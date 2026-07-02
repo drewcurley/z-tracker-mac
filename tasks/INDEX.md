@@ -12,7 +12,7 @@
 
 | ID | Title | Owner | State |
 |----|-------|-------|-------|
-| [T-007](./T-007.md) | Overworld map — real sprite rendering | frontend-engineer | proposed |
+| _none_ | | | |
 
 ## Completed
 
@@ -24,6 +24,7 @@
 | [T-004](./T-004.md) | Startup screen — embedded settings panel | frontend-engineer | — | feat/settings-panel | — | docs/reviews/feat-settings-panel/final.md |
 | [T-005](./T-005.md) | Settings panel follow-ups — voice picker, "More settings", unconfirmed toggles | frontend-engineer | — | feat/settings-panel-followups | — | docs/reviews/feat-settings-panel-followups/final.md |
 | [T-006](./T-006.md) | Overworld map — tile-mark data model and basic grid interaction | frontend-engineer | — | feat/overworld-map-core | — | docs/reviews/feat-overworld-map-core/final.md |
+| [T-007](./T-007.md) | Overworld map — real sprite rendering | frontend-engineer | — | feat/overworld-map-sprites | — | docs/reviews/feat-overworld-map-sprites/final.md |
 
 ## Cancelled / Superseded
 

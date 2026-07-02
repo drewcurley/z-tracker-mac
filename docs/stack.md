@@ -36,10 +36,15 @@ Revisit if distributing to others with older machines becomes a real need.
 
 ## Third-party dependencies
 
-None planned at bootstrap time. If any SPM package is added later (e.g. a
-snapshot-testing library — see `testing.md`), it must be recorded here with
-its license and the reason it was chosen, per the Architect's redline on
-supply-chain risk (`playbook/.claude/agents/architect.md`).
+No SPM package dependencies. One bundled third-party **asset** (not code):
+`Sources/ZTrackerMac/Resources/s_icon_overworld_strip39.png`, the reference
+app's overworld tile-icon sprite sheet, MIT-licensed (Brian McNamara) — see
+`/NOTICE.md` for the full license text and
+`docs/decisions/0001-native-swiftui-over-avalonia-port.md` for the reuse
+decision. If any SPM package is added later (e.g. a snapshot-testing
+library — see `testing.md`), it must be recorded here with its license and
+the reason it was chosen, per the Architect's redline on supply-chain risk
+(`playbook/.claude/agents/architect.md`).
 
 ## Update-this-doc-when
 

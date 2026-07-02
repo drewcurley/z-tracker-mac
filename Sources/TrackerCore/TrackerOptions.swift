@@ -53,16 +53,20 @@ public enum BroadcastWindowSize: Int, Codable, CaseIterable, Sendable {
 }
 
 /// The 12 overworld tile kinds the "More settings…" popup can hide
-/// (`OptionsMenu.fs`'s `TilesThatSupportHidingOverworldMarks`, backed by
-/// `TrackerModelOptions.OverworldTilesToHide`, T-005). Display names are
-/// straightforward derivations of the confirmed field names — the reference
-/// app's exact on-screen tile labels come from a separate lookup
-/// (`TrackerModel.dummyOverworldTiles`) not transcribed here; revisit if a
-/// mismatch is found.
+/// (`TrackerModel.fs`'s `MapSquareChoiceDomainHelper.TilesThatSupportHidingOverworldMarks`,
+/// backed by `TrackerModelOptions.OverworldTilesToHide`, T-005/T-007). Case
+/// order matches that source array exactly (T-007 — corrected from an
+/// earlier draft's alphabetical-ish guess), so `allCases` iterates in the
+/// same order the reference app's "More settings…" popup lays them out in.
+/// Display names are straightforward derivations of the confirmed field
+/// names — the reference app's exact on-screen tile labels come from a
+/// separate lookup (`TrackerModel.dummyOverworldTiles`) not transcribed
+/// here; revisit if a mismatch is found.
 public enum OverworldHiddenTileKind: String, Codable, CaseIterable, Sendable {
-    case sword1, sword2, sword3
+    case sword3, sword2, sword1
+    case moneyMakingGame
     case largeSecret, mediumSecret, smallSecret
-    case doorRepair, moneyMakingGame, theLetter, armos, hintShop, takeAny
+    case doorRepair, theLetter, armos, hintShop, takeAny
 
     public var displayName: String {
         switch self {
