@@ -57,12 +57,19 @@ jobs:
 
   build-and-test:
     name: build + test (Xcode)
-    runs-on: macos-14
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
+      - name: Select latest available Xcode (need Swift 6 for Package.swift)
+        run: |
+          echo "Available Xcode versions:"
+          ls -d /Applications/Xcode*.app 2>/dev/null || true
+          latest=$(ls -d /Applications/Xcode_*.app 2>/dev/null | sort -V | tail -1)
+          if [ -n "$latest" ]; then
+            sudo xcode-select -s "$latest/Contents/Developer"
+          fi
+          swift --version
       - name: swift build
         run: swift build
-        continue-on-error: true # relax once Package.swift/Xcode project exists — see T-002
       - name: swift test
         run: swift test
-        continue-on-error: true # relax once Package.swift/Xcode project exists — see T-002
