@@ -12,7 +12,7 @@
 
 | ID | Title | Owner | State |
 |----|-------|-------|-------|
-| [T-010](./T-010.md) | Overworld routing — dynamic graph layer + pathfinding search | frontend-engineer | proposed |
+| [T-011](./T-011.md) | Overworld routing — GYR coloring + route-line UI, wired to live state | frontend-engineer | proposed |
 
 ## Completed
 
@@ -27,6 +27,7 @@
 | [T-007](./T-007.md) | Overworld map — real sprite rendering | frontend-engineer | — | feat/overworld-map-sprites | — | docs/reviews/feat-overworld-map-sprites/final.md |
 | [T-008](./T-008.md) | Overworld map — background/terrain art | frontend-engineer | — | feat/overworld-map-background | — | docs/reviews/feat-overworld-map-background/final.md |
 | [T-009](./T-009.md) | Overworld routing — static adjacency graph (foundation) | frontend-engineer | — | feat/overworld-routing-graph | — | docs/reviews/feat-overworld-routing-graph/final.md |
+| [T-010](./T-010.md) | Overworld routing — dynamic graph layer + pathfinding search | frontend-engineer | — | feat/overworld-routing-dynamic | — | docs/reviews/feat-overworld-routing-dynamic/final.md |
 
 ## Cancelled / Superseded
 
