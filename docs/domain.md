@@ -6,9 +6,17 @@ feature, near pixel-perfect clone" — every item below is something the clone i
 expected to eventually replicate, unless a future ADR explicitly descopes it.
 
 **Verification:** produced by a dedicated inventory pass over
-`Zelda1RandoTools`'s `doc/*.md` and F# source (`Z1R_Tracker/`), 2026-07-02.
-File/line citations below point into that repo. Re-verify against
-`Zelda1RandoTools` directly if this ever seems stale — it is a pinned fork
+`Zelda1RandoTools`'s `doc/*.md` and F# source (`Z1R_Tracker/`), 2026-07-02,
+**plus** two visual passes the same day: (1) the ~100 screenshots already
+committed in `Zelda1RandoTools/doc/screenshots/` (referenced from the doc
+`.md` files), and (2) live screenshots of the actual running v1.3.1 app in a
+Windows 11 ARM VM, for the one screen the repo's own screenshots don't cover
+(the startup screen — `quick-start.md`'s screenshot is the *main* window,
+taken after startup). The live-VM pass corrected a factual error in an
+earlier draft of § 4.1 (window size and shape are independent settings, not
+one combined preset list) — see § 4.1 for what changed. File/line citations
+below point into that repo. Re-verify against `Zelda1RandoTools` directly if
+this ever seems stale — it is a pinned fork
 (see `playbook/workspace.manifest.md`), so it will only change if intentionally
 re-synced with `upstream`.
 
@@ -48,16 +56,69 @@ emulator integration of any kind is required for feature parity.
 ## 4. Exhaustive feature inventory (the parity checklist)
 
 ### 4.1 Startup screen
-- Heart Shuffle toggle, Hide Dungeon Numbers toggle
-- 4 overworld-quest start buttons: First / Second / Mixed-First / Mixed-Second
-  (spot counts: 1Q=73, 2Q=80, Mixed=93, "UQ"=128)
+
+**Verified against the running reference app** (v1.3.1, screenshotted live in
+a Windows 11 ARM VM, 2026-07-02) in addition to the doc/source pass — this
+corrected two details the text-only inventory pass got wrong or missed. Also
+cross-checked against `doc/screenshots/size-and-shape-options.png`.
+
+- Heart Shuffle toggle, Hide Dungeon Numbers toggle — **implemented, T-003**
+  (`TrackerCore.TrackerModel.heartShuffle`/`.hideDungeonNumbers`,
+  `StartupView`). Toggling their effect elsewhere (dungeon pre-fill / numeral
+  hiding) is not implemented yet — only the startup-screen state capture is.
+- 4 overworld-quest start buttons — **implemented, T-003** — confirmed
+  on-screen labels: "Start: First Quest Overworld", "Start: Second Quest
+  Overworld", "Start: Mixed - First Quest Overworld", "Start: Mixed - Second
+  Quest Overworld (or randomized quest)" (spot counts: 1Q=73, 2Q=80, Mixed=93,
+  "UQ"=128 — the spot-count behavior itself is not implemented yet, only quest
+  selection and navigation to the (placeholder) main view)
 - Alternative overworld map mode: blank 16×8 grid, fully-revealed load, or
-  hidden-until-clicked load
-- "Start from previously saved state" (restores HS/HDN/OW from the save)
-- Embedded options menu (note: "Listen for Speech" is startup-only — cannot be
-  toggled on later in the reference app; confirm whether this constraint is
-  worth carrying forward or was purely an implementation artifact)
-- Window size/shape presets: Tall (default, 768×967), Square, 2/3, 1/3, 5/6
+  hidden-until-clicked load — **not implemented** (see `tasks/T-003.md` "Out
+  of scope" — niche, `other.md`-scope feature, deferred)
+- "- OR -" divider, then "Start: from a previously saved state" (restores
+  HS/HDN/OW from the save) — **UI present but disabled, T-003**; needs
+  save-file persistence (`data-model.md` § 4 compatibility decision) before
+  it can actually do anything
+- A random tip/factoid box — **implemented, T-003**, but backed by
+  `TrackerCore.TipProvider.placeholderTips`, an explicitly-labeled small
+  illustrative subset (3 tips), not the exhaustive original list — see
+  `tasks/T-003.md` "Out of scope"
+- Below that: **"Settings (most can be changed later, using 'Options...'
+  button above timeline)"** — a live options panel embedded directly on the
+  startup screen, in 3 columns, confirmed on-screen — **not implemented,
+  tracked as `T-004`** (deliberately out of scope for T-003, see
+  `tasks/T-003.md`):
+  - **Overworld settings:** Draw routes, Show screen scrolls, Highlight
+    nearby, Show magnifier, Shops before dungeons, "More settings…" button.
+    **Dungeon settings:** BOARD instead of LEVEL, Show basement info, Do door
+    inference, Book for Helpful Hints, Left-drag auto-inverts.
+  - **Reminders:** a volume slider, "Disable all," and a Voice/Visual
+    two-column checkbox matrix for the 7 reminder categories (§ 4.10):
+    Dungeon feedback, Sword hearts, Coast Item, Recorder/PB/Boomstick, Have
+    magic key/ladder, Blockers, Door Repair Count, Overworld overwrites, plus
+    a "Change voice" button.
+  - **Other:** Animate tile changes, Animate shop highlights, Save on
+    completion, Snoop for seed&flags, Display seed&flags, Listen for speech
+    (confirmed startup-only — cannot be toggled on later, matches the
+    original inventory note), Confirmation sound, a Broadcast window
+    radio-group (**Full size broadcast / 2/3 size broadcast / 1/3 size
+    broadcast** — the user-facing labels for the 768/512/256 px widths in
+    § 4.13), Include overworld magnifier, Mouse magnifier window (and more,
+    cut off in the captured window height — not fully enumerated).
+- **Window size vs. window shape are two independent settings, not one
+  combined preset list** (corrected from an earlier draft of this doc, which
+  conflated them): **Window Size** = 4/3 size (Largest) / Default / 5/6 size /
+  2/3 size (Smallest); **Window Shape** = Tall (default) or Square. Square
+  "auto-swaps between Overworld and Dungeon focus, based on your mouse" and
+  disables the overworld magnifier, broadcast window, and Draw/UCC buttons.
+  **Critically: "this option only affects the main application; the startup
+  options screen is always 'Tall'"** — i.e., the reference app's own startup
+  screen never varies its layout at all, regardless of the user's size/shape
+  settings. **Intentionally NOT cloned** — `z-tracker-mac`'s startup screen
+  (and main window) is responsive and reflows instead of using fixed
+  presets/a fixed shape; see
+  `docs/decisions/0003-responsive-layout-not-fixed-presets.md`. (The
+  broadcast window, § 4.13, is the one exception and does keep fixed sizing.)
 - Random tip/Factoid display; Konami-code easter egg reveals all tips
 
 ### 4.2 Dungeon Item Area (9 dungeons)
@@ -184,7 +245,9 @@ press for certain blocker/triforce/item actions.
 - **Broadcast window** — separate, non-interactive, square-ish window for OBS
   capture; auto-switches between overworld/dungeon view based on mouse
   position; fixed widths (768/512/256) for crisp integer-scaled capture;
-  remembers its screen position.
+  remembers its screen position. **This fixed sizing IS cloned** (unlike the
+  main window, § 4.1) — OBS window capture wants a stable size; see
+  `docs/decisions/0003-responsive-layout-not-fixed-presets.md`.
 - **Pop-out windows** — Spot Summary, Remaining Items, Inventory as small,
   movable, non-resizable always-on-top windows; positions persisted.
 - **Hotkey cheat sheet** pop-out (persisted, right-click resets).

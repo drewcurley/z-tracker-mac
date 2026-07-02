@@ -5,6 +5,13 @@ reference app's own terminology (`Zelda1RandoTools`) so that porting
 discussions stay unambiguous — see `domain.md` for the full feature context
 behind each term.
 
+**For what a randomizer flag/mechanic actually *does*** (as opposed to what
+the tracker UI calls it), the authoritative source is the community wiki,
+[z1r.fandom.com/wiki](https://z1r.fandom.com/wiki/) — the base game being
+randomized is the original NES *The Legend of Zelda* (1986). The tracker
+app's source only encodes tracking state, not game rules; an earlier draft of
+this file learned that the hard way (see the "Boomstick" entry below).
+
 | Term | Meaning |
 |---|---|
 | **z1r** | fcoughlin's Zelda 1 Randomizer — the game mod this app tracks progress for. Not part of this codebase. |
@@ -16,7 +23,7 @@ behind each term.
 | **Blocker** | An item/condition marked as required to progress past a specific point in a dungeon (8 kinds — see `domain.md` § 4.7). |
 | **Take-Any** | A cave type where the player picks one of several items — has a dedicated pie-menu gesture accelerator. |
 | **Recorder** | An in-game item (the flute) with warp-destination mechanics the tracker helps route. |
-| **Boomstick** | A seed-specific item combination (Bow + Boomerang merged) — affects several toggles (`IsBoomstickSeed`, "Boomstick Book"). |
+| **Boomstick** | The result of the z1r randomizer flag "Replace Book Fire with Explosion" ([z1r wiki](https://z1r.fandom.com/wiki/Boomstick)). The Wand works normally (2 HP damage on contact/beam) until the Book is acquired; the Book becomes purchasable from a shop (swapped in at whichever shop has the highest Shield price); once acquired, the Wand shoots explosions usable like Bombs instead of fire. Explosions don't damage Link; they can stun (not kill) Dodongos. Matches the tracker's own `TrackerModel.fs` behavior (`IsCurrentlyBook`/"Boomstick Book" replacing the Book/Shield slot) and `DungeonData.fs:29`'s note that Wizzrobes/Gleeok require "explosions (from bombs or boomstick)" when swordless. *(A prior draft of this entry guessed "Bow + Boomerang merged" without checking any source — wrong; see `tasks/T-003.md` activity log.)* |
 | **Atlas seed** | A seed variant where the Book item behaves as a map/atlas — affects the "book-is-atlas" toggle. |
 | **RoomType / MonsterDetail / FloorDropDetail** | The three independent per-room classification axes in the dungeon tracker (34 / 32 / 9 possible values respectively — see `domain.md` § 4.6). |
 | **Broadcast window** | A separate, non-interactive window sized/positioned for OBS capture — see `contracts.md` § 2 entry 1. |

@@ -1,22 +1,18 @@
 import SwiftUI
 import TrackerCore
 
-/// Placeholder window content for the initial scaffold (T-002). Replaced by
-/// the real startup screen / tracker view in a later feature task — see
-/// docs/domain.md § 4.1 for what that screen needs to do.
+/// Root view: shows the startup screen (docs/domain.md § 4.1, T-003) until a
+/// quest is selected, then hands off to the main tracker view (a placeholder
+/// until a future task builds it for real).
 struct ContentView: View {
     var model: TrackerModel
 
     var body: some View {
-        VStack(spacing: 12) {
-            Text("Z-Tracker Mac")
-                .font(.title)
-            Text("Scaffold — no tracker UI yet. See tasks/INDEX.md.")
-                .font(.callout)
-                .foregroundStyle(.secondary)
+        if model.quest == nil {
+            StartupView(model: model, onQuestSelected: model.selectQuest)
+        } else {
+            MainTrackerPlaceholderView(model: model)
         }
-        .padding(40)
-        .frame(minWidth: 400, minHeight: 250)
     }
 }
 

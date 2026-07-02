@@ -12,7 +12,7 @@
 
 | ID | Title | Owner | State |
 |----|-------|-------|-------|
-| _none_ | | | |
+| [T-004](./T-004.md) | Startup screen — embedded settings panel | frontend-engineer | proposed |
 
 ## Completed
 
@@ -20,6 +20,7 @@
 |----|-------|-------|------|--------|----|--------|
 | [T-001](./T-001.md) | Bootstrap `/docs/` folder (Tier 1 + Tier 2) | review-coordinator | — | chore/bootstrap-docs | — | docs/reviews/chore-bootstrap-docs/final.md |
 | [T-002](./T-002.md) | Initial Xcode/SwiftPM project scaffold | architect | — | chore/initial-scaffold | — | docs/reviews/chore-initial-scaffold/final.md |
+| [T-003](./T-003.md) | Startup screen — quest selection, core toggles, responsive layout | frontend-engineer | — | feat/startup-screen | — | docs/reviews/feat-startup-screen/final.md |
 
 ## Cancelled / Superseded
 

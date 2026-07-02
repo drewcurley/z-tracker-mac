@@ -37,11 +37,21 @@ Not yet established — no SwiftUI views exist yet. The reference app's visual
 language (see `domain.md` § "Notable for a pixel-perfect clone" in the
 inventory that produced this doc set, and ADR 0001) is the starting point:
 sprite-sheet pixel art at small native sizes with integer/nearest-neighbor
-scaling, a small set of fixed window-size presets, near-black backgrounds,
-Segoe UI for body text (macOS equivalent TBD — **UNKNOWN — needs human
-confirmation**, likely San Francisco or a similar system font, not
-necessarily a literal Segoe UI substitute) and a Zelda-style display font for
-section headers.
+scaling, near-black backgrounds, Segoe UI for body text (macOS equivalent TBD
+— **UNKNOWN — needs human confirmation**, likely San Francisco or a similar
+system font, not necessarily a literal Segoe UI substitute) and a Zelda-style
+display font for section headers.
+
+**Layout is responsive, not fixed-preset — a deliberate departure from the
+reference app** (`docs/decisions/0003-responsive-layout-not-fixed-presets.md`).
+The reference app's small set of fixed window-size presets (Tall/Square/2:3/
+1:3/5:6) is a specific, longstanding frustration for the developer, not a
+behavior worth cloning. The main tracker window reflows as it's resized;
+sprite-rendered content (overworld map, dungeon grids, item icons) must scale
+with available space, likely via integer-scale snapping to keep pixel-art
+crispness at arbitrary window sizes (open implementation problem, not solved
+yet). The **broadcast window is the one exception** and keeps the reference
+app's fixed sizing, since OBS window capture wants a stable size.
 
 ## Accessibility baseline
 
