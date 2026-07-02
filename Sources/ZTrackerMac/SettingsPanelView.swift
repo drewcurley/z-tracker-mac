@@ -1,13 +1,18 @@
+import AVFoundation
 import SwiftUI
 import TrackerCore
 
-/// The startup screen's embedded settings panel (docs/domain.md § 4.1, T-004)
-/// — 3 columns confirmed by direct screenshot of the running reference app.
-/// Responsive per `docs/decisions/0003-responsive-layout-not-fixed-presets.md`:
-/// uses an adaptive grid rather than a fixed 3-column HStack, so columns
-/// reflow to fewer per row as the window narrows instead of clipping.
+/// The startup screen's embedded settings panel (docs/domain.md § 4.1,
+/// T-004/T-005) — 3 columns confirmed by direct screenshot of the running
+/// reference app and by reading `OptionsMenu.fs` directly. Responsive per
+/// `docs/decisions/0003-responsive-layout-not-fixed-presets.md`: uses an
+/// adaptive grid rather than a fixed 3-column HStack, so columns reflow to
+/// fewer per row as the window narrows instead of clipping.
 struct SettingsPanelView: View {
     var options: TrackerOptions
+
+    @State private var showMoreSettings = false
+    @State private var showVoicePicker = false
 
     private let columns = [
         GridItem(.adaptive(minimum: 220), alignment: .top)
@@ -36,12 +41,11 @@ struct SettingsPanelView: View {
             Toggle("Highlight nearby", isOn: Bindable(options).highlightNearby)
             Toggle("Show magnifier", isOn: Bindable(options).showMagnifier)
             Toggle("Shops before dungeons", isOn: Bindable(options).shopsBeforeDungeons)
-            // "More settings…" button — its contents weren't confirmed by
-            // screenshot (cut off), so it's a placeholder, not a guessed
-            // expansion. See tasks/T-004.md "Out of scope".
-            Button("More settings…") {}
-                .disabled(true)
-                .help("Not implemented yet — the expanded panel's exact contents weren't confirmed against the reference app")
+            // Opens the overworld-tile-hiding checklist (OptionsMenu.fs:115-205).
+            Button("More settings…") { showMoreSettings = true }
+                .popover(isPresented: $showMoreSettings) {
+                    MoreSettingsPopoverView(options: options)
+                }
 
             settingsHeader("Dungeon settings")
             Toggle("BOARD instead of LEVEL", isOn: Bindable(options).boardInsteadOfLevel)
@@ -49,6 +53,8 @@ struct SettingsPanelView: View {
             Toggle("Do door inference", isOn: Bindable(options).doDoorInference)
             Toggle("Book for Helpful Hints", isOn: Bindable(options).bookForHelpfulHints)
             Toggle("Left-drag auto-inverts", isOn: Bindable(options).leftDragAutoInverts)
+            Toggle("Default to NonDescript", isOn: Bindable(options).defaultToNonDescript)
+            Toggle("Dungeon 'sunglasses'", isOn: Bindable(options).dungeonSunglasses)
         }
         .toggleStyle(.checkbox)
     }
@@ -82,9 +88,14 @@ struct SettingsPanelView: View {
             }
             .toggleStyle(.checkbox)
 
-            Button("Change voice…") {}
-                .disabled(true)
-                .help("Voice picker not implemented yet")
+            // Reference app only shows this button when >1 voice is
+            // installed (OptionsMenu.fs:275) — same gate here.
+            if AVSpeechSynthesisVoice.speechVoices().count > 1 {
+                Button("Change voice…") { showVoicePicker = true }
+                    .popover(isPresented: $showVoicePicker) {
+                        VoicePickerView(options: options)
+                    }
+            }
         }
     }
 
@@ -115,6 +126,7 @@ struct SettingsPanelView: View {
                 .disabled(!options.showBroadcastWindow)
 
             Toggle("Mouse magnifier window", isOn: Bindable(options).showMouseMagnifierWindow)
+            Toggle("Hide timer", isOn: Bindable(options).hideTimer)
         }
         .toggleStyle(.checkbox)
     }
@@ -137,6 +149,94 @@ struct SettingsPanelView: View {
             get: { options.visualReminders[category] ?? false },
             set: { options.visualReminders[category] = $0 }
         )
+    }
+}
+
+/// The "More settings…" popup (`OptionsMenu.fs:115-205`) — overworld tiles
+/// that can be hidden (rendered as "Don't Care" spots) once marked, plus the
+/// two shop-hiding modifiers.
+private struct MoreSettingsPopoverView: View {
+    var options: TrackerOptions
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Overworld marks to hide")
+                .font(.headline)
+            Text(
+                "Sometimes you want to mark certain map tiles so the tracker can help you, "
+                    + "but don't want to clutter your overworld map with icons you don't need "
+                    + "to see. Check each tile kind you'd prefer to hide after marking it."
+            )
+            .font(.callout)
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
+
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 140))], alignment: .leading) {
+                ForEach(OverworldHiddenTileKind.allCases, id: \.self) { kind in
+                    Toggle(kind.displayName, isOn: hiddenTileBinding(for: kind))
+                }
+            }
+            .toggleStyle(.checkbox)
+
+            Divider()
+
+            Toggle("Hide no-longer-relevant shop items", isOn: Bindable(options).hideNoLongerRelevantShopItems)
+                .toggleStyle(.checkbox)
+            Toggle("Always hide meat shops", isOn: Bindable(options).alwaysHideMeatShops)
+                .toggleStyle(.checkbox)
+                .disabled(!options.hideNoLongerRelevantShopItems)
+                .padding(.leading, 20)
+        }
+        .padding()
+        .frame(width: 420)
+    }
+
+    private func hiddenTileBinding(for kind: OverworldHiddenTileKind) -> Binding<Bool> {
+        Binding(
+            get: { options.hiddenOverworldTiles[kind] ?? false },
+            set: { options.hiddenOverworldTiles[kind] = $0 }
+        )
+    }
+}
+
+/// The "Change voice…" popup (`OptionsMenu.fs:275-325`) — lists installed
+/// system voices with a way to preview and select one. `AVSpeechSynthesizer`
+/// is this project's macOS-native replacement for the reference app's
+/// `System.Speech` (see `docs/stack.md`).
+private struct VoicePickerView: View {
+    var options: TrackerOptions
+
+    private let synthesizer = AVSpeechSynthesizer()
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Select preferred voice")
+                .font(.headline)
+            ScrollView {
+                VStack(alignment: .leading, spacing: 6) {
+                    ForEach(AVSpeechSynthesisVoice.speechVoices(), id: \.identifier) { voice in
+                        HStack {
+                            Text(voice.name)
+                                .frame(width: 180, alignment: .leading)
+                            Button("Test it") { speak(voice, text: "Hello") }
+                            Button("Choose this") {
+                                options.preferredVoiceIdentifier = voice.identifier
+                                speak(voice, text: "Voice chosen")
+                            }
+                        }
+                    }
+                }
+            }
+            .frame(maxHeight: 300)
+        }
+        .padding()
+        .frame(width: 420)
+    }
+
+    private func speak(_ voice: AVSpeechSynthesisVoice, text: String) {
+        let utterance = AVSpeechUtterance(string: text)
+        utterance.voice = voice
+        synthesizer.speak(utterance)
     }
 }
 

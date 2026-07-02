@@ -52,18 +52,49 @@ public enum BroadcastWindowSize: Int, Codable, CaseIterable, Sendable {
     }
 }
 
-/// The startup screen's embedded settings panel (docs/domain.md § 4.1, T-004)
-/// — the "Overworld settings" / "Dungeon settings" / "Reminders" / "Other"
-/// columns confirmed by direct screenshot of the running reference app.
-/// Defaults match `TrackerModelOptions.fs` field-for-field where a field is
-/// confirmed to appear on this screen; see each property's doc comment for
-/// its source line. This does not yet cover every field in that source file
-/// — several (e.g. `RequirePTTForSpeech`, `UseBlurEffects`,
-/// `GiveDungeonTrackerSunglasses`, `HideTimer`, the "More settings…" panel's
-/// contents) exist in the reference app but their presence on *this specific
-/// screen* (vs. the main window's own Options menu) was not confirmed by
-/// screenshot — deliberately deferred rather than guessed, see
-/// `tasks/T-004.md` "Out of scope".
+/// The 12 overworld tile kinds the "More settings…" popup can hide
+/// (`OptionsMenu.fs`'s `TilesThatSupportHidingOverworldMarks`, backed by
+/// `TrackerModelOptions.OverworldTilesToHide`, T-005). Display names are
+/// straightforward derivations of the confirmed field names — the reference
+/// app's exact on-screen tile labels come from a separate lookup
+/// (`TrackerModel.dummyOverworldTiles`) not transcribed here; revisit if a
+/// mismatch is found.
+public enum OverworldHiddenTileKind: String, Codable, CaseIterable, Sendable {
+    case sword1, sword2, sword3
+    case largeSecret, mediumSecret, smallSecret
+    case doorRepair, moneyMakingGame, theLetter, armos, hintShop, takeAny
+
+    public var displayName: String {
+        switch self {
+        case .sword1: "Sword cave 1"
+        case .sword2: "Sword cave 2"
+        case .sword3: "Sword cave 3"
+        case .largeSecret: "Large secret"
+        case .mediumSecret: "Medium secret"
+        case .smallSecret: "Small secret"
+        case .doorRepair: "Door repair"
+        case .moneyMakingGame: "Money making game"
+        case .theLetter: "The letter"
+        case .armos: "Armos"
+        case .hintShop: "Hint shop"
+        case .takeAny: "Take any"
+        }
+    }
+}
+
+/// The startup screen's embedded settings panel (docs/domain.md § 4.1,
+/// T-004/T-005) — the "Overworld settings" / "Dungeon settings" /
+/// "Reminders" / "Other" columns, confirmed by direct screenshot of the
+/// running reference app *and* by reading `OptionsMenu.fs` directly (the
+/// single WPF component shared by both the startup screen and the main
+/// window's "Options…" button — resolving what a partial screenshot alone
+/// could not). Two fields that exist in `TrackerModelOptions.fs` are
+/// confirmed **excluded** from this panel, not just unconfirmed:
+/// `RequirePTTForSpeech` is dead code in the reference app itself (its
+/// checkbox is commented out — "not (yet) a fully supported feature, so
+/// don't publish it on the options menu", `OptionsMenu.fs:400-419`), and
+/// `UseBlurEffects` does not appear anywhere in `OptionsMenu.fs` — it's
+/// controlled elsewhere in the reference app, not this component.
 @Observable
 public final class TrackerOptions {
     // MARK: Overworld settings (TrackerModelOptions.fs Overworld module)
@@ -91,6 +122,25 @@ public final class TrackerOptions {
     public var bookForHelpfulHints: Bool
     /// `LeftClickDragAutoInverts`, default `false`.
     public var leftDragAutoInverts: Bool
+    /// `DefaultRoomPreferNonDescriptToMaybePushBlock`, default `false`.
+    /// Labeled "Default to NonDescript" on-screen (`OptionsMenu.fs:60`).
+    public var defaultToNonDescript: Bool
+    /// `GiveDungeonTrackerSunglasses`, default `true`. Labeled "Dungeon
+    /// 'sunglasses'" on-screen (`OptionsMenu.fs:61`).
+    public var dungeonSunglasses: Bool
+
+    // MARK: "More settings…" — overworld tile hiding (OptionsMenu.fs:115-205)
+
+    /// `OverworldTilesToHide.*` for the 12 kinds in `OverworldHiddenTileKind`.
+    /// All default `false` (nothing hidden), matching source.
+    public var hiddenOverworldTiles: [OverworldHiddenTileKind: Bool]
+    /// `OverworldTilesToHide.Shop`, default `false`. Labeled "Hide
+    /// no-longer-relevant shop items" in the "More settings…" popup.
+    public var hideNoLongerRelevantShopItems: Bool
+    /// `OverworldTilesToHide.AlwaysHideMeatShops`, default `false`. Only
+    /// meaningful when `hideNoLongerRelevantShopItems` is on
+    /// (`OptionsMenu.fs:179-189`).
+    public var alwaysHideMeatShops: Bool
 
     // MARK: Reminders
 
@@ -133,6 +183,9 @@ public final class TrackerOptions {
     public var broadcastWindowIncludesOverworldMagnifier: Bool
     /// `ShowMouseMagnifierWindow`, default `false`.
     public var showMouseMagnifierWindow: Bool
+    /// `HideTimer`, default `false`. Labeled "Hide timer" on-screen
+    /// (`OptionsMenu.fs:460-466`).
+    public var hideTimer: Bool
 
     public init(
         drawRoutes: Bool = true,
@@ -145,6 +198,11 @@ public final class TrackerOptions {
         doDoorInference: Bool = false,
         bookForHelpfulHints: Bool = false,
         leftDragAutoInverts: Bool = false,
+        defaultToNonDescript: Bool = false,
+        dungeonSunglasses: Bool = true,
+        hiddenOverworldTiles: [OverworldHiddenTileKind: Bool]? = nil,
+        hideNoLongerRelevantShopItems: Bool = false,
+        alwaysHideMeatShops: Bool = false,
         reminderVolume: Int = 30,
         voiceReminders: [ReminderCategory: Bool]? = nil,
         visualReminders: [ReminderCategory: Bool]? = nil,
@@ -159,7 +217,8 @@ public final class TrackerOptions {
         showBroadcastWindow: Bool = false,
         broadcastWindowSize: BroadcastWindowSize = .full,
         broadcastWindowIncludesOverworldMagnifier: Bool = false,
-        showMouseMagnifierWindow: Bool = false
+        showMouseMagnifierWindow: Bool = false,
+        hideTimer: Bool = false
     ) {
         self.drawRoutes = drawRoutes
         self.showScreenScrolls = showScreenScrolls
@@ -171,6 +230,11 @@ public final class TrackerOptions {
         self.doDoorInference = doDoorInference
         self.bookForHelpfulHints = bookForHelpfulHints
         self.leftDragAutoInverts = leftDragAutoInverts
+        self.defaultToNonDescript = defaultToNonDescript
+        self.dungeonSunglasses = dungeonSunglasses
+        self.hiddenOverworldTiles = hiddenOverworldTiles ?? Self.defaultHiddenOverworldTiles()
+        self.hideNoLongerRelevantShopItems = hideNoLongerRelevantShopItems
+        self.alwaysHideMeatShops = alwaysHideMeatShops
         self.reminderVolume = reminderVolume
         self.voiceReminders = voiceReminders ?? Self.defaultReminderToggles()
         self.visualReminders = visualReminders ?? Self.defaultReminderToggles()
@@ -186,6 +250,7 @@ public final class TrackerOptions {
         self.broadcastWindowSize = broadcastWindowSize
         self.broadcastWindowIncludesOverworldMagnifier = broadcastWindowIncludesOverworldMagnifier
         self.showMouseMagnifierWindow = showMouseMagnifierWindow
+        self.hideTimer = hideTimer
     }
 
     /// Every category defaults to `true` except `.recorderPBSpotsAndBoomstickBook`
@@ -196,6 +261,12 @@ public final class TrackerOptions {
         Dictionary(uniqueKeysWithValues: ReminderCategory.allCases.map { category in
             (category, category != .recorderPBSpotsAndBoomstickBook)
         })
+    }
+
+    /// All 12 hideable tile kinds default to `false` (nothing hidden),
+    /// matching `OverworldTilesToHide` in `TrackerModelOptions.fs:40-54`.
+    private static func defaultHiddenOverworldTiles() -> [OverworldHiddenTileKind: Bool] {
+        Dictionary(uniqueKeysWithValues: OverworldHiddenTileKind.allCases.map { ($0, false) })
     }
 
     /// The "Disable all" button (docs/domain.md § 4.1) — not itself a
