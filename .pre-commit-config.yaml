@@ -1,0 +1,31 @@
+# Optional: pre-commit framework configuration (https://pre-commit.com).
+# Complementary to .githooks/ (procedure) — this layers in Swift-specific quality.
+#
+# Install:  brew install pre-commit swiftlint swiftformat && pre-commit install
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-merge-conflict
+      - id: check-added-large-files
+        args: ['--maxkb=1024'] # tracker icon/asset PNGs run larger than 512kb
+      - id: check-yaml
+      - id: check-json
+      - id: detect-private-key
+
+  # Swift lint + format — uncomment once SwiftLint/SwiftFormat configs are added (T-002)
+  # - repo: local
+  #   hooks:
+  #     - id: swiftlint
+  #       name: swiftlint
+  #       entry: swiftlint
+  #       language: system
+  #       types: [swift]
+  #     - id: swiftformat
+  #       name: swiftformat --lint
+  #       entry: swiftformat --lint
+  #       language: system
+  #       types: [swift]
