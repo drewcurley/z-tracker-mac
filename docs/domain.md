@@ -62,19 +62,32 @@ a Windows 11 ARM VM, 2026-07-02) in addition to the doc/source pass — this
 corrected two details the text-only inventory pass got wrong or missed. Also
 cross-checked against `doc/screenshots/size-and-shape-options.png`.
 
-- Heart Shuffle toggle, Hide Dungeon Numbers toggle
-- 4 overworld-quest start buttons — confirmed on-screen labels: "Start: First
-  Quest Overworld", "Start: Second Quest Overworld", "Start: Mixed - First
-  Quest Overworld", "Start: Mixed - Second Quest Overworld (or randomized
-  quest)" (spot counts: 1Q=73, 2Q=80, Mixed=93, "UQ"=128)
+- Heart Shuffle toggle, Hide Dungeon Numbers toggle — **implemented, T-003**
+  (`TrackerCore.TrackerModel.heartShuffle`/`.hideDungeonNumbers`,
+  `StartupView`). Toggling their effect elsewhere (dungeon pre-fill / numeral
+  hiding) is not implemented yet — only the startup-screen state capture is.
+- 4 overworld-quest start buttons — **implemented, T-003** — confirmed
+  on-screen labels: "Start: First Quest Overworld", "Start: Second Quest
+  Overworld", "Start: Mixed - First Quest Overworld", "Start: Mixed - Second
+  Quest Overworld (or randomized quest)" (spot counts: 1Q=73, 2Q=80, Mixed=93,
+  "UQ"=128 — the spot-count behavior itself is not implemented yet, only quest
+  selection and navigation to the (placeholder) main view)
 - Alternative overworld map mode: blank 16×8 grid, fully-revealed load, or
-  hidden-until-clicked load
+  hidden-until-clicked load — **not implemented** (see `tasks/T-003.md` "Out
+  of scope" — niche, `other.md`-scope feature, deferred)
 - "- OR -" divider, then "Start: from a previously saved state" (restores
-  HS/HDN/OW from the save)
-- A random tip/factoid box (e.g. z1r trivia like the "khananakey" trick)
+  HS/HDN/OW from the save) — **UI present but disabled, T-003**; needs
+  save-file persistence (`data-model.md` § 4 compatibility decision) before
+  it can actually do anything
+- A random tip/factoid box — **implemented, T-003**, but backed by
+  `TrackerCore.TipProvider.placeholderTips`, an explicitly-labeled small
+  illustrative subset (3 tips), not the exhaustive original list — see
+  `tasks/T-003.md` "Out of scope"
 - Below that: **"Settings (most can be changed later, using 'Options...'
   button above timeline)"** — a live options panel embedded directly on the
-  startup screen, in 3 columns, confirmed on-screen:
+  startup screen, in 3 columns, confirmed on-screen — **not implemented,
+  tracked as `T-004`** (deliberately out of scope for T-003, see
+  `tasks/T-003.md`):
   - **Overworld settings:** Draw routes, Show screen scrolls, Highlight
     nearby, Show magnifier, Shops before dungeons, "More settings…" button.
     **Dungeon settings:** BOARD instead of LEVEL, Show basement info, Do door
