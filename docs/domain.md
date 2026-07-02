@@ -85,44 +85,52 @@ cross-checked against `doc/screenshots/size-and-shape-options.png`.
   `tasks/T-003.md` "Out of scope"
 - Below that: **"Settings (most can be changed later, using 'Options...'
   button above timeline)"** — a live options panel embedded directly on the
-  startup screen, in 3 columns, confirmed on-screen — **implemented, T-004**
-  (`TrackerCore.TrackerOptions`, `ZTrackerMac.SettingsPanelView`). Defaults
-  cross-verified field-for-field against
-  `Zelda1RandoTools/Z1R_Tracker/Z1R_Tracker/TrackerModelOptions.fs`, not just
-  the screenshot (which resolved the "cut off, not fully enumerated" gap this
-  entry previously flagged for the Other column — see that file's exhaustive
-  field list for anything below):
+  startup screen, in 3 columns — **fully implemented, T-004 + T-005**
+  (`TrackerCore.TrackerOptions`, `ZTrackerMac.SettingsPanelView`). Confirmed
+  by both screenshot and by reading `Z1R_WPF/OptionsMenu.fs` directly — the
+  single WPF component the reference app shares between the startup screen
+  and the main window's "Options…" button (same code, two call sites), which
+  is what let every remaining "unconfirmed placement" item below be resolved
+  for real rather than guessed:
   - **Overworld settings:** Draw routes, Show screen scrolls, Highlight
     nearby, Show magnifier, Shops before dungeons — implemented. "More
-    settings…" button is present but disabled/non-functional — its expanded
-    contents were never confirmed by screenshot, so nothing was guessed (see
-    `tasks/T-004.md` "Out of scope").
+    settings…" opens a real popover (T-005) listing the 12 overworld tile
+    kinds that can be hidden (`OverworldHiddenTileKind`) plus "Hide
+    no-longer-relevant shop items" and "Always hide meat shops" — matches
+    `TrackerModelOptions.OverworldTilesToHide` exactly (14 fields total).
     **Dungeon settings:** BOARD instead of LEVEL, Show basement info, Do door
-    inference, Book for Helpful Hints, Left-drag auto-inverts — implemented.
+    inference, Book for Helpful Hints, Left-drag auto-inverts, **Default to
+    NonDescript, Dungeon 'sunglasses'** (`GiveDungeonTrackerSunglasses` —
+    confirmed to belong here, added in T-005) — all implemented.
   - **Reminders:** a volume slider, "Disable all," and a Voice/Visual
     two-column checkbox matrix for the 8 reminder categories (§ 4.10):
     Dungeon feedback, Sword hearts, Coast Item, Recorder/PB/Boomstick, Have
     magic key/ladder, Blockers, Door Repair Count, Overworld overwrites — all
     implemented with correct per-category defaults (all `true` except
-    Recorder/PB/Boomstick). "Change voice" button is present but
-    disabled/non-functional — a real voice picker needs `AVSpeechSynthesisVoice`
-    wiring, deferred (see `tasks/T-004.md` "Out of scope").
+    Recorder/PB/Boomstick). "Change voice…" opens a real popover (T-005)
+    listing installed voices via `AVSpeechSynthesisVoice.speechVoices()`,
+    with Test/Choose actions — matches the reference app's own
+    `voice.GetInstalledVoices()` UI, including the same >1-voice gate before
+    showing the button.
   - **Other:** Animate tile changes, Animate shop highlights, Save on
     completion, Snoop for seed&flags, Display seed&flags, Listen for speech
     (confirmed startup-only — cannot be toggled on later, matches the
     original inventory note), Confirmation sound, a Broadcast window
     radio-group (**Full size broadcast / 2/3 size broadcast / 1/3 size
     broadcast** — the user-facing labels for the 768/512/256 px widths in
-    § 4.13), Include overworld magnifier, Mouse magnifier window — all
-    implemented. **Not implemented, placement unconfirmed** (present in
-    `TrackerModelOptions.fs` but not verified to appear on *this* screen vs.
-    the main window's own Options menu — deliberately not guessed):
-    `RequirePTTForSpeech`, `UseBlurEffects`, `GiveDungeonTrackerSunglasses`,
-    `HideTimer`, `DefaultRoomPreferNonDescriptToMaybePushBlock`. `SmallerAppWindow`/
-    `ShorterAppWindow`/`SmallerAppWindowScaleFactor` are confirmed **out of
-    scope for this screen** — they belong to the separate Size & Shape option
-    described above, not the embedded settings panel, and are moot for this
-    project anyway per ADR 0003 (responsive layout).
+    § 4.13), Include overworld magnifier, Mouse magnifier window, **Hide
+    timer** (confirmed to belong here, added in T-005) — all implemented.
+  - **Resolved, confirmed excluded** (T-005 — checked `OptionsMenu.fs`
+    directly rather than leaving as "unconfirmed"): `RequirePTTForSpeech` is
+    dead code in the reference app itself — its checkbox is commented out
+    with the note "not (yet) a fully supported feature, so don't publish it
+    on the options menu" (`OptionsMenu.fs:400-419`). `UseBlurEffects` does
+    not appear anywhere in `OptionsMenu.fs` at all — it's controlled
+    elsewhere in the reference app, not this component, so correctly absent
+    from this panel. `SmallerAppWindow`/`ShorterAppWindow`/
+    `SmallerAppWindowScaleFactor` belong to the separate Size & Shape option
+    (not this embedded panel) and are moot for this project per ADR 0003
+    (responsive layout).
 - **Window size vs. window shape are two independent settings, not one
   combined preset list** (corrected from an earlier draft of this doc, which
   conflated them): **Window Size** = 4/3 size (Largest) / Default / 5/6 size /
@@ -232,10 +240,13 @@ Routing/highlighting toggles (DrawRoutes, HighlightNearby, ShowMagnifier,
 Coords, door-inference, …), window/broadcast toggles (ShowBroadcastWindow +
 size, blur effects, animation toggles), workflow toggles (SaveOnCompletion,
 SnoopSeedAndFlags, HideTimer), speech toggles (ListenForSpeech,
-RequirePTTForSpeech, PlaySoundWhenUseSpeech, PreferredVoice), per-category
-voice+visual reminder toggles (7 categories — see § 4.10), 14
-`HideOverworldTile_*` toggles, and display-convention toggles (e.g.
-"BOARD" vs. "LEVEL" header wording).
+PlaySoundWhenUseSpeech, PreferredVoice — **`RequirePTTForSpeech` listed here
+in an earlier draft, but it's actually dead/commented-out code in the
+reference app's UI, never exposed to users**, see § 4.1's "resolved,
+confirmed excluded" note), per-category voice+visual reminder toggles (8
+categories, not 7 — see § 4.10), 14 `HideOverworldTile_*` toggles (the "More
+settings…" panel, § 4.1), and display-convention toggles (e.g. "BOARD" vs.
+"LEVEL" header wording).
 
 ### 4.10 Reminders (8 categories + 1 special case)
 

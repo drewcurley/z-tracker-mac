@@ -20,6 +20,12 @@ struct TrackerOptionsTests {
         #expect(options.doDoorInference == false)
         #expect(options.bookForHelpfulHints == false)
         #expect(options.leftDragAutoInverts == false)
+        #expect(options.defaultToNonDescript == false)
+        #expect(options.dungeonSunglasses == true)
+
+        // "More settings…" (overworld tile hiding)
+        #expect(options.hideNoLongerRelevantShopItems == false)
+        #expect(options.alwaysHideMeatShops == false)
 
         // Reminders
         #expect(options.reminderVolume == 30)
@@ -37,6 +43,31 @@ struct TrackerOptionsTests {
         #expect(options.broadcastWindowSize == .full)
         #expect(options.broadcastWindowIncludesOverworldMagnifier == false)
         #expect(options.showMouseMagnifierWindow == false)
+        #expect(options.hideTimer == false)
+    }
+
+    @Test(
+        "every overworld hideable tile kind defaults to false (nothing hidden)",
+        arguments: OverworldHiddenTileKind.allCases
+    )
+    func hiddenOverworldTileDefaults(kind: OverworldHiddenTileKind) {
+        let options = TrackerOptions()
+        #expect(options.hiddenOverworldTiles[kind] == false)
+    }
+
+    @Test("hiddenOverworldTiles has exactly the 12 confirmed kinds")
+    func hiddenOverworldTilesCount() {
+        let options = TrackerOptions()
+        #expect(options.hiddenOverworldTiles.count == 12)
+        #expect(OverworldHiddenTileKind.allCases.count == 12)
+    }
+
+    @Test("alwaysHideMeatShops is settable independently of hideNoLongerRelevantShopItems")
+    func alwaysHideMeatShopsIndependent() {
+        let options = TrackerOptions()
+        options.alwaysHideMeatShops = true
+        #expect(options.alwaysHideMeatShops == true)
+        #expect(options.hideNoLongerRelevantShopItems == false)
     }
 
     @Test(
