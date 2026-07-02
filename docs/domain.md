@@ -357,10 +357,22 @@ JSON file holds options/settings, independent of save state.
   schema inspired by it (full design freedom, no import path)? **Not decided.**
   Recommend resolving this explicitly before `data-model.md`'s schema is
   implemented, not assumed here.
-- **Overworld routing algorithm** — described at a feature level (§ 4.4) but
-  the exact rule-by-rule logic (Lost Woods/Lost Hills topology, any-road warp
-  graph) lives in `OverworldRouting.fs`/`OverworldData.fs` and was not
-  transcribed rule-by-rule. Needed before that feature can be implemented.
+- **Overworld routing algorithm — static graph layer resolved (T-009), rest
+  still open.** The full system (`OverworldRouting.fs`) is a hand-built
+  ~130-edge adjacency graph (most screens one vertex, ~12 split into
+  half-screen vertices for narrow passages) with asymmetric Lost Woods/Lost
+  Hills traps and ladder/raft-conditional crossings, feeding a
+  priority-queue multi-path breadth-first search. The **static** layer (item-
+  independent-except-ladder/raft adjacencies) is transcribed edge-for-edge
+  in `TrackerCore.OverworldRoutingGraph`, cross-checked against the F# source
+  by call-count comparison (not just eyeballing) and validated by porting
+  the reference app's own 128-screen consistency sanity check as a real
+  test. **Still not ported:** the **dynamic** layer (screen-scroll variants
+  for mirrored/normal overworld, recorder-warp and any-road edges,
+  `populateDynamic`), the pathfinding search itself (`findAllBestPaths`),
+  and the GYR/route-line UI that consumes it (`OverworldRouteDrawing.fs`,
+  where GYR turns out to be a byproduct of path cost, not a separate simpler
+  computation).
 - **Hint-decoding tables** ("Aquamentus Awaits" → location halos) — mapping
   logic exists in code (`GetLevelHint`-style) but wasn't fully extracted.
 - **Sprite atlas slicing offsets — resolved (T-006/T-007).** Base tile size
