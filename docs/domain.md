@@ -204,30 +204,36 @@ custom waypoint, hint decoder, hotkeys pop-out cheat sheet, "show/run custom"
 (user-configurable: show images / run local executables or URLs — **security-
 relevant, see `contracts.md`**), save, FQ/SQ toggle, legend, item-progress bar.
 
-**Implementation status (T-006/T-007):** the tile-mark data model
+**Implementation status (T-006/T-007/T-008):** the tile-mark data model
 (`TrackerCore.OverworldTileMark`, `OverworldGrid`, 16×8), the icon-strip
 index mapping (`OverworldTileMark.iconStripIndex`, grounded exactly in
 `MapSquareChoiceDomainHelper`), **real sprite-icon rendering** (the actual
 reference-app icon strip, bundled as an SPM resource with attribution in
-`/NOTICE.md`, cropped per-tile via `OverworldIconAtlas` — verified visually,
-crisp/uninterpolated), and the core "left-click unmarked → mark dark" /
+`/NOTICE.md`, cropped per-tile via `OverworldIconAtlas`), **real terrain
+background art per quest** (`s_map_overworld_vanilla_strip8.png`, cropped
+via `OverworldBackgroundAtlas`, quest-indexed via
+`OverworldQuest.referenceAppIndex` — grounded exactly in `OverworldData.fs`'s
+`OWQuest.AsInt`), and the core "left-click unmarked → mark dark" /
 "right-click (or click-when-dark) → selection menu" gestures are
-**implemented** (`ZTrackerMac.OverworldMapView`). `.unmarked` (this
-project's own default state) still uses a placeholder gray tile, since no
-reference-app icon corresponds to it. **Not yet implemented:** the map's
-*background/terrain* art, middle-click circling, shift-variants, the
-take-any pie-menu accelerator, hover magnifier/routing lines/GYR overlay,
-and all the supporting controls listed above (version link,
-recorder-destination counter, hint decoder, "show/run custom", save, FQ/SQ,
-legend, item-progress bar).
+**implemented** (`ZTrackerMac.OverworldMapView`) — verified visually: the
+rendered map is recognizably the actual Zelda 1 First Quest overworld
+(forests, lakes, the graveyard area all correctly placed, no gaps or
+misalignment). **Not yet implemented:** middle-click circling,
+shift-variants, the take-any pie-menu accelerator, hover magnifier/routing
+lines/GYR overlay, and all the supporting controls listed above (version
+link, recorder-destination counter, hint decoder, "show/run custom", save,
+FQ/SQ, legend, item-progress bar). The `BLANK` quest / "alternative
+overworld map" custom mode remains out of scope, as originally deferred.
 
-**Layout constants resolved (T-006):** the base overworld tile is 16×11px,
-rendered at 3x scale by default (`OMTW = 48. // 16*3`, `Graphics.fs:358`) —
-this was an open question in an earlier draft of this doc ("Layout.fs / OMTW
-numeric constants... not fully dumped"). The reference app's actual map
-background art involves per-quest bitmap caching
-(`Graphics.fs` `overworldMapBMPs`) that was not reverse-engineered here —
-still open for whoever picks up the background-art portion of `tasks/T-007.md`.
+**Layout constants resolved (T-006), background art resolved (T-008):** the
+base overworld tile is 16×11px, rendered at 3x scale by default
+(`OMTW = 48. // 16*3`, `Graphics.fs:358`) — this was an open question in an
+earlier draft of this doc ("Layout.fs / OMTW numeric constants... not fully
+dumped"). The reference app's map background art comes from
+`s_map_overworld_vanilla_strip8.png` (1280×88px, 5 sections of 256×88px —
+the first 4 are the real quest layouts, the 5th is unused/blank), read via
+`Graphics.fs`'s `overworldMapBMPs` pixel-indexing math and confirmed by
+direct visual inspection of the source file (not just arithmetic).
 
 **GYR convention** (used throughout): green = reachable now, yellow = reachable
 but may not exist (mixed-quest ambiguity), red = not reachable.

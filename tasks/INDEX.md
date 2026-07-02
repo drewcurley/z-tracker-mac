@@ -25,6 +25,7 @@
 | [T-005](./T-005.md) | Settings panel follow-ups — voice picker, "More settings", unconfirmed toggles | frontend-engineer | — | feat/settings-panel-followups | — | docs/reviews/feat-settings-panel-followups/final.md |
 | [T-006](./T-006.md) | Overworld map — tile-mark data model and basic grid interaction | frontend-engineer | — | feat/overworld-map-core | — | docs/reviews/feat-overworld-map-core/final.md |
 | [T-007](./T-007.md) | Overworld map — real sprite rendering | frontend-engineer | — | feat/overworld-map-sprites | — | docs/reviews/feat-overworld-map-sprites/final.md |
+| [T-008](./T-008.md) | Overworld map — background/terrain art | frontend-engineer | — | feat/overworld-map-background | — | docs/reviews/feat-overworld-map-background/final.md |
 
 ## Cancelled / Superseded
 

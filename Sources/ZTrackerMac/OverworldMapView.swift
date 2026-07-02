@@ -3,12 +3,13 @@ import SwiftUI
 import TrackerCore
 
 /// The overworld map (docs/domain.md § 4.5, T-006 core data model +
-/// interaction, T-007 real sprite rendering). Renders the reference app's
-/// actual tile-mark icons (`s_icon_overworld_strip39.png`, MIT-licensed,
-/// see `/NOTICE.md`) via `OverworldIconAtlas`, falling back to a colored
-/// placeholder only for `.unmarked` (no reference-app icon exists for
-/// "nothing set yet"). Map *background/terrain* art is still not
-/// implemented — see `tasks/T-007.md`.
+/// interaction, T-007 tile-mark sprite rendering, T-008 terrain background).
+/// Renders the reference app's actual terrain art
+/// (`s_map_overworld_vanilla_strip8.png`, per selected quest, via
+/// `OverworldBackgroundAtlas`) as the base layer, with tile-mark icons
+/// (`s_icon_overworld_strip39.png`, via `OverworldIconAtlas`) composited on
+/// top wherever a mark is set. Both assets are MIT-licensed — see
+/// `/NOTICE.md`.
 ///
 /// Confirmed gestures implemented: left-click an unmarked tile marks it
 /// `.dontCare` ("dark"); left-click a `.dontCare` tile, or right-click any
@@ -17,6 +18,7 @@ import TrackerCore
 /// this task's functional stand-in, not a guess at the real design.
 struct OverworldMapView: View {
     var grid: OverworldGrid
+    var quest: OverworldQuest
 
     /// Aspect ratio matches the reference app's base tile shape (16×11px,
     /// `Graphics.fs` `OMTW`/`OMTH` — resolves a previously-open question in
@@ -35,7 +37,8 @@ struct OverworldMapView: View {
                     HStack(spacing: 0) {
                         ForEach(0..<OverworldGrid.columnCount, id: \.self) { column in
                             let mark = grid.mark(column: column, row: row)
-                            TileView(mark: mark)
+                            let background = OverworldBackgroundAtlas.tile(quest: quest, column: column, row: row)
+                            TileView(mark: mark, background: background)
                                 .frame(width: tileWidth, height: tileHeight)
                                 .onTapGesture { handleLeftClick(column: column, row: row) }
                                 .contextMenu { markMenu(column: column, row: row) }
@@ -112,32 +115,45 @@ struct OverworldMapView: View {
     }
 }
 
-/// A single tile's placeholder visual — a color keyed to the mark's
-/// broad category plus a short text abbreviation. Not the reference app's
-/// sprite icons where available (T-007 — real icon per `iconStripIndex`;
-/// `.unmarked` has no reference-app icon, so it keeps the placeholder look).
+/// A single tile's visual: the real terrain background (T-008) as the base
+/// layer, with the real tile-mark icon (T-007) composited on top wherever a
+/// mark is set. `.unmarked` tiles show terrain alone, undecorated — matching
+/// how the reference app's map looks before the player has marked anything.
+/// Falls back to a colored placeholder + abbreviation only if the terrain
+/// image failed to load (defensive, not expected in practice).
 private struct TileView: View {
     var mark: OverworldTileMark
+    var background: CGImage?
 
     var body: some View {
-        Rectangle()
-            .fill(color)
-            .overlay {
-                if let index = mark.iconStripIndex, let icon = OverworldIconAtlas.icon(at: index) {
-                    Image(decorative: icon, scale: 1, orientation: .up)
-                        .resizable()
-                        .interpolation(.none) // crisp nearest-neighbor, matches the reference app's own integer scaling
-                        .aspectRatio(contentMode: .fit)
-                        .padding(1)
-                } else {
-                    Text(abbreviation)
-                        .font(.system(size: 8))
-                        .foregroundStyle(.white)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.5)
-                }
+        Group {
+            if let background {
+                Image(decorative: background, scale: 1, orientation: .up)
+                    .resizable()
+                    .interpolation(.none)
+                    .aspectRatio(contentMode: .fill)
+            } else {
+                Rectangle().fill(color)
             }
-            .overlay(Rectangle().stroke(.black.opacity(0.3), lineWidth: 0.5))
+        }
+        .overlay {
+            if let index = mark.iconStripIndex, let icon = OverworldIconAtlas.icon(at: index) {
+                Image(decorative: icon, scale: 1, orientation: .up)
+                    .resizable()
+                    .interpolation(.none) // crisp nearest-neighbor, matches the reference app's own integer scaling
+                    .aspectRatio(contentMode: .fit)
+                    .padding(1)
+            } else if background == nil {
+                // Only show the text fallback when terrain also failed to load --
+                // otherwise .unmarked tiles would get a spurious empty overlay.
+                Text(abbreviation)
+                    .font(.system(size: 8))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+            }
+        }
+        .overlay(Rectangle().stroke(.black.opacity(0.3), lineWidth: 0.5))
     }
 
     private var color: Color {
@@ -218,8 +234,56 @@ enum OverworldIconAtlas {
     }
 }
 
+/// Loads the reference app's overworld terrain-art strip once and crops
+/// individual 16×11px terrain tiles on demand, per quest (T-008). The
+/// source (`s_map_overworld_vanilla_strip8.png`, 1280×88px) is 5
+/// horizontal sections of 256×88px each — the first 4 are the real quest
+/// layouts (`OverworldQuest.referenceAppIndex`, grounded in
+/// `OverworldData.fs`'s `OWQuest.AsInt`), the 5th is unused/blank (the
+/// reference app's `OWQuest.BLANK`, which maps to the already-deferred
+/// "alternative overworld map" mode — not read here). Each 256×88px section
+/// is itself a 16×8 grid of 16×11px tiles, identical in shape to
+/// `OverworldIconAtlas`'s icons — confirmed via `Graphics.fs`'s
+/// `overworldMapBMPs` pixel-indexing math, not guessed.
+enum OverworldBackgroundAtlas {
+    static let tileWidth = 16
+    static let tileHeight = 11
+    static let sectionWidth = tileWidth * OverworldGrid.columnCount // 256
+    static let questCount = 4 // FIRST, SECOND, MIXED_FIRST, MIXED_SECOND -- BLANK excluded, see above
+
+    private static let fullImage: CGImage? = {
+        guard
+            let url = Bundle.module.url(forResource: "s_map_overworld_vanilla_strip8", withExtension: "png"),
+            let dataProvider = CGDataProvider(url: url as CFURL),
+            let image = CGImage(
+                pngDataProviderSource: dataProvider,
+                decode: nil,
+                shouldInterpolate: false,
+                intent: .defaultIntent
+            )
+        else { return nil }
+        return image
+    }()
+
+    static func tile(quest: OverworldQuest, column: Int, row: Int) -> CGImage? {
+        guard
+            let fullImage,
+            (0..<OverworldGrid.columnCount).contains(column),
+            (0..<OverworldGrid.rowCount).contains(row)
+        else { return nil }
+        let sectionX = quest.referenceAppIndex * sectionWidth
+        let rect = CGRect(
+            x: sectionX + column * tileWidth,
+            y: row * tileHeight,
+            width: tileWidth,
+            height: tileHeight
+        )
+        return fullImage.cropping(to: rect)
+    }
+}
+
 #Preview {
-    OverworldMapView(grid: OverworldGrid())
+    OverworldMapView(grid: OverworldGrid(), quest: .first)
         .frame(width: 800)
         .padding()
 }
