@@ -85,26 +85,44 @@ cross-checked against `doc/screenshots/size-and-shape-options.png`.
   `tasks/T-003.md` "Out of scope"
 - Below that: **"Settings (most can be changed later, using 'Options...'
   button above timeline)"** — a live options panel embedded directly on the
-  startup screen, in 3 columns, confirmed on-screen — **not implemented,
-  tracked as `T-004`** (deliberately out of scope for T-003, see
-  `tasks/T-003.md`):
+  startup screen, in 3 columns, confirmed on-screen — **implemented, T-004**
+  (`TrackerCore.TrackerOptions`, `ZTrackerMac.SettingsPanelView`). Defaults
+  cross-verified field-for-field against
+  `Zelda1RandoTools/Z1R_Tracker/Z1R_Tracker/TrackerModelOptions.fs`, not just
+  the screenshot (which resolved the "cut off, not fully enumerated" gap this
+  entry previously flagged for the Other column — see that file's exhaustive
+  field list for anything below):
   - **Overworld settings:** Draw routes, Show screen scrolls, Highlight
-    nearby, Show magnifier, Shops before dungeons, "More settings…" button.
+    nearby, Show magnifier, Shops before dungeons — implemented. "More
+    settings…" button is present but disabled/non-functional — its expanded
+    contents were never confirmed by screenshot, so nothing was guessed (see
+    `tasks/T-004.md` "Out of scope").
     **Dungeon settings:** BOARD instead of LEVEL, Show basement info, Do door
-    inference, Book for Helpful Hints, Left-drag auto-inverts.
+    inference, Book for Helpful Hints, Left-drag auto-inverts — implemented.
   - **Reminders:** a volume slider, "Disable all," and a Voice/Visual
-    two-column checkbox matrix for the 7 reminder categories (§ 4.10):
+    two-column checkbox matrix for the 8 reminder categories (§ 4.10):
     Dungeon feedback, Sword hearts, Coast Item, Recorder/PB/Boomstick, Have
-    magic key/ladder, Blockers, Door Repair Count, Overworld overwrites, plus
-    a "Change voice" button.
+    magic key/ladder, Blockers, Door Repair Count, Overworld overwrites — all
+    implemented with correct per-category defaults (all `true` except
+    Recorder/PB/Boomstick). "Change voice" button is present but
+    disabled/non-functional — a real voice picker needs `AVSpeechSynthesisVoice`
+    wiring, deferred (see `tasks/T-004.md` "Out of scope").
   - **Other:** Animate tile changes, Animate shop highlights, Save on
     completion, Snoop for seed&flags, Display seed&flags, Listen for speech
     (confirmed startup-only — cannot be toggled on later, matches the
     original inventory note), Confirmation sound, a Broadcast window
     radio-group (**Full size broadcast / 2/3 size broadcast / 1/3 size
     broadcast** — the user-facing labels for the 768/512/256 px widths in
-    § 4.13), Include overworld magnifier, Mouse magnifier window (and more,
-    cut off in the captured window height — not fully enumerated).
+    § 4.13), Include overworld magnifier, Mouse magnifier window — all
+    implemented. **Not implemented, placement unconfirmed** (present in
+    `TrackerModelOptions.fs` but not verified to appear on *this* screen vs.
+    the main window's own Options menu — deliberately not guessed):
+    `RequirePTTForSpeech`, `UseBlurEffects`, `GiveDungeonTrackerSunglasses`,
+    `HideTimer`, `DefaultRoomPreferNonDescriptToMaybePushBlock`. `SmallerAppWindow`/
+    `ShorterAppWindow`/`SmallerAppWindowScaleFactor` are confirmed **out of
+    scope for this screen** — they belong to the separate Size & Shape option
+    described above, not the embedded settings panel, and are moot for this
+    project anyway per ADR 0003 (responsive layout).
 - **Window size vs. window shape are two independent settings, not one
   combined preset list** (corrected from an earlier draft of this doc, which
   conflated them): **Window Size** = 4/3 size (Largest) / Default / 5/6 size /
@@ -219,11 +237,23 @@ voice+visual reminder toggles (7 categories — see § 4.10), 14
 `HideOverworldTile_*` toggles, and display-convention toggles (e.g.
 "BOARD" vs. "LEVEL" header wording).
 
-### 4.10 Reminders (7 categories)
-SwordHearts, RecorderPBSpotsAndBoomstickBook, HaveKeyLadder, Blockers,
-DoorRepair, OverworldOverwrites, DungeonFeedback — each independently
-toggleable for spoken (synthesized) and/or visual (timeline-corner icon + log)
-delivery.
+### 4.10 Reminders (8 categories + 1 special case)
+
+**Corrected** — an earlier draft of this doc said "7 categories" and omitted
+"Coast Item"; verified directly against the `ReminderCategory` enum
+(`Zelda1RandoTools/Z1R_Tracker/Z1R_Tracker/TrackerModel.fs:6-15`), not
+re-derived from memory of the first inventory pass.
+
+The 8 user-toggleable categories, each independently toggleable for spoken
+(synthesized) and/or visual (timeline-corner icon + log) delivery — display
+names per the enum's own `DisplayName`: Dungeon feedback, Sword hearts,
+Coast Item, Recorder/PB/Boomstick, Have magic key/ladder, Blockers, Door
+Repair Count, Overworld overwrites.
+
+Plus a 9th enum case, `Asterisk` ("Error beeps"), which is **not** confirmed
+to be a user-facing toggle in the settings panel (no evidence yet either way)
+— flagged as **UNKNOWN — needs human confirmation** rather than assumed
+either in or out of scope for `T-004`'s reminder-matrix UI.
 
 ### 4.11 Hotkeys
 User-editable hotkey file, 7 contexts (item boxes, overworld tiles, blockers,

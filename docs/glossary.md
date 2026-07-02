@@ -27,7 +27,7 @@ this file learned that the hard way (see the "Boomstick" entry below).
 | **Atlas seed** | A seed variant where the Book item behaves as a map/atlas — affects the "book-is-atlas" toggle. |
 | **RoomType / MonsterDetail / FloorDropDetail** | The three independent per-room classification axes in the dungeon tracker (34 / 32 / 9 possible values respectively — see `domain.md` § 4.6). |
 | **Broadcast window** | A separate, non-interactive window sized/positioned for OBS capture — see `contracts.md` § 2 entry 1. |
-| **Reminder** | A spoken and/or visual nudge triggered by tracked state changes, grouped into 7 categories (see `domain.md` § 4.10). |
+| **Reminder** | A spoken and/or visual nudge triggered by tracked state changes, grouped into 8 categories plus one special case (see `domain.md` § 4.10). |
 | **Autosave / manual save / finished save** | The three save-file triggers — see `data-model.md` § 1. |
 | **Parity** | Shorthand used throughout this project's docs for "matches the reference app's (`Zelda1RandoTools`) behavior" — the acceptance bar for this clone, per `domain.md`. |
 | **Reference app** | `Zelda1RandoTools` — the pinned, read-only fork this project clones feature-by-feature. Never developed further; see `playbook/workspace.manifest.md`. |
