@@ -57,7 +57,11 @@ emulator integration of any kind is required for feature parity.
 - Embedded options menu (note: "Listen for Speech" is startup-only — cannot be
   toggled on later in the reference app; confirm whether this constraint is
   worth carrying forward or was purely an implementation artifact)
-- Window size/shape presets: Tall (default, 768×967), Square, 2/3, 1/3, 5/6
+- Window size/shape presets: Tall (default, 768×967), Square, 2/3, 1/3, 5/6.
+  **Intentionally NOT cloned** — `z-tracker-mac`'s main window is responsive
+  and reflows instead of using fixed presets; see
+  `docs/decisions/0003-responsive-layout-not-fixed-presets.md`. (The broadcast
+  window, § 4.13, is the one exception and does keep fixed sizing.)
 - Random tip/Factoid display; Konami-code easter egg reveals all tips
 
 ### 4.2 Dungeon Item Area (9 dungeons)
@@ -184,7 +188,9 @@ press for certain blocker/triforce/item actions.
 - **Broadcast window** — separate, non-interactive, square-ish window for OBS
   capture; auto-switches between overworld/dungeon view based on mouse
   position; fixed widths (768/512/256) for crisp integer-scaled capture;
-  remembers its screen position.
+  remembers its screen position. **This fixed sizing IS cloned** (unlike the
+  main window, § 4.1) — OBS window capture wants a stable size; see
+  `docs/decisions/0003-responsive-layout-not-fixed-presets.md`.
 - **Pop-out windows** — Spot Summary, Remaining Items, Inventory as small,
   movable, non-resizable always-on-top windows; positions persisted.
 - **Hotkey cheat sheet** pop-out (persisted, right-click resets).
