@@ -6,10 +6,11 @@ import TrackerCore
 /// until a future task builds it for real).
 struct ContentView: View {
     var model: TrackerModel
+    var options: TrackerOptions
 
     var body: some View {
         if model.quest == nil {
-            StartupView(model: model, onQuestSelected: model.selectQuest)
+            StartupView(model: model, options: options, onQuestSelected: model.selectQuest)
         } else {
             MainTrackerPlaceholderView(model: model)
         }
@@ -17,5 +18,5 @@ struct ContentView: View {
 }
 
 #Preview {
-    ContentView(model: TrackerModel())
+    ContentView(model: TrackerModel(), options: TrackerOptions())
 }

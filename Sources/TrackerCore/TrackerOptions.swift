@@ -1,0 +1,211 @@
+import Observation
+
+/// The 8 reminder categories (docs/domain.md § 4.10), verified directly
+/// against `Zelda1RandoTools/Z1R_Tracker/Z1R_Tracker/TrackerModel.fs:6-15`
+/// (`ReminderCategory`), not re-derived from an earlier, undercounted draft.
+/// A 9th case in the source, `Asterisk` ("Error beeps"), is not confirmed to
+/// be a user-facing settings-panel toggle and is deliberately omitted here —
+/// see `docs/domain.md` § 4.10 UNKNOWN note.
+public enum ReminderCategory: String, Codable, CaseIterable, Sendable {
+    case dungeonFeedback
+    case swordHearts
+    case coastItem
+    case recorderPBSpotsAndBoomstickBook
+    case haveKeyLadder
+    case blockers
+    case doorRepair
+    case overworldOverwrites
+
+    /// Matches the reference app's own `DisplayName` exactly
+    /// (`TrackerModel.fs:16-26`).
+    public var displayName: String {
+        switch self {
+        case .dungeonFeedback: "Dungeon feedback"
+        case .swordHearts: "Sword hearts"
+        case .coastItem: "Coast Item"
+        case .recorderPBSpotsAndBoomstickBook: "Recorder/PB/Boomstick"
+        case .haveKeyLadder: "Have magic key/ladder"
+        case .blockers: "Blockers"
+        case .doorRepair: "Door Repair Count"
+        case .overworldOverwrites: "Overworld overwrites"
+        }
+    }
+}
+
+/// The broadcast window's fixed-size options (docs/domain.md § 4.13,
+/// `docs/contracts.md` § 2 entry 1 — the one place this project keeps the
+/// reference app's fixed sizing on purpose, per
+/// `docs/decisions/0003-responsive-layout-not-fixed-presets.md`). Raw values
+/// match the reference app's `BroadcastWindowSize` field
+/// (`TrackerModelOptions.fs:74`, clamped to 1...3, default 3).
+public enum BroadcastWindowSize: Int, Codable, CaseIterable, Sendable {
+    case oneThird = 1
+    case twoThirds = 2
+    case full = 3
+
+    public var displayName: String {
+        switch self {
+        case .full: "Full size broadcast"
+        case .twoThirds: "2/3 size broadcast"
+        case .oneThird: "1/3 size broadcast"
+        }
+    }
+}
+
+/// The startup screen's embedded settings panel (docs/domain.md § 4.1, T-004)
+/// — the "Overworld settings" / "Dungeon settings" / "Reminders" / "Other"
+/// columns confirmed by direct screenshot of the running reference app.
+/// Defaults match `TrackerModelOptions.fs` field-for-field where a field is
+/// confirmed to appear on this screen; see each property's doc comment for
+/// its source line. This does not yet cover every field in that source file
+/// — several (e.g. `RequirePTTForSpeech`, `UseBlurEffects`,
+/// `GiveDungeonTrackerSunglasses`, `HideTimer`, the "More settings…" panel's
+/// contents) exist in the reference app but their presence on *this specific
+/// screen* (vs. the main window's own Options menu) was not confirmed by
+/// screenshot — deliberately deferred rather than guessed, see
+/// `tasks/T-004.md` "Out of scope".
+@Observable
+public final class TrackerOptions {
+    // MARK: Overworld settings (TrackerModelOptions.fs Overworld module)
+
+    /// `Overworld.DrawRoutes`, default `true`.
+    public var drawRoutes: Bool
+    /// `Overworld.RoutesCanScreenScroll`, default `false`.
+    public var showScreenScrolls: Bool
+    /// `Overworld.HighlightNearby`, default `true`.
+    public var highlightNearby: Bool
+    /// `Overworld.ShowMagnifier`, default `true`.
+    public var showMagnifier: Bool
+    /// `Overworld.ShopsFirst`, default `true`.
+    public var shopsBeforeDungeons: Bool
+
+    // MARK: Dungeon settings (top-level fields in TrackerModelOptions.fs)
+
+    /// `BOARDInsteadOfLEVEL`, default `false`.
+    public var boardInsteadOfLevel: Bool
+    /// `ShowBasementInfo`, default `true`.
+    public var showBasementInfo: Bool
+    /// `DoDoorInference`, default `false`.
+    public var doDoorInference: Bool
+    /// `BookForHelpfulHints`, default `false`.
+    public var bookForHelpfulHints: Bool
+    /// `LeftClickDragAutoInverts`, default `false`.
+    public var leftDragAutoInverts: Bool
+
+    // MARK: Reminders
+
+    /// `Volume`, default `30` (reference app range appears to be 0...100 —
+    /// see the `max 0 (min 100 ...)` clamp in `TrackerModelOptions.fs:345`).
+    public var reminderVolume: Int
+    /// `VoiceReminders.*` — one entry per category. Defaults match source
+    /// exactly: all `true` except `.recorderPBSpotsAndBoomstickBook` (`false`).
+    public var voiceReminders: [ReminderCategory: Bool]
+    /// `VisualReminders.*` — same categories and defaults as `voiceReminders`.
+    public var visualReminders: [ReminderCategory: Bool]
+    /// `PreferredVoice`, default empty (no preference / system default).
+    public var preferredVoiceIdentifier: String?
+
+    // MARK: Other
+
+    /// `AnimateTileChanges`, default `true`.
+    public var animateTileChanges: Bool
+    /// `AnimateShopHighlights`, default `true`.
+    public var animateShopHighlights: Bool
+    /// `SaveOnCompletion`, default `false`.
+    public var saveOnCompletion: Bool
+    /// `SnoopSeedAndFlags`, default `false`.
+    public var snoopSeedAndFlags: Bool
+    /// `DisplaySeedAndFlags`, default `true`.
+    public var displaySeedAndFlags: Bool
+    /// `ListenForSpeech`, default `false`. Startup-screen-only per the
+    /// reference app (docs/domain.md § 4.1) — this project carries that
+    /// constraint forward by only exposing it here, not in a later settings
+    /// surface (not yet enforced anywhere else, since no other surface exists).
+    public var listenForSpeech: Bool
+    /// `PlaySoundWhenUseSpeech`, default `true`. Labeled "Confirmation sound"
+    /// on-screen.
+    public var confirmationSound: Bool
+    /// `ShowBroadcastWindow`, default `false`.
+    public var showBroadcastWindow: Bool
+    /// `BroadcastWindowSize`, default `.full` (raw value 3).
+    public var broadcastWindowSize: BroadcastWindowSize
+    /// `BroadcastWindowIncludesOverworldMagnifier`, default `false`.
+    public var broadcastWindowIncludesOverworldMagnifier: Bool
+    /// `ShowMouseMagnifierWindow`, default `false`.
+    public var showMouseMagnifierWindow: Bool
+
+    public init(
+        drawRoutes: Bool = true,
+        showScreenScrolls: Bool = false,
+        highlightNearby: Bool = true,
+        showMagnifier: Bool = true,
+        shopsBeforeDungeons: Bool = true,
+        boardInsteadOfLevel: Bool = false,
+        showBasementInfo: Bool = true,
+        doDoorInference: Bool = false,
+        bookForHelpfulHints: Bool = false,
+        leftDragAutoInverts: Bool = false,
+        reminderVolume: Int = 30,
+        voiceReminders: [ReminderCategory: Bool]? = nil,
+        visualReminders: [ReminderCategory: Bool]? = nil,
+        preferredVoiceIdentifier: String? = nil,
+        animateTileChanges: Bool = true,
+        animateShopHighlights: Bool = true,
+        saveOnCompletion: Bool = false,
+        snoopSeedAndFlags: Bool = false,
+        displaySeedAndFlags: Bool = true,
+        listenForSpeech: Bool = false,
+        confirmationSound: Bool = true,
+        showBroadcastWindow: Bool = false,
+        broadcastWindowSize: BroadcastWindowSize = .full,
+        broadcastWindowIncludesOverworldMagnifier: Bool = false,
+        showMouseMagnifierWindow: Bool = false
+    ) {
+        self.drawRoutes = drawRoutes
+        self.showScreenScrolls = showScreenScrolls
+        self.highlightNearby = highlightNearby
+        self.showMagnifier = showMagnifier
+        self.shopsBeforeDungeons = shopsBeforeDungeons
+        self.boardInsteadOfLevel = boardInsteadOfLevel
+        self.showBasementInfo = showBasementInfo
+        self.doDoorInference = doDoorInference
+        self.bookForHelpfulHints = bookForHelpfulHints
+        self.leftDragAutoInverts = leftDragAutoInverts
+        self.reminderVolume = reminderVolume
+        self.voiceReminders = voiceReminders ?? Self.defaultReminderToggles()
+        self.visualReminders = visualReminders ?? Self.defaultReminderToggles()
+        self.preferredVoiceIdentifier = preferredVoiceIdentifier
+        self.animateTileChanges = animateTileChanges
+        self.animateShopHighlights = animateShopHighlights
+        self.saveOnCompletion = saveOnCompletion
+        self.snoopSeedAndFlags = snoopSeedAndFlags
+        self.displaySeedAndFlags = displaySeedAndFlags
+        self.listenForSpeech = listenForSpeech
+        self.confirmationSound = confirmationSound
+        self.showBroadcastWindow = showBroadcastWindow
+        self.broadcastWindowSize = broadcastWindowSize
+        self.broadcastWindowIncludesOverworldMagnifier = broadcastWindowIncludesOverworldMagnifier
+        self.showMouseMagnifierWindow = showMouseMagnifierWindow
+    }
+
+    /// Every category defaults to `true` except `.recorderPBSpotsAndBoomstickBook`
+    /// (`false`) — matches `VoiceReminders`/`VisualReminders` in
+    /// `TrackerModelOptions.fs:22-39` exactly (both blocks have the same
+    /// per-category defaults).
+    private static func defaultReminderToggles() -> [ReminderCategory: Bool] {
+        Dictionary(uniqueKeysWithValues: ReminderCategory.allCases.map { category in
+            (category, category != .recorderPBSpotsAndBoomstickBook)
+        })
+    }
+
+    /// The "Disable all" button (docs/domain.md § 4.1) — not itself a
+    /// persisted field in the reference app (no matching source field), a UI
+    /// convenience that zeroes every voice+visual toggle. Implemented as a
+    /// method rather than stored state for that reason.
+    public func disableAllReminders() {
+        for category in ReminderCategory.allCases {
+            voiceReminders[category] = false
+            visualReminders[category] = false
+        }
+    }
+}

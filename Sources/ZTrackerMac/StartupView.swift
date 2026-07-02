@@ -7,12 +7,13 @@ import TrackerCore
 /// and a live VM check), this view is responsive and reflows with the window
 /// per `docs/decisions/0003-responsive-layout-not-fixed-presets.md`.
 ///
-/// Out of scope here (see tasks/T-003.md): the embedded 3-column settings
-/// panel (T-004), the alternative-overworld-map custom mode, and real
-/// save-file loading (the "start from saved state" button is present but
-/// disabled until persistence exists).
+/// Out of scope here (see tasks/T-003.md): the alternative-overworld-map
+/// custom mode, and real save-file loading (the "start from saved state"
+/// button is present but disabled until persistence exists). The embedded
+/// settings panel (T-004) is now included — see `SettingsPanelView`.
 struct StartupView: View {
     var model: TrackerModel
+    var options: TrackerOptions
     var onQuestSelected: (OverworldQuest) -> Void
 
     @State private var tip: Tip = TipProvider.random()
@@ -20,17 +21,23 @@ struct StartupView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 24) {
-                Text("Z-Tracker Mac")
-                    .font(.largeTitle.bold())
+                VStack(spacing: 24) {
+                    Text("Z-Tracker Mac")
+                        .font(.largeTitle.bold())
 
-                togglesSection
-                questSection
-                savedStateSection
-                tipSection
+                    togglesSection
+                    questSection
+                    savedStateSection
+                    tipSection
+                }
+                .frame(maxWidth: 640)
+                .frame(maxWidth: .infinity)
+
+                SettingsPanelView(options: options)
+                    .frame(maxWidth: 900)
+                    .frame(maxWidth: .infinity)
             }
             .padding(32)
-            .frame(maxWidth: 640)
-            .frame(maxWidth: .infinity)
         }
         .frame(minWidth: 420, minHeight: 320)
     }
@@ -99,5 +106,5 @@ struct StartupView: View {
 }
 
 #Preview {
-    StartupView(model: TrackerModel(), onQuestSelected: { _ in })
+    StartupView(model: TrackerModel(), options: TrackerOptions(), onQuestSelected: { _ in })
 }
