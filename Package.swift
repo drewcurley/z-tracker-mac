@@ -17,8 +17,9 @@ let package = Package(
             name: "ZTrackerMac",
             dependencies: ["TrackerCore"],
             resources: [
-                // Third-party asset, MIT-licensed -- see /NOTICE.md.
-                .copy("Resources/s_icon_overworld_strip39.png")
+                // Third-party assets, MIT-licensed -- see /NOTICE.md.
+                .copy("Resources/s_icon_overworld_strip39.png"),
+                .copy("Resources/s_map_overworld_vanilla_strip8.png")
             ]
         ),
         .testTarget(

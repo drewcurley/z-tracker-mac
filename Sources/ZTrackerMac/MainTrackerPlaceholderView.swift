@@ -23,7 +23,10 @@ struct MainTrackerPlaceholderView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-            OverworldMapView(grid: model.overworldGrid)
+            // ContentView only shows this view once model.quest is set
+            // (docs/domain.md § 4.1); the fallback here is defensive, not
+            // an expected path.
+            OverworldMapView(grid: model.overworldGrid, quest: model.quest ?? .first)
                 .frame(maxWidth: 900)
         }
         .padding(32)
