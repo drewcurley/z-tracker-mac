@@ -48,4 +48,17 @@ struct TrackerModelTests {
         #expect(model.heartShuffle == true)
         #expect(model.hideDungeonNumbers == true)
     }
+
+    @Test("owns a fresh, fully-unmarked overworldGrid by default")
+    func ownsFreshOverworldGrid() {
+        let model = TrackerModel()
+        #expect(model.overworldGrid.mark(column: 0, row: 0) == .unmarked)
+    }
+
+    @Test("mutating overworldGrid through the model is visible on the same instance")
+    func overworldGridMutationVisible() {
+        let model = TrackerModel()
+        model.overworldGrid.setMark(.dungeon(4), column: 7, row: 3)
+        #expect(model.overworldGrid.mark(column: 7, row: 3) == .dungeon(4))
+    }
 }

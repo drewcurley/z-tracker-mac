@@ -181,7 +181,7 @@ the reference app's original, most novel feature — the algorithm lives in
 `OverworldRouting.fs`/`OverworldData.fs` (rule-by-rule detail not yet
 transcribed — see § 6 open questions).
 
-### 4.5 Overworld map (16×8 grid, 38 tile-mark types)
+### 4.5 Overworld map (16×8 grid, tile-mark types)
 9 dungeons, 4 any-roads, 3 sword caves, 8 shops (Arrow/Bomb/Book/Candle/
 BlueRing/Meat/Key/Shield), Unknown/Large/Medium/Small secret, DoorRepair,
 MoneyMakingGame, Letter, Armos, HintShop, TakeAny, PotionShop, DarkX
@@ -193,6 +193,31 @@ controls: version link, recorder-destination counter + flags menu, start spot,
 custom waypoint, hint decoder, hotkeys pop-out cheat sheet, "show/run custom"
 (user-configurable: show images / run local executables or URLs — **security-
 relevant, see `contracts.md`**), save, FQ/SQ toggle, legend, item-progress bar.
+
+**Implementation status (T-006):** the tile-mark data model
+(`TrackerCore.OverworldTileMark`, `OverworldGrid`, 16×8) and the core
+"left-click unmarked → mark dark" / "right-click (or click-when-dark) →
+selection menu" gestures are **implemented** (`ZTrackerMac.OverworldMapView`).
+**Not yet implemented:** pixel-accurate sprite rendering (placeholder colored
+rectangles are used instead — see `tasks/T-007.md`), middle-click circling,
+shift-variants, the take-any pie-menu accelerator, hover magnifier/routing
+lines/GYR overlay, and all the supporting controls listed above (version
+link, recorder-destination counter, hint decoder, "show/run custom", save,
+FQ/SQ, legend, item-progress bar). **Count discrepancy flagged, not
+resolved:** this doc says "38 tile-mark types," but a direct tally of the
+kinds listed above is 36, and the reference app's own icon strip
+(`s_icon_overworld_strip39.png`) has 39 images — see
+`TrackerCore.OverworldTileMark`'s doc comment. Re-verify against
+`TrackerModel.fs`'s tile-mark type directly (not yet done) before treating
+any of these three numbers as authoritative.
+
+**Layout constants resolved (T-006):** the base overworld tile is 16×11px,
+rendered at 3x scale by default (`OMTW = 48. // 16*3`, `Graphics.fs:358`) —
+this was an open question in an earlier draft of this doc ("Layout.fs / OMTW
+numeric constants... not fully dumped"). The reference app's actual map
+background art involves per-quest bitmap caching
+(`Graphics.fs` `overworldMapBMPs`) that was not reverse-engineered here —
+still open for whoever picks up `tasks/T-007.md`.
 
 **GYR convention** (used throughout): green = reachable now, yellow = reachable
 but may not exist (mixed-quest ambiguity), red = not reachable.
@@ -322,9 +347,17 @@ JSON file holds options/settings, independent of save state.
   transcribed rule-by-rule. Needed before that feature can be implemented.
 - **Hint-decoding tables** ("Aquamentus Awaits" → location halos) — mapping
   logic exists in code (`GetLevelHint`-style) but wasn't fully extracted.
-- **Sprite atlas slicing offsets** — the source PNG atlases are identified
-  (§ per `docs/decisions/0001-...md`), but exact per-icon pixel offsets live in
-  `Graphics.fs` and weren't enumerated. Needed for pixel-perfect icon slicing.
+- **Sprite atlas slicing offsets — partially resolved (T-006).** Base tile
+  size is 16×11px at 1x, rendered at 3x by default (`OMTW = 48. // 16*3`,
+  `Graphics.fs:358`); `s_icon_overworld_strip39.png` is 624×11px = 39 icons
+  of exactly 16×11px each, laid out horizontally with no gaps (confirmed via
+  `sips` measurement + the code's own tile-size math). **Still open:** the
+  index-to-tile-mark-kind mapping (which of the 39 icons is "Dungeon 1" vs.
+  "Armos" etc.) was not extracted — needed before real sprite rendering
+  (`tasks/T-007.md`) can slice the right icon for a given
+  `OverworldTileMark`. The overworld map's *background* art (terrain) uses
+  separate per-quest cached bitmaps (`Graphics.fs` `overworldMapBMPs`) not
+  yet investigated at all.
 - **Per-dungeon `DungeonMaps` save sub-schema** and **options-file exact
   filename** — top-level shape is known (`data-model.md`); field-by-field
   detail lives in `DungeonSaveAndLoad.fs` / `TrackerModelOptions.fs` and

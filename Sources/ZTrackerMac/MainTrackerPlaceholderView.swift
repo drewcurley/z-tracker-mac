@@ -1,25 +1,31 @@
 import SwiftUI
 import TrackerCore
 
-/// Stands in for the real main tracker view (dungeon items, overworld map,
-/// blockers, timeline — docs/domain.md § 4.2 onward), which is a future
-/// task's scope. Confirms the startup screen actually handed off the
-/// selected quest + toggle state, so this placeholder is a real integration
-/// check, not just a label.
+/// Stands in for the real main tracker view (dungeon items, blockers,
+/// timeline — docs/domain.md § 4.2, § 4.6 onward), which is future tasks'
+/// scope. The overworld map (§ 4.5, T-006) is real, not a placeholder —
+/// everything else here still is. Confirms the startup screen actually
+/// handed off the selected quest + toggle state, so this view is a real
+/// integration check, not just a label.
 struct MainTrackerPlaceholderView: View {
     var model: TrackerModel
 
     var body: some View {
         VStack(spacing: 12) {
-            Text("Main tracker view — not built yet")
+            Text("Main tracker view — mostly not built yet")
                 .font(.title2)
+                .foregroundStyle(.secondary)
             if let quest = model.quest {
                 Text("Quest: \(quest.rawValue)")
+                    .foregroundStyle(.secondary)
             }
-            Text("Heart Shuffle: \(model.heartShuffle ? "on" : "off")")
-            Text("Hide Dungeon Numbers: \(model.hideDungeonNumbers ? "on" : "off")")
+            Text("Heart Shuffle: \(model.heartShuffle ? "on" : "off"), Hide Dungeon Numbers: \(model.hideDungeonNumbers ? "on" : "off")")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+
+            OverworldMapView(grid: model.overworldGrid)
+                .frame(maxWidth: 900)
         }
-        .foregroundStyle(.secondary)
         .padding(32)
         .frame(minWidth: 420, minHeight: 320)
     }
