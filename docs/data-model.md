@@ -22,13 +22,12 @@ files:
 | Manual save | User clicks "Save" | `zt-save-manual-YYYY-MM-DD-HH-mm-ss.json` |
 | Finished save | Optional, on Ganon+Zelda completion | `zt-save-completed-YYYY-MM-DD-HH-mm-ss.json` |
 
-**Location — decision open:** the reference app writes next to its own
-executable (not a system data directory). For a signed/notarized/sandboxed
-macOS app this is likely not viable as-is (app bundles are typically
-read-only / Gatekeeper-managed) — **UNKNOWN — needs human confirmation**:
-the actual macOS-appropriate location (e.g.
-`~/Library/Application Support/z-tracker-mac/`) needs to be decided in
-`tasks/T-002.md` or a dedicated task, not assumed here.
+**Location — resolved (ADR 0002):** `~/Library/Application Support/com.drewcurley.ztrackermac/`,
+implemented as `TrackerCore.SaveDirectoryLocator.appSupportDirectory()`
+(`Sources/TrackerCore/SaveDirectoryLocator.swift`), covered by
+`Tests/TrackerCoreTests/SaveDirectoryLocatorTests.swift`. The reference app's
+"next to the executable" approach is not viable for a signed/notarized macOS
+app bundle; this is the standard macOS location for app-owned data instead.
 
 A **separate** file holds options/settings (independent lifecycle from saves;
 exact reference-app filename not transcribed — see `domain.md` § 6).
@@ -111,7 +110,6 @@ positions for broadcast/pop-out/magnifier windows (stored as strings), and a
 - **Options file's exact filename and full field-by-field key list** — not
   transcribed; read `TrackerModelOptions.fs` (`readSettings`/`writeSettings`)
   directly when implementing.
-- **macOS-appropriate storage location** (§ 1) — not decided.
 
 ## Update-this-doc-when
 

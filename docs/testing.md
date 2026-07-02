@@ -1,7 +1,8 @@
 # Testing — z-tracker-mac
 
-**Status:** forward-looking — no code or test suite exists yet (`tasks/T-002.md`
-covers the initial scaffold, including the test target setup this doc assumes).
+**Status:** scaffold implemented (`tasks/T-002.md`, merged) — `TrackerCoreTests`
+is a real, running test target. Feature-level test coverage described below is
+still forward-looking (the features themselves don't exist yet).
 
 ## Strategy
 
@@ -10,15 +11,16 @@ narrower than a typical client/server project:
 
 | Level | Tool | What it covers |
 |---|---|---|
-| Unit | XCTest | Tracker domain logic — item/location state machine, save/load (de)serialization, overworld routing logic, any pure-function game-state derivation. This is almost all of the app's logic surface, ported from what `Zelda1RandoTools`'s F# core does today (see `domain.md`). |
-| Integration | XCTest | Save-file round-trip (write then read back), any local file-system interaction, OBS integration surface if implemented (see `contracts.md`). |
-| UI / end-to-end | XCUITest | Golden-path flows: launch app, click through a tracker screen's core gestures, verify on-screen state updates. Given the "near pixel-perfect" goal, visual/layout regression checks (e.g. snapshot testing of key views) are worth adding once the UI stabilizes — **UNKNOWN — needs human confirmation** whether a snapshot-testing library (e.g. swift-snapshot-testing) will be adopted; not decided yet. |
+| Unit | **Swift Testing** (`import Testing`, `@Test`/`@Suite`) — not XCTest, see `docs/decisions/0002-scaffold-decisions.md` | Tracker domain logic — item/location state machine, save/load (de)serialization, overworld routing logic, any pure-function game-state derivation. This is almost all of the app's logic surface, ported from what `Zelda1RandoTools`'s F# core does today (see `domain.md`). Two real examples exist today: `TrackerModelTests`, `SaveDirectoryLocatorTests`. |
+| Integration | Swift Testing | Save-file round-trip (write then read back), any local file-system interaction, OBS integration surface if implemented (see `contracts.md`). |
+| UI / end-to-end | XCUITest | Golden-path flows: launch app, click through a tracker screen's core gestures, verify on-screen state updates. Swift Testing does not cover UI-level end-to-end tests — XCUITest remains the plan here. Given the "near pixel-perfect" goal, visual/layout regression checks (e.g. snapshot testing of key views) are worth adding once the UI stabilizes — **UNKNOWN — needs human confirmation** whether a snapshot-testing library (e.g. swift-snapshot-testing) will be adopted; not decided yet. |
 
 ## Coverage gates
 
-Not yet configured (no code to gate). Once the scaffold exists, `tasks/T-002.md`
-or a follow-up should wire a coverage report into CI (`xcodebuild test -enableCodeCoverage YES`)
-even before a hard percentage gate is chosen.
+Not yet configured (nothing to gate meaningfully yet — the scaffold has 5
+tests over two trivial units). Wire a coverage report into CI
+(`swift test --enable-code-coverage`) once the first real feature task lands,
+before a hard percentage gate is chosen.
 
 ## Test data approach
 
@@ -40,6 +42,5 @@ option), the change must:
 
 ## Update-this-doc-when
 
-Update this file once the Xcode/SPM scaffold exists and the first real test target
-is added — replace "forward-looking" statements with the actual test commands,
-coverage tool output format, and CI job names.
+Update this file once the first real feature task adds meaningful coverage —
+replace the "nothing to gate yet" note with real coverage numbers and CI job names.

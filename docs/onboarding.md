@@ -1,13 +1,12 @@
 # Onboarding — z-tracker-mac
 
-**Status:** forward-looking — no Xcode/SPM project exists yet (tracked as `tasks/T-002.md`).
-This describes the intended day-one setup once that scaffold lands.
+**Status:** verified — the scaffold (`tasks/T-002.md`) is merged; the steps
+below are real, run commands, not a plan.
 
 ## Prerequisites
 
 - Apple Silicon Mac (this app targets Apple Silicon natively — see `stack.md`).
-- Xcode (latest stable; exact minimum version to be pinned in `stack.md` once the
-  project scaffold is created and a minimum macOS deployment target is chosen).
+- Xcode 26+ / Swift 6+ toolchain (built and tested against Xcode 26.6, Swift 6.3.3).
 - No other toolchain — Swift Package Manager ships with Xcode, no separate install.
 - `gh` CLI recommended for PR workflow (not required).
 
@@ -20,10 +19,14 @@ This describes the intended day-one setup once that scaffold lands.
    every file in `/docs/` — see `docs/README.md` for why and the Grounding &
    Completeness Protocol.
 4. Read `tasks/INDEX.md` for what's in flight.
-5. Open the project in Xcode once `tasks/T-002.md` (initial scaffold) lands; until
-   then, there is no buildable target — the repo is in the docs-bootstrap phase.
-6. Build: `swift build`. Test: `swift test`. (Both currently no-op / `continue-on-error`
-   in CI until the scaffold exists — see `.github/workflows/checks.yml`.)
+5. Build: `swift build`. Test: `swift test` (runs the `TrackerCoreTests` Swift
+   Testing suite — 5 tests as of `T-002`). Run: `swift run ZTrackerMac` (opens a
+   placeholder window; no tracker UI yet). Both `swift build` and `swift test`
+   are required (not `continue-on-error`) in CI — see `.github/workflows/checks.yml`.
+6. There is no Xcode project file (`.xcodeproj`) — this is a pure SwiftPM
+   package. Opening the folder in Xcode directly (`xed .`) works and gives the
+   full IDE experience (editing, debugging, running) against the same
+   `Package.swift`.
 
 ## First pull request expectations
 
@@ -41,6 +44,5 @@ recorded as ADRs in `docs/decisions/`, not left in chat/issue history.
 
 ## Update-this-doc-when
 
-Update this file when the Xcode/SPM scaffold lands (`tasks/T-002.md`) — replace the
-"forward-looking" build/run steps with the real, verified ones, and pin exact Xcode
-and Swift toolchain versions.
+Update this file if the toolchain version requirement changes, or if the
+project ever moves from a pure SwiftPM package to a `.xcodeproj`-based layout.

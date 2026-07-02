@@ -1,16 +1,19 @@
 # Stack — z-tracker-mac
 
-**Status:** forward-looking — decided but not yet implemented (`tasks/T-002.md`
-covers scaffolding). See `docs/decisions/0001-native-swiftui-over-avalonia-port.md`
-for the reasoning behind "native Swift" over reviving the reference app's
-existing Avalonia cross-platform build.
+**Status:** implemented for the scaffold (`tasks/T-002.md`, merged) — the
+table below reflects what actually builds and runs today, not a plan. See
+`docs/decisions/0001-native-swiftui-over-avalonia-port.md` for "native Swift"
+over reviving the Avalonia build, and `docs/decisions/0002-scaffold-decisions.md`
+for the deployment-target/test-framework/sprite-rendering decisions made
+while building the scaffold.
 
 | Concern | Choice | Why |
 |---|---|---|
-| Language | Swift | Native Apple-platform language; explicit project requirement is a native macOS app. |
-| UI framework | SwiftUI, with targeted AppKit interop (`NSViewRepresentable`) where SwiftUI can't deliver pixel-exact sprite rendering/scaling | SwiftUI for structure/state-binding productivity; AppKit escape hatch for the "near pixel-perfect," integer-scaled sprite rendering the reference app is explicit about (nearest-neighbor scaling, exact 768/512/256 broadcast-window widths). **UNKNOWN — needs human confirmation:** whether Core Graphics/`NSView` drawing or SpriteKit ends up being the better fit for the sprite-atlas rendering — a decision for `tasks/T-002.md` or a follow-up ADR once a prototype is tried, not decided here. |
-| Package manager | Swift Package Manager (SPM) | Ships with Xcode; no third-party toolchain needed. |
-| Test runner | XCTest | Standard, ships with Xcode; see `testing.md`. |
+| Language | Swift 6 (`swift-tools-version: 6.0`) | Native Apple-platform language; explicit project requirement is a native macOS app. |
+| UI framework | SwiftUI, with `Canvas` + `CGImage` cropping planned for sprite rendering (no AppKit interop for v1 — see ADR 0002) | SwiftUI for structure/state-binding productivity; `Canvas` gives pixel-exact, interpolation-disabled drawing for the "near pixel-perfect," integer-scaled sprite rendering the reference app requires, without an AppKit escape hatch unless a future prototype shows `Canvas` can't keep up (ADR 0002). |
+| Package manager | Swift Package Manager (SPM) | `Package.swift` at repo root: library target `TrackerCore` + executable target `ZTrackerMac` + test target `TrackerCoreTests`. |
+| Test runner | **Swift Testing** (`import Testing`, `@Test`/`@Suite`) — supersedes the originally-planned XCTest for unit tests, see ADR 0002 | Current first-party successor to XCTest for unit-level tests; better parameterized-test ergonomics. |
+| End-to-end / UI test tool | XCUITest (not yet used — no UI to test yet) | Swift Testing does not cover UI-level end-to-end tests; XCUITest remains the plan once there's a real UI (see `testing.md`). |
 | End-to-end / UI test tool | XCUITest | Standard Xcode UI-testing framework. |
 | Persistence | Local JSON files (`Codable` structs) in the app's own data directory — no database | Matches the reference app's approach exactly (hand-serialized JSON, no DB); see `data-model.md`. |
 | Speech synthesis | `AVSpeechSynthesizer` | macOS-native replacement for the reference app's `System.Speech` synthesis use (spoken reminders). |
@@ -26,11 +29,10 @@ existing Avalonia cross-platform build.
 
 ## Minimum deployment target
 
-**UNKNOWN — needs human confirmation.** Not yet decided. Candidates:
-recent SwiftUI versions (macOS 14 Sonoma+) give the most modern APIs for a
-greenfield project; an older floor (e.g. macOS 13) widens the install base at
-the cost of some SwiftUI API availability. Recommend deciding this in
-`tasks/T-002.md` when the Xcode project is actually created, not guessing here.
+**macOS 14 (Sonoma)**, set in `Package.swift` (`platforms: [.macOS(.v14)]`).
+Decided in ADR 0002: no installed-base constraint yet (single user, the
+developer), so the newest well-established SwiftUI/Observation APIs win.
+Revisit if distributing to others with older machines becomes a real need.
 
 ## Third-party dependencies
 
@@ -41,6 +43,6 @@ supply-chain risk (`playbook/.claude/agents/architect.md`).
 
 ## Update-this-doc-when
 
-Update this file the moment `tasks/T-002.md` lands and any "UNKNOWN" above
-becomes a real, implemented decision (deployment target, sprite-rendering
-approach). Update again whenever a new third-party dependency is added.
+Update this file whenever the sprite-rendering approach is actually
+implemented and proven out (replace the "planned" `Canvas` note with what's
+real), or whenever a new third-party dependency is added.

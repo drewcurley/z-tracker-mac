@@ -12,13 +12,14 @@
 
 | ID | Title | Owner | State |
 |----|-------|-------|-------|
-| [T-002](./T-002.md) | Create the initial Xcode/SwiftPM project scaffold | architect | proposed |
+| _none_ | | | |
 
 ## Completed
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
 | [T-001](./T-001.md) | Bootstrap `/docs/` folder (Tier 1 + Tier 2) | review-coordinator | — | chore/bootstrap-docs | — | docs/reviews/chore-bootstrap-docs/final.md |
+| [T-002](./T-002.md) | Initial Xcode/SwiftPM project scaffold | architect | — | chore/initial-scaffold | — | docs/reviews/chore-initial-scaffold/final.md |
 
 ## Cancelled / Superseded
 
