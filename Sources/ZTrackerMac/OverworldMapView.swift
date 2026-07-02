@@ -1,12 +1,14 @@
+import CoreGraphics
 import SwiftUI
 import TrackerCore
 
-/// The overworld map (docs/domain.md § 4.5, T-006 — core data model + basic
-/// interaction only). Renders the 16×8 grid with simple colored rectangles
-/// and short text labels rather than the reference app's real sprite icons
-/// — pixel-accurate rendering is deliberately deferred (see
-/// `tasks/T-006.md` "Out of scope") so the interaction model and data
-/// contract land first, on a testable, working foundation.
+/// The overworld map (docs/domain.md § 4.5, T-006 core data model +
+/// interaction, T-007 real sprite rendering). Renders the reference app's
+/// actual tile-mark icons (`s_icon_overworld_strip39.png`, MIT-licensed,
+/// see `/NOTICE.md`) via `OverworldIconAtlas`, falling back to a colored
+/// placeholder only for `.unmarked` (no reference-app icon exists for
+/// "nothing set yet"). Map *background/terrain* art is still not
+/// implemented — see `tasks/T-007.md`.
 ///
 /// Confirmed gestures implemented: left-click an unmarked tile marks it
 /// `.dontCare` ("dark"); left-click a `.dontCare` tile, or right-click any
@@ -112,20 +114,29 @@ struct OverworldMapView: View {
 
 /// A single tile's placeholder visual — a color keyed to the mark's
 /// broad category plus a short text abbreviation. Not the reference app's
-/// sprite icons (see `OverworldMapView`'s doc comment).
+/// sprite icons where available (T-007 — real icon per `iconStripIndex`;
+/// `.unmarked` has no reference-app icon, so it keeps the placeholder look).
 private struct TileView: View {
     var mark: OverworldTileMark
 
     var body: some View {
         Rectangle()
             .fill(color)
-            .overlay(
-                Text(abbreviation)
-                    .font(.system(size: 8))
-                    .foregroundStyle(.white)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.5)
-            )
+            .overlay {
+                if let index = mark.iconStripIndex, let icon = OverworldIconAtlas.icon(at: index) {
+                    Image(decorative: icon, scale: 1, orientation: .up)
+                        .resizable()
+                        .interpolation(.none) // crisp nearest-neighbor, matches the reference app's own integer scaling
+                        .aspectRatio(contentMode: .fit)
+                        .padding(1)
+                } else {
+                    Text(abbreviation)
+                        .font(.system(size: 8))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                }
+            }
             .overlay(Rectangle().stroke(.black.opacity(0.3), lineWidth: 0.5))
     }
 
@@ -165,6 +176,45 @@ private struct TileView: View {
         case .takeAny: "T"
         case .potionShop: "P"
         }
+    }
+}
+
+/// Loads the reference app's overworld tile-icon strip once and crops
+/// individual icons on demand. Each icon is exactly 16×11px
+/// (`docs/domain.md` § 4.5/§ 6, grounded in `Graphics.fs`'s `OMTW` constant
+/// and a direct `sips` measurement of the strip). Uses plain `CGImage`
+/// cropping + SwiftUI `Image(decorative:)` with `.interpolation(.none)`
+/// rather than a `Canvas`-based draw call (ADR 0002's stated plan) — for a
+/// single static per-tile icon these are equivalent in output (both give
+/// nearest-neighbor-scaled, uninterpolated pixels); `Canvas` would matter
+/// more for compositing many icons in one custom draw pass, which isn't
+/// needed here. Revisit with `Canvas` if a future task needs that (e.g.
+/// layering multiple icons/overlays on one tile).
+enum OverworldIconAtlas {
+    static let iconWidth = 16
+    static let iconHeight = 11
+    /// The strip has 39 images total; only indices reachable via
+    /// `OverworldTileMark.iconStripIndex` (0...35) are ever requested.
+    static let iconCount = 39
+
+    private static let fullImage: CGImage? = {
+        guard
+            let url = Bundle.module.url(forResource: "s_icon_overworld_strip39", withExtension: "png"),
+            let dataProvider = CGDataProvider(url: url as CFURL),
+            let image = CGImage(
+                pngDataProviderSource: dataProvider,
+                decode: nil,
+                shouldInterpolate: false,
+                intent: .defaultIntent
+            )
+        else { return nil }
+        return image
+    }()
+
+    static func icon(at index: Int) -> CGImage? {
+        guard let fullImage, (0..<iconCount).contains(index) else { return nil }
+        let rect = CGRect(x: index * iconWidth, y: 0, width: iconWidth, height: iconHeight)
+        return fullImage.cropping(to: rect)
     }
 }
 

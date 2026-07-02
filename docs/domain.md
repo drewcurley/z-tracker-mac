@@ -181,7 +181,17 @@ the reference app's original, most novel feature — the algorithm lives in
 `OverworldRouting.fs`/`OverworldData.fs` (rule-by-rule detail not yet
 transcribed — see § 6 open questions).
 
-### 4.5 Overworld map (16×8 grid, tile-mark types)
+### 4.5 Overworld map (16×8 grid, 36 tile-mark types)
+
+**Count corrected (T-007):** this doc previously said "38 tile-mark types,"
+an unverified number. Reading `MapSquareChoiceDomainHelper` directly
+(`Zelda1RandoTools/Z1R_Tracker/Z1R_Tracker/TrackerModel.fs:310-354`) — the
+reference app's own authoritative tile-index enumeration — confirms exactly
+**36** (indices 0...35, `DUNGEON_1` through `DARK_X`). The reference app's
+icon strip (`s_icon_overworld_strip39.png`) has 39 images; the extra 3 are
+unaccounted for (unused/reserved, most likely) and don't correspond to any
+value this tile-index enum reaches.
+
 9 dungeons, 4 any-roads, 3 sword caves, 8 shops (Arrow/Bomb/Book/Candle/
 BlueRing/Meat/Key/Shield), Unknown/Large/Medium/Small secret, DoorRepair,
 MoneyMakingGame, Letter, Armos, HintShop, TakeAny, PotionShop, DarkX
@@ -194,22 +204,22 @@ custom waypoint, hint decoder, hotkeys pop-out cheat sheet, "show/run custom"
 (user-configurable: show images / run local executables or URLs — **security-
 relevant, see `contracts.md`**), save, FQ/SQ toggle, legend, item-progress bar.
 
-**Implementation status (T-006):** the tile-mark data model
-(`TrackerCore.OverworldTileMark`, `OverworldGrid`, 16×8) and the core
-"left-click unmarked → mark dark" / "right-click (or click-when-dark) →
-selection menu" gestures are **implemented** (`ZTrackerMac.OverworldMapView`).
-**Not yet implemented:** pixel-accurate sprite rendering (placeholder colored
-rectangles are used instead — see `tasks/T-007.md`), middle-click circling,
-shift-variants, the take-any pie-menu accelerator, hover magnifier/routing
-lines/GYR overlay, and all the supporting controls listed above (version
-link, recorder-destination counter, hint decoder, "show/run custom", save,
-FQ/SQ, legend, item-progress bar). **Count discrepancy flagged, not
-resolved:** this doc says "38 tile-mark types," but a direct tally of the
-kinds listed above is 36, and the reference app's own icon strip
-(`s_icon_overworld_strip39.png`) has 39 images — see
-`TrackerCore.OverworldTileMark`'s doc comment. Re-verify against
-`TrackerModel.fs`'s tile-mark type directly (not yet done) before treating
-any of these three numbers as authoritative.
+**Implementation status (T-006/T-007):** the tile-mark data model
+(`TrackerCore.OverworldTileMark`, `OverworldGrid`, 16×8), the icon-strip
+index mapping (`OverworldTileMark.iconStripIndex`, grounded exactly in
+`MapSquareChoiceDomainHelper`), **real sprite-icon rendering** (the actual
+reference-app icon strip, bundled as an SPM resource with attribution in
+`/NOTICE.md`, cropped per-tile via `OverworldIconAtlas` — verified visually,
+crisp/uninterpolated), and the core "left-click unmarked → mark dark" /
+"right-click (or click-when-dark) → selection menu" gestures are
+**implemented** (`ZTrackerMac.OverworldMapView`). `.unmarked` (this
+project's own default state) still uses a placeholder gray tile, since no
+reference-app icon corresponds to it. **Not yet implemented:** the map's
+*background/terrain* art, middle-click circling, shift-variants, the
+take-any pie-menu accelerator, hover magnifier/routing lines/GYR overlay,
+and all the supporting controls listed above (version link,
+recorder-destination counter, hint decoder, "show/run custom", save, FQ/SQ,
+legend, item-progress bar).
 
 **Layout constants resolved (T-006):** the base overworld tile is 16×11px,
 rendered at 3x scale by default (`OMTW = 48. // 16*3`, `Graphics.fs:358`) —
@@ -217,7 +227,7 @@ this was an open question in an earlier draft of this doc ("Layout.fs / OMTW
 numeric constants... not fully dumped"). The reference app's actual map
 background art involves per-quest bitmap caching
 (`Graphics.fs` `overworldMapBMPs`) that was not reverse-engineered here —
-still open for whoever picks up `tasks/T-007.md`.
+still open for whoever picks up the background-art portion of `tasks/T-007.md`.
 
 **GYR convention** (used throughout): green = reachable now, yellow = reachable
 but may not exist (mixed-quest ambiguity), red = not reachable.
@@ -347,17 +357,17 @@ JSON file holds options/settings, independent of save state.
   transcribed rule-by-rule. Needed before that feature can be implemented.
 - **Hint-decoding tables** ("Aquamentus Awaits" → location halos) — mapping
   logic exists in code (`GetLevelHint`-style) but wasn't fully extracted.
-- **Sprite atlas slicing offsets — partially resolved (T-006).** Base tile
-  size is 16×11px at 1x, rendered at 3x by default (`OMTW = 48. // 16*3`,
+- **Sprite atlas slicing offsets — resolved (T-006/T-007).** Base tile size
+  is 16×11px at 1x, rendered at 3x by default (`OMTW = 48. // 16*3`,
   `Graphics.fs:358`); `s_icon_overworld_strip39.png` is 624×11px = 39 icons
-  of exactly 16×11px each, laid out horizontally with no gaps (confirmed via
-  `sips` measurement + the code's own tile-size math). **Still open:** the
-  index-to-tile-mark-kind mapping (which of the 39 icons is "Dungeon 1" vs.
-  "Armos" etc.) was not extracted — needed before real sprite rendering
-  (`tasks/T-007.md`) can slice the right icon for a given
-  `OverworldTileMark`. The overworld map's *background* art (terrain) uses
-  separate per-quest cached bitmaps (`Graphics.fs` `overworldMapBMPs`) not
-  yet investigated at all.
+  of exactly 16×11px each, laid out horizontally with no gaps. The
+  index-to-tile-mark-kind mapping is extracted and grounded in
+  `MapSquareChoiceDomainHelper` (`TrackerModel.fs:310-354`) — implemented as
+  `OverworldTileMark.iconStripIndex`. **Still open:** the overworld map's
+  *background* art (terrain) uses separate per-quest cached bitmaps
+  (`Graphics.fs` `overworldMapBMPs`) not yet investigated at all, and the
+  actual `Canvas`-based cropping/rendering code hasn't been written yet
+  (`tasks/T-007.md`, remaining acceptance criteria).
 - **Per-dungeon `DungeonMaps` save sub-schema** and **options-file exact
   filename** — top-level shape is known (`data-model.md`); field-by-field
   detail lives in `DungeonSaveAndLoad.fs` / `TrackerModelOptions.fs` and

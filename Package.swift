@@ -15,11 +15,19 @@ let package = Package(
         ),
         .executableTarget(
             name: "ZTrackerMac",
-            dependencies: ["TrackerCore"]
+            dependencies: ["TrackerCore"],
+            resources: [
+                // Third-party asset, MIT-licensed -- see /NOTICE.md.
+                .copy("Resources/s_icon_overworld_strip39.png")
+            ]
         ),
         .testTarget(
             name: "TrackerCoreTests",
             dependencies: ["TrackerCore"]
+        ),
+        .testTarget(
+            name: "ZTrackerMacTests",
+            dependencies: ["ZTrackerMac"]
         )
     ]
 )
