@@ -1,0 +1,68 @@
+name: procedure-checks
+
+# Server-side mirror of .githooks/. --no-verify on the client doesn't bypass these.
+# This is a personal repo (no org policy blocking GitHub Actions), so this workflow
+# runs directly — unlike the playbook's parked copy, which waits on Azure DevOps
+# approval for the work org. See docs/decisions/0001-solo-scale-down.md.
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  scripts:
+    name: shell scripts (lint)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: shellcheck hooks and scripts
+        run: |
+          shellcheck .githooks/pre-commit .githooks/commit-msg .githooks/pre-push scripts/*.sh
+
+  procedure:
+    name: procedure checks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine diff range
+        id: range
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "base=${{ github.event.pull_request.base.sha }}" >> "$GITHUB_OUTPUT"
+            echo "head=${{ github.event.pull_request.head.sha }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "base=${{ github.event.before }}" >> "$GITHUB_OUTPUT"
+            echo "head=${{ github.sha }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Procedure checks (mirror of .githooks/)
+        run: sh scripts/ci-checks.sh "${{ steps.range.outputs.base }}" "${{ steps.range.outputs.head }}"
+
+      - name: pull request body must use the project template
+        if: github.event_name == 'pull_request'
+        run: |
+          body=$(jq -r '.pull_request.body // ""' "$GITHUB_EVENT_PATH")
+          missing=0
+          for section in '## Task' '## Summary' '## Agent sign-offs' '## Human review' '## Risk' '## Redlines'; do
+            if ! printf '%s' "$body" | grep -qF "$section"; then
+              echo "::error::pull request body is missing section: $section (use .github/pull_request_template.md)"
+              missing=1
+            fi
+          done
+          [ "$missing" = "1" ] && exit 1 || true
+
+  build-and-test:
+    name: build + test (Xcode)
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - name: swift build
+        run: swift build
+        continue-on-error: true # relax once Package.swift/Xcode project exists — see T-002
+      - name: swift test
+        run: swift test
+        continue-on-error: true # relax once Package.swift/Xcode project exists — see T-002

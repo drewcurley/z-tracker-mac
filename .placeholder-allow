@@ -1,0 +1,11 @@
+# Files allowed to contain `[insert … here]` placeholders.
+# See playbook/.placeholder-allow for the full rationale.
+
+.githooks/pre-commit
+.githooks/README.md
+scripts/ci-checks.sh
+.claude/agents/*.md
+tasks/_TEMPLATE.md
+tasks/T-001.md
+docs/README.md
+.placeholder-allow
