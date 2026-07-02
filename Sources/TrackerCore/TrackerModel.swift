@@ -21,14 +21,21 @@ public final class TrackerModel {
     /// elsewhere (docs/domain.md § 4.1–4.2). Off by default.
     public var hideDungeonNumbers: Bool
 
+    /// The overworld map's tile-mark state (docs/domain.md § 4.5, T-006).
+    /// Owned here since `TrackerModel` is documented as the eventual home
+    /// for all main-tracker-view state, not a separate parallel container.
+    public let overworldGrid: OverworldGrid
+
     public init(
         quest: OverworldQuest? = nil,
         heartShuffle: Bool = false,
-        hideDungeonNumbers: Bool = false
+        hideDungeonNumbers: Bool = false,
+        overworldGrid: OverworldGrid = OverworldGrid()
     ) {
         self.quest = quest
         self.heartShuffle = heartShuffle
         self.hideDungeonNumbers = hideDungeonNumbers
+        self.overworldGrid = overworldGrid
     }
 
     /// Selects the overworld quest for this run. Mirrors the reference app's

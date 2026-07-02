@@ -107,9 +107,14 @@ positions for broadcast/pop-out/magnifier windows (stored as strings), and a
 - **`StartingItemsAndExtras`'s full 16-field list** — only partially
   enumerated during the inventory pass. Read the reference source directly
   before implementing this section rather than guessing the remaining fields.
-- **Options file's exact filename and full field-by-field key list** — not
-  transcribed; read `TrackerModelOptions.fs` (`readSettings`/`writeSettings`)
-  directly when implementing.
+- **Options file's exact filename and full field-by-field key list —
+  resolved (T-005).** Reference app filename: `Z1R_Tracker_settings.json`,
+  written next to the executable (`TrackerModelOptions.fs:389`,
+  `readSettings`/`writeSettings`). Full field list is now transcribed in
+  `TrackerCore.TrackerOptions` (`z-tracker-mac`'s own in-memory model, not
+  yet persisted to disk — this project's own settings-file name/location is
+  still a separate, not-yet-made decision, since `z-tracker-mac` already
+  diverges on location per the resolution above this list).
 
 ## Update-this-doc-when
 
