@@ -1,8 +1,9 @@
 # Third-party asset attribution
 
-`s_icon_overworld_strip39.png` and `s_map_overworld_vanilla_strip8.png` are
-copied from [Zelda1RandoTools](https://github.com/brianmcn/Zelda1RandoTools)
-by Brian McNamara, used under the MIT License:
+`ow_icons5x9.png`, `icons3x7.png`, and `s_map_overworld_vanilla_strip8.png`
+are copied from
+[Zelda1RandoTools](https://github.com/brianmcn/Zelda1RandoTools) by Brian
+McNamara, used under the MIT License:
 
 ```
 The MIT License (MIT)

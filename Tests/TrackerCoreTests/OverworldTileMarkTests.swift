@@ -55,36 +55,66 @@ struct OverworldTileMarkTests {
         #expect(OverworldTileMark.shop(.arrow) != OverworldTileMark.shop(.bomb))
     }
 
-    @Test("iconStripIndex matches MapSquareChoiceDomainHelper exactly, 0...35, no duplicates")
-    func iconStripIndexIsCompleteAndUnique() {
-        var marks: [OverworldTileMark] = (1...9).map { .dungeon($0) }
-        marks += (1...4).map { .anyRoad($0) }
-        marks += (1...3).map { .swordCave($0) }
-        marks += ShopKind.allCases.map { .shop($0) }
-        marks += SecretSize.allCases.map { .secret($0) }
-        marks += [.doorRepair, .moneyMakingGame, .theLetter, .armos, .hintShop, .takeAny, .potionShop, .dontCare]
+    @Test(
+        """
+        iconSource covers every documented mark exactly once across its real \
+        source (interiorSprite 0...13, shopSprite 0...7, dungeon/any-road digits) \
+        -- bugfix: not a single flat 0...35 strip index into the dead \
+        s_icon_overworld_strip39.png ZHelper leftover
+        """
+    )
+    func iconSourceIsCompleteAndUnique() {
+        let dungeonMarks: [OverworldTileMark] = (1...9).map { .dungeon($0) }
+        let anyRoadMarks: [OverworldTileMark] = (1...4).map { .anyRoad($0) }
+        let swordCaveMarks: [OverworldTileMark] = (1...3).map { .swordCave($0) }
+        let shopMarks: [OverworldTileMark] = ShopKind.allCases.map { .shop($0) }
+        let otherMarks: [OverworldTileMark] = SecretSize.allCases.map { .secret($0) }
+            + [.doorRepair, .moneyMakingGame, .theLetter, .armos, .hintShop, .takeAny, .potionShop]
 
-        let indices = marks.compactMap(\.iconStripIndex)
-        #expect(indices.count == 36)
-        #expect(Set(indices) == Set(0...35))
+        let dungeonDigits = dungeonMarks.map { mark -> Int in
+            guard case .dungeonDigit(let n) = mark.iconSource else { fatalError("expected dungeonDigit") }
+            return n
+        }
+        #expect(Set(dungeonDigits) == Set(1...9))
+
+        let anyRoadDigits = anyRoadMarks.map { mark -> Int in
+            guard case .anyRoadDigit(let n) = mark.iconSource else { fatalError("expected anyRoadDigit") }
+            return n
+        }
+        #expect(Set(anyRoadDigits) == Set(1...4))
+
+        let shopIndices = shopMarks.map { mark -> Int in
+            guard case .shopSprite(let i) = mark.iconSource else { fatalError("expected shopSprite") }
+            return i
+        }
+        #expect(Set(shopIndices) == Set(0...7))
+
+        let interiorIndices = (swordCaveMarks + otherMarks).map { mark -> Int in
+            guard case .interiorSprite(let i) = mark.iconSource else { fatalError("expected interiorSprite") }
+            return i
+        }
+        #expect(Set(interiorIndices) == Set(0...13))
+
+        #expect(OverworldTileMark.dontCare.iconSource == .solidBlackTile)
+        #expect(OverworldTileMark.unmarked.iconSource == .none)
     }
 
-    @Test("iconStripIndex is nil for unmarked and out-of-range associated values")
-    func iconStripIndexNilCases() {
-        #expect(OverworldTileMark.unmarked.iconStripIndex == nil)
-        #expect(OverworldTileMark.dungeon(0).iconStripIndex == nil)
-        #expect(OverworldTileMark.dungeon(10).iconStripIndex == nil)
-        #expect(OverworldTileMark.anyRoad(0).iconStripIndex == nil)
-        #expect(OverworldTileMark.anyRoad(5).iconStripIndex == nil)
-        #expect(OverworldTileMark.swordCave(0).iconStripIndex == nil)
-        #expect(OverworldTileMark.swordCave(4).iconStripIndex == nil)
+    @Test("iconSource is .none for unmarked and out-of-range associated values")
+    func iconSourceNilCases() {
+        #expect(OverworldTileMark.unmarked.iconSource == .none)
+        #expect(OverworldTileMark.dungeon(0).iconSource == .none)
+        #expect(OverworldTileMark.dungeon(10).iconSource == .none)
+        #expect(OverworldTileMark.anyRoad(0).iconSource == .none)
+        #expect(OverworldTileMark.anyRoad(5).iconSource == .none)
+        #expect(OverworldTileMark.swordCave(0).iconSource == .none)
+        #expect(OverworldTileMark.swordCave(4).iconSource == .none)
     }
 
     @Test("sword cave icon indices descend as cave number ascends (matches reference app order)")
     func swordCaveIconIndexOrder() {
-        #expect(OverworldTileMark.swordCave(3).iconStripIndex == 13)
-        #expect(OverworldTileMark.swordCave(2).iconStripIndex == 14)
-        #expect(OverworldTileMark.swordCave(1).iconStripIndex == 15)
+        #expect(OverworldTileMark.swordCave(3).iconSource == .interiorSprite(0))
+        #expect(OverworldTileMark.swordCave(2).iconSource == .interiorSprite(1))
+        #expect(OverworldTileMark.swordCave(1).iconSource == .interiorSprite(2))
     }
 
     @Test("marks round-trip through Codable")

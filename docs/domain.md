@@ -215,10 +215,29 @@ existed. See § 6.
 an unverified number. Reading `MapSquareChoiceDomainHelper` directly
 (`Zelda1RandoTools/Z1R_Tracker/Z1R_Tracker/TrackerModel.fs:310-354`) — the
 reference app's own authoritative tile-index enumeration — confirms exactly
-**36** (indices 0...35, `DUNGEON_1` through `DARK_X`). The reference app's
-icon strip (`s_icon_overworld_strip39.png`) has 39 images; the extra 3 are
-unaccounted for (unused/reserved, most likely) and don't correspond to any
-value this tile-index enum reaches.
+**36** (indices 0...35, `DUNGEON_1` through `DARK_X`).
+
+**Icon source corrected (bugfix, post-T-007):** T-007 bundled
+`s_icon_overworld_strip39.png` and built the icon-index mapping around it,
+reasoning that its 39 images (3 more than the 36 tile-mark types) were
+"unaccounted for — unused/reserved, most likely." That reasoning was
+backwards: the file *itself* is unused. Reading `Z1R_WPF/Graphics.fs:767`
+shows it loaded into a variable named `zhMapIcons`, and a repo-wide search
+confirms that variable is never referenced anywhere else — it's dead code,
+a leftover from the ZHelper tool that inspired Z-Tracker before its
+overworld tiles were redesigned with smaller icons
+(`Zelda1RandoTools/doc/about.md`: *"Overworld tiles in particular required
+redesigning new, slimmer icons, rather than the full-tile icons I had
+copied from ZHelper"*). The real icon system, confirmed by reading
+`theInteriorBmpTable`'s construction (`Graphics.fs:850-945`) and its
+consumers (`OverworldMapTileCustomization.fs`) and verified icon-by-icon
+against the actual strip pixels: a small 5×9 icon centered within the
+16×11 tile (not a full-tile image), drawn from `ow_icons5x9.png` (14 icons)
+for sword caves/secrets/door-repair/money-game/letter/armos/hint-shop/
+take-any/potion-shop, `icons3x7.png` (8 icons) composited on an orange
+background for shops, and a painted digit on a colored background for
+dungeons/any-roads. See `OverworldTileMark.iconSource`'s doc comment for
+the full grounding.
 
 9 dungeons, 4 any-roads, 3 sword caves, 8 shops (Arrow/Bomb/Book/Candle/
 BlueRing/Meat/Key/Shield), Unknown/Large/Medium/Small secret, DoorRepair,
@@ -232,26 +251,34 @@ custom waypoint, hint decoder, hotkeys pop-out cheat sheet, "show/run custom"
 (user-configurable: show images / run local executables or URLs — **security-
 relevant, see `contracts.md`**), save, FQ/SQ toggle, legend, item-progress bar.
 
-**Implementation status (T-006/T-007/T-008):** the tile-mark data model
-(`TrackerCore.OverworldTileMark`, `OverworldGrid`, 16×8), the icon-strip
-index mapping (`OverworldTileMark.iconStripIndex`, grounded exactly in
-`MapSquareChoiceDomainHelper`), **real sprite-icon rendering** (the actual
-reference-app icon strip, bundled as an SPM resource with attribution in
-`/NOTICE.md`, cropped per-tile via `OverworldIconAtlas`), **real terrain
-background art per quest** (`s_map_overworld_vanilla_strip8.png`, cropped
-via `OverworldBackgroundAtlas`, quest-indexed via
-`OverworldQuest.referenceAppIndex` — grounded exactly in `OverworldData.fs`'s
-`OWQuest.AsInt`), and the core "left-click unmarked → mark dark" /
-"right-click (or click-when-dark) → selection menu" gestures are
-**implemented** (`ZTrackerMac.OverworldMapView`) — verified visually: the
-rendered map is recognizably the actual Zelda 1 First Quest overworld
+**Implementation status (T-006/T-007/T-008, icon source bugfixed post-T-007):**
+the tile-mark data model (`TrackerCore.OverworldTileMark`, `OverworldGrid`,
+16×8), the icon-source mapping (`OverworldTileMark.iconSource`, grounded
+exactly in `MapSquareChoiceDomainHelper` and `theInteriorBmpTable`), **real
+sprite-icon rendering** (`ow_icons5x9.png` + `icons3x7.png`, the reference
+app's actual interior-icon sources — not the dead `s_icon_overworld_strip39.png`
+ZHelper leftover T-007 originally used — bundled as SPM resources with
+attribution in `/NOTICE.md`, cropped per-tile via `OverworldInteriorIconAtlas`/
+`OverworldShopIconAtlas`), **real terrain background art per quest**
+(`s_map_overworld_vanilla_strip8.png`, cropped via `OverworldBackgroundAtlas`,
+quest-indexed via `OverworldQuest.referenceAppIndex` — grounded exactly in
+`OverworldData.fs`'s `OWQuest.AsInt`), and the core "left-click unmarked →
+mark dark" / "right-click (or click-when-dark) → selection menu" gestures
+are **implemented** (`ZTrackerMac.OverworldMapView`) — verified visually:
+the rendered map is recognizably the actual Zelda 1 First Quest overworld
 (forests, lakes, the graveyard area all correctly placed, no gaps or
-misalignment). **Not yet implemented:** middle-click circling,
-shift-variants, the take-any pie-menu accelerator, hover magnifier/routing
-lines/GYR overlay, and all the supporting controls listed above (version
-link, recorder-destination counter, hint decoder, "show/run custom", save,
-FQ/SQ, legend, item-progress bar). The `BLANK` quest / "alternative
-overworld map" custom mode remains out of scope, as originally deferred.
+misalignment), and every one of the 36 tile-mark icons was individually
+verified against the real reference sprite strips by temporarily seeding
+all 36 marks and screenshotting, pixel-matched against direct crops of
+`ow_icons5x9.png`/`icons3x7.png`. **Not yet implemented:** the "darkened
+once obtained" variant (needs the item/dungeon state layer, `T-013`/`T-014`
+— see § 6), the two-item shop display, HDN-mode's lettered dungeon variant
+(`T-016`), middle-click circling, shift-variants, the take-any pie-menu
+accelerator, hover magnifier/routing lines/GYR overlay, and all the
+supporting controls listed above (version link, recorder-destination
+counter, hint decoder, "show/run custom", save, FQ/SQ, legend,
+item-progress bar). The `BLANK` quest / "alternative overworld map" custom
+mode remains out of scope, as originally deferred.
 
 **Layout constants resolved (T-006), background art resolved (T-008):** the
 base overworld tile is 16×11px, rendered at 3x scale by default
@@ -465,17 +492,20 @@ JSON file holds options/settings, independent of save state.
   tips for a future dungeon-map-drawing UI — unrelated to player state.
 - **Hint-decoding tables** ("Aquamentus Awaits" → location halos) — mapping
   logic exists in code (`GetLevelHint`-style) but wasn't fully extracted.
-- **Sprite atlas slicing offsets — resolved (T-006/T-007).** Base tile size
-  is 16×11px at 1x, rendered at 3x by default (`OMTW = 48. // 16*3`,
-  `Graphics.fs:358`); `s_icon_overworld_strip39.png` is 624×11px = 39 icons
-  of exactly 16×11px each, laid out horizontally with no gaps. The
-  index-to-tile-mark-kind mapping is extracted and grounded in
-  `MapSquareChoiceDomainHelper` (`TrackerModel.fs:310-354`) — implemented as
-  `OverworldTileMark.iconStripIndex`. **Still open:** the overworld map's
-  *background* art (terrain) uses separate per-quest cached bitmaps
-  (`Graphics.fs` `overworldMapBMPs`) not yet investigated at all, and the
-  actual `Canvas`-based cropping/rendering code hasn't been written yet
-  (`tasks/T-007.md`, remaining acceptance criteria).
+- **Sprite atlas slicing offsets — resolved (T-006/T-007/T-008), icon
+  *source* corrected post-T-007 (bugfix).** Base tile size is 16×11px at 1x,
+  rendered at 3x by default (`OMTW = 48. // 16*3`, `Graphics.fs:358`). The
+  real interior-icon sources are `ow_icons5x9.png` (70×9px = 14 icons of
+  5×9px each) and `icons3x7.png` (24×7px = 8 icons of 3×7px each), composited
+  centered within the 16×11 tile — **not** a single flat strip of 16×11
+  full-tile icons as T-007 originally assumed (`s_icon_overworld_strip39.png`
+  turned out to be dead ZHelper-era code the reference app never draws with;
+  see § 4.5). The index-to-tile-mark-kind mapping is extracted and grounded
+  in `MapSquareChoiceDomainHelper` (`TrackerModel.fs:310-354`) and
+  `theInteriorBmpTable` (`Graphics.fs:850-945`) — implemented as
+  `OverworldTileMark.iconSource`. The overworld map's *background* art
+  (terrain, `s_map_overworld_vanilla_strip8.png`) was resolved separately in
+  T-008 and is unaffected by this correction.
 - **Per-dungeon `DungeonMaps` save sub-schema** and **options-file exact
   filename** — top-level shape is known (`data-model.md`); field-by-field
   detail lives in `DungeonSaveAndLoad.fs` / `TrackerModelOptions.fs` and
