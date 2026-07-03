@@ -417,15 +417,21 @@ JSON file holds options/settings, independent of save state.
   real, already-existing state, so that one *is* wired). See the next item
   for the full plan to close this gap.
 - **Player state layer (item possession, dungeon completion/triforce,
-  progress) — scoped into a 7-stage plan (`T-012`-`T-018`), none yet
-  started.** Discovered as a hard blocker for true GYR while scoping
+  progress) — scoped into a 7-stage plan (`T-012`-`T-018`); T-012 done, rest
+  not started.** Discovered as a hard blocker for true GYR while scoping
   `T-011`; a full read-through of `TrackerModel.fs`'s player-state
   subsystem (1878 lines) sized and staged it, mirroring how the routing
   algorithm split into `T-009`/`T-010`:
-  - **T-012** — `StartingItemsAndExtras` + `PlayerProgressAndTakeAnyHearts`
-    (`TrackerModel.fs:492-570`): two small, dependency-free data bags.
-    Foundation; nothing else can meaningfully start without at least stubs
-    of these.
+  - **T-012 — done.** `StartingItemsAndExtras` + `PlayerProgressAndTakeAnyHearts`
+    (`TrackerModel.fs:492-570`) ported field-for-field to `TrackerCore` as
+    `@Observable` classes, defaults verified against
+    `SaveAndLoad.fs:56-151`. Both owned by `TrackerModel`
+    (`startingItemsAndExtras`, `playerProgress`) and surfaced via a
+    bare-bones, explicitly-labeled debug panel in the main tracker view (a
+    real item-tracker UI is a later task's concern, once `T-013`/`T-014`
+    give this state something to compute against). These two data bags were
+    genuinely dependency-free, unlike `T-009`'s static graph — confirmed
+    during scoping.
   - **T-013** — `Box`/`Dungeon`/`DungeonTrackerInstance` core
     (`TrackerModel.fs:582-837`, ~257 lines, the largest single piece):
     item slots, `Dungeon.IsComplete`, triforce tracking — DEFAULT mode

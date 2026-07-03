@@ -26,16 +26,29 @@ public final class TrackerModel {
     /// for all main-tracker-view state, not a separate parallel container.
     public let overworldGrid: OverworldGrid
 
+    /// Seed-configured starting inventory (docs/domain.md § 6, T-012 —
+    /// foundation piece of the player-state layer; `PlayerComputedStateSummary`
+    /// derivation that actually consumes this lands in T-014).
+    public let startingItemsAndExtras: StartingItemsAndExtras
+
+    /// Runtime-acquired player progress not tied to a dungeon-box location
+    /// (docs/domain.md § 6, T-012).
+    public let playerProgress: PlayerProgressAndTakeAnyHearts
+
     public init(
         quest: OverworldQuest? = nil,
         heartShuffle: Bool = false,
         hideDungeonNumbers: Bool = false,
-        overworldGrid: OverworldGrid = OverworldGrid()
+        overworldGrid: OverworldGrid = OverworldGrid(),
+        startingItemsAndExtras: StartingItemsAndExtras = StartingItemsAndExtras(),
+        playerProgress: PlayerProgressAndTakeAnyHearts = PlayerProgressAndTakeAnyHearts()
     ) {
         self.quest = quest
         self.heartShuffle = heartShuffle
         self.hideDungeonNumbers = hideDungeonNumbers
         self.overworldGrid = overworldGrid
+        self.startingItemsAndExtras = startingItemsAndExtras
+        self.playerProgress = playerProgress
     }
 
     /// Selects the overworld quest for this run. Mirrors the reference app's
