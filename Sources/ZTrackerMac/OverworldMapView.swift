@@ -19,6 +19,7 @@ import TrackerCore
 struct OverworldMapView: View {
     var grid: OverworldGrid
     var quest: OverworldQuest
+    var options: TrackerOptions
 
     /// Aspect ratio matches the reference app's base tile shape (16×11px,
     /// `Graphics.fs` `OMTW`/`OMTH` — resolves a previously-open question in
@@ -27,40 +28,140 @@ struct OverworldMapView: View {
     /// integration doesn't have to fight a mismatched grid shape.
     private let tileAspectRatio: CGFloat = 16.0 / 11.0
 
+    @State private var hoveredVertex: OverworldVertex?
+    @State private var routeHighlight: OverworldRouteHighlight?
+
+    /// Ladder/raft item possession and the mirror-overworld toggle have no
+    /// live state anywhere in `TrackerModel`/`TrackerOptions` yet
+    /// (`docs/domain.md` § 6, `tasks/T-012.md`) — this task assumes both
+    /// items are held and the overworld is never mirrored. Documented
+    /// placeholders, not silently hardcoded; `T-012` replaces them with real
+    /// state. `RoutesCanScreenScroll` already exists as a real option, so
+    /// that one is wired to live state below instead of placeholder'd.
+    private static let placeholderHasLadder = true
+    private static let placeholderHasRaft = true
+    private static let placeholderIsMirror = false
+
+    /// Bold/pale highlight cap, matching the reference app's `MaxGYR`
+    /// default (`OverworldRouteDrawing.fs:94`/`:28`).
+    private static let maxGYR = 12
+
+    private var dynamicGraph: OverworldDynamicGraph? {
+        OverworldRoutingGraph.dynamicGraph(
+            ladder: Self.placeholderHasLadder,
+            raft: Self.placeholderHasRaft,
+            recorderWarpDestinations: [],
+            anyRoads: [],
+            isMirror: Self.placeholderIsMirror,
+            canScreenScroll: options.showScreenScrolls
+        )
+    }
+
+    private var highlightByCoordinate: [OverworldScreenCoordinate: Bool] {
+        guard let routeHighlight else { return [:] }
+        return Dictionary(uniqueKeysWithValues: routeHighlight.highlightedTiles.map { ($0.coordinate, $0.isBold) })
+    }
+
     var body: some View {
         GeometryReader { geometry in
             let tileWidth = geometry.size.width / CGFloat(OverworldGrid.columnCount)
             let tileHeight = tileWidth / tileAspectRatio
+            let highlights = highlightByCoordinate
 
-            VStack(spacing: 0) {
-                ForEach(0..<OverworldGrid.rowCount, id: \.self) { row in
-                    HStack(spacing: 0) {
-                        ForEach(0..<OverworldGrid.columnCount, id: \.self) { column in
-                            let mark = grid.mark(column: column, row: row)
-                            let background = OverworldBackgroundAtlas.tile(quest: quest, column: column, row: row)
-                            TileView(mark: mark, background: background)
-                                .frame(width: tileWidth, height: tileHeight)
-                                .onTapGesture { handleLeftClick(column: column, row: row) }
-                                .contextMenu { markMenu(column: column, row: row) }
-                                // Custom-drawn tiles (Rectangle + onTapGesture) have NO
-                                // accessibility representation by default -- confirmed by
-                                // inspecting the accessibility tree while testing this view,
-                                // not assumed. VoiceOver users could not otherwise perceive
-                                // or activate any of these 128 tiles. See docs/ux.md
-                                // "Accessibility baseline" -- this is the first view with
-                                // fully custom interactive elements, so it's handled here
-                                // rather than deferred again.
-                                .accessibilityElement(children: .ignore)
-                                .accessibilityLabel("Overworld tile, column \(column + 1), row \(row + 1)")
-                                .accessibilityValue(mark.displayName)
-                                .accessibilityAddTraits(.isButton)
-                                .accessibilityAction { handleLeftClick(column: column, row: row) }
+            ZStack(alignment: .topLeading) {
+                VStack(spacing: 0) {
+                    ForEach(0..<OverworldGrid.rowCount, id: \.self) { row in
+                        HStack(spacing: 0) {
+                            ForEach(0..<OverworldGrid.columnCount, id: \.self) { column in
+                                let mark = grid.mark(column: column, row: row)
+                                let background = OverworldBackgroundAtlas.tile(quest: quest, column: column, row: row)
+                                TileView(mark: mark, background: background)
+                                    .frame(width: tileWidth, height: tileHeight)
+                                    .overlay {
+                                        if options.highlightNearby,
+                                           let isBold = highlights[OverworldScreenCoordinate(x: column, y: row)] {
+                                            // Real reachability, not real GYR: true green/yellow/red
+                                            // needs the item/dungeon state layer (T-012) to know what's
+                                            // actually accessible vs. merely nearby -- see docs/domain.md § 6.
+                                            Rectangle().fill(.green.opacity(isBold ? 0.45 : 0.2))
+                                        }
+                                    }
+                                    .onTapGesture { handleLeftClick(column: column, row: row) }
+                                    .contextMenu { markMenu(column: column, row: row) }
+                                    .onContinuousHover { phase in
+                                        handleHover(column: column, row: row, phase: phase, tileWidth: tileWidth, tileHeight: tileHeight)
+                                    }
+                                    // Custom-drawn tiles (Rectangle + onTapGesture) have NO
+                                    // accessibility representation by default -- confirmed by
+                                    // inspecting the accessibility tree while testing this view,
+                                    // not assumed. VoiceOver users could not otherwise perceive
+                                    // or activate any of these 128 tiles. See docs/ux.md
+                                    // "Accessibility baseline" -- this is the first view with
+                                    // fully custom interactive elements, so it's handled here
+                                    // rather than deferred again.
+                                    .accessibilityElement(children: .ignore)
+                                    .accessibilityLabel("Overworld tile, column \(column + 1), row \(row + 1)")
+                                    .accessibilityValue(mark.displayName)
+                                    .accessibilityAddTraits(.isButton)
+                                    .accessibilityAction { handleLeftClick(column: column, row: row) }
+                            }
                         }
                     }
+                }
+                if options.drawRoutes, let routeHighlight {
+                    OverworldRouteLinesOverlay(lines: routeHighlight.lines, tileWidth: tileWidth, tileHeight: tileHeight)
+                        .allowsHitTesting(false)
                 }
             }
         }
         .aspectRatio(tileAspectRatio * CGFloat(OverworldGrid.columnCount) / CGFloat(OverworldGrid.rowCount), contentMode: .fit)
+    }
+
+    /// Hover-triggered route computation, ported structurally from the
+    /// reference app's mouse-move-driven `drawPathsImpl` calls
+    /// (`Z1R_Avalonia/UI.fs:80-94`) — recomputed on every hover update just
+    /// as the reference recomputes on every mouse move, since the graph is
+    /// small enough (~140 vertices) for this to be cheap.
+    private func handleHover(column: Int, row: Int, phase: HoverPhase, tileWidth: CGFloat, tileHeight: CGFloat) {
+        guard options.drawRoutes || options.highlightNearby else {
+            hoveredVertex = nil
+            routeHighlight = nil
+            return
+        }
+        switch phase {
+        case .active(let location):
+            guard
+                let graph = dynamicGraph,
+                let screenType = graph.screenTypes[OverworldScreenCoordinate(x: column, y: row)]
+            else { return }
+            let portion: OverworldScreenPortion
+            switch screenType {
+            case .whole: portion = .full
+            case .northSouth: portion = location.y > tileHeight / 2 ? .south : .north
+            case .eastWest: portion = location.x > tileWidth / 2 ? .east : .west
+            }
+            let vertex = OverworldVertex(column, row, portion)
+            guard vertex != hoveredVertex else { return }
+            hoveredVertex = vertex
+
+            var unmarkedScreens: Set<OverworldScreenCoordinate> = []
+            for gridRow in 0..<OverworldGrid.rowCount {
+                for gridColumn in 0..<OverworldGrid.columnCount where grid.mark(column: gridColumn, row: gridRow) == .unmarked {
+                    unmarkedScreens.insert(OverworldScreenCoordinate(x: gridColumn, y: gridRow))
+                }
+            }
+            routeHighlight = OverworldRoutingGraph.routeHighlight(
+                from: vertex,
+                unmarkedScreens: unmarkedScreens,
+                screenTypes: graph.screenTypes,
+                adjacency: graph.adjacency,
+                maxBold: options.highlightNearby ? Self.maxGYR : 0,
+                maxPale: options.highlightNearby ? Self.maxGYR : 0
+            )
+        case .ended:
+            hoveredVertex = nil
+            routeHighlight = nil
+        }
     }
 
     private func handleLeftClick(column: Int, row: Int) {
@@ -282,8 +383,70 @@ enum OverworldBackgroundAtlas {
     }
 }
 
+/// Draws the hover-triggered route lines (T-011) on top of the grid, using
+/// coordinates computed as a *fraction* of each tile's current on-screen
+/// size — the reference app's `coords` function
+/// (`OverworldRouteDrawing.fs:72-80`) uses fixed absolute pixel offsets into
+/// a fixed-size `Canvas`, which doesn't hold up under this app's responsive,
+/// reflowing layout (`docs/decisions/0003-responsive-layout-not-fixed-presets.md`);
+/// this recomputes from the actual current `tileWidth`/`tileHeight` every
+/// layout pass instead.
+private struct OverworldRouteLinesOverlay: View {
+    var lines: [OverworldRouteLineSegment]
+    var tileWidth: CGFloat
+    var tileHeight: CGFloat
+
+    var body: some View {
+        Canvas { context, _ in
+            for line in lines {
+                var path = Path()
+                path.move(to: point(for: line.from))
+                path.addLine(to: point(for: line.to))
+                context.stroke(path, with: .color(color(forCost: line.cost)), lineWidth: 2)
+            }
+        }
+    }
+
+    private func point(for vertex: OverworldVertex) -> CGPoint {
+        let offset = OverworldRouteGeometry.fractionalOffset(for: vertex.portion)
+        return CGPoint(
+            x: (CGFloat(vertex.x) + offset.x) * tileWidth,
+            y: (CGFloat(vertex.y) + offset.y) * tileHeight
+        )
+    }
+
+    /// Opacity tiers ported from `OverworldRouteDrawing.fs`'s `color(cost)`
+    /// function (`:130-137`) — a white line, brightest near the hovered
+    /// tile, fading as path cost increases.
+    private func color(forCost cost: Int) -> Color {
+        if cost <= 8 { .white.opacity(0.706) }
+        else if cost <= 14 { .white.opacity(0.588) }
+        else if cost <= 22 { .white.opacity(0.47) }
+        else if cost <= 30 { .white.opacity(0.392) }
+        else { .white.opacity(0.333) }
+    }
+}
+
+/// Where each screen portion sits within its own tile's bounds, as a
+/// fraction of tile width/height — converted from the reference app's
+/// absolute-pixel offsets (`OverworldRouteDrawing.fs:72-80`: tile is 48×33px
+/// at the reference's fixed 3x zoom, offsets are `8*3`/`5*3` for center and
+/// `±4`/`±6`/`±8`/`±12` for the half-screen portions) so the same relative
+/// layout holds at any tile size.
+private enum OverworldRouteGeometry {
+    static func fractionalOffset(for portion: OverworldScreenPortion) -> (x: CGFloat, y: CGFloat) {
+        switch portion {
+        case .full: (0.5, 0.5)
+        case .north: (0.5 + 4.0 / 48.0, 0.5 - 8.0 / 33.0)
+        case .south: (0.5 - 6.0 / 48.0, 0.5 + 8.0 / 33.0)
+        case .east: (0.5 + 12.0 / 48.0, 0.5)
+        case .west: (0.5 - 12.0 / 48.0, 0.5)
+        }
+    }
+}
+
 #Preview {
-    OverworldMapView(grid: OverworldGrid(), quest: .first)
+    OverworldMapView(grid: OverworldGrid(), quest: .first, options: TrackerOptions())
         .frame(width: 800)
         .padding()
 }
