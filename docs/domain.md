@@ -182,9 +182,32 @@ the reference app's original, most novel feature — the algorithm lives in
 T-010):** static adjacency graph, dynamic layer (screen-scroll variants,
 recorder-warp/any-road edges), and the `findAllBestPaths` priority-queue
 search all live in `TrackerCore.OverworldRoutingGraph`, verified with
-known-route regression tests. **Still not wired into any UI** — GYR tile
-coloring and route-line rendering in `OverworldMapView` is the next follow-up
-(see § 6 open questions).
+known-route regression tests.
+
+**UI: minimal slice shipped (T-011), full fidelity deferred to T-012.**
+Hovering an overworld tile now draws real route lines to nearby unmarked
+screens and highlights the cheapest ones (bold) plus the next-cheapest
+(pale) — `OverworldMapView`'s `OverworldRouteLinesOverlay` and
+`TrackerCore.OverworldRoutingGraph.routeHighlight(...)`. Reading
+`OverworldRouteDrawing.fs` in full surfaced that the reference app's real
+feature goes further in two ways this task deliberately does not attempt,
+both tracked as `T-012`:
+1. **True GYR** (green="accessible", yellow="sometimes empty",
+   red="inaccessible") requires `TrackerModel.fs`'s `MapStateSummary`/
+   `recomputeMapStateSummary` — dungeon completion, triforce count,
+   item possession, sword-cave/armos progress — none of which exists in
+   `z-tracker-mac` yet. This task's highlight uses a single "reachable,
+   currently-unmarked" semantic instead (real, correct for what it
+   computes; not a stand-in for red/yellow).
+2. **The destination-picker menu** (pick a specific tile/shop/dungeon/cave
+   target) isn't built — the current behavior is always "show routes to
+   everywhere nearby," matching the reference's own passive hover mode but
+   not its explicit-destination mode.
+`ladder`/`raft`/mirror-overworld are also placeholder `true`/`true`/`false`
+constants in `OverworldMapView` (no item-possession or mirror-overworld
+state exists yet to wire to instead) — `RoutesCanScreenScroll` *is* wired to
+the real `TrackerOptions.showScreenScrolls` toggle, since that one already
+existed. See § 6.
 
 ### 4.5 Overworld map (16×8 grid, 36 tile-mark types)
 
@@ -362,11 +385,12 @@ JSON file holds options/settings, independent of save state.
   schema inspired by it (full design freedom, no import path)? **Not decided.**
   Recommend resolving this explicitly before `data-model.md`'s schema is
   implemented, not assumed here.
-- **Overworld routing algorithm — fully ported (T-009, T-010); only the UI
-  layer remains open.** The full system (`OverworldRouting.fs`) is a
-  hand-built ~130-edge adjacency graph (most screens one vertex, ~12 split
-  into half-screen vertices for narrow passages) with asymmetric Lost
-  Woods/Lost Hills traps and ladder/raft-conditional crossings, feeding a
+- **Overworld routing algorithm — fully ported (T-009, T-010); UI is a
+  minimal slice (T-011), full fidelity blocked on the item/dungeon state
+  layer (T-012).** The full system (`OverworldRouting.fs`) is a hand-built
+  ~130-edge adjacency graph (most screens one vertex, ~12 split into
+  half-screen vertices for narrow passages) with asymmetric Lost Woods/Lost
+  Hills traps and ladder/raft-conditional crossings, feeding a
   priority-queue multi-path breadth-first search. The **static** layer
   (T-009) is transcribed edge-for-edge in `TrackerCore.OverworldRoutingGraph`,
   cross-checked against the F# source by call-count comparison and validated
@@ -380,12 +404,19 @@ JSON file holds options/settings, independent of save state.
   search — are all ported and covered by known-route regression tests (e.g.
   a hand-verified Lost Woods dead-end: the only path into `(0,6)` costs
   exactly 8, since that screen has no other connection in the graph).
-  **Still open:** wiring this into the UI — GYR tile coloring and
-  route-line rendering in `OverworldMapView` (`OverworldRouteDrawing.fs`,
-  where GYR turns out to be a byproduct of path cost, not a separate simpler
-  computation) — plus live-state wiring (current ladder/raft possession,
-  marked any-roads/recorder destinations feeding the dynamic graph from
-  `TrackerModel`, not just hand-passed arguments as in the current tests).
+  **T-011** wired this into `OverworldMapView`: hovering a screen draws real
+  route lines (via `OverworldRouteHighlight`'s ported `drawPathsImpl` logic)
+  and highlights the nearest unmarked screens, using
+  `GeometryReader`-relative coordinates instead of the reference's
+  fixed-pixel `Canvas`, since this app is responsive/reflowing
+  (`decisions/0003`). Two things are deliberately not attempted, both scoped
+  as **T-012**: true GYR's red/yellow distinctions (needs
+  `MapStateSummary`-equivalent item/dungeon state, which doesn't exist at
+  all in `z-tracker-mac` yet — a large, mostly self-contained feature area
+  in its own right) and the destination-picker menu. `ladder`/`raft`/mirror
+  are placeholder constants in `OverworldMapView` for the same reason
+  (`RoutesCanScreenScroll` is real, already-existing state, so that one
+  *is* wired).
 - **Hint-decoding tables** ("Aquamentus Awaits" → location halos) — mapping
   logic exists in code (`GetLevelHint`-style) but wasn't fully extracted.
 - **Sprite atlas slicing offsets — resolved (T-006/T-007).** Base tile size

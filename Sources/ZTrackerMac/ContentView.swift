@@ -12,7 +12,7 @@ struct ContentView: View {
         if model.quest == nil {
             StartupView(model: model, options: options, onQuestSelected: model.selectQuest)
         } else {
-            MainTrackerPlaceholderView(model: model)
+            MainTrackerPlaceholderView(model: model, options: options)
         }
     }
 }

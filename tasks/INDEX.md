@@ -12,7 +12,7 @@
 
 | ID | Title | Owner | State |
 |----|-------|-------|-------|
-| [T-011](./T-011.md) | Overworld routing — GYR coloring + route-line UI, wired to live state | frontend-engineer | proposed |
+| [T-012](./T-012.md) | Item-possession + dungeon-progress state layer, then full GYR + destination picker | frontend-engineer | proposed |
 
 ## Completed
 
@@ -28,6 +28,7 @@
 | [T-008](./T-008.md) | Overworld map — background/terrain art | frontend-engineer | — | feat/overworld-map-background | — | docs/reviews/feat-overworld-map-background/final.md |
 | [T-009](./T-009.md) | Overworld routing — static adjacency graph (foundation) | frontend-engineer | — | feat/overworld-routing-graph | — | docs/reviews/feat-overworld-routing-graph/final.md |
 | [T-010](./T-010.md) | Overworld routing — dynamic graph layer + pathfinding search | frontend-engineer | — | feat/overworld-routing-dynamic | — | docs/reviews/feat-overworld-routing-dynamic/final.md |
+| [T-011](./T-011.md) | Overworld routing — hover-based route lines + reachability highlight (minimal slice) | frontend-engineer | — | feat/overworld-routing-ui | — | docs/reviews/feat-overworld-routing-ui/final.md |
 
 ## Cancelled / Superseded
 

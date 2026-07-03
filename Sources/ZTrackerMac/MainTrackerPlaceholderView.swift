@@ -9,6 +9,7 @@ import TrackerCore
 /// integration check, not just a label.
 struct MainTrackerPlaceholderView: View {
     var model: TrackerModel
+    var options: TrackerOptions
 
     var body: some View {
         VStack(spacing: 12) {
@@ -26,7 +27,7 @@ struct MainTrackerPlaceholderView: View {
             // ContentView only shows this view once model.quest is set
             // (docs/domain.md § 4.1); the fallback here is defensive, not
             // an expected path.
-            OverworldMapView(grid: model.overworldGrid, quest: model.quest ?? .first)
+            OverworldMapView(grid: model.overworldGrid, quest: model.quest ?? .first, options: options)
                 .frame(maxWidth: 900)
         }
         .padding(32)
@@ -35,5 +36,5 @@ struct MainTrackerPlaceholderView: View {
 }
 
 #Preview {
-    MainTrackerPlaceholderView(model: TrackerModel(quest: .first, heartShuffle: true))
+    MainTrackerPlaceholderView(model: TrackerModel(quest: .first, heartShuffle: true), options: TrackerOptions())
 }
