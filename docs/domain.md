@@ -409,14 +409,54 @@ JSON file holds options/settings, independent of save state.
   and highlights the nearest unmarked screens, using
   `GeometryReader`-relative coordinates instead of the reference's
   fixed-pixel `Canvas`, since this app is responsive/reflowing
-  (`decisions/0003`). Two things are deliberately not attempted, both scoped
-  as **T-012**: true GYR's red/yellow distinctions (needs
-  `MapStateSummary`-equivalent item/dungeon state, which doesn't exist at
-  all in `z-tracker-mac` yet — a large, mostly self-contained feature area
-  in its own right) and the destination-picker menu. `ladder`/`raft`/mirror
-  are placeholder constants in `OverworldMapView` for the same reason
-  (`RoutesCanScreenScroll` is real, already-existing state, so that one
-  *is* wired).
+  (`decisions/0003`). Two things are deliberately not attempted: true GYR's
+  red/yellow distinctions (needs `MapStateSummary`-equivalent item/dungeon
+  state, which doesn't exist at all in `z-tracker-mac` yet) and the
+  destination-picker menu. `ladder`/`raft`/mirror are placeholder constants
+  in `OverworldMapView` for the same reason (`RoutesCanScreenScroll` is
+  real, already-existing state, so that one *is* wired). See the next item
+  for the full plan to close this gap.
+- **Player state layer (item possession, dungeon completion/triforce,
+  progress) — scoped into a 7-stage plan (`T-012`-`T-018`), none yet
+  started.** Discovered as a hard blocker for true GYR while scoping
+  `T-011`; a full read-through of `TrackerModel.fs`'s player-state
+  subsystem (1878 lines) sized and staged it, mirroring how the routing
+  algorithm split into `T-009`/`T-010`:
+  - **T-012** — `StartingItemsAndExtras` + `PlayerProgressAndTakeAnyHearts`
+    (`TrackerModel.fs:492-570`): two small, dependency-free data bags.
+    Foundation; nothing else can meaningfully start without at least stubs
+    of these.
+  - **T-013** — `Box`/`Dungeon`/`DungeonTrackerInstance` core
+    (`TrackerModel.fs:582-837`, ~257 lines, the largest single piece):
+    item slots, `Dungeon.IsComplete`, triforce tracking — DEFAULT mode
+    only. Confirmed during scoping: `armosBox`/`ladderBox`/`sword2Box` are
+    plain instances of the same `Box` class, **not** a distinct subsystem
+    despite earlier docs implying otherwise.
+  - **T-014** — `PlayerComputedStateSummary` derivation
+    (`TrackerModel.fs:841-958`): pure glue over T-012+T-013's output into
+    the 16 fields (`HaveLadder`, `SwordLevel`, etc.) routing and everything
+    else actually consumes.
+  - **T-015** — the task that actually closes T-011's gap: shop/cave
+    discovery flags + `OwGettableLocations`/`OwRouteworthySpots`
+    (`TrackerModel.fs:1033-1140`), true GYR rendering, the destination-
+    picker menu, and wiring T-011's remaining placeholders to live state.
+  - **T-016** — Hide Dungeon Numbers (HDN) mode's dungeon labeling +
+    basement-stair-rendering metadata (`TrackerModel.fs:587-632`,
+    `:816-818`) — deliberately deferred out of T-013 since it roughly
+    doubles most dungeon code paths with quest/kind-dependent branching;
+    `hideDungeonNumbers` already exists as an inert toggle (`T-003`) this
+    task would make meaningful.
+  - **T-017** — Dungeon blockers ("why I left this dungeon" reminders,
+    `TrackerModel.fs:1147-1273`) — reads player-state, doesn't feed back
+    into it, cleanly deferrable.
+  - **T-018** — Reminders/announcements/Triforce-and-Go orchestration
+    (`TrackerModel.fs:1439-1750`, ~310 lines) — the top-of-stack consumer
+    of everything else; includes a real architecture decision (reactive
+    `@Observable` vs. a literal `ITrackerEvents`-delegate port) flagged for
+    evaluation when that task starts, not decided here.
+  Also confirmed *not* part of this subsystem despite a similar name:
+  `DungeonData.fs` (290 lines) is dungeon-room-shape ASCII grids + flavor
+  tips for a future dungeon-map-drawing UI — unrelated to player state.
 - **Hint-decoding tables** ("Aquamentus Awaits" → location halos) — mapping
   logic exists in code (`GetLevelHint`-style) but wasn't fully extracted.
 - **Sprite atlas slicing offsets — resolved (T-006/T-007).** Base tile size

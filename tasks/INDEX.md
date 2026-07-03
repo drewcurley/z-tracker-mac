@@ -12,7 +12,13 @@
 
 | ID | Title | Owner | State |
 |----|-------|-------|-------|
-| [T-012](./T-012.md) | Item-possession + dungeon-progress state layer, then full GYR + destination picker | frontend-engineer | proposed |
+| [T-012](./T-012.md) | Player state — starting items + progress flags (foundation) | frontend-engineer | proposed |
+| [T-013](./T-013.md) | Player state — Box/Dungeon core (item slots, completion, triforce) | frontend-engineer | proposed |
+| [T-014](./T-014.md) | Player state — PlayerComputedStateSummary derivation | frontend-engineer | proposed |
+| [T-015](./T-015.md) | Real GYR + destination picker + live routing state | frontend-engineer | proposed |
+| [T-016](./T-016.md) | Hide Dungeon Numbers (HDN) mode — dungeon labeling + basement-stair metadata | frontend-engineer | proposed |
+| [T-017](./T-017.md) | Dungeon blockers — "why I left this dungeon" reminders | frontend-engineer | proposed |
+| [T-018](./T-018.md) | Reminders, announcements, and Triforce-and-Go orchestration | frontend-engineer | proposed |
 
 ## Completed
 
