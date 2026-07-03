@@ -75,8 +75,7 @@ struct OverworldMapView: View {
                             ForEach(0..<OverworldGrid.columnCount, id: \.self) { column in
                                 let mark = grid.mark(column: column, row: row)
                                 let background = OverworldBackgroundAtlas.tile(quest: quest, column: column, row: row)
-                                TileView(mark: mark, background: background)
-                                    .frame(width: tileWidth, height: tileHeight)
+                                TileView(mark: mark, background: background, tileWidth: tileWidth, tileHeight: tileHeight)
                                     .overlay {
                                         if options.highlightNearby,
                                            let isBold = highlights[OverworldScreenCoordinate(x: column, y: row)] {
@@ -217,106 +216,155 @@ struct OverworldMapView: View {
 }
 
 /// A single tile's visual: the real terrain background (T-008) as the base
-/// layer, with the real tile-mark icon (T-007) composited on top wherever a
-/// mark is set. `.unmarked` tiles show terrain alone, undecorated — matching
-/// how the reference app's map looks before the player has marked anything.
-/// Falls back to a colored placeholder + abbreviation only if the terrain
-/// image failed to load (defensive, not expected in practice).
+/// layer, with the real tile-mark interior icon composited centered on top
+/// wherever a mark is set. `.unmarked` tiles show terrain alone, undecorated
+/// — matching how the reference app's map looks before the player has
+/// marked anything.
+///
+/// **Bugfix, not the original design:** this used to overlay a full-tile
+/// icon cropped from `s_icon_overworld_strip39.png`. That file is dead code
+/// in the reference app (see `OverworldTileMark.iconSource`'s doc comment)
+/// — the real interior icon is much smaller than the tile (5×9 of a 16×11
+/// tile) and centered within it, composited from up to three different
+/// sources depending on the mark. Position/size fractions below are ported
+/// exactly from `Graphics.fs`'s `initFull()` (`:947-960`): interior region
+/// is `x∈[5,10), y∈[1,10)` within the 16×11 tile.
 private struct TileView: View {
     var mark: OverworldTileMark
     var background: CGImage?
+    var tileWidth: CGFloat
+    var tileHeight: CGFloat
+
+    private static let interiorOffsetXFraction: CGFloat = 5.0 / 16.0
+    private static let interiorOffsetYFraction: CGFloat = 1.0 / 11.0
+    private static let interiorWidthFraction: CGFloat = 5.0 / 16.0
+    private static let interiorHeightFraction: CGFloat = 9.0 / 11.0
+
+    /// Ported from `Color.Orchid` (`Z1R_WPF/Graphics.fs:886-892`, any-road
+    /// digit background) — .NET's standard Orchid RGB value.
+    private static let anyRoadBackground = Color(red: 218.0 / 255, green: 112.0 / 255, blue: 214.0 / 255)
+    /// Ported from `itemBackgroundColor` (`Z1R_WPF/Graphics.fs:830`, shop
+    /// icon background).
+    private static let shopBackground = Color(red: 0xEF / 255.0, green: 0x83 / 255.0, blue: 0)
 
     var body: some View {
-        Group {
-            if let background {
-                Image(decorative: background, scale: 1, orientation: .up)
-                    .resizable()
-                    .interpolation(.none)
-                    .aspectRatio(contentMode: .fill)
-            } else {
-                Rectangle().fill(color)
-            }
+        ZStack(alignment: .topLeading) {
+            backgroundView
+            interiorIconView
+                .frame(width: tileWidth * Self.interiorWidthFraction, height: tileHeight * Self.interiorHeightFraction)
+                .offset(x: tileWidth * Self.interiorOffsetXFraction, y: tileHeight * Self.interiorOffsetYFraction)
         }
-        .overlay {
-            if let index = mark.iconStripIndex, let icon = OverworldIconAtlas.icon(at: index) {
-                Image(decorative: icon, scale: 1, orientation: .up)
-                    .resizable()
-                    .interpolation(.none) // crisp nearest-neighbor, matches the reference app's own integer scaling
-                    .aspectRatio(contentMode: .fit)
-                    .padding(1)
-            } else if background == nil {
-                // Only show the text fallback when terrain also failed to load --
-                // otherwise .unmarked tiles would get a spurious empty overlay.
-                Text(abbreviation)
-                    .font(.system(size: 8))
-                    .foregroundStyle(.white)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.5)
-            }
-        }
+        .frame(width: tileWidth, height: tileHeight)
+        .clipped()
         .overlay(Rectangle().stroke(.black.opacity(0.3), lineWidth: 0.5))
     }
 
-    private var color: Color {
-        switch mark {
-        case .unmarked: .gray.opacity(0.3)
-        case .dontCare: .black.opacity(0.6)
-        case .dungeon: .orange
-        case .anyRoad: .yellow
-        case .swordCave: .red
-        case .shop: .blue
-        case .secret: .purple
-        case .doorRepair: .brown
-        case .moneyMakingGame: .green
-        case .theLetter: .cyan
-        case .armos: .pink
-        case .hintShop: .indigo
-        case .takeAny: .mint
-        case .potionShop: .teal
+    @ViewBuilder
+    private var backgroundView: some View {
+        // .dontCare blacks out the *entire* tile, not just the interior icon
+        // region -- ported from initFull()'s `if i=len-1 then Black` branch.
+        if mark.iconSource == .solidBlackTile {
+            Rectangle().fill(.black)
+        } else if let background {
+            Image(decorative: background, scale: 1, orientation: .up)
+                .resizable()
+                .interpolation(.none)
+                .aspectRatio(contentMode: .fill)
+        } else {
+            Rectangle().fill(.gray.opacity(0.3))
         }
     }
 
-    private var abbreviation: String {
-        switch mark {
-        case .unmarked: ""
-        case .dontCare: "·"
-        case .dungeon(let n): "D\(n)"
-        case .anyRoad(let n): "R\(n)"
-        case .swordCave(let n): "S\(n)"
-        case .shop: "$"
-        case .secret: "?"
-        case .doorRepair: "DR"
-        case .moneyMakingGame: "MG"
-        case .theLetter: "L"
-        case .armos: "A"
-        case .hintShop: "H"
-        case .takeAny: "T"
-        case .potionShop: "P"
+    @ViewBuilder
+    private var interiorIconView: some View {
+        switch mark.iconSource {
+        case .none, .solidBlackTile:
+            EmptyView()
+        case .dungeonDigit(let number):
+            digitIcon(number, background: .yellow)
+        case .anyRoadDigit(let number):
+            digitIcon(number, background: Self.anyRoadBackground)
+        case .interiorSprite(let index):
+            if let icon = OverworldInteriorIconAtlas.icon(at: index) {
+                Image(decorative: icon, scale: 1, orientation: .up)
+                    .resizable()
+                    .interpolation(.none) // crisp nearest-neighbor, matches the reference app's own integer scaling
+            }
+        case .shopSprite(let index):
+            let interiorBoxWidth = tileWidth * Self.interiorWidthFraction
+            let interiorBoxHeight = tileHeight * Self.interiorHeightFraction
+            ZStack {
+                Self.shopBackground
+                if let icon = OverworldShopIconAtlas.icon(at: index) {
+                    Image(decorative: icon, scale: 1, orientation: .up)
+                        .resizable()
+                        .interpolation(.none)
+                        // 3x7 icon inset by a 1px margin within the 5x9 background
+                        // on every side, ported from Graphics.fs:909
+                        // (`px/3 >= 1 && px/3 <= 3 && py/3 >= 1 && py/3 <= 7`).
+                        .padding(.horizontal, interiorBoxWidth / 5.0)
+                        .padding(.vertical, interiorBoxHeight / 9.0)
+                }
+            }
+        }
+    }
+
+    private func digitIcon(_ number: Int, background: Color) -> some View {
+        ZStack {
+            background
+            Text("\(number)")
+                .font(.system(size: 6, weight: .heavy, design: .monospaced))
+                .minimumScaleFactor(0.1)
+                .foregroundStyle(.black)
         }
     }
 }
 
-/// Loads the reference app's overworld tile-icon strip once and crops
-/// individual icons on demand. Each icon is exactly 16×11px
-/// (`docs/domain.md` § 4.5/§ 6, grounded in `Graphics.fs`'s `OMTW` constant
-/// and a direct `sips` measurement of the strip). Uses plain `CGImage`
-/// cropping + SwiftUI `Image(decorative:)` with `.interpolation(.none)`
-/// rather than a `Canvas`-based draw call (ADR 0002's stated plan) — for a
-/// single static per-tile icon these are equivalent in output (both give
-/// nearest-neighbor-scaled, uninterpolated pixels); `Canvas` would matter
-/// more for compositing many icons in one custom draw pass, which isn't
-/// needed here. Revisit with `Canvas` if a future task needs that (e.g.
-/// layering multiple icons/overlays on one tile).
-enum OverworldIconAtlas {
-    static let iconWidth = 16
-    static let iconHeight = 11
-    /// The strip has 39 images total; only indices reachable via
-    /// `OverworldTileMark.iconStripIndex` (0...35) are ever requested.
-    static let iconCount = 39
+/// Loads the reference app's real overworld interior-icon strip
+/// (`ow_icons5x9.png`, 14 icons of 5×9px each) and crops individual icons on
+/// demand. Covers sword caves, secrets, door repair, money making game, the
+/// letter, armos, hint shop, take-any, and the potion shop — grounded in
+/// `Graphics.fs`'s `theInteriorBmpTable` construction (`:850-945`) and
+/// verified icon-by-icon against the actual strip pixels, not assumed from
+/// the filename.
+enum OverworldInteriorIconAtlas {
+    static let iconWidth = 5
+    static let iconHeight = 9
+    static let iconCount = 14
 
     private static let fullImage: CGImage? = {
         guard
-            let url = Bundle.module.url(forResource: "s_icon_overworld_strip39", withExtension: "png"),
+            let url = Bundle.module.url(forResource: "ow_icons5x9", withExtension: "png"),
+            let dataProvider = CGDataProvider(url: url as CFURL),
+            let image = CGImage(
+                pngDataProviderSource: dataProvider,
+                decode: nil,
+                shouldInterpolate: false,
+                intent: .defaultIntent
+            )
+        else { return nil }
+        return image
+    }()
+
+    static func icon(at index: Int) -> CGImage? {
+        guard let fullImage, (0..<iconCount).contains(index) else { return nil }
+        let rect = CGRect(x: index * iconWidth, y: 0, width: iconWidth, height: iconHeight)
+        return fullImage.cropping(to: rect)
+    }
+}
+
+/// Loads the reference app's real shop-item icon strip (`icons3x7.png`, 8
+/// icons of 3×7px each — Arrow/Bomb/Book/BlueCandle/BlueRing/Meat/Key/Shield,
+/// matching `MapSquareChoiceDomainHelper`'s `ARROW`...`SHIELD` order exactly)
+/// and crops individual icons on demand.
+enum OverworldShopIconAtlas {
+    static let iconWidth = 3
+    static let iconHeight = 7
+    static let iconCount = 8
+
+    private static let fullImage: CGImage? = {
+        guard
+            let url = Bundle.module.url(forResource: "icons3x7", withExtension: "png"),
             let dataProvider = CGDataProvider(url: url as CFURL),
             let image = CGImage(
                 pngDataProviderSource: dataProvider,

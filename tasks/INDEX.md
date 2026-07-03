@@ -35,6 +35,7 @@
 | [T-010](./T-010.md) | Overworld routing — dynamic graph layer + pathfinding search | frontend-engineer | — | feat/overworld-routing-dynamic | — | docs/reviews/feat-overworld-routing-dynamic/final.md |
 | [T-011](./T-011.md) | Overworld routing — hover-based route lines + reachability highlight (minimal slice) | frontend-engineer | — | feat/overworld-routing-ui | — | docs/reviews/feat-overworld-routing-ui/final.md |
 | [T-012](./T-012.md) | Player state — starting items + progress flags (foundation) | frontend-engineer | — | feat/player-state-foundation | — | docs/reviews/feat-player-state-foundation/final.md |
+| [T-019](./T-019.md) | Bugfix: overworld tile icons used a dead ZHelper asset, wrong mapping | frontend-engineer | — | fix/overworld-tile-icons-wrong-asset | — | docs/reviews/fix-overworld-tile-icons-wrong-asset/final.md |
 
 ## Cancelled / Superseded
 
