@@ -514,10 +514,32 @@ JSON file holds options/settings, independent of save state.
     *without* ladder/raft (previously hardcoded `true`), matching the
     reference's `OverworldRouteDrawing`. `MirrorOverworld` stays a
     placeholder (its option/save wiring is T-015).
-  - **T-015** — the task that actually closes T-011's gap: shop/cave
-    discovery flags + `OwGettableLocations`/`OwRouteworthySpots`
-    (`TrackerModel.fs:1033-1140`), true GYR rendering, the destination-
-    picker menu, and wiring T-011's remaining placeholders to live state.
+  - **T-015 — split into T-015.1…T-015.6.** A grounded scoping read
+    (2026-07-13) found T-015's premise ("mostly overworld/routing work
+    `z-tracker-mac` already has") was inaccurate: the `owInstance`
+    terrain-capability predicates (`OverworldData.OverworldInstance`,
+    `OverworldData.fs:273-339`) and the shop second-item extra-data store
+    (`TrackerModel.fs:996-1011`) were **never** ported by T-006–T-010. So it
+    was split into six ordered sub-tasks, mirroring the T-009/T-010 routing
+    split: **T-015.1** terrain masks + `OverworldInstance` (foundation,
+    pure data); **T-015.2** shop extra-data store + `OverworldTileMark`
+    raw-index bridge; **T-015.3** `recomputeMapStateSummary` +
+    `MapStateSummary` (`:1013-1143`) → `owGettableLocations`/
+    `owRouteworthySpots` + the 8 discovery flags; **T-015.4** true GYR
+    (green/yellow/red + cyan) from `doComputedDrawing`
+    (`OverworldRouteDrawing.fs:40-70`); **T-015.5** live mirror/warp/any-road
+    placeholder wiring; **T-015.6** the destination picker
+    (`LinkRouting.fs:15-235`).
+    - **T-015.1 — done.** `OverworldInstance.swift`: all ~13 literal 16×8
+      terrain masks transcribed verbatim + 3 derived masks
+      (`mixedQuestAlwaysEmpty`/`firstQuestOnly`/`secondQuestOnly`) computed
+      as the reference does, and the 11 predicates (`alwaysEmpty`,
+      `ladderable`, `hasArmos`, `raftable`, `whistleable`,
+      `powerBraceletable`, `gravePushable`, `burnable`, `bombable`,
+      `nothingable`, `sometimesEmpty`) with the MIXED=1Q-OR-2Q rules.
+      `OWQuest.BLANK` stays deferred with the custom-overworld mode.
+      Transcription verified by per-mask `X`-count pins against
+      `OverworldData.fs` (8 tests).
   - **T-016** — Hide Dungeon Numbers (HDN) mode's dungeon labeling +
     basement-stair-rendering metadata (`TrackerModel.fs:587-632`,
     `:816-818`) — deliberately deferred out of T-013 since it roughly
