@@ -47,10 +47,12 @@ public enum PlayerHas: Int, Sendable, CaseIterable {
 /// is deferred with the persistence layer.
 @Observable
 public final class Box {
-    /// The number of valid item identities (`ITEMS.itemNamesAndCounts`,
+    /// The number of valid item identities (`ITEMS.count`, from
     /// `TrackerModel.fs:179-194`). A `cellCurrent` is either `-1` (empty) or
-    /// in `0..<itemCount`. Identity meaning is assigned in T-014.
-    public static let itemCount = 15
+    /// in `0..<itemCount`. Identity meaning (which index is which item) is
+    /// assigned by `ITEMS` and consumed by `PlayerComputedStateSummary`
+    /// (both T-014).
+    public static let itemCount = ITEMS.count
 
     /// `-1` = empty (nothing known here yet); `0...14` = a known item index.
     /// Mirrors the reference's `Cell.Current()` value space exactly.

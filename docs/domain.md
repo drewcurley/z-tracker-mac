@@ -439,10 +439,12 @@ JSON file holds options/settings, independent of save state.
   (`decisions/0003`). Two things are deliberately not attempted: true GYR's
   red/yellow distinctions (needs `MapStateSummary`-equivalent item/dungeon
   state, which doesn't exist at all in `z-tracker-mac` yet) and the
-  destination-picker menu. `ladder`/`raft`/mirror are placeholder constants
-  in `OverworldMapView` for the same reason (`RoutesCanScreenScroll` is
-  real, already-existing state, so that one *is* wired). See the next item
-  for the full plan to close this gap.
+  destination-picker menu. **Update (T-014):** `ladder`/`raft` are now wired
+  to live `PlayerComputedStateSummary` state; only `mirror`
+  (`MirrorOverworld`) remains a placeholder constant in `OverworldMapView`
+  (its option/save wiring is T-015; `RoutesCanScreenScroll` was already
+  real). True GYR red/yellow and the destination-picker menu are still T-015.
+  See the next item for the full plan to close this gap.
 - **Player state layer (item possession, dungeon completion/triforce,
   progress) — scoped into a 7-stage plan (`T-012`-`T-018`); T-012 done, rest
   not started.** Discovered as a hard blocker for true GYR while scoping
@@ -487,10 +489,31 @@ JSON file holds options/settings, independent of save state.
     with a precondition, not silently wrong), `Color`/`LabelChar`. Deferred
     to T-014/T-015: `PlayerCanSeeMapOfThisDungeon` (needs book/atlas state),
     `HasBeenLocated` (needs the overworld map-square domain).
-  - **T-014** — `PlayerComputedStateSummary` derivation
-    (`TrackerModel.fs:841-958`): pure glue over T-012+T-013's output into
-    the 16 fields (`HaveLadder`, `SwordLevel`, etc.) routing and everything
-    else actually consumes.
+  - **T-014 — done.** `PlayerComputedStateSummary` derivation
+    (`TrackerModel.fs:841-958`) ported as an immutable 16-field value struct
+    (`PlayerComputedStateSummary.swift`) plus a structure-preserving
+    `compute(...)` that scans `dungeonTracker.allBoxes()` for `.yes` cells by
+    `ITEMS.*` index, then layers in progress flags, starting items, the two
+    standalone-box (`ladderBox`→`haveCoastItem`, `sword2Box`→
+    `haveWhiteSwordItem`) done-checks, and hearts. `ITEMS` index constants
+    (`Items.swift`) ported value-for-value; `Box.itemCount` now sources
+    `ITEMS.count`. Surfaced as a computed `TrackerModel.playerComputed-
+    StateSummary` (re-derives via `@Observable`, replacing the F# mutable
+    global + `recompute()` + `LastChangedTime`/event plumbing). **Grounding
+    finding:** the recompute branches on **only one** seed-option flag,
+    `IsWSMSReplacedByBU` (added to `TrackerModel`); the task's "three-flag
+    (book/atlas/WSMS)" phrasing overstates the actual code —
+    `IsCurrentlyBook`/`IsBookAnAtlas` gate `PlayerHasTheBook` /
+    `PlayerCanSeeMapOfThisDungeon`, which are deferred with their own
+    consumers, so those two flags are added when those land, not here. The
+    White-Sword/Magical-Sword asymmetry is preserved exactly: the *starting-
+    item* sword always counts (real sword), the *box/progress* sword is
+    suppressed under WSMS-as-BU (`:911`/`:924`). Closes T-011's placeholder
+    gap for ladder/raft: `OverworldMapView` now routes on
+    `playerState.haveLadder`/`.haveRaft` — so a fresh game correctly routes
+    *without* ladder/raft (previously hardcoded `true`), matching the
+    reference's `OverworldRouteDrawing`. `MirrorOverworld` stays a
+    placeholder (its option/save wiring is T-015).
   - **T-015** — the task that actually closes T-011's gap: shop/cave
     discovery flags + `OwGettableLocations`/`OwRouteworthySpots`
     (`TrackerModel.fs:1033-1140`), true GYR rendering, the destination-

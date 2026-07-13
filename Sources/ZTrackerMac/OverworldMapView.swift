@@ -21,6 +21,11 @@ struct OverworldMapView: View {
     var quest: OverworldQuest
     var options: TrackerOptions
 
+    /// Live derived player state (T-014). Supplies real ladder/raft
+    /// possession to the routing graph below, replacing T-011's documented
+    /// placeholders.
+    var playerState: PlayerComputedStateSummary
+
     /// Aspect ratio matches the reference app's base tile shape (16×11px,
     /// `Graphics.fs` `OMTW`/`OMTH` — resolves a previously-open question in
     /// `docs/domain.md` about the layout's numeric constants) — kept even
@@ -31,15 +36,12 @@ struct OverworldMapView: View {
     @State private var hoveredVertex: OverworldVertex?
     @State private var routeHighlight: OverworldRouteHighlight?
 
-    /// Ladder/raft item possession and the mirror-overworld toggle have no
-    /// live state anywhere in `TrackerModel`/`TrackerOptions` yet
-    /// (`docs/domain.md` § 6, `tasks/T-012.md`) — this task assumes both
-    /// items are held and the overworld is never mirrored. Documented
-    /// placeholders, not silently hardcoded; `T-012` replaces them with real
-    /// state. `RoutesCanScreenScroll` already exists as a real option, so
-    /// that one is wired to live state below instead of placeholder'd.
-    private static let placeholderHasLadder = true
-    private static let placeholderHasRaft = true
+    /// Ladder and raft are now live (`playerState.haveLadder`/`.haveRaft`,
+    /// T-014). The mirror-overworld toggle (`MirrorOverworld`) still has no
+    /// live state — its option/save wiring lands with the overworld map-
+    /// state work (T-015) — so it stays a documented placeholder, not
+    /// silently hardcoded. `RoutesCanScreenScroll` is already wired to a
+    /// real option below.
     private static let placeholderIsMirror = false
 
     /// Bold/pale highlight cap, matching the reference app's `MaxGYR`
@@ -48,8 +50,8 @@ struct OverworldMapView: View {
 
     private var dynamicGraph: OverworldDynamicGraph? {
         OverworldRoutingGraph.dynamicGraph(
-            ladder: Self.placeholderHasLadder,
-            raft: Self.placeholderHasRaft,
+            ladder: playerState.haveLadder,
+            raft: playerState.haveRaft,
             recorderWarpDestinations: [],
             anyRoads: [],
             isMirror: Self.placeholderIsMirror,
@@ -494,7 +496,12 @@ private enum OverworldRouteGeometry {
 }
 
 #Preview {
-    OverworldMapView(grid: OverworldGrid(), quest: .first, options: TrackerOptions())
-        .frame(width: 800)
-        .padding()
+    OverworldMapView(
+        grid: OverworldGrid(),
+        quest: .first,
+        options: TrackerOptions(),
+        playerState: PlayerComputedStateSummary(haveLadder: true, haveRaft: true)
+    )
+    .frame(width: 800)
+    .padding()
 }
