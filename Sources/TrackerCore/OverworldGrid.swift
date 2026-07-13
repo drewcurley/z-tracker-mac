@@ -11,8 +11,24 @@ public final class OverworldGrid {
 
     private var tiles: [OverworldTileMark]
 
+    /// Per-tile "extra data" key-value store, ported from the reference's
+    /// `overworldMapExtraData` (`TrackerModel.fs:996-1011`): each of the 128
+    /// tiles carries an array of `keyCount` ints (all 0 by default). Used for
+    /// a 3-item shop's **second item** (key `OverworldTileMark.shopExtraDataKey`,
+    /// value `0` = none, `1…8` in `toItem` format), `.theLetter`'s
+    /// have-potion-letter toggle, and `.dontCare`'s un-revealed toggle. Stored
+    /// flat (`tileIndex * keyCount + key`) so `@Observable` tracks single-cell
+    /// writes.
+    ///
+    /// `keyCount` is `DARK_X + 1 = 36`, matching the reference's
+    /// `Array.zeroCreate (DARK_X+1)` — the key is itself a mapSquare index.
+    public static let extraDataKeyCount = OverworldTileMark.maxRawIndex + 1
+
+    private var extraData: [Int]
+
     public init() {
         tiles = Array(repeating: .unmarked, count: Self.columnCount * Self.rowCount)
+        extraData = Array(repeating: 0, count: Self.columnCount * Self.rowCount * Self.extraDataKeyCount)
     }
 
     public func mark(column: Int, row: Int) -> OverworldTileMark {
@@ -23,15 +39,35 @@ public final class OverworldGrid {
         tiles[Self.index(column: column, row: row)] = mark
     }
 
-    /// Resets every tile to `.unmarked` — not itself a confirmed reference-app
-    /// gesture, but a useful testing/reset hook.
+    /// Reads a tile's extra-data value for `key` (`0…extraDataKeyCount-1`).
+    /// Ported from `getOverworldMapExtraData` (`TrackerModel.fs:1000-1008`);
+    /// this port omits the reference's `#if DEBUG` consistency assertion.
+    public func extraData(column: Int, row: Int, key: Int) -> Int {
+        extraData[Self.extraDataIndex(column: column, row: row, key: key)]
+    }
+
+    /// Writes a tile's extra-data value for `key`. Ported from
+    /// `setOverworldMapExtraData` (`TrackerModel.fs:1009-1011`).
+    public func setExtraData(_ value: Int, column: Int, row: Int, key: Int) {
+        extraData[Self.extraDataIndex(column: column, row: row, key: key)] = value
+    }
+
+    /// Resets every tile to `.unmarked` and clears all extra-data — not
+    /// itself a confirmed reference-app gesture, but a useful testing/reset
+    /// hook.
     public func clearAll() {
         tiles = Array(repeating: .unmarked, count: Self.columnCount * Self.rowCount)
+        extraData = Array(repeating: 0, count: Self.columnCount * Self.rowCount * Self.extraDataKeyCount)
     }
 
     private static func index(column: Int, row: Int) -> Int {
         precondition((0..<columnCount).contains(column), "column \(column) out of range")
         precondition((0..<rowCount).contains(row), "row \(row) out of range")
         return row * columnCount + column
+    }
+
+    private static func extraDataIndex(column: Int, row: Int, key: Int) -> Int {
+        precondition((0..<extraDataKeyCount).contains(key), "extra-data key \(key) out of range")
+        return index(column: column, row: row) * extraDataKeyCount + key
     }
 }

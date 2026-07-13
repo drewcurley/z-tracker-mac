@@ -540,6 +540,16 @@ JSON file holds options/settings, independent of save state.
       `OWQuest.BLANK` stays deferred with the custom-overworld mode.
       Transcription verified by per-mask `X`-count pins against
       `OverworldData.fs` (8 tests).
+    - **T-015.2 — done.** `OverworldTileMarkRawIndex.swift`: the raw-int
+      bridge between the typed `OverworldTileMark` and the reference's
+      `MapSquareChoiceDomainHelper` 0…35 numbering (`rawIndex`/`fromRawIndex`
+      explicit per case, `isItem`/`toItem`/`shopExtraDataKey`(=16)/
+      `numShopItems`(=8)/`maxRawIndex`(=35, verified: the domain has exactly
+      36 entries). Plus the per-tile extra-data store on `OverworldGrid`
+      (`extraData`/`setExtraData`, 36 keys/tile = `DARK_X+1`) ported from
+      `overworldMapExtraData` (`TrackerModel.fs:996-1011`) — the shop
+      second-item / potion-letter / un-revealed toggles the recompute reads.
+      8 tests pin the full numbering + round-trips.
   - **T-016** — Hide Dungeon Numbers (HDN) mode's dungeon labeling +
     basement-stair-rendering metadata (`TrackerModel.fs:587-632`,
     `:816-818`) — deliberately deferred out of T-013 since it roughly
