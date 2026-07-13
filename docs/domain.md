@@ -459,12 +459,34 @@ JSON file holds options/settings, independent of save state.
     give this state something to compute against). These two data bags were
     genuinely dependency-free, unlike `T-009`'s static graph — confirmed
     during scoping.
-  - **T-013** — `Box`/`Dungeon`/`DungeonTrackerInstance` core
-    (`TrackerModel.fs:582-837`, ~257 lines, the largest single piece):
-    item slots, `Dungeon.IsComplete`, triforce tracking — DEFAULT mode
-    only. Confirmed during scoping: `armosBox`/`ladderBox`/`sword2Box` are
-    plain instances of the same `Box` class, **not** a distinct subsystem
-    despite earlier docs implying otherwise.
+  - **T-013 — done.** `Box`/`Dungeon`/`DungeonTrackerInstance` core
+    (`TrackerModel.fs:582-837`) ported to `TrackerCore` (`DungeonBox.swift`,
+    `DungeonTracker.swift`), DEFAULT mode only: `PlayerHas` tri-state
+    (raw values pinned to `NO=0/YES=1/SKIPPED=2`), `Box`
+    (item-slot + possession + `isDone`/`isEmptyRedBox`), the nine
+    `Dungeon`s with the quest-dependent shared `finalBoxOf1Or4` third box
+    (base counts `[2,2,2,2,2,2,2,3,2]` transcribed exactly from
+    `makeDungeons()`; `allBoxes()` = 23), `isComplete`, `toggleTriforce`,
+    `getTriforceHaves()`, and `allBoxProgress`. Confirmed during scoping and
+    in the port: `armosBox`/`ladderBox`/`sword2Box` are plain `.skipped`
+    `Box` instances, **not** a distinct subsystem. Owned by `TrackerModel`
+    as `dungeonTracker`. **Three deliberate parity simplifications, none
+    behavior-changing:** (1) `Box`'s `Cell`/`ChoiceDomain` cross-box
+    item-max-use machinery is *not* ported — `cellCurrent` is a plain item
+    index (`-1` empty, `0…14`) matching `Cell.Current()`, since the
+    completion model needs only "is a value known"; the overworld's
+    `OverworldGrid` set the same precedent, and the item-picker cycling that
+    actually needs `ChoiceDomain` lands with its first consumer (T-014/T-015).
+    (2) `@Observable` replaces every F# `Event<_>`/`LastChangedTime`
+    publisher. (3) `isComplete` is a plain computed property, not the F#
+    cached/reentrancy-guarded member — the guard existed only because
+    reading it fired an event that could recurse; a getter can't. No UI was
+    added (unlike T-012's debug panel) — none is in T-013's acceptance
+    criteria; the real item-tracker UI is T-015. Still deferred to T-016:
+    `StairKind`/`BoxOwner`/`CurrentlyHasBasementStair`, HDN mode (guarded
+    with a precondition, not silently wrong), `Color`/`LabelChar`. Deferred
+    to T-014/T-015: `PlayerCanSeeMapOfThisDungeon` (needs book/atlas state),
+    `HasBeenLocated` (needs the overworld map-square domain).
   - **T-014** — `PlayerComputedStateSummary` derivation
     (`TrackerModel.fs:841-958`): pure glue over T-012+T-013's output into
     the 16 fields (`HaveLadder`, `SwordLevel`, etc.) routing and everything
