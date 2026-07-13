@@ -35,13 +35,21 @@ public final class TrackerModel {
     /// (docs/domain.md § 6, T-012).
     public let playerProgress: PlayerProgressAndTakeAnyHearts
 
+    /// The nine dungeons' item/completion/triforce state plus the three
+    /// standalone boxes (docs/domain.md § 6, T-013). DEFAULT mode only —
+    /// Hidden Dungeon Numbers is T-016. `PlayerComputedStateSummary`, the
+    /// glue that turns these boxes into `HaveLadder`/`SwordLevel`/etc., is
+    /// T-014.
+    public let dungeonTracker: DungeonTrackerInstance
+
     public init(
         quest: OverworldQuest? = nil,
         heartShuffle: Bool = false,
         hideDungeonNumbers: Bool = false,
         overworldGrid: OverworldGrid = OverworldGrid(),
         startingItemsAndExtras: StartingItemsAndExtras = StartingItemsAndExtras(),
-        playerProgress: PlayerProgressAndTakeAnyHearts = PlayerProgressAndTakeAnyHearts()
+        playerProgress: PlayerProgressAndTakeAnyHearts = PlayerProgressAndTakeAnyHearts(),
+        dungeonTracker: DungeonTrackerInstance = DungeonTrackerInstance()
     ) {
         self.quest = quest
         self.heartShuffle = heartShuffle
@@ -49,6 +57,7 @@ public final class TrackerModel {
         self.overworldGrid = overworldGrid
         self.startingItemsAndExtras = startingItemsAndExtras
         self.playerProgress = playerProgress
+        self.dungeonTracker = dungeonTracker
     }
 
     /// Selects the overworld quest for this run. Mirrors the reference app's
