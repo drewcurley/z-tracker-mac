@@ -550,6 +550,24 @@ JSON file holds options/settings, independent of save state.
       `overworldMapExtraData` (`TrackerModel.fs:996-1011`) — the shop
       second-item / potion-letter / un-revealed toggles the recompute reads.
       8 tests pin the full numbering + round-trips.
+    - **T-015.3 — done.** `MapStateSummary.swift`: the overworld map-state
+      derivation, a structure-preserving port of `recomputeMapStateSummary`
+      (`TrackerModel.fs:1032-1143`). Iterates every non-always-empty screen,
+      classifies by the mark's raw index, and produces
+      `owGettableLocations` (the red-GYR input), `owRouteworthySpots`, the
+      dungeon/any-road/sword/armos locations, `owSpotsRemain`,
+      `owWhistleSpotsRemain`, `owPowerBraceletSpotsRemain`, the
+      first/second-quest-only interesting-mark grids, and the 8
+      shop/cave-discovery flags — folded into one immutable value struct
+      (`ScreenBoolGrid` for the 16×8 bool arrays). `@Observable`-computed on
+      demand, replacing the reference's mutable global + `recompute()` +
+      `EventingBool`s. All external globals (grid, instance, dungeon tracker,
+      player summary, progress, and the `drawRoutes`/`routesCanScreenScroll`/
+      `mirrorOverworld` flags the coast-island special case reads) are passed
+      explicitly; `mirrorOverworld` has no live source until T-015.5.
+      Verified by 12 scenario tests including pinned empty-first-quest counts
+      (owSpotsRemain 73, gettable/routeworthy 28) that exercise the terrain
+      masks + raw-index bridge + recompute end-to-end.
   - **T-016** — Hide Dungeon Numbers (HDN) mode's dungeon labeling +
     basement-stair-rendering metadata (`TrackerModel.fs:587-632`,
     `:816-818`) — deliberately deferred out of T-013 since it roughly
