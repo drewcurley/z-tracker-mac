@@ -29,8 +29,13 @@ struct MainTrackerPlaceholderView: View {
             // ContentView only shows this view once model.quest is set
             // (docs/domain.md § 4.1); the fallback here is defensive, not
             // an expected path.
-            OverworldMapView(grid: model.overworldGrid, quest: model.quest ?? .first, options: options)
-                .frame(maxWidth: 900)
+            OverworldMapView(
+                grid: model.overworldGrid,
+                quest: model.quest ?? .first,
+                options: options,
+                playerState: model.playerComputedStateSummary
+            )
+            .frame(maxWidth: 900)
         }
         .padding(32)
         .frame(minWidth: 420, minHeight: 320)

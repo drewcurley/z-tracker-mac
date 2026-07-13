@@ -42,6 +42,16 @@ public final class TrackerModel {
     /// T-014.
     public let dungeonTracker: DungeonTrackerInstance
 
+    /// Seed flag: in some seed variants the White-Sword and Magical-Sword
+    /// item slots are Bomb-Upgrade slots instead, so they don't raise the
+    /// player's sword level. The one seed-option flag
+    /// `PlayerComputedStateSummary.compute` branches on (T-014;
+    /// `TrackerModel.fs:170-176`, read at `:911`/`:924`). Its sibling flags
+    /// `IsCurrentlyBook`/`IsBookAnAtlas` gate `PlayerHasTheBook` /
+    /// `PlayerCanSeeMapOfThisDungeon`, which are deferred with their own
+    /// consumers — so they're added when those land, not here.
+    public var isWSMSReplacedByBU: Bool
+
     public init(
         quest: OverworldQuest? = nil,
         heartShuffle: Bool = false,
@@ -49,7 +59,8 @@ public final class TrackerModel {
         overworldGrid: OverworldGrid = OverworldGrid(),
         startingItemsAndExtras: StartingItemsAndExtras = StartingItemsAndExtras(),
         playerProgress: PlayerProgressAndTakeAnyHearts = PlayerProgressAndTakeAnyHearts(),
-        dungeonTracker: DungeonTrackerInstance = DungeonTrackerInstance()
+        dungeonTracker: DungeonTrackerInstance = DungeonTrackerInstance(),
+        isWSMSReplacedByBU: Bool = false
     ) {
         self.quest = quest
         self.heartShuffle = heartShuffle
@@ -58,6 +69,22 @@ public final class TrackerModel {
         self.startingItemsAndExtras = startingItemsAndExtras
         self.playerProgress = playerProgress
         self.dungeonTracker = dungeonTracker
+        self.isWSMSReplacedByBU = isWSMSReplacedByBU
+    }
+
+    /// The derived player state (item possession, levels, hearts) read by
+    /// routing/GYR and, later, the item tracker and reminders. Recomputed on
+    /// demand from `startingItemsAndExtras`, `playerProgress`, and
+    /// `dungeonTracker` (T-014). Because those inputs are all `@Observable`,
+    /// reading this inside a SwiftUI view re-derives it whenever any of them
+    /// changes.
+    public var playerComputedStateSummary: PlayerComputedStateSummary {
+        PlayerComputedStateSummary.compute(
+            dungeonTracker: dungeonTracker,
+            startingItems: startingItemsAndExtras,
+            progress: playerProgress,
+            isWSMSReplacedByBU: isWSMSReplacedByBU
+        )
     }
 
     /// Selects the overworld quest for this run. Mirrors the reference app's
