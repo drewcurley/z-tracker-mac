@@ -3,10 +3,11 @@ import SwiftUI
 /// A state-destructive action pending confirmation (T-051). Because the top
 /// section packs many controls close together, a misclick on something that
 /// wipes game state (Heart Shuffle / Hidden Dungeon Numbers rebuild the dungeon
-/// tracker; Reset Timer zeroes the run) would ruin a run. When the timer is
-/// running, such actions are routed through a confirmation instead of firing
-/// immediately; before the run starts or while paused, they apply directly
-/// (that's deliberate setup, not a misclick during play).
+/// tracker; Reset Timer zeroes the run) would ruin a run. Once the run has
+/// started (Go pressed) — running **or paused**, since misclicks happen either
+/// way (T-052) — such actions are routed through a confirmation instead of
+/// firing immediately; before the run starts, they apply directly (that's
+/// deliberate setup).
 struct DestructiveAction: Identifiable {
     let id = UUID()
     let title: String
@@ -36,19 +37,20 @@ extension View {
     }
 }
 
-/// Runs `perform` now, or stashes it into `pending` for confirmation when the
-/// timer is running (T-051). Pure routing helper so the "guard while running"
-/// decision is consistent across the destructive controls.
+/// Runs `perform` now, or — when `confirmFirst` is true — stashes it into
+/// `pending` for confirmation (T-051/T-052). Pure routing helper so the guard
+/// decision is consistent across the destructive controls; callers pass the
+/// condition (e.g. `timer.hasStarted`).
 @MainActor
 func runOrConfirm(
-    timerIsRunning: Bool,
+    confirmFirst: Bool,
     into pending: inout DestructiveAction?,
     title: String,
     message: String,
     confirmLabel: String,
     perform: @escaping () -> Void
 ) {
-    if timerIsRunning {
+    if confirmFirst {
         pending = DestructiveAction(title: title, message: message, confirmLabel: confirmLabel, perform: perform)
     } else {
         perform()

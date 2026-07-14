@@ -4,20 +4,20 @@ import Testing
 @Suite("Destructive-action guard (T-051)")
 @MainActor
 struct DestructiveActionGuardTests {
-    @Test("runs immediately when the timer isn't running; confirms when it is")
+    @Test("runs immediately unless confirmFirst is set, which queues instead")
     func routing() {
         var pending: DestructiveAction?
         var ran = false
 
-        // Not running → the action fires now, nothing is queued.
-        runOrConfirm(timerIsRunning: false, into: &pending,
+        // confirmFirst false (e.g. run not started) → fires now, nothing queued.
+        runOrConfirm(confirmFirst: false, into: &pending,
                      title: "t", message: "m", confirmLabel: "c") { ran = true }
         #expect(ran)
         #expect(pending == nil)
 
-        // Running → the action is queued for confirmation, not run yet.
+        // confirmFirst true (e.g. run started, even if paused) → queued, not run.
         ran = false
-        runOrConfirm(timerIsRunning: true, into: &pending,
+        runOrConfirm(confirmFirst: true, into: &pending,
                      title: "Change X?", message: "wipes state", confirmLabel: "Change X") { ran = true }
         #expect(!ran)
         #expect(pending != nil)
