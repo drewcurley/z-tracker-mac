@@ -70,15 +70,10 @@ struct MainTrackerPlaceholderView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-                DisclosureGroup("Player state (debug — starting items / progress toggles)") {
-                    PlayerStateDebugPanel(startingItems: model.startingItemsAndExtras, progress: model.playerProgress)
-                }
-                .font(.caption)
-                .frame(maxWidth: 900)
-
                 // ContentView only shows this view once model.quest is set
                 // (docs/domain.md § 4.1); the fallback here is defensive, not
-                // an expected path.
+                // an expected path. The map stretches to the full window width
+                // (no upper bound, T-055).
                 OverworldMapView(
                     grid: model.overworldGrid,
                     quest: model.quest ?? .first,
@@ -90,7 +85,7 @@ struct MainTrackerPlaceholderView: View {
                     mirrored: model.mirrorOverworld,
                     hideDungeonNumbers: model.hideDungeonNumbers
                 )
-                .frame(maxWidth: 900)
+                .frame(maxWidth: .infinity)
             }
             .padding(24)
             .frame(maxWidth: .infinity)
@@ -114,43 +109,6 @@ struct MainTrackerPlaceholderView: View {
                 try? await Task.sleep(for: .seconds(1))
             }
         }
-    }
-}
-
-/// A bare-bones, reachable surface for the player-state foundation added in
-/// T-012 (`StartingItemsAndExtras`, `PlayerProgressAndTakeAnyHearts`) — not
-/// the reference app's real item-tracker UI (that's a later task, once
-/// `T-013`/`T-014` give this state something to compute against). This
-/// exists so the new state is exercised by something a person can actually
-/// click, not just unit tests, per this task's own acceptance criterion.
-private struct PlayerStateDebugPanel: View {
-    @Bindable var startingItems: StartingItemsAndExtras
-    @Bindable var progress: PlayerProgressAndTakeAnyHearts
-
-    var body: some View {
-        DisclosureGroup("Player state (debug — T-012 foundation, not the real item tracker)") {
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Starting items").font(.caption).bold().foregroundStyle(.secondary)
-                HStack {
-                    Toggle("Ladder", isOn: $startingItems.hasLadder)
-                    Toggle("Raft", isOn: $startingItems.hasRaft)
-                    Toggle("Recorder", isOn: $startingItems.hasRecorder)
-                }
-                Stepper("Max hearts differential: \(startingItems.maxHeartsDifferential)", value: $startingItems.maxHeartsDifferential, in: -8...8)
-
-                Text("Progress").font(.caption).bold().foregroundStyle(.secondary)
-                HStack {
-                    Toggle("Bombs", isOn: $progress.hasBombs)
-                    Toggle("Magical Sword", isOn: $progress.hasMagicalSword)
-                    Toggle("Defeated Ganon", isOn: $progress.hasDefeatedGanon)
-                }
-                Button("Reset progress") { progress.resetAll() }
-            }
-            .toggleStyle(.checkbox)
-            .padding(.top, 4)
-        }
-        .font(.caption)
-        .frame(maxWidth: 500)
     }
 }
 
