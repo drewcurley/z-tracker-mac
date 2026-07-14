@@ -24,17 +24,17 @@ struct PlayerProgressAndTakeAnyHeartsTests {
         let progress = PlayerProgressAndTakeAnyHearts()
 
         progress.hasBombs = true
-        progress.takeAnyHearts[2] = .takenPotionOrCandle
+        progress.takeAnyHearts[2] = .takenPotion
 
         #expect(progress.hasBombs == true)
-        #expect(progress.takeAnyHearts == [.untaken, .untaken, .takenPotionOrCandle, .untaken])
+        #expect(progress.takeAnyHearts == [.untaken, .untaken, .takenPotion, .untaken])
         #expect(progress.hasWoodSword == false)
     }
 
     @Test("resetAll zeroes every field, matching ResetAll()")
     func resetAllZeroesEverything() {
         let progress = PlayerProgressAndTakeAnyHearts(
-            takeAnyHearts: [.takenHeart, .takenPotionOrCandle, .takenHeart, .untaken],
+            takeAnyHearts: [.takenHeart, .takenPotion, .takenHeart, .untaken],
             hasBoomBook: true,
             hasWoodSword: true,
             hasWoodArrow: true,
@@ -60,10 +60,14 @@ struct PlayerProgressAndTakeAnyHeartsTests {
         #expect(progress.hasBombs == false)
     }
 
-    @Test("TakeAnyHeartState raw values match the reference app's int tri-state")
+    @Test("TakeAnyHeartState raw values: reference 0/1/2 preserved, candle added at 3")
     func takeAnyHeartStateRawValues() {
         #expect(TakeAnyHeartState.untaken.rawValue == 0)
         #expect(TakeAnyHeartState.takenHeart.rawValue == 1)
-        #expect(TakeAnyHeartState.takenPotionOrCandle.rawValue == 2)
+        // The reference's combined potion/candle (2) becomes potion; candle is
+        // the new distinct state (3) — T-031, back-compatible with old saves.
+        #expect(TakeAnyHeartState.takenPotion.rawValue == 2)
+        #expect(TakeAnyHeartState.takenCandle.rawValue == 3)
+        #expect(TakeAnyHeartState.allCases.count == 4)
     }
 }

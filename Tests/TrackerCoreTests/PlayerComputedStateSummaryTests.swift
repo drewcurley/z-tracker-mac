@@ -33,14 +33,30 @@ struct PlayerComputedStateSummaryTests {
         dungeonTracker: DungeonTrackerInstance = DungeonTrackerInstance(),
         startingItems: StartingItemsAndExtras = StartingItemsAndExtras(),
         progress: PlayerProgressAndTakeAnyHearts = PlayerProgressAndTakeAnyHearts(),
-        isWSMSReplacedByBU: Bool = false
+        isWSMSReplacedByBU: Bool = false,
+        extraCandles: Bool = false
     ) -> PlayerComputedStateSummary {
         PlayerComputedStateSummary.compute(
             dungeonTracker: dungeonTracker,
             startingItems: startingItems,
             progress: progress,
-            isWSMSReplacedByBU: isWSMSReplacedByBU
+            isWSMSReplacedByBU: isWSMSReplacedByBU,
+            extraCandles: extraCandles
         )
+    }
+
+    @Test("Extra Candles: a taken wood-sword-cave item counts as a candle, not a sword")
+    func extraCandlesWoodToCandle() {
+        let progress = PlayerProgressAndTakeAnyHearts()
+        progress.hasWoodSword = true
+        // Off: wood sword raises sword level, not candle.
+        let off = compute(progress: progress, extraCandles: false)
+        #expect(off.swordLevel == 1)
+        #expect(off.candleLevel == 0)
+        // On: it raises candle level, not sword.
+        let on = compute(progress: progress, extraCandles: true)
+        #expect(on.swordLevel == 0)
+        #expect(on.candleLevel == 1)
     }
 
     @Test("a fresh game derives all defaults (hearts = 3, everything else false/0)")
@@ -107,7 +123,7 @@ struct PlayerComputedStateSummaryTests {
 
         let progress = PlayerProgressAndTakeAnyHearts()
         progress.takeAnyHearts[0] = .takenHeart          // +1
-        progress.takeAnyHearts[1] = .takenPotionOrCandle // +0
+        progress.takeAnyHearts[1] = .takenPotion // +0
         progress.takeAnyHearts[2] = .takenHeart          // +1
 
         let starting = StartingItemsAndExtras(maxHeartsDifferential: 2)

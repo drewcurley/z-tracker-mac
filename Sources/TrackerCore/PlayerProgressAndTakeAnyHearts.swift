@@ -1,13 +1,19 @@
 import Observation
 
 /// One "Take Any" heart-cave slot's state — there are 4 such overworld
-/// locations. Ported from the reference's raw `int` tri-state
-/// (`TrackerModel.fs:494`: "0 = untaken (open heart on UI), 1 = taken heart
-/// (red heart on UI), 2 = taken potion/candle (X out empty heart on UI)").
+/// locations. The reference used a raw `int` tri-state (`TrackerModel.fs:494`:
+/// "0 = untaken, 1 = taken heart, 2 = taken potion/candle").
+///
+/// **Beyond the reference (T-031):** the combined "potion/candle" state is
+/// split into distinct `takenPotion` (2, preserving the reference's raw value)
+/// and `takenCandle` (3), so the tracker can record which was taken — the
+/// Extra Candles randomizer option makes a blue candle a possible take-any
+/// item alongside the red potion and the heart.
 public enum TakeAnyHeartState: Int, Sendable, CaseIterable {
     case untaken = 0
     case takenHeart = 1
-    case takenPotionOrCandle = 2
+    case takenPotion = 2
+    case takenCandle = 3
 }
 
 /// Runtime-acquired player progress that isn't tied to a spatial dungeon-
