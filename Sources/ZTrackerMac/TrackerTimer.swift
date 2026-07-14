@@ -51,14 +51,22 @@ final class TrackerTimer {
         hasLap = true
     }
 
+    /// Pause the main (and thus the lap). No-op if already paused.
+    func pause(asOf now: Date = Date()) {
+        guard let start = segmentStart else { return }
+        accumulated += now.timeIntervalSince(start)
+        segmentStart = nil
+    }
+
+    /// Resume the main. No-op if already running.
+    func resume(asOf now: Date = Date()) {
+        guard segmentStart == nil else { return }
+        segmentStart = now
+    }
+
     /// Pause ⇄ resume the main (and thus the lap).
     func togglePause(asOf now: Date = Date()) {
-        if let start = segmentStart {
-            accumulated += now.timeIntervalSince(start)
-            segmentStart = nil
-        } else {
-            segmentStart = now
-        }
+        if isRunning { pause(asOf: now) } else { resume(asOf: now) }
     }
 
     /// Reset everything to zero, keeping the running/paused state.

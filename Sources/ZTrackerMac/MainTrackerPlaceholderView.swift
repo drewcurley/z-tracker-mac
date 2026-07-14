@@ -85,6 +85,12 @@ struct MainTrackerPlaceholderView: View {
             .frame(maxWidth: .infinity)
         }
         .frame(minWidth: 420, minHeight: 320)
+        // Rescuing Zelda ends the run — pause the timer (both main and lap);
+        // un-rescuing resumes it (the reference's PlayerHasRescuedZelda →
+        // Pause/Resume, OverworldItemGridUI.fs:428-440).
+        .onChange(of: model.playerProgress.hasRescuedZelda) { _, rescued in
+            if rescued { timer.pause() } else { timer.resume() }
+        }
         .overlay(alignment: .top) {
             ReminderOverlayView(controller: reminders)
                 .padding(.top, 8)
