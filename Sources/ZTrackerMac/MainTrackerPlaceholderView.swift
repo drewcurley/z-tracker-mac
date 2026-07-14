@@ -11,6 +11,9 @@ struct MainTrackerPlaceholderView: View {
     var model: TrackerModel
     var options: TrackerOptions
 
+    /// Drives + presents the reminder engine's announcements (T-018.3).
+    @State private var reminders = ReminderController()
+
     /// The live overworld map-state summary (T-015.3) feeding the map's true
     /// GYR highlight. Recomputed here from the observable model each time the
     /// body evaluates, so the colors track marks / items / dungeon state.
@@ -57,6 +60,18 @@ struct MainTrackerPlaceholderView: View {
         }
         .padding(32)
         .frame(minWidth: 420, minHeight: 320)
+        .overlay(alignment: .top) {
+            ReminderOverlayView(controller: reminders)
+                .padding(.top, 8)
+        }
+        // Poll the reminder engine ~once a second (the reference's cadence)
+        // and speak/show the returned announcements.
+        .task {
+            while !Task.isCancelled {
+                reminders.handle(model.pollReminders(), options: options)
+                try? await Task.sleep(for: .seconds(1))
+            }
+        }
     }
 }
 
