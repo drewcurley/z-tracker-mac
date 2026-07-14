@@ -248,32 +248,25 @@ enum ItemProgressGrid {
 extension ItemProgressGrid.CoastBox: Equatable {}
 extension ItemProgressGrid.ItemToggle: Equatable {}
 
-/// The overworld item grid (T-025.1): the reference's top-right `owItemGrid`,
-/// re-laid-out cleanly. Toggle boxes flip a `PlayerProgressAndTakeAnyHearts`
-/// flag on click; the three coast/armos/white-sword boxes are full item
-/// pickers (reused `BoxView`). Located/superseded highlighting and the
-/// take-any hearts row are later T-025 sub-tasks.
-struct ItemProgressGridView: View {
+/// Shared cell size for the obtainable-item grid and its hint row.
+private let itemGridCellSize: CGFloat = 34
+
+/// **Obtainables** group (T-043): the reference's top-right `owItemGrid`,
+/// re-laid-out cleanly — the white-sword-item / armos / coast picker boxes, the
+/// other obtainable-item toggles, and the take-any heart caves, with the
+/// white/magical-sword location hints above their columns. Toggle boxes flip a
+/// `PlayerProgressAndTakeAnyHearts` flag on click; the three picker boxes reuse
+/// `BoxView`. Located (yellow) / superseded (gray-X) highlighting comes from
+/// live state (T-025.3).
+struct ObtainableItemsView: View {
     @Bindable var model: TrackerModel
-    @State private var confirmingReset = false
-    /// Live derived state driving the located (yellow) / superseded (gray-X)
-    /// box highlighting (T-025.3). Supplied by the parent, which already
-    /// computes them for the overworld map.
     var playerState: PlayerComputedStateSummary
     var mapState: MapStateSummary
-    /// Map-overlay toggles (T-035.2) — the top-section icons that hover-preview
-    /// / click-lock highlights on the overworld map.
-    var overlays: OverworldOverlayState
-    /// Run timer (T-035.4) — a groundhog reset starts a fresh lap.
-    var timer: TrackerTimer
-
-    private static let cellSize: CGFloat = 34
 
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
-            Text("Items").font(.caption2).foregroundStyle(.secondary)
             // White / magical sword cave location hints (T-039), each sitting
-            // directly above its box: the White Sword indicator (col 0) and the
+            // directly above its box: the White Sword item box (col 1) and the
             // Magical Sword box (col 2), matching the reference.
             swordHintRow
             Grid(horizontalSpacing: 6, verticalSpacing: 6) {
@@ -285,29 +278,87 @@ struct ItemProgressGridView: View {
                     }
                 }
             }
-            Divider().overlay(Color(white: 0.2))
-            // Seed-option toggles: icon-only with rollover tooltips (matching
-            // the reference and keeping the UI clean), plus the read-only
-            // Max Hearts readout.
-            HStack(spacing: 14) {
-                swordlessToggle
-                bookShieldToggle
-                overlayToggles
-                Spacer(minLength: 8)
-                statusReadout
-                resetButton
+        }
+    }
+
+    /// A row of hint labels aligned with the item-grid columns: the White Sword
+    /// cave hint over the White Sword *item box* (col 1) and the Magical Sword
+    /// cave hint over the Magical Sword box (col 2). Every column reserves a
+    /// fixed-width slot (`Color.clear` for the empties) so the two labels stay
+    /// aligned over their boxes.
+    private var swordHintRow: some View {
+        HStack(spacing: 6) {
+            ForEach(0..<ItemProgressGrid.columns, id: \.self) { col in
+                Group {
+                    if col == 1 {
+                        HintLabel(hint: $model.levelHints[HintTarget.whiteSwordCave], title: "White Sword Cave")
+                    } else if col == 2 {
+                        HintLabel(hint: $model.levelHints[HintTarget.magicalSwordCave], title: "Magical Sword Cave")
+                    } else {
+                        Color.clear
+                    }
+                }
+                .frame(width: itemGridCellSize, height: 15)
             }
         }
-        .padding(8)
-        .background(RoundedRectangle(cornerRadius: 8).fill(Color(white: 0.09)))
+    }
+
+    /// Seed-option icon override for a toggle box: the magical-sword box shows
+    /// the bomb-upgrade under swordless (T-025.4).
+    private func iconOverride(for toggle: ItemProgressGrid.ItemToggle) -> ItemIconAtlas.Icon? {
+        if toggle == .magicalSword && model.isWSMSReplacedByBU { return .wsMsBombUpgrade }
+        return nil
+    }
+
+    @ViewBuilder
+    private func cellView(_ cell: ItemProgressGrid.Cell) -> some View {
+        switch cell {
+        case .indicator(let coast):
+            IndicatorCell(icon: coast.indicator, help: coast.help, size: itemGridCellSize)
+        case .pickerBox(let coast):
+            BoxView(box: coast.box(in: model.dungeonTracker), instance: model.dungeonTracker,
+                    label: nil, iconOptions: model.iconOptions)
+                .help(coast.help)
+        case .toggle(let toggle):
+            ItemToggleBox(
+                progress: model.playerProgress,
+                toggle: toggle,
+                iconOverride: iconOverride(for: toggle),
+                located: toggle.located(playerState: playerState, mapState: mapState),
+                superseded: toggle.superseded(playerState: playerState),
+                size: itemGridCellSize
+            )
+        case .takeAnyHeart(let i):
+            TakeAnyHeartBox(progress: model.playerProgress, index: i, size: itemGridCellSize)
+        case .empty:
+            Color.clear.frame(width: itemGridCellSize, height: itemGridCellSize)
+        }
+    }
+}
+
+/// **Flags** group (T-043): the seed-option toggles — swordless (White/Magical
+/// Sword → Bomb Upgrade) and Book vs Magic Shield (boomstick seeds), icon-only
+/// with rollover tooltips. Book-as-atlas and mirror-overworld are listed in the
+/// reference but not yet modeled here, so they're intentionally absent (no
+/// invented flags).
+struct SeedFlagsView: View {
+    @Bindable var model: TrackerModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            swordlessToggle
+            bookShieldToggle
+        }
+        .toggleStyle(.checkbox)
     }
 
     /// The swordless (WSMS→Bomb Upgrade) seed toggle. When on, the White Sword
     /// and Magical Sword are Bomb Upgrades (`isWSMSReplacedByBU`).
     private var swordlessToggle: some View {
-        Toggle(isOn: $model.isWSMSReplacedByBU) { iconOnly(.wsMsBombUpgrade) }
-            .toggleStyle(.checkbox)
-            .help("Swordless seed: the White Sword and Magical Sword are replaced by Bomb Upgrades")
+        Toggle(isOn: $model.isWSMSReplacedByBU) {
+            HStack(spacing: 6) { iconOnly(.wsMsBombUpgrade); Text("Swordless").font(.system(size: 11)) }
+        }
+        .help("Swordless seed: the White Sword and Magical Sword are replaced by Bomb Upgrades")
     }
 
     /// Book vs Magic Shield for item slot 0 (boomstick seeds). Checked = shield
@@ -315,10 +366,40 @@ struct ItemProgressGridView: View {
     /// book" checkbox.
     private var bookShieldToggle: some View {
         Toggle(isOn: Binding(get: { !model.isCurrentlyBook }, set: { model.isCurrentlyBook = !$0 })) {
-            iconOnly(model.isCurrentlyBook ? .book : .magicShield)
+            HStack(spacing: 6) {
+                iconOnly(model.isCurrentlyBook ? .book : .magicShield)
+                Text("Boomstick").font(.system(size: 11))
+            }
         }
-        .toggleStyle(.checkbox)
         .help("When checked, item slot 0 is the Magic Shield instead of the Book (boomstick seeds)")
+    }
+
+    @ViewBuilder
+    private func iconOnly(_ icon: ItemIconAtlas.Icon) -> some View {
+        if let img = Image(atlasIcon: ItemIconAtlas.cgImage(icon)) {
+            img.interpolation(.none).resizable().frame(width: 16, height: 16)
+        }
+    }
+}
+
+/// **Informational** group (T-043): live read-only readouts (unmarked overworld
+/// spots left, how many are currently gettable, computed Max Hearts) plus the
+/// map-overlay toggle icons (open caves / money / zones / coords — hover to
+/// preview, click to lock) and the groundhog/routers reset action.
+struct MapInfoView: View {
+    @Bindable var model: TrackerModel
+    var playerState: PlayerComputedStateSummary
+    var mapState: MapStateSummary
+    var overlays: OverworldOverlayState
+    var timer: TrackerTimer
+    @State private var confirmingReset = false
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            statusReadout
+            overlayToggles
+            resetButton
+        }
     }
 
     /// Live map/heart status (T-035.1): unmarked overworld spots remaining, how
@@ -326,7 +407,7 @@ struct ItemProgressGridView: View {
     /// `MapStateSummary`, capability-aware + per quest), and the computed Max
     /// Hearts. All read-only.
     private var statusReadout: some View {
-        HStack(spacing: 12) {
+        VStack(alignment: .leading, spacing: 3) {
             Text("\(mapState.owSpotsRemain) OW spots left")
                 .foregroundStyle(.orange)
                 .help("Unmarked overworld screens remaining")
@@ -337,7 +418,7 @@ struct ItemProgressGridView: View {
                 .foregroundStyle(.orange)
                 .help("Max hearts, computed from collected heart containers and take-any hearts")
         }
-        .font(.system(size: 10))
+        .font(.system(size: 11))
     }
 
     /// The map-overlay toggle icons (T-035.2): hover previews the highlight on
@@ -396,67 +477,6 @@ struct ItemProgressGridView: View {
             } message: {
                 Text("Removes all items, triforces, and take-any hearts so you can replay the same seed. Your overworld marks and known item locations stay. This can't be undone (no save yet).")
             }
-    }
-
-    /// A row of hint labels aligned with the item-grid columns: the White Sword
-    /// cave hint over the White Sword *item box* (col 1) and the Magical Sword
-    /// cave hint over the Magical Sword box (col 2). Every column reserves a
-    /// fixed-width slot (`Color.clear` for the empties) so the two labels stay
-    /// aligned over their boxes.
-    private var swordHintRow: some View {
-        HStack(spacing: 6) {
-            ForEach(0..<ItemProgressGrid.columns, id: \.self) { col in
-                Group {
-                    if col == 1 {
-                        HintLabel(hint: $model.levelHints[HintTarget.whiteSwordCave], title: "White Sword Cave")
-                    } else if col == 2 {
-                        HintLabel(hint: $model.levelHints[HintTarget.magicalSwordCave], title: "Magical Sword Cave")
-                    } else {
-                        Color.clear
-                    }
-                }
-                .frame(width: Self.cellSize, height: 15)
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func iconOnly(_ icon: ItemIconAtlas.Icon) -> some View {
-        if let img = Image(atlasIcon: ItemIconAtlas.cgImage(icon)) {
-            img.interpolation(.none).resizable().frame(width: 16, height: 16)
-        }
-    }
-
-    /// Seed-option icon override for a toggle box: the magical-sword box shows
-    /// the bomb-upgrade under swordless (T-025.4).
-    private func iconOverride(for toggle: ItemProgressGrid.ItemToggle) -> ItemIconAtlas.Icon? {
-        if toggle == .magicalSword && model.isWSMSReplacedByBU { return .wsMsBombUpgrade }
-        return nil
-    }
-
-    @ViewBuilder
-    private func cellView(_ cell: ItemProgressGrid.Cell) -> some View {
-        switch cell {
-        case .indicator(let coast):
-            IndicatorCell(icon: coast.indicator, help: coast.help, size: Self.cellSize)
-        case .pickerBox(let coast):
-            BoxView(box: coast.box(in: model.dungeonTracker), instance: model.dungeonTracker,
-                    label: nil, iconOptions: model.iconOptions)
-                .help(coast.help)
-        case .toggle(let toggle):
-            ItemToggleBox(
-                progress: model.playerProgress,
-                toggle: toggle,
-                iconOverride: iconOverride(for: toggle),
-                located: toggle.located(playerState: playerState, mapState: mapState),
-                superseded: toggle.superseded(playerState: playerState),
-                size: Self.cellSize
-            )
-        case .takeAnyHeart(let i):
-            TakeAnyHeartBox(progress: model.playerProgress, index: i, size: Self.cellSize)
-        case .empty:
-            Color.clear.frame(width: Self.cellSize, height: Self.cellSize)
-        }
     }
 }
 
