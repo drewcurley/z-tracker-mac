@@ -342,6 +342,10 @@ struct ItemProgressGridView: View {
                           help: "Highlight open caves (unmarked spots that can hold a plain cave); late game, the Armos spots. Hover to preview, click to lock on.")
             overlayToggle(.money, atlasIcon: .rupee,
                           help: "Highlight money spots: Money Making Game, Unknown Secret, and known money secrets. Hover to preview, click to lock on.")
+            overlayToggle(.zones, systemImage: "map.fill",
+                          help: "Tint the map by overworld region (Zones). Hover to preview, click to lock on.")
+            overlayToggle(.coords, systemImage: "number",
+                          help: "Overlay screen coordinates (A1…H16). Hover to preview, click to lock on.")
         }
     }
 
