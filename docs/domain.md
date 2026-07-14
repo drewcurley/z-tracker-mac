@@ -635,12 +635,25 @@ JSON file holds options/settings, independent of save state.
       penalty on the ladder and makes TAG level 102 unreachable — flagged in
       code, an auto-memory note, and pinned by a test; do NOT "fix" without an
       explicit decision to diverge. 8 tests.
-    - **T-018.2** — the `ITrackerEvents` callback contract + `allUIEventing-
-      Logic` announcement/reminder orchestration (`:1486-1750`), carrying the
-      real reactive-`@Observable`-vs-literal-`ITrackerEvents`-delegate
-      architecture decision (evaluate when that task starts) and the
-      recorder-warp-destination derivation deferred from T-015.5. Depends on
-      reminder UI surfaces this project mostly hasn't built.
+    - **T-018.2 — done.** `ReminderEngine.swift`: the edge-triggered half of
+      `allUIEventingLogic` (`:1568-1750`) + its transition trackers + the
+      groundhog reset, as a `poll(...) -> [ReminderAnnouncement]` (8
+      announcement cases: consider-sword2/3, completed-dungeon, found-count,
+      triforce-count, triforce-and-go, remind-unblock, remind-shortly).
+      **The `ITrackerEvents` architecture decision is resolved:** its
+      *state-push* callbacks (`CurrentHearts`, `DungeonLocation`,
+      `RoutingInfo`, `CompletedDungeons`, …) are redundant under
+      `@Observable` (views read the model directly) and are not ported; only
+      the edge-triggered announcements are stateful logic, ported as the
+      engine. A literal delegate port was considered and rejected. 14 tests
+      cover each announcement, the TAG-103 blocker-suppression gate,
+      `hardCanonical` maybe-blocker matching, and reset. Deferred: recorder-
+      warp dests (a routing concern that only fed the dropped `RoutingInfo`)
+      and the timeline data.
+    - **T-018.3** — announcement *rendering*: speech (`AVSpeechSynthesizer`)
+      + a visual reminder surface, driven by a ~1 Hz poll of `ReminderEngine`,
+      honoring the per-category Voice/Visual reminder options. Needs a
+      reminder UI surface this project hasn't built.
   Also confirmed *not* part of this subsystem despite a similar name:
   `DungeonData.fs` (290 lines) is dungeon-room-shape ASCII grids + flavor
   tips for a future dungeon-map-drawing UI — unrelated to player state.
