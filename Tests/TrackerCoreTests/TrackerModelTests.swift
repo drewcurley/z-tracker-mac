@@ -30,6 +30,16 @@ struct TrackerModelTests {
         #expect(model.hideDungeonNumbers == false)
     }
 
+    @Test("mirrorOverworld defaults off and is settable (T-047)")
+    func mirrorOverworldFlag() {
+        let model = TrackerModel()
+        #expect(model.mirrorOverworld == false)
+        model.mirrorOverworld = true
+        #expect(model.mirrorOverworld == true)
+        // Init override also works.
+        #expect(TrackerModel(mirrorOverworld: true).mirrorOverworld == true)
+    }
+
     @Test("heartShuffle and hideDungeonNumbers can be set independently")
     func togglesAreIndependent() {
         let model = TrackerModel()
