@@ -44,6 +44,30 @@ struct DungeonLabelingTests {
         #expect(model.dungeonTracker.isSecondQuestDungeons)
     }
 
+    @Test("identifiedAsTwoBoxer: HDN dungeons flagged once assigned a 2-item number")
+    func twoBoxerIdentification() {
+        // Two-boxer whitelist: 1Q → 234567 (three-item = 1,8); 2Q → 123567 (=4,8).
+        #expect(Dungeon.twoBoxerDigits(secondQuest: false) == "234567")
+        #expect(Dungeon.twoBoxerDigits(secondQuest: true) == "123567")
+
+        let inst = DungeonTrackerInstance(kind: .hideDungeonNumbers, isSecondQuestDungeons: false)
+        let d = inst.dungeon(0)
+        // Unassigned → not a two-boxer (no disabling).
+        #expect(!d.identifiedAsTwoBoxer)
+        // Assign a two-item number (5) → two-boxer; assign a three-item (8) → not.
+        d.labelChar = "5"
+        #expect(d.identifiedAsTwoBoxer)
+        d.labelChar = "8"
+        #expect(!d.identifiedAsTwoBoxer)
+        d.labelChar = "1"   // 1 is a three-item dungeon in 1Q
+        #expect(!d.identifiedAsTwoBoxer)
+
+        // In DEFAULT mode there's no HDN identification, so never flagged.
+        let def = DungeonTrackerInstance(kind: .default)
+        def.dungeon(0).labelChar = "5"
+        #expect(!def.dungeon(0).identifiedAsTwoBoxer)
+    }
+
     @Test("setHeartShuffle re-seeds the dungeon floor hearts")
     func heartShuffleReseeds() {
         let model = TrackerModel(quest: .first)
