@@ -21,4 +21,15 @@ public enum OverworldQuest: String, Codable, CaseIterable, Sendable {
         case .mixedSecond: 3
         }
     }
+
+    /// Whether this quest uses the **first-quest overworld** layout (`.first`
+    /// and `.mixedFirst`). Ported from `OWQuest.IsFirstQuestOW`
+    /// (`OverworldData.fs:35`) — drives, e.g., the per-quest secret counts
+    /// (T-053).
+    public var isFirstQuestOverworld: Bool {
+        switch self {
+        case .first, .mixedFirst: true
+        case .second, .mixedSecond: false
+        }
+    }
 }
