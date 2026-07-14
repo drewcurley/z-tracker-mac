@@ -66,10 +66,16 @@ private struct DungeonCardView: View {
 
     var body: some View {
         VStack(spacing: 4) {
-            // Location hint (T-039), above the dungeon numeral. In HDN this slot
-            // is replaced by the dungeon-number chooser (a later task), so the
-            // hint is hidden here for now.
-            if !hideDungeonNumbers {
+            // Above the slot: the location hint (T-039) in default mode; in HDN
+            // (T-050) the dungeon-number chooser instead — except Level 9
+            // (id 8), which is always known.
+            if hideDungeonNumbers {
+                if dungeon.id != 8 {
+                    DungeonNumberLabel(dungeon: dungeon, slotLabel: slotLabel)
+                } else {
+                    Color.clear.frame(height: 16)
+                }
+            } else {
                 HintLabel(hint: $hint, title: "Dungeon \(dungeon.id + 1)")
             }
             HStack(spacing: 3) {
@@ -89,8 +95,12 @@ private struct DungeonCardView: View {
                     .help("Toggle triforce")
                 }
             }
-            ForEach(Array(dungeon.boxes.enumerated()), id: \.offset) { _, box in
-                BoxView(box: box, instance: instance, label: nil, iconOptions: iconOptions)
+            ForEach(Array(dungeon.boxes.enumerated()), id: \.offset) { idx, box in
+                // In HDN, an identified two-boxer dungeon has no third item, so
+                // its last box is disabled (T-050, beyond the reference).
+                let isDisabledThirdBox = dungeon.identifiedAsTwoBoxer && idx == dungeon.boxes.count - 1
+                BoxView(box: box, instance: instance, label: nil, iconOptions: iconOptions,
+                        disabled: isDisabledThirdBox)
             }
             // The "ghost" slot under whichever of L1/L4 doesn't hold the movable
             // extra floor item (1Q overworld ↔ 2Q dungeons). Clicking it moves
@@ -149,6 +159,9 @@ struct BoxView: View {
     var label: String?
     /// Seed-option flags affecting item-icon display (swordless, book/shield).
     var iconOptions = ItemIconOptions()
+    /// The box carries no item (an identified HDN two-boxer's third box, T-050):
+    /// rendered dimmed + non-interactive so it can't be filled.
+    var disabled: Bool = false
 
     @State private var showPicker = false
 
@@ -163,6 +176,28 @@ struct BoxView: View {
     }
 
     var body: some View {
+        if disabled { disabledBox } else { interactiveBox }
+    }
+
+    /// A dimmed, dashed, non-interactive slot for a dungeon's absent third item.
+    private var disabledBox: some View {
+        VStack(spacing: 2) {
+            RoundedRectangle(cornerRadius: 4)
+                .fill(Color(white: 0.07))
+                .frame(width: Self.size, height: Self.size)
+                .overlay(RoundedRectangle(cornerRadius: 4)
+                    .strokeBorder(Color(white: 0.22), style: StrokeStyle(lineWidth: 1.5, dash: [3, 2])))
+                .overlay(Image(systemName: "nosign")
+                    .font(.system(size: 12))
+                    .foregroundStyle(Color(white: 0.35)))
+                .help("No third item — this dungeon has only two items")
+            if let label {
+                Text(label).font(.system(size: 8)).foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private var interactiveBox: some View {
         VStack(spacing: 2) {
             ZStack {
                 RoundedRectangle(cornerRadius: 4).fill(Color.black)

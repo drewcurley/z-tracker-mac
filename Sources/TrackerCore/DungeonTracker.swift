@@ -137,9 +137,26 @@ public final class Dungeon {
         case .hideDungeonNumbers:
             guard playerHasTriforce else { return false }
             let numBoxesDone = baseBoxes.reduce(0) { $0 + ($1.isDone ? 1 : 0) }
-            let twoBoxers = instance.isSecondQuestDungeons ? "123567" : "234567"
-            return numBoxesDone == 3 || (numBoxesDone == 2 && twoBoxers.contains(labelChar))
+            return numBoxesDone == 3 || (numBoxesDone == 2 && Self.twoBoxerDigits(secondQuest: instance.isSecondQuestDungeons).contains(labelChar))
         }
+    }
+
+    /// The HDN "two-boxer" whitelist for the quest — dungeon numbers that carry
+    /// only two items (complete with 2 of 3 boxes). Ported from `isComplete`
+    /// (`TrackerModel.fs:802`): `"234567"` (1st quest) / `"123567"` (2nd quest);
+    /// the complement (`{1,8}` / `{4,8}`) are the three-item dungeons.
+    static func twoBoxerDigits(secondQuest: Bool) -> String {
+        secondQuest ? "123567" : "234567"
+    }
+
+    /// **Beyond the reference (T-050):** in Hidden Dungeon Numbers, once this
+    /// dungeon is identified (its `labelChar` is a known two-boxer for the
+    /// quest), its **third** box carries no item. The UI uses this to disable
+    /// that box so you don't hunt for a nonexistent third item. `false` until
+    /// identified, and only in HDN.
+    public var identifiedAsTwoBoxer: Bool {
+        instance.kind == .hideDungeonNumbers
+            && Self.twoBoxerDigits(secondQuest: instance.isSecondQuestDungeons).contains(labelChar)
     }
 }
 
