@@ -11,7 +11,7 @@ import TrackerCore
 /// Aesthetic license (per the project): the reference's cramped grid is
 /// re-laid-out as clean cards; the Zelda item sprites are kept.
 struct DungeonTrackerView: View {
-    var model: TrackerModel
+    @Bindable var model: TrackerModel
 
     /// Dungeon indices (0–8) currently marked somewhere on the overworld —
     /// which numerals light up. Ported behavior of the reference's
@@ -36,7 +36,8 @@ struct DungeonTrackerView: View {
             HStack(alignment: .top, spacing: 6) {
                 ForEach(0..<9, id: \.self) { i in
                     DungeonCardView(dungeon: dt.dungeon(i), instance: dt, isLocated: loc.contains(i),
-                                    iconOptions: model.iconOptions)
+                                    iconOptions: model.iconOptions,
+                                    hint: $model.levelHints[HintTarget.dungeon(i + 1)])
                 }
             }
         }
@@ -50,9 +51,12 @@ private struct DungeonCardView: View {
     var instance: DungeonTrackerInstance
     var isLocated: Bool
     var iconOptions = ItemIconOptions()
+    @Binding var hint: HintZone
 
     var body: some View {
         VStack(spacing: 4) {
+            // Location hint (T-039), above the dungeon numeral.
+            HintLabel(hint: $hint, title: "Dungeon \(dungeon.id + 1)")
             HStack(spacing: 3) {
                 Text("\(dungeon.id + 1)")
                     .font(.system(size: 15, weight: .heavy, design: .rounded))
