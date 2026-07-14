@@ -19,10 +19,29 @@ struct TimerFormattingTests {
 struct TrackerTimerTests {
     private let t0 = Date(timeIntervalSinceReferenceDate: 1_000_000)
     private func at(_ secs: TimeInterval) -> Date { t0.addingTimeInterval(secs) }
+    /// A timer already "Go"-started at t0.
+    private func startedTimer() -> TrackerTimer { let t = TrackerTimer(); t.start(asOf: t0); return t }
+
+    @Test("timer waits for Go, then starts")
+    func goButton() {
+        let timer = TrackerTimer()
+        #expect(!timer.hasStarted && !timer.isRunning)
+        #expect(timer.mainElapsed(asOf: at(10)) == 0)   // not counting yet
+        // Pause/resume are no-ops before Go.
+        timer.resume(asOf: at(5))
+        #expect(!timer.isRunning)
+        // Go.
+        timer.start(asOf: at(10))
+        #expect(timer.hasStarted && timer.isRunning)
+        #expect(timer.mainElapsed(asOf: at(20)) == 10)  // counts from Go
+        // A second start is a no-op.
+        timer.start(asOf: at(99))
+        #expect(timer.mainElapsed(asOf: at(30)) == 20)
+    }
 
     @Test("main counts up from start")
     func mainCounts() {
-        let timer = TrackerTimer(now: t0)
+        let timer = startedTimer()
         #expect(timer.isRunning)
         #expect(timer.mainElapsed(asOf: at(10)) == 10)
         #expect(!timer.hasLap)
@@ -31,7 +50,7 @@ struct TrackerTimerTests {
 
     @Test("a lap resets independently while the main keeps running")
     func lapIndependent() {
-        let timer = TrackerTimer(now: t0)
+        let timer = startedTimer()
         // 30s in, a groundhog reset starts a fresh lap.
         timer.startLap(asOf: at(30))
         #expect(timer.hasLap)
@@ -46,7 +65,7 @@ struct TrackerTimerTests {
 
     @Test("pause freezes both main and lap; resume continues")
     func pauseFreezes() {
-        let timer = TrackerTimer(now: t0)
+        let timer = startedTimer()
         timer.startLap(asOf: at(10))
         timer.togglePause(asOf: at(20)) // pause at 20s (lap = 10)
         #expect(!timer.isRunning)
@@ -61,7 +80,7 @@ struct TrackerTimerTests {
 
     @Test("explicit pause/resume are idempotent (for the Zelda-rescued trigger)")
     func pauseResumeIdempotent() {
-        let timer = TrackerTimer(now: t0)
+        let timer = startedTimer()
         timer.pause(asOf: at(10))
         #expect(!timer.isRunning && timer.mainElapsed(asOf: at(30)) == 10)
         // Pausing again does nothing.
@@ -75,7 +94,7 @@ struct TrackerTimerTests {
 
     @Test("reset zeroes everything and clears the lap")
     func resetClears() {
-        let timer = TrackerTimer(now: t0)
+        let timer = startedTimer()
         timer.startLap(asOf: at(30))
         timer.reset(asOf: at(50))
         #expect(!timer.hasLap)

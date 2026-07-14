@@ -28,10 +28,19 @@ final class TrackerTimer {
     private var lapOrigin: TimeInterval = 0
     /// Whether a lap has been started (a groundhog reset has occurred).
     private(set) var hasLap = false
+    /// Whether the run has been started via "Go". Before this, the timer shows
+    /// a Go button (the reference auto-starts, which the community dislikes —
+    /// the tracker can be loaded/configured before starting).
+    private(set) var hasStarted = false
 
     var isRunning: Bool { segmentStart != nil }
 
-    init(now: Date = Date()) { segmentStart = now }
+    /// Starts the run (the "Go" button). No-op if already started.
+    func start(asOf now: Date = Date()) {
+        guard !hasStarted else { return }
+        hasStarted = true
+        segmentStart = now
+    }
 
     /// Total elapsed on the main timer as of `now`.
     func mainElapsed(asOf now: Date) -> TimeInterval {
@@ -58,21 +67,22 @@ final class TrackerTimer {
         segmentStart = nil
     }
 
-    /// Resume the main. No-op if already running.
+    /// Resume the main. No-op if not started or already running.
     func resume(asOf now: Date = Date()) {
-        guard segmentStart == nil else { return }
+        guard hasStarted, segmentStart == nil else { return }
         segmentStart = now
     }
 
-    /// Pause ⇄ resume the main (and thus the lap).
+    /// Pause ⇄ resume the main (and thus the lap). No-op before the run starts.
     func togglePause(asOf now: Date = Date()) {
+        guard hasStarted else { return }
         if isRunning { pause(asOf: now) } else { resume(asOf: now) }
     }
 
-    /// Reset everything to zero, keeping the running/paused state.
+    /// Reset the elapsed to zero, keeping the running/paused (and started) state.
     func reset(asOf now: Date = Date()) {
         accumulated = 0
-        segmentStart = isRunning ? now : nil
+        if isRunning { segmentStart = now }
         lapOrigin = 0
         hasLap = false
     }
