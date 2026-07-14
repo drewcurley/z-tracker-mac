@@ -424,6 +424,16 @@ struct OverworldMapView: View {
                 Button(size.displayName) { applyMark(.secret(size), column: column, row: row) }
             }
         }
+        // Take-any is a submenu (Unclaimed / Potion / Blue candle / Heart since
+        // T-057), so it belongs with the other submenus rather than down among
+        // the one-shot marks where it used to live as a plain button (T-063).
+        Menu("Take any") {
+            Button("Unclaimed") { applyTakeAny(.untaken, column: column, row: row) }
+            Button("Potion") { applyTakeAny(.takenPotion, column: column, row: row) }
+            Button("Blue candle") { applyTakeAny(.takenCandle, column: column, row: row) }
+            Button("Heart") { applyTakeAny(.takenHeart, column: column, row: row) }
+        }
+        .disabled(isExhausted(.takeAny, column: column, row: row, counts: counts))
         Divider()
         Button("Door repair") { applyMark(.doorRepair, column: column, row: row) }
             .disabled(isExhausted(.doorRepair, column: column, row: row, counts: counts))
@@ -435,13 +445,6 @@ struct OverworldMapView: View {
             .disabled(isExhausted(.armos, column: column, row: row, counts: counts))
         Button("Hint shop") { applyMark(.hintShop, column: column, row: row) }
             .disabled(isExhausted(.hintShop, column: column, row: row, counts: counts))
-        Menu("Take any") {
-            Button("Unclaimed") { applyTakeAny(.untaken, column: column, row: row) }
-            Button("Potion") { applyTakeAny(.takenPotion, column: column, row: row) }
-            Button("Blue candle") { applyTakeAny(.takenCandle, column: column, row: row) }
-            Button("Heart") { applyTakeAny(.takenHeart, column: column, row: row) }
-        }
-        .disabled(isExhausted(.takeAny, column: column, row: row, counts: counts))
         Button("Potion shop") { applyMark(.potionShop, column: column, row: row) }
             .disabled(isExhausted(.potionShop, column: column, row: row, counts: counts))
     }
@@ -540,6 +543,12 @@ private struct TileView: View {
                 digitBadge
                     .frame(width: tileWidth, height: tileHeight)
                     .scaleEffect(x: mirrored ? -1 : 1, y: 1)
+                // Sword caves use the high-fidelity Items-area sword sprite on a
+                // dark plate (like the item boxes), sized like the digit badge
+                // so it reads at map scale — T-063.
+                swordCaveBadge
+                    .frame(width: tileWidth, height: tileHeight)
+                    .scaleEffect(x: mirrored ? -1 : 1, y: 1)
                 // Small interior sprites (secrets, shops, armos, …) keep the
                 // reference's exact interior-icon placement.
                 interiorIconView
@@ -603,10 +612,42 @@ private struct TileView: View {
         }
     }
 
+    /// The Items-area sword sprite (wood / white / magical for cave levels
+    /// 1 / 2 / 3) — the high-fidelity replacement for the numbered ow sprite.
+    private static func swordIcon(forCaveLevel level: Int) -> ItemIconAtlas.Icon? {
+        switch level {
+        case 1: .brownSword
+        case 2: .whiteSword
+        case 3: .magicalSword
+        default: nil
+        }
+    }
+
+    @ViewBuilder
+    private var swordCaveBadge: some View {
+        if case .swordCaveItem(let level) = mark.iconSource,
+           let icon = Self.swordIcon(forCaveLevel: level),
+           let image = Image(atlasIcon: ItemIconAtlas.cgImage(icon)) {
+            let badge = min(tileWidth, tileHeight) * 0.82
+            RoundedRectangle(cornerRadius: badge * 0.18)
+                .fill(.black.opacity(0.82))
+                .overlay(
+                    image.interpolation(.none).resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .padding(badge * 0.14)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: badge * 0.18)
+                        .strokeBorder(.black.opacity(0.55), lineWidth: 1)
+                )
+                .frame(width: badge, height: badge)
+        }
+    }
+
     @ViewBuilder
     private var interiorIconView: some View {
         switch mark.iconSource {
-        case .none, .solidBlackTile, .dungeonDigit, .anyRoadDigit:
+        case .none, .solidBlackTile, .dungeonDigit, .anyRoadDigit, .swordCaveItem:
             EmptyView()
         case .interiorSprite(let index):
             if let icon = OverworldInteriorIconAtlas.icon(at: index) {
