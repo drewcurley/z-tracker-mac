@@ -87,7 +87,8 @@ struct MainTrackerPlaceholderView: View {
                     mapState: mapState,
                     overlays: overlays,
                     armosClaimed: model.dungeonTracker.armosBox.isDone,
-                    mirrored: model.mirrorOverworld
+                    mirrored: model.mirrorOverworld,
+                    hideDungeonNumbers: model.hideDungeonNumbers
                 )
                 .frame(maxWidth: 900)
             }

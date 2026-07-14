@@ -40,7 +40,12 @@ public final class TrackerModel {
     /// Hidden Dungeon Numbers is T-016. `PlayerComputedStateSummary`, the
     /// glue that turns these boxes into `HaveLadder`/`SwordLevel`/etc., is
     /// T-014.
-    public let dungeonTracker: DungeonTrackerInstance
+    /// `private(set) var` (not `let`) because toggling Hidden Dungeon Numbers
+    /// live (T-049) rebuilds it with the other `kind` — the box structure and
+    /// completion rules differ between modes. Use `setHideDungeonNumbers` /
+    /// `setHeartShuffle` rather than mutating the flags directly so the tracker
+    /// stays in sync.
+    public private(set) var dungeonTracker: DungeonTrackerInstance
 
     /// Seed flag: in some seed variants the White-Sword and Magical-Sword
     /// item slots are Bomb-Upgrade slots instead, so they don't raise the
@@ -189,6 +194,30 @@ public final class TrackerModel {
         // At session start, seed the dungeon floor-item hearts per Heart
         // Shuffle (the reference's `makeAll` does this once the quest is
         // chosen — `UI.fs:142-144`).
+        dungeonTracker.applyFloorItemHearts(heartShuffle: heartShuffle)
+    }
+
+    /// Toggle Heart Shuffle live (T-049 — the flag now lives in the in-app Flags
+    /// group, not just the startup screen). Re-seeds the dungeon floor-item
+    /// hearts: **off** puts a known Heart Container in dungeons 1–8's first box,
+    /// **on** empties them (hearts shuffled into the pool).
+    public func setHeartShuffle(_ on: Bool) {
+        heartShuffle = on
+        dungeonTracker.applyFloorItemHearts(heartShuffle: on)
+    }
+
+    /// Toggle Hidden Dungeon Numbers live (T-049). HDN changes the dungeon
+    /// structure (3 boxes per dungeon vs 2, different completion rules), so the
+    /// tracker is **rebuilt** with the other `kind` — dungeon progress resets,
+    /// as befits a structural seed choice. The second-quest-dungeons choice is
+    /// preserved, and the floor-item hearts are re-seeded for the new boxes.
+    public func setHideDungeonNumbers(_ on: Bool) {
+        guard on != hideDungeonNumbers else { return }
+        hideDungeonNumbers = on
+        dungeonTracker = DungeonTrackerInstance(
+            kind: on ? .hideDungeonNumbers : .default,
+            isSecondQuestDungeons: dungeonTracker.isSecondQuestDungeons
+        )
         dungeonTracker.applyFloorItemHearts(heartShuffle: heartShuffle)
     }
 }
