@@ -69,8 +69,33 @@ public final class Dungeon {
         self.playerHasMap = false
         self.color = 0
         self.labelChar = "?"
-        self.baseBoxes = (0..<numBoxes).map { _ in Box() }
+        let kind = instance.kind
+        self.baseBoxes = (0..<numBoxes).map { j in
+            Box(stair: Dungeon.stairKind(id: id, j: j, kind: kind),
+                owner: .dungeonIndexAndNth(id, j))
+        }
         self.instance = instance
+    }
+
+    /// The basement `StairKind` for box `j` of dungeon `id`. Ported from the
+    /// box-construction table (`TrackerModel.fs:742-753`): HDN uses `.never`
+    /// (basements are computed from `labelChar` instead); DEFAULT keys on the
+    /// vanilla dungeon shapes.
+    private static func stairKind(id: Int, j: Int, kind: DungeonTrackerInstanceKind) -> StairKind {
+        switch kind {
+        case .hideDungeonNumbers:
+            return .never
+        case .default:
+            if id == 8 || (j == 1 && !(id == 0 || id == 1 || id == 2)) || j == 2 {
+                return .always
+            } else if j == 1 && id == 1 {
+                return .likeL2
+            } else if j == 1 && id == 2 {
+                return .likeL3
+            } else {
+                return .never
+            }
+        }
     }
 
     /// Toggles triforce possession. Ported from `ToggleTriforce()`
@@ -162,10 +187,10 @@ public final class DungeonTrackerInstance {
     ) {
         self.kind = kind
         self.isSecondQuestDungeons = isSecondQuestDungeons
-        self.finalBoxOf1Or4 = Box()
-        self.ladderBox = Box(playerHas: .skipped)
-        self.armosBox = Box(playerHas: .skipped)
-        self.sword2Box = Box(playerHas: .skipped)
+        self.finalBoxOf1Or4 = Box(stair: .always, owner: .dungeon1or4)
+        self.ladderBox = Box(playerHas: .skipped, stair: .never, owner: .none)
+        self.armosBox = Box(playerHas: .skipped, stair: .never, owner: .none)
+        self.sword2Box = Box(playerHas: .skipped, stair: .never, owner: .none)
         self.dungeons = []
         // Base box counts, transcribed exactly from `makeDungeons()`
         // (`TrackerModel.fs:682-704`):
@@ -230,6 +255,44 @@ public final class DungeonTrackerInstance {
                 }
             }
             return haves
+        }
+    }
+
+    /// Whether `box` currently renders a basement-stair icon. Ported from
+    /// `Box.CurrentlyHasBasementStair` (`TrackerModel.fs:607-632`) — computed
+    /// here rather than on `Box` because the HDN branch needs this instance's
+    /// `kind`/`isSecondQuestDungeons` and the owning dungeon's `labelChar`.
+    /// In HDN, basement-ness is keyed on the identified dungeon's label +
+    /// quest + box index; in DEFAULT, on the box's `StairKind` + quest.
+    public func currentlyHasBasementStair(_ box: Box) -> Bool {
+        switch kind {
+        case .hideDungeonNumbers:
+            guard case let .dungeonIndexAndNth(i, n) = box.owner else { return false }
+            if i == 8 { return true } // dungeon 9 has all basements
+            let lc = dungeons[i].labelChar
+            if isSecondQuestDungeons {
+                switch lc {
+                case "1", "3": return false
+                case "2", "5", "6", "7": return n == 1
+                case "4", "8": return n == 1 || n == 2
+                default: return false
+                }
+            } else {
+                switch lc {
+                case "1": return n == 2
+                case "2": return false
+                case "3", "4", "5", "6", "7": return n == 1
+                case "8": return n == 1 || n == 2
+                default: return false
+                }
+            }
+        case .default:
+            switch box.stair {
+            case .likeL2: return isSecondQuestDungeons
+            case .likeL3: return !isSecondQuestDungeons
+            case .always: return true
+            case .never: return false
+            }
         }
     }
 

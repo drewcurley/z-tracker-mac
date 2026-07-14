@@ -605,9 +605,14 @@ JSON file holds options/settings, independent of save state.
       `TrackerModel.fs:682-836`'s HDN branches; 9 tests, DEFAULT paths
       unchanged. `TrackerModel` still constructs `.default` — wiring the
       `hideDungeonNumbers` toggle to build an HDN instance rides with T-016.3.
-    - **T-016.2** — `StairKind`/`BoxOwner`/`CurrentlyHasBasementStair`
-      (`:587-632`) basement-stair metadata, deferred until the dungeon-room-
-      grid UI exists.
+    - **T-016.2 — done (model; unconsumed).** `StairKind`/`BoxOwner` added to
+      `Box` (defaulted, so existing call sites are unaffected) with the
+      DEFAULT box-construction stair table transcribed; `currentlyHasBasement-
+      Stair` (`:607-632`, both DEFAULT and HDN branches) ported onto
+      `DungeonTrackerInstance` (it needs the kind/quest/label context). 4
+      tests pin it against the reference's quest/label/box-index table. The
+      dungeon-room-grid UI that would *render* the stair doesn't exist yet, so
+      this metadata is unconsumed — ported for 1:1 completeness.
     - **T-016.3** — HDN labeling UI + overworld lettered-dungeon rendering
       (`Color`/`LabelChar` UI; `OverworldTileMark.iconSource`'s HDN variant),
       deferred until a dungeon-tracker UI host exists.
