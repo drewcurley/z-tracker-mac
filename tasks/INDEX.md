@@ -71,6 +71,7 @@
 | [T-035.3](./T-035.3.md) | Map-overlay toggles — Zones + Coords | frontend-engineer | — | feat/overlay-zones-coords | #52 | docs/reviews/feat-overlay-zones-coords/final.md |
 | [T-035.4](./T-035.4.md) | Run timer — H:MM:SS.mmm main + yellow groundhog lap | frontend-engineer | — | feat/timer-lap | #53 | docs/reviews/feat-timer-lap/final.md |
 | [T-037](./T-037.md) | Rescuing Zelda pauses the timer (un-rescuing resumes) | frontend-engineer | — | feat/zelda-pauses-timer | #54 | docs/reviews/feat-zelda-pauses-timer/final.md |
+| [T-038](./T-038.md) | Fix — timer display stutter on groundhog reset | frontend-engineer | — | fix/timer-stutter | #55 | docs/reviews/fix-timer-stutter/final.md |
 | [T-032](./T-032.md) | Fix — sword-cave labels wrongly BU-annotated (white sword item ≠ white sword) | frontend-engineer | — | fix/sword-cave-labels | #43 | docs/reviews/fix-sword-cave-labels/final.md |
 | [T-026](./T-026.md) | Auto-mark always-empty overworld tiles as permanent "don't care" | frontend-engineer | — | feat/always-empty-tiles | #36 | docs/reviews/feat-always-empty-tiles/final.md |
 | [T-027](./T-027.md) | Always-empty tile polish — drop the X, add fairy-spot icons | frontend-engineer | — | feat/always-empty-polish | #37 | docs/reviews/feat-always-empty-polish/final.md |
