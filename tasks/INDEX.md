@@ -75,6 +75,7 @@
 | [T-039](./T-039.md) | Location hints — dungeon + white/magical sword hint zones | frontend-engineer | — | feat/hint-zones | #56 | docs/reviews/feat-hint-zones/final.md |
 | [T-040](./T-040.md) | Fix — white/magical sword hint labels shifted one box left | frontend-engineer | — | fix/sword-hint-placement | #57 | docs/reviews/fix-sword-hint-placement/final.md |
 | [T-041](./T-041.md) | "Go" button — start the run on demand instead of auto-starting the timer | frontend-engineer | — | feat/go-button | #58 | docs/reviews/feat-go-button/final.md |
+| [T-042](./T-042.md) | Moving floor-item "ghost" box — toggle extra item L1 (1Q) ↔ L4 (2Q dungeons) | frontend-engineer | — | feat/moving-floor-item-box | #59 | docs/reviews/feat-moving-floor-item-box/final.md |
 | [T-032](./T-032.md) | Fix — sword-cave labels wrongly BU-annotated (white sword item ≠ white sword) | frontend-engineer | — | fix/sword-cave-labels | #43 | docs/reviews/fix-sword-cave-labels/final.md |
 | [T-026](./T-026.md) | Auto-mark always-empty overworld tiles as permanent "don't care" | frontend-engineer | — | feat/always-empty-tiles | #36 | docs/reviews/feat-always-empty-tiles/final.md |
 | [T-027](./T-027.md) | Always-empty tile polish — drop the X, add fairy-spot icons | frontend-engineer | — | feat/always-empty-polish | #37 | docs/reviews/feat-always-empty-polish/final.md |

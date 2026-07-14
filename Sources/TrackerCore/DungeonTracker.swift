@@ -256,6 +256,26 @@ public final class DungeonTrackerInstance {
     /// (`TrackerModel.fs:730`) / the module-level `GetDungeon(i)`.
     public func dungeon(_ i: Int) -> Dungeon { dungeons[i] }
 
+    /// Move the shared extra floor item between dungeon 1 (a first-quest
+    /// overworld) and dungeon 4 (second-quest dungeons). Because
+    /// `finalBoxOf1Or4` is a single shared `Box`, whatever item is marked in it
+    /// travels with it. Driven by the "ghost" box the UI shows under whichever
+    /// of L1/L4 doesn't currently own it. No-op contract in HDN mode (there is
+    /// no shared box), though the flag stays settable for `isComplete`'s
+    /// two-boxer whitelist.
+    public func toggleSecondQuestDungeons() {
+        isSecondQuestDungeons.toggle()
+    }
+
+    /// The dungeon id (0-based) that should show the empty "ghost" placeholder
+    /// for the movable extra box — the one of {L1 (0), L4 (3)} that doesn't
+    /// currently own `finalBoxOf1Or4`. `nil` in HDN mode (no shared box).
+    /// 1Q (`isSecondQuestDungeons == false`) → L4; 2Q → L1.
+    public var ghostBoxDungeonId: Int? {
+        guard kind == .default else { return nil }
+        return isSecondQuestDungeons ? 0 : 3
+    }
+
     /// Every box, flattened: each dungeon's effective boxes (including the
     /// quest-dependent `finalBoxOf1Or4`) followed by the three standalone
     /// boxes. 23 total in DEFAULT mode (19 base + 1 finalBox + 3 standalone).
