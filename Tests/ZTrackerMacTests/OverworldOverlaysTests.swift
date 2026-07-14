@@ -1,0 +1,76 @@
+import Testing
+import TrackerCore
+@testable import ZTrackerMac
+
+@Suite("Overworld overlay state + predicates")
+struct OverworldOverlaysTests {
+    @MainActor
+    @Test("overlay state: hover previews, click locks; active = locked OR hovered")
+    func stateModel() {
+        let s = OverworldOverlayState()
+        #expect(!s.isActive(.money))
+        // Hover previews.
+        s.setHover(.money, true)
+        #expect(s.isActive(.money) && !s.isLocked(.money))
+        s.setHover(.money, false)
+        #expect(!s.isActive(.money))
+        // Click locks (stays on without hover).
+        s.toggleLock(.money)
+        #expect(s.isActive(.money) && s.isLocked(.money))
+        s.toggleLock(.money)
+        #expect(!s.isActive(.money))
+        // Leaving a different overlay doesn't clear the current hover.
+        s.setHover(.openCaves, true)
+        s.setHover(.money, false)
+        #expect(s.hovered == .openCaves)
+    }
+
+    @Test("money tile: MMG + Unknown Secret always; sized secrets only when priced")
+    func moneyTile() {
+        #expect(OverworldOverlays.isMoneyTile(.moneyMakingGame, secretValue: 0))
+        #expect(OverworldOverlays.isMoneyTile(.secret(.unknown), secretValue: 0))
+        // A sized secret is money only once it has a recorded value.
+        #expect(!OverworldOverlays.isMoneyTile(.secret(.large), secretValue: 0))
+        #expect(OverworldOverlays.isMoneyTile(.secret(.large), secretValue: 5))
+        // Non-money marks never highlight.
+        #expect(!OverworldOverlays.isMoneyTile(.dungeon(3), secretValue: 9))
+        #expect(!OverworldOverlays.isMoneyTile(.unmarked, secretValue: 9))
+    }
+
+    @Test("open-cave early game: unmarked nothingable screens")
+    func openCaveEarly() {
+        #expect(OverworldOverlays.isOpenCaveTile(
+            mark: .unmarked, nothingable: true, hasArmos: false,
+            pastEarlyGame: false, armosClaimed: false))
+        // Marked, or not nothingable → no.
+        #expect(!OverworldOverlays.isOpenCaveTile(
+            mark: .dungeon(1), nothingable: true, hasArmos: false,
+            pastEarlyGame: false, armosClaimed: false))
+        #expect(!OverworldOverlays.isOpenCaveTile(
+            mark: .unmarked, nothingable: false, hasArmos: false,
+            pastEarlyGame: false, armosClaimed: false))
+    }
+
+    @Test("open-cave late game: only unclaimed Armos spots")
+    func openCaveLate() {
+        // Past early game, a nothingable non-armos screen is no longer shown.
+        #expect(!OverworldOverlays.isOpenCaveTile(
+            mark: .unmarked, nothingable: true, hasArmos: false,
+            pastEarlyGame: true, armosClaimed: false))
+        // Armos spot shows until the armos item is claimed.
+        #expect(OverworldOverlays.isOpenCaveTile(
+            mark: .unmarked, nothingable: false, hasArmos: true,
+            pastEarlyGame: true, armosClaimed: false))
+        #expect(!OverworldOverlays.isOpenCaveTile(
+            mark: .unmarked, nothingable: false, hasArmos: true,
+            pastEarlyGame: true, armosClaimed: true))
+    }
+
+    @Test("open-cave phase transition: wood sword cave found, or sword + candle")
+    func phaseTransition() {
+        #expect(!OverworldOverlays.openCavesPastEarlyGame(woodSwordCaveFound: false, swordLevel: 0, candleLevel: 0))
+        #expect(OverworldOverlays.openCavesPastEarlyGame(woodSwordCaveFound: true, swordLevel: 0, candleLevel: 0))
+        #expect(OverworldOverlays.openCavesPastEarlyGame(woodSwordCaveFound: false, swordLevel: 1, candleLevel: 1))
+        #expect(!OverworldOverlays.openCavesPastEarlyGame(woodSwordCaveFound: false, swordLevel: 1, candleLevel: 0))
+    }
+}

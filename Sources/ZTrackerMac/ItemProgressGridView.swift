@@ -261,6 +261,9 @@ struct ItemProgressGridView: View {
     /// computes them for the overworld map.
     var playerState: PlayerComputedStateSummary
     var mapState: MapStateSummary
+    /// Map-overlay toggles (T-035.2) — the top-section icons that hover-preview
+    /// / click-lock highlights on the overworld map.
+    var overlays: OverworldOverlayState
 
     private static let cellSize: CGFloat = 34
 
@@ -283,6 +286,7 @@ struct ItemProgressGridView: View {
             HStack(spacing: 14) {
                 swordlessToggle
                 bookShieldToggle
+                overlayToggles
                 Spacer(minLength: 8)
                 statusReadout
                 resetButton
@@ -328,6 +332,40 @@ struct ItemProgressGridView: View {
                 .help("Max hearts, computed from collected heart containers and take-any hearts")
         }
         .font(.system(size: 10))
+    }
+
+    /// The map-overlay toggle icons (T-035.2): hover previews the highlight on
+    /// the map, click locks it on. No separate checkboxes (user preference).
+    private var overlayToggles: some View {
+        HStack(spacing: 6) {
+            overlayToggle(.openCaves, systemImage: "mountain.2.fill",
+                          help: "Highlight open caves (unmarked spots that can hold a plain cave); late game, the Armos spots. Hover to preview, click to lock on.")
+            overlayToggle(.money, atlasIcon: .rupee,
+                          help: "Highlight money spots: Money Making Game, Unknown Secret, and known money secrets. Hover to preview, click to lock on.")
+        }
+    }
+
+    @ViewBuilder
+    private func overlayToggle(_ overlay: OverworldOverlayState.Overlay,
+                               systemImage: String? = nil,
+                               atlasIcon: ItemIconAtlas.Icon? = nil,
+                               help: String) -> some View {
+        let locked = overlays.isLocked(overlay)
+        ZStack {
+            if let systemImage {
+                Image(systemName: systemImage).font(.system(size: 12))
+                    .foregroundStyle(locked ? Color.green : Color(white: 0.75))
+            } else if let atlasIcon, let img = Image(atlasIcon: ItemIconAtlas.cgImage(atlasIcon)) {
+                img.interpolation(.none).resizable().frame(width: 15, height: 15)
+            }
+        }
+        .frame(width: 24, height: 20)
+        .background(RoundedRectangle(cornerRadius: 4).fill(locked ? Color.green.opacity(0.3) : Color.clear))
+        .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(locked ? Color.green : Color(white: 0.28), lineWidth: 1))
+        .contentShape(Rectangle())
+        .onHover { overlays.setHover(overlay, $0) }
+        .onTapGesture { overlays.toggleLock(overlay) }
+        .help(help)
     }
 
     /// "Groundhog / routers" reset — remove inventory but keep maps

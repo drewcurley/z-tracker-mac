@@ -14,6 +14,10 @@ struct MainTrackerPlaceholderView: View {
     /// Drives + presents the reminder engine's announcements (T-018.3).
     @State private var reminders = ReminderController()
 
+    /// The top-section map-overlay toggles (T-035.2), shared between the item-
+    /// grid icons (hover/click) and the overworld map (rendering).
+    @State private var overlays = OverworldOverlayState()
+
     /// The live overworld map-state summary (T-015.3) feeding the map's true
     /// GYR highlight. Recomputed here from the observable model each time the
     /// body evaluates, so the colors track marks / items / dungeon state.
@@ -44,7 +48,7 @@ struct MainTrackerPlaceholderView: View {
                     // The overworld item grid (T-025.1): item toggles + the
                     // coast/armos/white-sword picker boxes, with located/
                     // superseded box highlighting (T-025.3) from live state.
-                    ItemProgressGridView(model: model, playerState: model.playerComputedStateSummary, mapState: mapState)
+                    ItemProgressGridView(model: model, playerState: model.playerComputedStateSummary, mapState: mapState, overlays: overlays)
                 }
 
                 DisclosureGroup("Player state (debug — starting items / progress toggles)") {
@@ -61,7 +65,9 @@ struct MainTrackerPlaceholderView: View {
                     quest: model.quest ?? .first,
                     options: options,
                     playerState: model.playerComputedStateSummary,
-                    mapState: mapState
+                    mapState: mapState,
+                    overlays: overlays,
+                    armosClaimed: model.dungeonTracker.armosBox.isDone
                 )
                 .frame(maxWidth: 900)
             }
