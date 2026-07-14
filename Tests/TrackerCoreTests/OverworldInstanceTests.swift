@@ -76,6 +76,18 @@ struct OverworldInstanceQuestTests {
         #expect(count(OverworldInstance(quest: .mixedSecond)) { i, x, y in i.alwaysEmpty(x: x, y: y) } == 35)
     }
 
+    @Test("alwaysEmpty at representative coordinates the overworld UI gates on")
+    func alwaysEmptyPinpoints() {
+        let first = OverworldInstance(quest: .first)
+        // Row 0 = "X.X...X.XX......": (0,0) empty, (1,0) not, (7,0) not.
+        #expect(first.alwaysEmpty(x: 0, y: 0))
+        #expect(!first.alwaysEmpty(x: 1, y: 0))
+        #expect(!first.alwaysEmpty(x: 7, y: 0))
+        // Start screen (7,7) is playable, never always-empty in either quest.
+        #expect(!first.alwaysEmpty(x: 7, y: 7))
+        #expect(!OverworldInstance(quest: .second).alwaysEmpty(x: 7, y: 7))
+    }
+
     @Test("mixed-quest OR predicates equal the union of the two single-quest masks")
     func mixedIsOr() {
         let first = OverworldInstance(quest: .first)

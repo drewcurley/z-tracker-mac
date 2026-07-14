@@ -112,9 +112,10 @@ struct OverworldMapView: View {
                             ForEach(0..<OverworldGrid.columnCount, id: \.self) { column in
                                 let mark = grid.mark(column: column, row: row)
                                 let background = OverworldBackgroundAtlas.tile(quest: quest, column: column, row: row)
-                                TileView(mark: mark, background: background, tileWidth: tileWidth, tileHeight: tileHeight)
+                                let isAlwaysEmpty = overworldInstance.alwaysEmpty(x: column, y: row)
+                                TileView(mark: mark, background: background, tileWidth: tileWidth, tileHeight: tileHeight, isAlwaysEmpty: isAlwaysEmpty)
                                     .overlay {
-                                        if options.highlightNearby,
+                                        if options.highlightNearby, !isAlwaysEmpty,
                                            let isBold = highlights[OverworldScreenCoordinate(x: column, y: row)] {
                                             // True GYR (T-015.4): green = accessible, yellow =
                                             // sometimes-empty, red = inaccessible, per the
@@ -128,6 +129,10 @@ struct OverworldMapView: View {
                                     .onContinuousHover { phase in
                                         handleHover(column: column, row: row, phase: phase, tileWidth: tileWidth, tileHeight: tileHeight)
                                     }
+                                    // Always-empty screens can never contain anything, so they
+                                    // are permanent "don't care" and take no input (the reference
+                                    // makes them a non-interactive opaque layer).
+                                    .allowsHitTesting(!isAlwaysEmpty)
                                     // Custom-drawn tiles (Rectangle + onTapGesture) have NO
                                     // accessibility representation by default -- confirmed by
                                     // inspecting the accessibility tree while testing this view,
@@ -138,7 +143,7 @@ struct OverworldMapView: View {
                                     // rather than deferred again.
                                     .accessibilityElement(children: .ignore)
                                     .accessibilityLabel("Overworld tile, column \(column + 1), row \(row + 1)")
-                                    .accessibilityValue(mark.displayName)
+                                    .accessibilityValue(isAlwaysEmpty ? "Always empty (nothing here)" : mark.displayName)
                                     .accessibilityAddTraits(.isButton)
                                     .accessibilityAction { handleLeftClick(column: column, row: row) }
                             }
@@ -202,6 +207,9 @@ struct OverworldMapView: View {
     }
 
     private func handleLeftClick(column: Int, row: Int) {
+        // Always-empty screens are permanent "don't care" and never editable
+        // (defensive — the tile also sets `.allowsHitTesting(false)`).
+        if overworldInstance.alwaysEmpty(x: column, y: row) { return }
         // "LC unmarked → mark dark" (docs/domain.md § 4.5). Left-click on an
         // already-dark tile is handled by the context menu, matching "LC
         // dark tile ... → popup" — SwiftUI's contextMenu also responds to a
@@ -272,6 +280,10 @@ private struct TileView: View {
     var background: CGImage?
     var tileWidth: CGFloat
     var tileHeight: CGFloat
+    /// This screen can never contain anything for the current quest
+    /// (`OverworldInstance.alwaysEmpty`) — rendered as a permanent, non-
+    /// editable "don't care" (the reference's DARK_X, `WPFUI.fs:244`).
+    var isAlwaysEmpty: Bool = false
 
     private static let interiorOffsetXFraction: CGFloat = 5.0 / 16.0
     private static let interiorOffsetYFraction: CGFloat = 1.0 / 11.0
@@ -304,6 +316,17 @@ private struct TileView: View {
             interiorIconView
                 .frame(width: tileWidth * Self.interiorWidthFraction, height: tileHeight * Self.interiorHeightFraction)
                 .offset(x: tileWidth * Self.interiorOffsetXFraction, y: tileHeight * Self.interiorOffsetYFraction)
+            // Permanent "always empty" screens: dim the terrain and stamp a
+            // fixed X, matching the reference's DARK_X. Drawn last so it sits
+            // above any (unexpected) mark.
+            if isAlwaysEmpty {
+                Rectangle().fill(.black.opacity(0.55))
+                    .frame(width: tileWidth, height: tileHeight)
+                Image(systemName: "xmark")
+                    .font(.system(size: tileHeight * 0.42, weight: .semibold))
+                    .foregroundStyle(.white.opacity(0.4))
+                    .frame(width: tileWidth, height: tileHeight)
+            }
         }
         .frame(width: tileWidth, height: tileHeight)
         .clipped()
