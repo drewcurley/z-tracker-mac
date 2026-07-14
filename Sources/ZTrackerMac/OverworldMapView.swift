@@ -172,7 +172,8 @@ struct OverworldMapView: View {
                                 let isAlwaysEmpty = overworldInstance.alwaysEmpty(x: column, y: row)
                                 let showsFairy = isAlwaysEmpty && OverworldFairySpots.isFairySpot(column: column, row: row, quest: quest)
                                 let used = grid.isUsed(column: column, row: row)
-                                TileView(mark: mark, background: background, tileWidth: tileWidth, tileHeight: tileHeight, isAlwaysEmpty: isAlwaysEmpty, showsFairy: showsFairy, mirrored: mirrored, hideDungeonNumbers: hideDungeonNumbers, used: used)
+                                let shopSecondItem = grid.shopSecondItem(column: column, row: row)
+                                TileView(mark: mark, background: background, tileWidth: tileWidth, tileHeight: tileHeight, isAlwaysEmpty: isAlwaysEmpty, showsFairy: showsFairy, mirrored: mirrored, hideDungeonNumbers: hideDungeonNumbers, used: used, shopSecondItem: shopSecondItem)
                                     .overlay {
                                         if options.highlightNearby, !isAlwaysEmpty,
                                            let isBold = highlights[OverworldScreenCoordinate(x: column, y: row)] {
@@ -326,6 +327,11 @@ struct OverworldMapView: View {
         if mark.isUsedToggleable {
             grid.setUsed(true, column: column, row: row)
         }
+        // A shop can't hold the same item twice (T-060): if the new primary
+        // matches the recorded second item, clear the second.
+        if case .shop(let item1) = mark, grid.shopSecondItem(column: column, row: row) == item1 {
+            grid.setShopSecondItem(nil, column: column, row: row)
+        }
     }
 
     /// Mark a take-any cave and record what was taken (T-057): `.untaken` leaves
@@ -401,6 +407,16 @@ struct OverworldMapView: View {
         Menu("Shop") {
             ForEach(ShopKind.allCases, id: \.self) { kind in
                 Button(kind.displayName) { applyMark(.shop(kind), column: column, row: row) }
+            }
+        }
+        // A shop tile carries two items (T-060) — its second item is set here.
+        if case .shop(let item1) = grid.mark(column: column, row: row) {
+            Menu("Shop — 2nd item") {
+                Button("None") { grid.setShopSecondItem(nil, column: column, row: row) }
+                ForEach(ShopKind.allCases, id: \.self) { kind in
+                    Button(kind.displayName) { grid.setShopSecondItem(kind, column: column, row: row) }
+                        .disabled(kind == item1) // no duplicate item
+                }
             }
         }
         Menu("Secret") {
@@ -486,6 +502,8 @@ private struct TileView: View {
     /// This claimable tile has been marked **used** (collected) — T-054;
     /// dimmed with a check so it reads as done.
     var used: Bool = false
+    /// A shop tile's second item (T-060); both are drawn in `ShopKind` order.
+    var shopSecondItem: ShopKind? = nil
 
     private static let interiorOffsetXFraction: CGFloat = 5.0 / 16.0
     private static let interiorOffsetYFraction: CGFloat = 1.0 / 11.0
@@ -586,22 +604,36 @@ private struct TileView: View {
                     .resizable()
                     .interpolation(.none) // crisp nearest-neighbor, matches the reference app's own integer scaling
             }
-        case .shopSprite(let index):
-            let interiorBoxWidth = tileWidth * Self.interiorWidthFraction
+        case .shopSprite:
             let interiorBoxHeight = tileHeight * Self.interiorHeightFraction
             ZStack {
                 Self.shopBackground
-                if let icon = OverworldShopIconAtlas.icon(at: index) {
-                    Image(decorative: icon, scale: 1, orientation: .up)
-                        .resizable()
-                        .interpolation(.none)
-                        // 3x7 icon inset by a 1px margin within the 5x9 background
-                        // on every side, ported from Graphics.fs:909
-                        // (`px/3 >= 1 && px/3 <= 3 && py/3 >= 1 && py/3 <= 7`).
-                        .padding(.horizontal, interiorBoxWidth / 5.0)
-                        .padding(.vertical, interiorBoxHeight / 9.0)
+                // Shops carry up to two items (T-060), drawn side by side in
+                // `ShopKind` order for a stable layout.
+                HStack(spacing: 0) {
+                    ForEach(orderedShopItems, id: \.self) { kind in
+                        if let icon = OverworldShopIconAtlas.icon(at: ShopKind.allCases.firstIndex(of: kind) ?? 0) {
+                            Image(decorative: icon, scale: 1, orientation: .up)
+                                .resizable()
+                                .interpolation(.none)
+                                .aspectRatio(3.0 / 7.0, contentMode: .fit)
+                        }
+                    }
                 }
+                .padding(.vertical, interiorBoxHeight / 9.0)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
+        }
+    }
+
+    /// This shop's items in `ShopKind` display order (primary from the mark +
+    /// the second item, deduped) — T-060.
+    private var orderedShopItems: [ShopKind] {
+        guard case .shop(let first) = mark else { return [] }
+        var kinds = [first]
+        if let second = shopSecondItem, second != first { kinds.append(second) }
+        return kinds.sorted {
+            (ShopKind.allCases.firstIndex(of: $0) ?? 0) < (ShopKind.allCases.firstIndex(of: $1) ?? 0)
         }
     }
 
