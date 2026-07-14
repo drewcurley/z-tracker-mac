@@ -59,6 +59,7 @@
 | [T-025.2](./T-025.2.md) | Take-any hearts row (overworld heart-cave tri-state boxes) | frontend-engineer | — | feat/take-any-hearts | #35 | docs/reviews/feat-take-any-hearts/final.md |
 | [T-026](./T-026.md) | Auto-mark always-empty overworld tiles as permanent "don't care" | frontend-engineer | — | feat/always-empty-tiles | #36 | docs/reviews/feat-always-empty-tiles/final.md |
 | [T-027](./T-027.md) | Always-empty tile polish — drop the X, add fairy-spot icons | frontend-engineer | — | feat/always-empty-polish | #37 | docs/reviews/feat-always-empty-polish/final.md |
+| [T-028](./T-028.md) | Coast item can never be the ladder (deliberate rule beyond the reference) | frontend-engineer | — | feat/coast-item-not-ladder | #38 | docs/reviews/feat-coast-item-not-ladder/final.md |
 
 ## Cancelled / Superseded
 

@@ -42,6 +42,32 @@ struct DungeonItemRulesTests {
         #expect(inst.canSelectItem(ITEMS.heartContainer, forBox: boxes[9]) == false)
     }
 
+    @Test("the coast item can never be the ladder, but other boxes/items are unaffected")
+    func coastItemCannotBeLadder() {
+        let inst = DungeonTrackerInstance()
+        // The coast box (ladderBox) disallows the ladder — you'd need the
+        // ladder to reach the coast item.
+        #expect(inst.canSelectItem(ITEMS.ladder, forBox: inst.ladderBox) == false)
+        // The coast box still accepts any other (unique) item.
+        #expect(inst.canSelectItem(ITEMS.bow, forBox: inst.ladderBox) == true)
+        #expect(inst.canSelectItem(ITEMS.recorder, forBox: inst.ladderBox) == true)
+        // The armos and white-sword boxes have no such rule — ladder is fine.
+        #expect(inst.canSelectItem(ITEMS.ladder, forBox: inst.armosBox) == true)
+        #expect(inst.canSelectItem(ITEMS.ladder, forBox: inst.sword2Box) == true)
+        // A regular dungeon box still accepts the ladder.
+        #expect(inst.canSelectItem(ITEMS.ladder, forBox: inst.dungeon(0).boxes[0]) == true)
+    }
+
+    @Test("the coast-item ladder rule composes with uniqueness")
+    func coastLadderRuleAndUniqueness() {
+        let inst = DungeonTrackerInstance()
+        // Put the ladder in armos; it's now used up for other boxes...
+        inst.armosBox.set(cellCurrent: ITEMS.ladder, playerHas: .yes)
+        #expect(inst.canSelectItem(ITEMS.ladder, forBox: inst.sword2Box) == false) // uniqueness
+        // ...and the coast box still rejects it (its own rule), regardless.
+        #expect(inst.canSelectItem(ITEMS.ladder, forBox: inst.ladderBox) == false)
+    }
+
     @Test("floor hearts: Heart Shuffle off seeds L1-8 box[0] with an unobtained heart; L9 excluded")
     func floorHeartsOff() {
         let inst = DungeonTrackerInstance()

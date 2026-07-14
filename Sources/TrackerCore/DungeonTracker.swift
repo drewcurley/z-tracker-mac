@@ -225,7 +225,14 @@ public final class DungeonTrackerInstance {
     /// Whether `item` can still be placed in `box` without exceeding its
     /// max-uses — the reference's `ChoiceDomain.CanAddUse`. `box`'s own current
     /// contents are excluded so re-picking the same item is always allowed.
+    ///
+    /// **Beyond the reference:** the coast item (F16) is reached *using* the
+    /// ladder, so it can never itself be the ladder (you'd need the ladder to
+    /// obtain the ladder). The armos and white-sword item boxes have no such
+    /// dependency and keep every option. This rule is a deliberate improvement
+    /// the reference app lacks (T-028) — don't remove it in the name of parity.
     public func canSelectItem(_ item: Int, forBox box: Box) -> Bool {
+        if box === ladderBox && item == ITEMS.ladder { return false }
         let usedElsewhere = itemUseCount(item) - (box.cellCurrent == item ? 1 : 0)
         return usedElsewhere < Self.maxUses(ofItem: item)
     }
