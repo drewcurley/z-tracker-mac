@@ -83,6 +83,35 @@ public final class OverworldGrid {
         setExtraData(used ? key : 0, column: column, row: row, key: key)
     }
 
+    /// A shop tile's **second** item (T-060), or `nil` if none. Zelda shops
+    /// carry two items: the primary is the `.shop(kind)` mark, the second is
+    /// stored at `shopExtraDataKey` in the reference's toItem encoding
+    /// (`1…8`; `0` = none) — the same slot `MapStateSummary` reads for
+    /// "found shop".
+    public func shopSecondItem(column: Int, row: Int) -> ShopKind? {
+        let value = extraData(column: column, row: row, key: OverworldTileMark.shopExtraDataKey)
+        guard (1...ShopKind.allCases.count).contains(value) else { return nil }
+        return ShopKind.allCases[value - 1]
+    }
+
+    /// Set (or clear, with `nil`) a shop tile's second item.
+    public func setShopSecondItem(_ kind: ShopKind?, column: Int, row: Int) {
+        let value = kind.flatMap { ShopKind.allCases.firstIndex(of: $0) }.map { $0 + 1 } ?? 0
+        setExtraData(value, column: column, row: row, key: OverworldTileMark.shopExtraDataKey)
+    }
+
+    /// A shop tile's items in the picker's listing order (`ShopKind.allCases`),
+    /// for a stable left→right display regardless of which was chosen first
+    /// (T-060). Empty when the tile isn't a shop.
+    public func shopItems(column: Int, row: Int) -> [ShopKind] {
+        guard case .shop(let first) = mark(column: column, row: row) else { return [] }
+        var kinds = [first]
+        if let second = shopSecondItem(column: column, row: row), second != first { kinds.append(second) }
+        return kinds.sorted {
+            (ShopKind.allCases.firstIndex(of: $0) ?? 0) < (ShopKind.allCases.firstIndex(of: $1) ?? 0)
+        }
+    }
+
     /// Clear every tile's **used** (claimed) state, keeping the marks and other
     /// extra-data (shop items, etc.). Called by the groundhog/routers reset
     /// (T-058) — a replay re-collects everything, but the map knowledge stays.

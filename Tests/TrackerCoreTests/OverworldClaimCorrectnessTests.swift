@@ -52,6 +52,30 @@ struct OverworldClaimCorrectnessTests {
         #expect(grid.mark(column: 2, row: 2) == .secret(.large))
     }
 
+    @Test("shop second item: set/clear + ordered display (T-060)")
+    func shopTwoItems() {
+        let grid = OverworldGrid()
+        grid.setMark(.shop(.book), column: 0, row: 0) // book = index 2
+        #expect(grid.shopSecondItem(column: 0, row: 0) == nil)
+        #expect(grid.shopItems(column: 0, row: 0) == [.book])
+
+        // Add arrow (index 0) as the second item; display is dropdown order.
+        grid.setShopSecondItem(.arrow, column: 0, row: 0)
+        #expect(grid.shopSecondItem(column: 0, row: 0) == .arrow)
+        #expect(grid.shopItems(column: 0, row: 0) == [.arrow, .book]) // arrow < book
+
+        // The encoding is the reference toItem format (arrow → 1).
+        #expect(grid.extraData(column: 0, row: 0, key: OverworldTileMark.shopExtraDataKey) == 1)
+
+        // Clearing removes the second item.
+        grid.setShopSecondItem(nil, column: 0, row: 0)
+        #expect(grid.shopItems(column: 0, row: 0) == [.book])
+
+        // A non-shop tile has no shop items.
+        grid.setMark(.armos, column: 1, row: 1)
+        #expect(grid.shopItems(column: 1, row: 1).isEmpty)
+    }
+
     @Test("groundhog reset clears the overworld claimed state")
     func groundhogClearsUsed() {
         let model = TrackerModel(quest: .first)
