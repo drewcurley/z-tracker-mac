@@ -49,6 +49,29 @@ struct BoxTests {
         #expect(Box(cellCurrent: -1, playerHas: .skipped).isEmptyRedBox == false)
     }
 
+    @Test("toggleTaken flips yes⇄no for a known item; skipped→yes; no-op when empty")
+    func toggleTaken() {
+        // Empty box: nothing known → hasKnownItem false, toggle is a no-op.
+        let empty = Box()
+        #expect(!empty.hasKnownItem)
+        empty.toggleTaken()
+        #expect(empty.cellCurrent == -1 && empty.playerHas == .no)
+
+        // Known-but-untaken (like a floor heart): left-click marks it taken.
+        let heart = Box(cellCurrent: ITEMS.heartContainer, playerHas: .no)
+        #expect(heart.hasKnownItem)
+        heart.toggleTaken()
+        #expect(heart.playerHas == .yes && heart.cellCurrent == ITEMS.heartContainer)
+        // Toggling again returns it to untaken, item unchanged.
+        heart.toggleTaken()
+        #expect(heart.playerHas == .no && heart.cellCurrent == ITEMS.heartContainer)
+
+        // A skipped-but-known box becomes taken on toggle.
+        let skipped = Box(cellCurrent: ITEMS.ladder, playerHas: .skipped)
+        skipped.toggleTaken()
+        #expect(skipped.playerHas == .yes)
+    }
+
     @Test("set and setPlayerHas mutate the expected fields")
     func mutation() {
         let box = Box()

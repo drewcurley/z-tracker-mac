@@ -3,10 +3,12 @@ import SwiftUI
 import TrackerCore
 
 /// The dungeon item-tracker (T-013/T-016 model, rendered). Nine dungeon
-/// cards, each with its located triforce numeral and its item boxes; a box
-/// left-click opens the item picker (Have it / Don't want it / Don't have it
-/// = `Box.playerHas` YES/SKIPPED/NO), matching the reference's box popup.
-/// Basement-stair glyphs render `currentlyHasBasementStair` (T-016.2).
+/// cards, each with its located triforce numeral and its item boxes.
+/// Box interaction (T-044, mirroring the overworld map): **right-click** opens
+/// the item picker (left-click an item = have it, right-click = don't have it,
+/// or Don't-want-it / Clear); once an item is known, a **left-click** toggles
+/// taken ⇄ untaken. Basement-stair glyphs render `currentlyHasBasementStair`
+/// (T-016.2).
 ///
 /// Aesthetic license (per the project): the reference's cramped grid is
 /// re-laid-out as clean cards; the Zelda item sprites are kept.
@@ -126,7 +128,8 @@ private struct GhostBoxView: View {
 }
 
 /// One item box: the item sprite (if known) on a state-colored cell, with a
-/// basement-stair glyph when applicable. Left-click opens the picker.
+/// basement-stair glyph when applicable. Left-click toggles taken/untaken once
+/// an item is known (else opens the picker); right-click opens the picker.
 struct BoxView: View {
     @Bindable var box: Box
     var instance: DungeonTrackerInstance
@@ -178,9 +181,14 @@ struct BoxView: View {
             }
             .frame(width: Self.size, height: Self.size)
             .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(borderColor, lineWidth: 1.5))
-            .onTapGesture { showPicker = true }
-            // Right-click a placed box -> "don't have it".
-            .onRightClick { box.setPlayerHas(.no) }
+            // Map-style interaction (T-044): left-click toggles taken/untaken
+            // once an item is known here; right-click opens the picker to set /
+            // change the item. An empty box has nothing to toggle, so a
+            // left-click opens the picker too.
+            .onTapGesture {
+                if box.hasKnownItem { box.toggleTaken() } else { showPicker = true }
+            }
+            .onRightClick { showPicker = true }
             .popover(isPresented: $showPicker, arrowEdge: .bottom) {
                 BoxItemPicker(box: box, instance: instance, iconOptions: iconOptions) { showPicker = false }
             }

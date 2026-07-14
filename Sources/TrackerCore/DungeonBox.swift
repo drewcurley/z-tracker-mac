@@ -144,4 +144,18 @@ public final class Box {
     public func setPlayerHas(_ playerHas: PlayerHas) {
         self.playerHas = playerHas
     }
+
+    /// Whether a known item is recorded here. When true, a plain left-click in
+    /// the UI toggles taken/untaken (`toggleTaken`) rather than opening the item
+    /// picker (T-044).
+    public var hasKnownItem: Bool { cellCurrent != -1 }
+
+    /// Toggle whether the known item here has been taken: `.yes` ⇄ `.no`,
+    /// leaving the item itself unchanged. A `.skipped` box becomes taken
+    /// (`.yes`). No-op when nothing is known here (the UI opens the picker in
+    /// that case). Backs the map-style left-click interaction (T-044).
+    public func toggleTaken() {
+        guard hasKnownItem else { return }
+        setPlayerHas(playerHas == .yes ? .no : .yes)
+    }
 }
