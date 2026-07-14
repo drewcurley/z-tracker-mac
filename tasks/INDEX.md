@@ -47,7 +47,7 @@
 | [T-018.1](./T-018.1.md) | `TriforceAndGoSummary` scored advisor | frontend-engineer | — | feat/triforce-and-go-summary | #24 | docs/reviews/feat-triforce-and-go-summary/final.md |
 | [T-018.2](./T-018.2.md) | Reminder/announcement engine (`allUIEventingLogic`) | frontend-engineer | — | feat/reminder-engine | #25 | docs/reviews/feat-reminder-engine/final.md |
 | [T-016.2](./T-016.2.md) | HDN basement-stair metadata — `StairKind`/`BoxOwner`/`currentlyHasBasementStair` | frontend-engineer | — | feat/basement-stair-metadata | #26 | docs/reviews/feat-basement-stair-metadata/final.md |
-| [T-018.3](./T-018.3.md) | Announcement rendering — speech + visual reminder surface | frontend-engineer | — | feat/announcement-rendering | — | docs/reviews/feat-announcement-rendering/final.md |
+| [T-018.3](./T-018.3.md) | Announcement rendering — speech + visual reminder surface | frontend-engineer | — | feat/announcement-rendering | #27 | docs/reviews/feat-announcement-rendering/final.md |
 | [T-019](./T-019.md) | Bugfix: overworld tile icons used a dead ZHelper asset, wrong mapping | frontend-engineer | — | fix/overworld-tile-icons-wrong-asset | — | docs/reviews/fix-overworld-tile-icons-wrong-asset/final.md |
 
 ## Cancelled / Superseded
