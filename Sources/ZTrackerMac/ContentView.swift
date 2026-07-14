@@ -9,11 +9,18 @@ struct ContentView: View {
     var options: TrackerOptions
 
     var body: some View {
-        if model.quest == nil {
-            StartupView(model: model, options: options, onQuestSelected: model.selectQuest)
-        } else {
-            MainTrackerPlaceholderView(model: model, options: options)
+        Group {
+            if model.quest == nil {
+                StartupView(model: model, options: options, onQuestSelected: model.selectQuest)
+            } else {
+                MainTrackerPlaceholderView(model: model, options: options)
+            }
         }
+        // Warm the audio-output stack at launch, off the main thread (T-045),
+        // so the first spoken reminder doesn't pay the coreaudiod cold-start
+        // cost mid-game — and warming it never hangs the UI. Fires once here on
+        // the very first appearance (the startup screen), before any reminder.
+        .task { ReminderAudioPlayer.primeAudioStack() }
     }
 }
 
