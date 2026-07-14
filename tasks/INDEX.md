@@ -49,6 +49,7 @@
 | [T-016.2](./T-016.2.md) | HDN basement-stair metadata — `StairKind`/`BoxOwner`/`currentlyHasBasementStair` | frontend-engineer | — | feat/basement-stair-metadata | #26 | docs/reviews/feat-basement-stair-metadata/final.md |
 | [T-018.3](./T-018.3.md) | Announcement rendering — speech + visual reminder surface | frontend-engineer | — | feat/announcement-rendering | #27 | docs/reviews/feat-announcement-rendering/final.md |
 | [T-020](./T-020.md) | Item + dungeon-cell sprite atlases (main-tracker UI foundation) | frontend-engineer | — | feat/item-sprite-atlas | #29 | docs/reviews/feat-item-sprite-atlas/final.md |
+| [T-021](./T-021.md) | Dungeon item-tracker view (boxes + picker + basement stairs) | frontend-engineer | — | feat/dungeon-tracker-view | #30 | docs/reviews/feat-dungeon-tracker-view/final.md |
 | [T-019](./T-019.md) | Bugfix: overworld tile icons used a dead ZHelper asset, wrong mapping | frontend-engineer | — | fix/overworld-tile-icons-wrong-asset | — | docs/reviews/fix-overworld-tile-icons-wrong-asset/final.md |
 
 ## Cancelled / Superseded
