@@ -19,6 +19,7 @@
 | [T-016.3](./T-016.3.md) | HDN labeling UI + overworld lettered-dungeon rendering | frontend-engineer | proposed |
 | [T-018](./T-018.md) | Reminders, announcements, and Triforce-and-Go (umbrella) | frontend-engineer | split |
 | [T-025](./T-025.md) | Overworld item grid UI (owItemGrid render) (umbrella; .3/.4 sub-tasks pending) | frontend-engineer | split |
+| [T-030](./T-030.md) | Main-tracker layout — dungeons and items side by side (deferred by user) | frontend-engineer | proposed |
 
 ## Completed
 
