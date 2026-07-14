@@ -113,7 +113,8 @@ struct OverworldMapView: View {
                                 let mark = grid.mark(column: column, row: row)
                                 let background = OverworldBackgroundAtlas.tile(quest: quest, column: column, row: row)
                                 let isAlwaysEmpty = overworldInstance.alwaysEmpty(x: column, y: row)
-                                TileView(mark: mark, background: background, tileWidth: tileWidth, tileHeight: tileHeight, isAlwaysEmpty: isAlwaysEmpty)
+                                let showsFairy = isAlwaysEmpty && OverworldFairySpots.isFairySpot(column: column, row: row, quest: quest)
+                                TileView(mark: mark, background: background, tileWidth: tileWidth, tileHeight: tileHeight, isAlwaysEmpty: isAlwaysEmpty, showsFairy: showsFairy)
                                     .overlay {
                                         if options.highlightNearby, !isAlwaysEmpty,
                                            let isBold = highlights[OverworldScreenCoordinate(x: column, y: row)] {
@@ -275,6 +276,25 @@ struct OverworldMapView: View {
 /// sources depending on the mark. Position/size fractions below are ported
 /// exactly from `Graphics.fs`'s `initFull()` (`:947-960`): interior region
 /// is `x∈[5,10), y∈[1,10)` within the 16×11 tile.
+/// The fixed fairy-fountain overworld screens (`WPFUI.fs:488-490`): `(9,3)`
+/// and `(3,4)` in every quest, plus `(11,0)` in second quest only. Pure +
+/// testable. (These coordinates are always-empty in the relevant quests, so
+/// the fairy is only ever drawn on an always-empty tile.)
+enum OverworldFairySpots {
+    static func isFairySpot(column: Int, row: Int, quest: OverworldQuest) -> Bool {
+        if column == 9 && row == 3 { return true }
+        if column == 3 && row == 4 { return true }
+        if quest == .second && column == 11 && row == 0 { return true }
+        return false
+    }
+}
+
+/// Loads the fairy sprite (`icons8x16.png`, 8×16px, the whole image, with
+/// black keyed transparent — `Graphics.fs:684-693`).
+enum FairyIconAtlas {
+    static let image: CGImage? = AtlasLoader.load("icons8x16", blackIsTransparent: true)
+}
+
 private struct TileView: View {
     var mark: OverworldTileMark
     var background: CGImage?
@@ -282,8 +302,11 @@ private struct TileView: View {
     var tileHeight: CGFloat
     /// This screen can never contain anything for the current quest
     /// (`OverworldInstance.alwaysEmpty`) — rendered as a permanent, non-
-    /// editable "don't care" (the reference's DARK_X, `WPFUI.fs:244`).
+    /// editable darkened "don't care" tile (`WPFUI.fs:244`).
     var isAlwaysEmpty: Bool = false
+    /// This always-empty screen is a fixed fairy-fountain spot and shows the
+    /// fairy icon (`WPFUI.fs:488-490`).
+    var showsFairy: Bool = false
 
     private static let interiorOffsetXFraction: CGFloat = 5.0 / 16.0
     private static let interiorOffsetYFraction: CGFloat = 1.0 / 11.0
@@ -316,16 +339,21 @@ private struct TileView: View {
             interiorIconView
                 .frame(width: tileWidth * Self.interiorWidthFraction, height: tileHeight * Self.interiorHeightFraction)
                 .offset(x: tileWidth * Self.interiorOffsetXFraction, y: tileHeight * Self.interiorOffsetYFraction)
-            // Permanent "always empty" screens: dim the terrain and stamp a
-            // fixed X, matching the reference's DARK_X. Drawn last so it sits
-            // above any (unexpected) mark.
+            // Permanent "always empty" screens are simply darkened (same as a
+            // user `.dontCare` mark) — a darkened tile already reads as
+            // "nothing here", so no extra glyph. A few of them are fixed
+            // fairy-fountain spots, which do get the fairy icon.
             if isAlwaysEmpty {
-                Rectangle().fill(.black.opacity(0.55))
+                Rectangle().fill(.black.opacity(0.62))
                     .frame(width: tileWidth, height: tileHeight)
-                Image(systemName: "xmark")
-                    .font(.system(size: tileHeight * 0.42, weight: .semibold))
-                    .foregroundStyle(.white.opacity(0.4))
-                    .frame(width: tileWidth, height: tileHeight)
+                if showsFairy, let fairy = FairyIconAtlas.image {
+                    Image(decorative: fairy, scale: 1, orientation: .up)
+                        .resizable()
+                        .interpolation(.none)
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: tileHeight * 0.7, height: tileHeight * 0.7)
+                        .frame(width: tileWidth, height: tileHeight)
+                }
             }
         }
         .frame(width: tileWidth, height: tileHeight)
