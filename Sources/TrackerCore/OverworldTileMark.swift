@@ -65,6 +65,20 @@ public enum OverworldTileMark: Hashable, Codable, Sendable {
     case takeAny
     case potionShop
 
+    /// Whether this tile holds a claimable-once thing that can be toggled
+    /// **used** (collected) vs unused via a left-click (T-054) — dimming it on
+    /// the map and updating the Spot Summary. The reference's `toggleables`
+    /// (`OverworldMapTileCustomization.fs:229`) are take-any, the wood-sword
+    /// cave, hint shop, and the three sized secrets; this set drops the sword
+    /// cave (tracked via its item box) and adds the armos item and the letter,
+    /// which are likewise claimed exactly once (user request).
+    public var isUsedToggleable: Bool {
+        switch self {
+        case .secret, .takeAny, .armos, .theLetter, .hintShop: true
+        default: false
+        }
+    }
+
     public var displayName: String {
         switch self {
         case .unmarked: "Unmarked"

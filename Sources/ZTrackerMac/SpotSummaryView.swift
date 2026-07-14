@@ -80,12 +80,13 @@ struct SpotSummaryView: View {
 
             VStack(alignment: .leading, spacing: 4) {
                 Text("Unique locations").font(.caption).bold().foregroundStyle(.secondary)
-                Text("Dimmed = already marked").font(.caption2).foregroundStyle(.secondary)
+                Text("Bright = to find · faded = found · dim = collected")
+                    .font(.caption2).foregroundStyle(.secondary)
                 LazyVGrid(columns: uniqueColumns, spacing: 5) {
                     ForEach(Array(summary.uniques.enumerated()), id: \.offset) { _, u in
                         OverworldMarkIcon(mark: u.mark, size: 24, hideDungeonNumbers: hideDungeonNumbers)
-                            .opacity(u.found ? 0.28 : 1)
-                            .help("\(u.displayName): \(u.found ? "found" : "not yet found")")
+                            .opacity(uniqueOpacity(u))
+                            .help("\(u.displayName): \(uniqueState(u))")
                     }
                 }
             }
@@ -108,6 +109,21 @@ struct SpotSummaryView: View {
         }
         .padding(14)
         .frame(width: 300)
+    }
+
+    /// Bright when still to find; faded once found (placed); fully dim once
+    /// collected (used). Non-claimable spots (dungeons/roads/swords) have no
+    /// used state, so found → dim directly.
+    private func uniqueOpacity(_ u: SpotSummary.UniqueSpot) -> Double {
+        if u.used { return 0.28 }
+        if u.placed { return u.mark.isUsedToggleable ? 0.6 : 0.28 }
+        return 1
+    }
+
+    private func uniqueState(_ u: SpotSummary.UniqueSpot) -> String {
+        if u.used { return "collected" }
+        if u.placed { return u.mark.isUsedToggleable ? "found, not collected" : "found" }
+        return "not yet found"
     }
 
     private func secretRow(_ mark: OverworldTileMark, label: String, total: Int, remaining: Int) -> some View {

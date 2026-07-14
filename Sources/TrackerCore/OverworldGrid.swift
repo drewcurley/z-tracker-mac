@@ -52,6 +52,28 @@ public final class OverworldGrid {
         extraData[Self.extraDataIndex(column: column, row: row, key: key)] = value
     }
 
+    /// Whether this tile's claimable thing has been marked **used** (collected)
+    /// — T-054, only meaningful when the mark `isUsedToggleable`. Stored in
+    /// `extraData` at the mark's own raw index (`extraData[state] == state`),
+    /// exactly as the reference's `ToggleOverworldTileIfItIsToggleable`.
+    public func isUsed(column: Int, row: Int) -> Bool {
+        let mark = mark(column: column, row: row)
+        guard mark.isUsedToggleable else { return false }
+        let key = mark.rawIndex
+        return extraData(column: column, row: row, key: key) == key
+    }
+
+    /// Toggle a claimable tile's used state (no-op if the mark isn't
+    /// toggleable). Ported from `ToggleOverworldTileIfItIsToggleable`
+    /// (`OverworldMapTileCustomization.fs:237-244`).
+    public func toggleUsed(column: Int, row: Int) {
+        let mark = mark(column: column, row: row)
+        guard mark.isUsedToggleable else { return }
+        let key = mark.rawIndex
+        let current = extraData(column: column, row: row, key: key)
+        setExtraData(current == key ? 0 : key, column: column, row: row, key: key)
+    }
+
     /// Resets every tile to `.unmarked` and clears all extra-data — not
     /// itself a confirmed reference-app gesture, but a useful testing/reset
     /// hook.
