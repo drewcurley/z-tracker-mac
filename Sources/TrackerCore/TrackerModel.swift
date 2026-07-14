@@ -127,5 +127,9 @@ public final class TrackerModel {
     /// this model's (the model just records the choice).
     public func selectQuest(_ quest: OverworldQuest) {
         self.quest = quest
+        // At session start, seed the dungeon floor-item hearts per Heart
+        // Shuffle (the reference's `makeAll` does this once the quest is
+        // chosen — `UI.fs:142-144`).
+        dungeonTracker.applyFloorItemHearts(heartShuffle: heartShuffle)
     }
 }

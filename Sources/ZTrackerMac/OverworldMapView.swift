@@ -288,6 +288,19 @@ private struct TileView: View {
     var body: some View {
         ZStack(alignment: .topLeading) {
             backgroundView
+            // .dontCare ("dark") darkens the terrain rather than blacking it
+            // out entirely, so the underlying map stays readable (aesthetic
+            // improvement over the reference's solid-black fill).
+            if mark.iconSource == .solidBlackTile {
+                Rectangle().fill(.black.opacity(0.62))
+            }
+            // Dungeon / any-road numbers render as a larger centered badge
+            // (not confined to the tiny 5px interior-icon region) so they're
+            // legible at map scale.
+            digitBadge
+                .frame(width: tileWidth, height: tileHeight)
+            // Small interior sprites (secrets, shops, armos, …) keep the
+            // reference's exact interior-icon placement.
             interiorIconView
                 .frame(width: tileWidth * Self.interiorWidthFraction, height: tileHeight * Self.interiorHeightFraction)
                 .offset(x: tileWidth * Self.interiorOffsetXFraction, y: tileHeight * Self.interiorOffsetYFraction)
@@ -299,11 +312,7 @@ private struct TileView: View {
 
     @ViewBuilder
     private var backgroundView: some View {
-        // .dontCare blacks out the *entire* tile, not just the interior icon
-        // region -- ported from initFull()'s `if i=len-1 then Black` branch.
-        if mark.iconSource == .solidBlackTile {
-            Rectangle().fill(.black)
-        } else if let background {
+        if let background {
             Image(decorative: background, scale: 1, orientation: .up)
                 .resizable()
                 .interpolation(.none)
@@ -314,14 +323,22 @@ private struct TileView: View {
     }
 
     @ViewBuilder
-    private var interiorIconView: some View {
+    private var digitBadge: some View {
         switch mark.iconSource {
-        case .none, .solidBlackTile:
-            EmptyView()
         case .dungeonDigit(let number):
             digitIcon(number, background: .yellow)
         case .anyRoadDigit(let number):
             digitIcon(number, background: Self.anyRoadBackground)
+        default:
+            EmptyView()
+        }
+    }
+
+    @ViewBuilder
+    private var interiorIconView: some View {
+        switch mark.iconSource {
+        case .none, .solidBlackTile, .dungeonDigit, .anyRoadDigit:
+            EmptyView()
         case .interiorSprite(let index):
             if let icon = OverworldInteriorIconAtlas.icon(at: index) {
                 Image(decorative: icon, scale: 1, orientation: .up)
@@ -347,14 +364,23 @@ private struct TileView: View {
         }
     }
 
+    /// A centered colored badge with a bold digit, sized to most of the tile
+    /// so dungeon/any-road numbers are legible at map scale.
     private func digitIcon(_ number: Int, background: Color) -> some View {
-        ZStack {
-            background
-            Text("\(number)")
-                .font(.system(size: 6, weight: .heavy, design: .monospaced))
-                .minimumScaleFactor(0.1)
-                .foregroundStyle(.black)
-        }
+        let badge = min(tileWidth, tileHeight) * 0.82
+        return RoundedRectangle(cornerRadius: badge * 0.18)
+            .fill(background)
+            .overlay(
+                Text("\(number)")
+                    .font(.system(size: badge * 0.8, weight: .heavy, design: .rounded))
+                    .minimumScaleFactor(0.3)
+                    .foregroundStyle(.black)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: badge * 0.18)
+                    .strokeBorder(.black.opacity(0.55), lineWidth: 1)
+            )
+            .frame(width: badge, height: badge)
     }
 }
 
