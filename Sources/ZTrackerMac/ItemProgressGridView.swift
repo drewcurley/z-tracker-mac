@@ -343,6 +343,10 @@ struct ObtainableItemsView: View {
 /// yet, so it's intentionally still absent (no dead toggle / invented flag).
 struct SeedFlagsView: View {
     @Bindable var model: TrackerModel
+    /// The run timer — Heart Shuffle / Hidden Dungeon Numbers rebuild dungeon
+    /// state, so while the timer is running they confirm first (T-051).
+    var timer: TrackerTimer
+    @State private var pending: DestructiveAction?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -353,12 +357,21 @@ struct SeedFlagsView: View {
             mirrorToggle
         }
         .toggleStyle(.checkbox)
+        .destructiveActionConfirmation($pending)
     }
 
     /// Heart Shuffle (T-049) — moved off the startup screen. Uses the model's
-    /// setter so the dungeon floor-item hearts re-seed on change.
+    /// setter so the dungeon floor-item hearts re-seed on change. Confirms
+    /// mid-run (T-051), since it overwrites the floor-item boxes.
     private var heartShuffleToggle: some View {
-        Toggle(isOn: Binding(get: { model.heartShuffle }, set: { model.setHeartShuffle($0) })) {
+        Toggle(isOn: Binding(get: { model.heartShuffle }, set: { newValue in
+            runOrConfirm(timerIsRunning: timer.isRunning, into: &pending,
+                         title: "Change Heart Shuffle mid-run?",
+                         message: "This re-seeds every dungeon's floor-item box, discarding what you've marked there. This can't be undone.",
+                         confirmLabel: "Change Heart Shuffle") {
+                model.setHeartShuffle(newValue)
+            }
+        })) {
             HStack(spacing: 6) {
                 Image(systemName: "suit.heart.fill").font(.system(size: 12)).foregroundStyle(.red)
                 Text("Heart Shuffle").font(.system(size: 11))
@@ -369,8 +382,16 @@ struct SeedFlagsView: View {
 
     /// Hidden Dungeon Numbers (T-049) — moved off the startup screen. Rebuilds
     /// the dungeon tracker (3 boxes per dungeon) and relabels dungeons A–H.
+    /// Confirms mid-run (T-051), since the rebuild wipes all dungeon progress.
     private var hideDungeonNumbersToggle: some View {
-        Toggle(isOn: Binding(get: { model.hideDungeonNumbers }, set: { model.setHideDungeonNumbers($0) })) {
+        Toggle(isOn: Binding(get: { model.hideDungeonNumbers }, set: { newValue in
+            runOrConfirm(timerIsRunning: timer.isRunning, into: &pending,
+                         title: "Change Hidden Dungeon Numbers mid-run?",
+                         message: "This rebuilds the dungeon tracker, discarding all dungeon items, triforces, and number assignments. This can't be undone.",
+                         confirmLabel: "Change Hidden Dungeon Numbers") {
+                model.setHideDungeonNumbers(newValue)
+            }
+        })) {
             HStack(spacing: 6) {
                 Image(systemName: "questionmark.square.fill").font(.system(size: 12))
                 Text("Hide Dungeon #s").font(.system(size: 11))
@@ -438,6 +459,7 @@ struct MapInfoView: View {
     var onResetApp: () -> Void = {}
 
     @State private var confirmingResetApp = false
+    @State private var confirmingResetTimer = false
     @State private var confirmingGroundhog = false
 
     var body: some View {
@@ -448,14 +470,14 @@ struct MapInfoView: View {
         }
     }
 
-    /// The three always-visible reset actions (T-048). Reset App and the
-    /// groundhog reset are destructive, so they confirm first; Reset Timer just
-    /// zeroes the clock.
+    /// The three always-visible reset actions (T-048). All three confirm first
+    /// (T-051), so a misclick in the crowded top section can't wipe a run's
+    /// state or its timer.
     private var resetButtons: some View {
         VStack(alignment: .leading, spacing: 4) {
             Button("Reset App") { confirmingResetApp = true }
                 .help("Discard everything and return to the startup screen, as if you'd just reopened the app")
-            Button("Reset Timer") { timer.reset() }
+            Button("Reset Timer") { confirmingResetTimer = true }
                 .help("Set the run timer back to 0:00:00 (keeps your marks and items)")
             Button("Reset (keep maps)") { confirmingGroundhog = true }
                 .help("Groundhog/routers restart: clear inventory but keep your overworld marks and known item locations. Does not pause the timer.")
@@ -467,6 +489,12 @@ struct MapInfoView: View {
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("Returns to the startup screen as if you'd just reopened the app. All marks, items, hints, and the timer are discarded. This can't be undone (no save yet).")
+        }
+        .confirmationDialog("Reset the timer to 0:00:00?", isPresented: $confirmingResetTimer, titleVisibility: .visible) {
+            Button("Reset Timer", role: .destructive) { timer.reset() }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Sets the run timer back to 0:00:00. Your marks and items are kept. This can't be undone.")
         }
         .confirmationDialog("Reset inventory for a groundhog/routers restart?",
                             isPresented: $confirmingGroundhog, titleVisibility: .visible) {

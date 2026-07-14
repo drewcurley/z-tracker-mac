@@ -84,6 +84,7 @@
 | [T-047](./T-047.md) | Mirror-overworld flag — flip the overworld map East↔West | frontend-engineer | — | feat/mirror-overworld | #65 | docs/reviews/feat-mirror-overworld/final.md |
 | [T-049](./T-049.md) | Move Heart Shuffle + Hidden Dungeon Numbers to Flags; wire HDN + A–H slot labels | frontend-engineer | — | feat/hdn-toggles-and-labels | #66 | docs/reviews/feat-hdn-toggles-and-labels/final.md |
 | [T-050](./T-050.md) | HDN dungeon-number chooser + triforce reference diagram + two-boxer third-box disable | frontend-engineer | — | feat/hdn-number-chooser | #67 | docs/reviews/feat-hdn-number-chooser/final.md |
+| [T-051](./T-051.md) | Confirm state-destructive controls — mid-run flag toggles + always-on Reset Timer | frontend-engineer | — | feat/confirm-destructive-when-running | #68 | docs/reviews/feat-confirm-destructive-when-running/final.md |
 | [T-032](./T-032.md) | Fix — sword-cave labels wrongly BU-annotated (white sword item ≠ white sword) | frontend-engineer | — | fix/sword-cave-labels | #43 | docs/reviews/fix-sword-cave-labels/final.md |
 | [T-026](./T-026.md) | Auto-mark always-empty overworld tiles as permanent "don't care" | frontend-engineer | — | feat/always-empty-tiles | #36 | docs/reviews/feat-always-empty-tiles/final.md |
 | [T-027](./T-027.md) | Always-empty tile polish — drop the X, add fairy-spot icons | frontend-engineer | — | feat/always-empty-polish | #37 | docs/reviews/feat-always-empty-polish/final.md |
