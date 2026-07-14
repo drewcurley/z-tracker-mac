@@ -358,6 +358,12 @@ struct OverworldMapView: View {
         return otherCount >= OverworldTileLimits.maxUses(mark, quest: quest)
     }
 
+    /// Whether **every** mark in a submenu is exhausted — disables the parent
+    /// menu itself (T-059), e.g. "Dungeon" once all nine are placed.
+    private func allExhausted(_ marks: [OverworldTileMark], column: Int, row: Int, counts: [OverworldTileMark: Int]) -> Bool {
+        marks.allSatisfy { isExhausted($0, column: column, row: row, counts: counts) }
+    }
+
     @ViewBuilder
     private func markMenu(column: Int, row: Int) -> some View {
         let counts = markCounts
@@ -375,12 +381,14 @@ struct OverworldMapView: View {
                 .disabled(isExhausted(.dungeon(number), column: column, row: row, counts: counts))
             }
         }
+        .disabled(allExhausted((1...9).map { .dungeon($0) }, column: column, row: row, counts: counts))
         Menu("Any road") {
             ForEach(1...4, id: \.self) { number in
                 Button("Any road \(number)") { applyMark(.anyRoad(number), column: column, row: row) }
                     .disabled(isExhausted(.anyRoad(number), column: column, row: row, counts: counts))
             }
         }
+        .disabled(allExhausted((1...4).map { .anyRoad($0) }, column: column, row: row, counts: counts))
         Menu("Sword cave") {
             ForEach(1...3, id: \.self) { number in
                 Button(Self.swordCaveLabel(number)) {
@@ -389,6 +397,7 @@ struct OverworldMapView: View {
                 .disabled(isExhausted(.swordCave(number), column: column, row: row, counts: counts))
             }
         }
+        .disabled(allExhausted((1...3).map { .swordCave($0) }, column: column, row: row, counts: counts))
         Menu("Shop") {
             ForEach(ShopKind.allCases, id: \.self) { kind in
                 Button(kind.displayName) { applyMark(.shop(kind), column: column, row: row) }
