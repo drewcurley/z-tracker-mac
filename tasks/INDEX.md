@@ -68,6 +68,7 @@
 | [T-035.1](./T-035.1.md) | Dynamic status fields — OW spots left + gettable | frontend-engineer | — | feat/topsection-status-fields | #49 | docs/reviews/feat-topsection-status-fields/final.md |
 | [T-036](./T-036.md) | Groundhog / routers reset — remove inventory, preserve maps | frontend-engineer | — | feat/groundhog-reset | #50 | docs/reviews/feat-groundhog-reset/final.md |
 | [T-035.2](./T-035.2.md) | Map-overlay toggles — open-caves + money (hover-preview / click-lock) | frontend-engineer | — | feat/overlay-open-caves-money | #51 | docs/reviews/feat-overlay-open-caves-money/final.md |
+| [T-035.3](./T-035.3.md) | Map-overlay toggles — Zones + Coords | frontend-engineer | — | feat/overlay-zones-coords | #52 | docs/reviews/feat-overlay-zones-coords/final.md |
 | [T-032](./T-032.md) | Fix — sword-cave labels wrongly BU-annotated (white sword item ≠ white sword) | frontend-engineer | — | fix/sword-cave-labels | #43 | docs/reviews/fix-sword-cave-labels/final.md |
 | [T-026](./T-026.md) | Auto-mark always-empty overworld tiles as permanent "don't care" | frontend-engineer | — | feat/always-empty-tiles | #36 | docs/reviews/feat-always-empty-tiles/final.md |
 | [T-027](./T-027.md) | Always-empty tile polish — drop the X, add fairy-spot icons | frontend-engineer | — | feat/always-empty-polish | #37 | docs/reviews/feat-always-empty-polish/final.md |

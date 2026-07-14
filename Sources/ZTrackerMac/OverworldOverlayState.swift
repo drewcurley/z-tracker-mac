@@ -11,6 +11,8 @@ final class OverworldOverlayState {
     enum Overlay: Hashable, CaseIterable {
         case openCaves   // highlight unmarked open caves (then armos, late game)
         case money       // highlight money-making-game / money secrets
+        case zones       // tint each screen by its overworld region
+        case coords      // overlay A1…H16 coordinates
     }
 
     /// Overlays the user has clicked to keep on.

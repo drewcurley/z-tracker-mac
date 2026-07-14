@@ -174,6 +174,23 @@ struct OverworldMapView: View {
                                                 .background(RoundedRectangle(cornerRadius: 2).fill(Color.green.opacity(0.18)))
                                         }
                                     }
+                                    .overlay {
+                                        // Zones (T-035.3): tint each screen by its overworld region.
+                                        if overlays?.isActive(.zones) == true {
+                                            Rectangle().fill(OverworldZones.color(column: column, row: row).opacity(0.4))
+                                        }
+                                    }
+                                    .overlay {
+                                        // Coords (T-035.3): the screen's A1…H16 coordinate.
+                                        if overlays?.isActive(.coords) == true {
+                                            Text(OverworldCoords.label(column: column, row: row))
+                                                .font(.system(size: 8, weight: .bold, design: .monospaced))
+                                                .foregroundStyle(.white)
+                                                .shadow(color: .black, radius: 1)
+                                                .padding(1)
+                                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                                        }
+                                    }
                                     .onTapGesture { handleLeftClick(column: column, row: row) }
                                     .contextMenu { markMenu(column: column, row: row) }
                                     .onContinuousHover { phase in
