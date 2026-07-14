@@ -568,6 +568,17 @@ JSON file holds options/settings, independent of save state.
       Verified by 12 scenario tests including pinned empty-first-quest counts
       (owSpotsRemain 73, gettable/routeworthy 28) that exercise the terrain
       masks + raw-index bridge + recompute end-to-end.
+    - **T-015.4 — done.** True GYR rendering. `OverworldRouteTint.swift` is
+      the pure green/yellow/red cascade ported from `doComputedDrawing`
+      (`OverworldRouteDrawing.fs:44-63`): marked dungeon 1–8 → green; else
+      not-gettable → red; else `sometimesEmpty` → yellow; else green. Wired
+      into `OverworldMapView` via a `mapState: MapStateSummary` parameter
+      (computed reactively in `MainTrackerPlaceholderView`), replacing
+      T-011's flat single-color "reachable" overlay; bold/pale stays the
+      `isBold` reachability axis rendered as opacity. **The cyan override for
+      the selected route target is deferred to T-015.6** (there's no selected
+      target until the picker exists). 6 cascade tests. This is the visible
+      GYR payoff the whole T-012→T-015.3 stack was building toward.
   - **T-016** — Hide Dungeon Numbers (HDN) mode's dungeon labeling +
     basement-stair-rendering metadata (`TrackerModel.fs:587-632`,
     `:816-818`) — deliberately deferred out of T-013 since it roughly

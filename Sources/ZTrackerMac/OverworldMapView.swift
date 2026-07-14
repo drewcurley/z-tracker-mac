@@ -26,6 +26,11 @@ struct OverworldMapView: View {
     /// placeholders.
     var playerState: PlayerComputedStateSummary
 
+    /// Live derived overworld map state (T-015.3). Supplies
+    /// `owGettableLocations` for the true green/yellow/red highlight cascade
+    /// (T-015.4), replacing T-011's flat single-color "reachable" overlay.
+    var mapState: MapStateSummary
+
     /// Aspect ratio matches the reference app's base tile shape (16×11px,
     /// `Graphics.fs` `OMTW`/`OMTH` — resolves a previously-open question in
     /// `docs/domain.md` about the layout's numeric constants) — kept even
@@ -64,6 +69,25 @@ struct OverworldMapView: View {
         return Dictionary(uniqueKeysWithValues: routeHighlight.highlightedTiles.map { ($0.coordinate, $0.isBold) })
     }
 
+    /// The terrain instance for the current quest — supplies `sometimesEmpty`
+    /// for the yellow GYR tint.
+    private var overworldInstance: OverworldInstance {
+        OverworldInstance(quest: quest)
+    }
+
+    /// The green/yellow/red tint for a highlighted screen (T-015.4).
+    private func gyrColor(column: Int, row: Int, mark: OverworldTileMark) -> Color {
+        switch OverworldRouteTint.forHighlightedTile(
+            markRawIndex: mark.rawIndex,
+            gettable: mapState.owGettableLocations[column, row],
+            sometimesEmpty: overworldInstance.sometimesEmpty(x: column, y: row)
+        ) {
+        case .green: .green
+        case .yellow: .yellow
+        case .red: .red
+        }
+    }
+
     var body: some View {
         GeometryReader { geometry in
             let tileWidth = geometry.size.width / CGFloat(OverworldGrid.columnCount)
@@ -81,10 +105,11 @@ struct OverworldMapView: View {
                                     .overlay {
                                         if options.highlightNearby,
                                            let isBold = highlights[OverworldScreenCoordinate(x: column, y: row)] {
-                                            // Real reachability, not real GYR: true green/yellow/red
-                                            // needs the item/dungeon state layer (T-012) to know what's
-                                            // actually accessible vs. merely nearby -- see docs/domain.md § 6.
-                                            Rectangle().fill(.green.opacity(isBold ? 0.45 : 0.2))
+                                            // True GYR (T-015.4): green = accessible, yellow =
+                                            // sometimes-empty, red = inaccessible, per the
+                                            // reference's doComputedDrawing cascade. Bold/pale is
+                                            // the reachability `isBold` axis, rendered as opacity.
+                                            Rectangle().fill(gyrColor(column: column, row: row, mark: mark).opacity(isBold ? 0.45 : 0.2))
                                         }
                                     }
                                     .onTapGesture { handleLeftClick(column: column, row: row) }
@@ -496,11 +521,23 @@ private enum OverworldRouteGeometry {
 }
 
 #Preview {
+    let grid = OverworldGrid()
+    let playerState = PlayerComputedStateSummary(haveLadder: true, haveRaft: true)
     OverworldMapView(
-        grid: OverworldGrid(),
+        grid: grid,
         quest: .first,
         options: TrackerOptions(),
-        playerState: PlayerComputedStateSummary(haveLadder: true, haveRaft: true)
+        playerState: playerState,
+        mapState: MapStateSummary.compute(
+            grid: grid,
+            instance: OverworldInstance(quest: .first),
+            dungeonTracker: DungeonTrackerInstance(),
+            playerState: playerState,
+            progress: PlayerProgressAndTakeAnyHearts(),
+            drawRoutes: true,
+            routesCanScreenScroll: false,
+            mirrorOverworld: false
+        )
     )
     .frame(width: 800)
     .padding()

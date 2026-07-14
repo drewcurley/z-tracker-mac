@@ -13,7 +13,6 @@
 | ID | Title | Owner | State |
 |----|-------|-------|-------|
 | [T-015](./T-015.md) | Real GYR + destination picker + live routing state (umbrella) | frontend-engineer | split |
-| [T-015.4](./T-015.4.md) | True GYR rendering (green/yellow/red + cyan) | frontend-engineer | proposed |
 | [T-015.5](./T-015.5.md) | Live placeholder wiring (mirror, warp/any-road inputs) | frontend-engineer | proposed |
 | [T-015.6](./T-015.6.md) | Destination-picker menu | frontend-engineer | proposed |
 | [T-016](./T-016.md) | Hide Dungeon Numbers (HDN) mode — dungeon labeling + basement-stair metadata | frontend-engineer | proposed |
@@ -41,6 +40,7 @@
 | [T-015.1](./T-015.1.md) | Overworld terrain-capability masks + `OverworldInstance` | frontend-engineer | — | feat/overworld-terrain-instance | #17 | docs/reviews/feat-overworld-terrain-instance/final.md |
 | [T-015.2](./T-015.2.md) | Shop extra-data store + `OverworldTileMark` raw-index bridge | frontend-engineer | — | feat/overworld-tile-rawindex-extradata | #18 | docs/reviews/feat-overworld-tile-rawindex-extradata/final.md |
 | [T-015.3](./T-015.3.md) | `recomputeMapStateSummary` + `MapStateSummary` | frontend-engineer | — | feat/map-state-summary | #19 | docs/reviews/feat-map-state-summary/final.md |
+| [T-015.4](./T-015.4.md) | True GYR rendering (green/yellow/red) | frontend-engineer | — | feat/true-gyr-rendering | #20 | docs/reviews/feat-true-gyr-rendering/final.md |
 | [T-019](./T-019.md) | Bugfix: overworld tile icons used a dead ZHelper asset, wrong mapping | frontend-engineer | — | fix/overworld-tile-icons-wrong-asset | — | docs/reviews/fix-overworld-tile-icons-wrong-asset/final.md |
 
 ## Cancelled / Superseded
