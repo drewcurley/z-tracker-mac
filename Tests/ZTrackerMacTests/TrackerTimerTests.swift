@@ -59,6 +59,20 @@ struct TrackerTimerTests {
         #expect(timer.lapElapsed(asOf: at(105)) == 15)
     }
 
+    @Test("explicit pause/resume are idempotent (for the Zelda-rescued trigger)")
+    func pauseResumeIdempotent() {
+        let timer = TrackerTimer(now: t0)
+        timer.pause(asOf: at(10))
+        #expect(!timer.isRunning && timer.mainElapsed(asOf: at(30)) == 10)
+        // Pausing again does nothing.
+        timer.pause(asOf: at(40))
+        #expect(timer.mainElapsed(asOf: at(50)) == 10)
+        // Resume, then a redundant resume doesn't lose time.
+        timer.resume(asOf: at(50))
+        timer.resume(asOf: at(60))
+        #expect(timer.mainElapsed(asOf: at(70)) == 30) // 10 + (70-50)
+    }
+
     @Test("reset zeroes everything and clears the lap")
     func resetClears() {
         let timer = TrackerTimer(now: t0)
