@@ -107,6 +107,35 @@ struct DungeonTrackerInstanceTests {
         #expect(inst.dungeon(3).boxes.count == 3)
     }
 
+    @Test("ghost box + toggle: the non-owning of L1/L4 hosts the movable extra item")
+    func ghostBoxAndToggle() {
+        let inst = DungeonTrackerInstance(isSecondQuestDungeons: false)
+        // 1Q: L1 owns the extra box, so the ghost placeholder sits under L4.
+        #expect(inst.ghostBoxDungeonId == 3)
+
+        // Mark an item in the shared box, then move it via the ghost toggle.
+        inst.finalBoxOf1Or4.set(cellCurrent: ITEMS.whiteSword, playerHas: .yes)
+        inst.toggleSecondQuestDungeons()
+
+        // 2Q: the extra box (and its item) is now under L4; the ghost is under L1.
+        #expect(inst.isSecondQuestDungeons)
+        #expect(inst.ghostBoxDungeonId == 0)
+        #expect(inst.dungeon(3).boxes.last === inst.finalBoxOf1Or4)
+        #expect(inst.dungeon(3).boxes.last?.cellCurrent == ITEMS.whiteSword)
+        #expect(inst.dungeon(0).boxes.allSatisfy { $0 !== inst.finalBoxOf1Or4 })
+
+        // Toggling back restores the first-quest arrangement.
+        inst.toggleSecondQuestDungeons()
+        #expect(inst.ghostBoxDungeonId == 3)
+        #expect(inst.dungeon(0).boxes.last === inst.finalBoxOf1Or4)
+    }
+
+    @Test("HDN mode has no shared box, so no ghost placeholder")
+    func ghostBoxNoneInHDN() {
+        let inst = DungeonTrackerInstance(kind: .hideDungeonNumbers)
+        #expect(inst.ghostBoxDungeonId == nil)
+    }
+
     @Test("allBoxes flattens to 23 (19 base + finalBox + 3 standalone) in either quest")
     func allBoxesCount() {
         for isSecond in [false, true] {

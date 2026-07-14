@@ -77,6 +77,12 @@ private struct DungeonCardView: View {
             ForEach(Array(dungeon.boxes.enumerated()), id: \.offset) { _, box in
                 BoxView(box: box, instance: instance, label: nil, iconOptions: iconOptions)
             }
+            // The "ghost" slot under whichever of L1/L4 doesn't hold the movable
+            // extra floor item (1Q overworld ↔ 2Q dungeons). Clicking it moves
+            // the extra item here.
+            if instance.ghostBoxDungeonId == dungeon.id {
+                GhostBoxView { instance.toggleSecondQuestDungeons() }
+            }
         }
         .padding(6)
         .background(
@@ -87,6 +93,35 @@ private struct DungeonCardView: View {
             RoundedRectangle(cornerRadius: 6)
                 .strokeBorder(dungeon.isComplete ? Color.green.opacity(0.8) : Color(white: 0.25), lineWidth: 1)
         )
+    }
+}
+
+/// The dimmed placeholder shown under whichever of dungeon 1 / dungeon 4 does
+/// **not** currently hold the movable extra floor item (a first-quest overworld
+/// puts it under L1; second-quest dungeons move it to L4). Clicking it toggles
+/// which dungeon carries the extra item. Mirrors the reference's "ghost" box;
+/// rendered as a dashed, dimmed slot with a down-arrow hint (aesthetic license).
+private struct GhostBoxView: View {
+    var onToggle: () -> Void
+    /// Matches `BoxView`'s cell size so the ghost aligns with the real boxes.
+    private static let size: CGFloat = 34
+
+    var body: some View {
+        RoundedRectangle(cornerRadius: 4)
+            .fill(Color(white: 0.14))
+            .frame(width: Self.size, height: Self.size)
+            .overlay(
+                RoundedRectangle(cornerRadius: 4)
+                    .strokeBorder(Color(white: 0.4), style: StrokeStyle(lineWidth: 1.5, dash: [3, 2]))
+            )
+            .overlay(
+                Image(systemName: "arrow.down")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(Color(white: 0.5))
+            )
+            .contentShape(Rectangle())
+            .onTapGesture(perform: onToggle)
+            .help("Move the extra floor item here (1st-quest overworld ↔ 2nd-quest dungeons)")
     }
 }
 
