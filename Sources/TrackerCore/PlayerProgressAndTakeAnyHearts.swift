@@ -63,6 +63,17 @@ public final class PlayerProgressAndTakeAnyHearts {
         self.hasBombs = hasBombs
     }
 
+    /// Record a claimed take-any item into the **next unclaimed** slot (T-057),
+    /// so marking a take-any cave on the overworld (with what you took) fills
+    /// the Items-group take-any tracker. A `.untaken` state or a full tracker is
+    /// a no-op. Returns the slot filled, or `nil`.
+    @discardableResult
+    public func recordTakeAny(_ state: TakeAnyHeartState) -> Int? {
+        guard state != .untaken, let slot = takeAnyHearts.firstIndex(of: .untaken) else { return nil }
+        takeAnyHearts[slot] = state
+        return slot
+    }
+
     /// Ported from `ResetAll()` (`TrackerModel.fs:520-531`) — a full reset
     /// used by the reference app's "groundhog/routers" restart feature.
     public func resetAll() {

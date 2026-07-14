@@ -83,7 +83,8 @@ struct MainTrackerPlaceholderView: View {
                     overlays: overlays,
                     armosClaimed: model.dungeonTracker.armosBox.isDone,
                     mirrored: model.mirrorOverworld,
-                    hideDungeonNumbers: model.hideDungeonNumbers
+                    hideDungeonNumbers: model.hideDungeonNumbers,
+                    onRecordTakeAny: { model.playerProgress.recordTakeAny($0) }
                 )
                 .frame(maxWidth: .infinity)
             }

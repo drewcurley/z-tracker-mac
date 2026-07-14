@@ -50,6 +50,10 @@ struct OverworldMapView: View {
     /// stays "9").
     var hideDungeonNumbers: Bool = false
 
+    /// Record a claimed take-any item into the next Items-group take-any slot
+    /// (T-057) — invoked when a take-any tile is marked with what was taken.
+    var onRecordTakeAny: (TakeAnyHeartState) -> Void = { _ in }
+
     /// Whether any active top-section overlay highlights this tile (T-035.2).
     private func overlayHighlights(column: Int, row: Int, mark: OverworldTileMark) -> Bool {
         guard let overlays else { return false }
@@ -324,6 +328,15 @@ struct OverworldMapView: View {
         }
     }
 
+    /// Mark a take-any cave and record what was taken (T-057): `.untaken` leaves
+    /// it unclaimed (not used, no Items-group slot); a potion/candle/heart marks
+    /// it used and fills the next take-any slot.
+    private func applyTakeAny(_ state: TakeAnyHeartState, column: Int, row: Int) {
+        grid.setMark(.takeAny, column: column, row: row)
+        grid.setUsed(state != .untaken, column: column, row: row)
+        if state != .untaken { onRecordTakeAny(state) }
+    }
+
     @ViewBuilder
     private func markMenu(column: Int, row: Int) -> some View {
         Button("Clear (unmarked)") { applyMark(.unmarked, column: column, row: row) }
@@ -367,7 +380,12 @@ struct OverworldMapView: View {
         Button("The letter") { applyMark(.theLetter, column: column, row: row) }
         Button("Armos") { applyMark(.armos, column: column, row: row) }
         Button("Hint shop") { applyMark(.hintShop, column: column, row: row) }
-        Button("Take any") { applyMark(.takeAny, column: column, row: row) }
+        Menu("Take any") {
+            Button("Unclaimed") { applyTakeAny(.untaken, column: column, row: row) }
+            Button("Potion") { applyTakeAny(.takenPotion, column: column, row: row) }
+            Button("Blue candle") { applyTakeAny(.takenCandle, column: column, row: row) }
+            Button("Heart") { applyTakeAny(.takenHeart, column: column, row: row) }
+        }
         Button("Potion shop") { applyMark(.potionShop, column: column, row: row) }
     }
 }
