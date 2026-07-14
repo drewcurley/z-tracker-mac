@@ -590,12 +590,27 @@ JSON file holds options/settings, independent of save state.
       **T-015.7** (a full display-flip feature, not just the routing
       `isMirror` flag). Warp-line dashed/skipped styling deferred with those
       (needs warp-vs-walk edge metadata the graph doesn't carry).
-  - **T-016** — Hide Dungeon Numbers (HDN) mode's dungeon labeling +
-    basement-stair-rendering metadata (`TrackerModel.fs:587-632`,
-    `:816-818`) — deliberately deferred out of T-013 since it roughly
-    doubles most dungeon code paths with quest/kind-dependent branching;
-    `hideDungeonNumbers` already exists as an inert toggle (`T-003`) this
-    task would make meaningful.
+  - **T-016 — split into T-016.1…T-016.3.** Hide Dungeon Numbers is a large
+    orthogonal mode; like T-015 it splits into a model core (portable now)
+    and UI/rendering pieces needing a dungeon-tracker room-grid UI that
+    doesn't exist yet.
+    - **T-016.1 — done.** HDN model core in `DungeonTracker.swift`: the
+      `.hideDungeonNumbers` kind is no longer guarded off; HDN box counts
+      (dungeons 1–8 get 3, dungeon 9 gets 2; `allBoxes()` = 29; no shared
+      `finalBoxOf1Or4`), the `isComplete` HDN branch (triforce + 3-done OR
+      2-done when `labelChar` is a quest-dependent two-boxer, whitelists
+      `"123567"` 2nd quest / `"234567"` 1st), per-dungeon `color`/`labelChar`
+      state, and `getTriforceHaves(hdnStartingTriforcePieces:)` HDN indexing
+      (identified `labelChar`→piece + HDN starting pieces). Transcribed from
+      `TrackerModel.fs:682-836`'s HDN branches; 9 tests, DEFAULT paths
+      unchanged. `TrackerModel` still constructs `.default` — wiring the
+      `hideDungeonNumbers` toggle to build an HDN instance rides with T-016.3.
+    - **T-016.2** — `StairKind`/`BoxOwner`/`CurrentlyHasBasementStair`
+      (`:587-632`) basement-stair metadata, deferred until the dungeon-room-
+      grid UI exists.
+    - **T-016.3** — HDN labeling UI + overworld lettered-dungeon rendering
+      (`Color`/`LabelChar` UI; `OverworldTileMark.iconSource`'s HDN variant),
+      deferred until a dungeon-tracker UI host exists.
   - **T-017** — Dungeon blockers ("why I left this dungeon" reminders,
     `TrackerModel.fs:1147-1273`) — reads player-state, doesn't feed back
     into it, cleanly deferrable.

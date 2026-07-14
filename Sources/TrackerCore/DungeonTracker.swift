@@ -3,11 +3,12 @@ import Observation
 /// Which flavor of dungeon tracking is in effect. Ported from
 /// `DungeonTrackerInstanceKind` (`TrackerModel.fs:667-670`).
 ///
-/// **T-013 implements `.default` only.** `.hideDungeonNumbers` is modeled
-/// here (so the public shape matches the reference) but constructing an
-/// instance with it is guarded off until T-016 builds the HDN box-count /
-/// completion / labeling variant — an honest scope boundary rather than a
-/// silently-wrong code path.
+/// Both modes' **model core** is implemented (box counts, completion,
+/// triforce indexing, `color`/`labelChar` state — T-013 for `.default`,
+/// T-016.1 for `.hideDungeonNumbers`). HDN's *rendering* pieces — the
+/// basement-stair metadata (`StairKind`/`BoxOwner`/`CurrentlyHasBasement-
+/// Stair`) and the label/color-assignment UI — are deferred until the
+/// dungeon-tracker room-grid UI they feed exists (T-016.2/T-016.3).
 public enum DungeonTrackerInstanceKind: Sendable {
     case `default`
     case hideDungeonNumbers
@@ -44,6 +45,14 @@ public final class Dungeon {
     /// Dungeon`, deferred to T-014/T-015.)
     public var playerHasMap: Bool
 
+    /// Hidden-Dungeon-Numbers player-assigned color (`0xRRGGBB`, default 0)
+    /// and label char (`"?"`, `"1"…"8"`, default `"?"`). Meaningful only in
+    /// `.hideDungeonNumbers` mode; "just ignore this for dungeon 9"
+    /// (`id == 8`), per the reference. Ported from `Color`/`LabelChar`
+    /// (`TrackerModel.fs:816-818`). The assignment UI is T-016.3.
+    public var color: Int
+    public var labelChar: Character
+
     /// The dungeon's own fixed item boxes (2 or 3), before the quest-
     /// dependent shared `finalBoxOf1Or4` is appended. Prefer `boxes`.
     public let baseBoxes: [Box]
@@ -58,6 +67,8 @@ public final class Dungeon {
         self.id = id
         self.playerHasTriforce = false
         self.playerHasMap = false
+        self.color = 0
+        self.labelChar = "?"
         self.baseBoxes = (0..<numBoxes).map { _ in Box() }
         self.instance = instance
     }
@@ -70,22 +81,40 @@ public final class Dungeon {
 
     /// The dungeon's effective box list. In DEFAULT mode, dungeon 1 (first
     /// quest) or dungeon 4 (second quest) gets the shared `finalBoxOf1Or4`
-    /// appended as its third box. Ported from `Boxes`
+    /// appended as its third box. In HDN mode there is no shared box — every
+    /// dungeon uses its own fixed `baseBoxes`. Ported from `Boxes`
     /// (`TrackerModel.fs:779-787`).
     public var boxes: [Box] {
-        if (id == 0 && !instance.isSecondQuestDungeons)
-            || (id == 3 && instance.isSecondQuestDungeons) {
-            return baseBoxes + [instance.finalBoxOf1Or4]
+        switch instance.kind {
+        case .hideDungeonNumbers:
+            return baseBoxes
+        case .default:
+            if (id == 0 && !instance.isSecondQuestDungeons)
+                || (id == 3 && instance.isSecondQuestDungeons) {
+                return baseBoxes + [instance.finalBoxOf1Or4]
+            }
+            return baseBoxes
         }
-        return baseBoxes
     }
 
-    /// DEFAULT-mode completion: the player has this dungeon's triforce AND
-    /// every effective box is done. Ported from `IsComplete`
-    /// (`TrackerModel.fs:789-813`, DEFAULT branch). HDN-mode completion
-    /// (2-vs-3-box quest-dependent) is T-016.
+    /// Whether this dungeon is complete. Ported from `IsComplete`
+    /// (`TrackerModel.fs:789-813`).
+    /// - DEFAULT: triforce held AND every effective box done.
+    /// - HDN: triforce held AND (all 3 boxes done, OR exactly 2 done when
+    ///   this dungeon's assigned `labelChar` is a known "two-boxer" — the
+    ///   quest-dependent whitelist `"123567"` (2nd quest) / `"234567"`
+    ///   (1st quest), since in HDN you may not know a dungeon's box count
+    ///   until you've identified it).
     public var isComplete: Bool {
-        playerHasTriforce && boxes.allSatisfy { $0.isDone }
+        switch instance.kind {
+        case .default:
+            return playerHasTriforce && boxes.allSatisfy { $0.isDone }
+        case .hideDungeonNumbers:
+            guard playerHasTriforce else { return false }
+            let numBoxesDone = baseBoxes.reduce(0) { $0 + ($1.isDone ? 1 : 0) }
+            let twoBoxers = instance.isSecondQuestDungeons ? "123567" : "234567"
+            return numBoxesDone == 3 || (numBoxesDone == 2 && twoBoxers.contains(labelChar))
+        }
     }
 }
 
@@ -131,10 +160,6 @@ public final class DungeonTrackerInstance {
         kind: DungeonTrackerInstanceKind = .default,
         isSecondQuestDungeons: Bool = false
     ) {
-        precondition(
-            kind == .default,
-            "HIDE_DUNGEON_NUMBERS is deferred to T-016; construct with .default"
-        )
         self.kind = kind
         self.isSecondQuestDungeons = isSecondQuestDungeons
         self.finalBoxOf1Or4 = Box()
@@ -142,10 +167,17 @@ public final class DungeonTrackerInstance {
         self.armosBox = Box(playerHas: .skipped)
         self.sword2Box = Box(playerHas: .skipped)
         self.dungeons = []
-        // DEFAULT-mode base box counts, transcribed exactly from
-        // `makeDungeons()` (`TrackerModel.fs:695-704`): dungeons 1–7 and 9
-        // have 2 base boxes, dungeon 8 has 3.
-        let baseBoxCounts = [2, 2, 2, 2, 2, 2, 2, 3, 2]
+        // Base box counts, transcribed exactly from `makeDungeons()`
+        // (`TrackerModel.fs:682-704`):
+        //   DEFAULT — dungeons 1–7 and 9 have 2, dungeon 8 has 3
+        //             (the shared `finalBoxOf1Or4` is added per-quest in
+        //              `Dungeon.boxes`).
+        //   HDN     — dungeons 1–8 have 3, dungeon 9 has 2.
+        let baseBoxCounts: [Int]
+        switch kind {
+        case .default: baseBoxCounts = [2, 2, 2, 2, 2, 2, 2, 3, 2]
+        case .hideDungeonNumbers: baseBoxCounts = [3, 3, 3, 3, 3, 3, 3, 3, 2]
+        }
         self.dungeons = baseBoxCounts.enumerated().map { index, count in
             Dungeon(id: index, numBoxes: count, instance: self)
         }
@@ -172,11 +204,42 @@ public final class DungeonTrackerInstance {
         return min(Double(touched) / 20.0, 1.0)
     }
 
-    /// The 8-element "does the player have this triforce piece" array,
-    /// DEFAULT-mode indexing (dungeon `i` → piece `i`). Ported from
-    /// `GetTriforceHaves()` (`TrackerModel.fs:823-836`, DEFAULT branch). The
-    /// HDN-mode variant (label-char driven + HDN starting pieces) is T-016.
-    public func getTriforceHaves() -> [Bool] {
-        (0...7).map { dungeons[$0].playerHasTriforce }
+    /// The 8-element "does the player have this triforce piece" array. Ported
+    /// from `GetTriforceHaves()` (`TrackerModel.fs:823-836`).
+    /// - DEFAULT: dungeon `i` → piece `i` (the `hdnStartingTriforcePieces`
+    ///   argument is ignored, matching the reference).
+    /// - HDN: a dungeon contributes piece `labelChar - '1'` only once the
+    ///   player has both its triforce *and* has identified it (`labelChar`
+    ///   in `"1"…"8"`); plus any HDN starting triforce pieces
+    ///   (`startingItemsAndExtras.HDNStartingTriforcePieces`, index `i` →
+    ///   piece `i`).
+    public func getTriforceHaves(hdnStartingTriforcePieces: [Bool] = Array(repeating: false, count: 8)) -> [Bool] {
+        switch kind {
+        case .default:
+            return (0...7).map { dungeons[$0].playerHasTriforce }
+        case .hideDungeonNumbers:
+            precondition(hdnStartingTriforcePieces.count == 8, "expected 8 HDN starting pieces")
+            var haves = Array(repeating: false, count: 8)
+            for i in 0...7 {
+                let d = dungeons[i]
+                if d.playerHasTriforce, let n = triforceIndex(for: d.labelChar) {
+                    haves[n] = true
+                }
+                if hdnStartingTriforcePieces[i] {
+                    haves[i] = true
+                }
+            }
+            return haves
+        }
+    }
+
+    /// Maps an HDN label char `"1"…"8"` to triforce-piece index `0…7`, or
+    /// `nil` for an unidentified (`"?"`) or out-of-range label.
+    private func triforceIndex(for labelChar: Character) -> Int? {
+        guard let ascii = labelChar.asciiValue,
+              let one = Character("1").asciiValue,
+              let eight = Character("8").asciiValue,
+              ascii >= one && ascii <= eight else { return nil }
+        return Int(ascii - one)
     }
 }
