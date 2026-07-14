@@ -16,6 +16,25 @@ struct TimerView: View {
     @State private var refreshAnchor = Date()
 
     var body: some View {
+        if timer.hasStarted {
+            runningTimer
+        } else {
+            // Before the run: a Go button, so the tracker can be loaded and
+            // configured without the clock already ticking.
+            Button {
+                timer.start()
+            } label: {
+                Text("Go")
+                    .font(.system(size: 22, weight: .heavy, design: .rounded))
+                    .frame(minWidth: 90)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(.green)
+            .help("Start the run timer")
+        }
+    }
+
+    private var runningTimer: some View {
         TimelineView(.periodic(from: refreshAnchor, by: 0.03)) { context in
             let now = context.date
             HStack(alignment: .center, spacing: 10) {
