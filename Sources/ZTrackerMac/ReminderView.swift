@@ -26,6 +26,16 @@ final class ReminderController {
     private let visibleDuration: Duration = .seconds(6)
     private let maxVisible = 5
 
+    init() {
+        // Warm up the speech service at launch. The first `AVSpeechSynthesizer`
+        // utterance is slow (macOS has to spin up the com.apple.speech
+        // service — often ~15-20s), so we absorb that latency here with a
+        // silent utterance rather than at the first real reminder.
+        let warmup = AVSpeechUtterance(string: " ")
+        warmup.volume = 0
+        synthesizer.speak(warmup)
+    }
+
     /// Speak/show each announcement whose category is enabled.
     func handle(_ announcements: [ReminderAnnouncement], options: TrackerOptions) {
         for announcement in announcements {
