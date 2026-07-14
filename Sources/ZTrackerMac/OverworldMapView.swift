@@ -31,6 +31,22 @@ struct OverworldMapView: View {
     /// (T-015.4), replacing T-011's flat single-color "reachable" overlay.
     var mapState: MapStateSummary
 
+    /// Swordless seed (T-025.4): the White Sword Item / Magical Sword cave
+    /// marks are labeled as Bomb Upgrades in the tile selector.
+    var isWSMSReplacedByBU: Bool = false
+
+    /// The tile-selector label for a sword cave. Relabeled from "Sword cave N"
+    /// (user request); under swordless, the white/magical entries note they are
+    /// Bomb Upgrades. Sword cave 1 (Wood Sword) is never affected.
+    static func swordCaveLabel(_ number: Int, wsmsReplacedByBU: Bool) -> String {
+        switch number {
+        case 1: return "Wood Sword"
+        case 2: return wsmsReplacedByBU ? "White Sword Item (Bomb Upgrade)" : "White Sword Item"
+        case 3: return wsmsReplacedByBU ? "Magical Sword (Bomb Upgrade)" : "Magical Sword"
+        default: return "Sword cave \(number)"
+        }
+    }
+
     /// Aspect ratio matches the reference app's base tile shape (16×11px,
     /// `Graphics.fs` `OMTW`/`OMTH` — resolves a previously-open question in
     /// `docs/domain.md` about the layout's numeric constants) — kept even
@@ -238,7 +254,9 @@ struct OverworldMapView: View {
         }
         Menu("Sword cave") {
             ForEach(1...3, id: \.self) { number in
-                Button("Sword cave \(number)") { grid.setMark(.swordCave(number), column: column, row: row) }
+                Button(Self.swordCaveLabel(number, wsmsReplacedByBU: isWSMSReplacedByBU)) {
+                    grid.setMark(.swordCave(number), column: column, row: row)
+                }
             }
         }
         Menu("Shop") {

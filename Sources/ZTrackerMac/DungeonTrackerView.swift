@@ -35,7 +35,8 @@ struct DungeonTrackerView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top, spacing: 6) {
                 ForEach(0..<9, id: \.self) { i in
-                    DungeonCardView(dungeon: dt.dungeon(i), instance: dt, isLocated: loc.contains(i))
+                    DungeonCardView(dungeon: dt.dungeon(i), instance: dt, isLocated: loc.contains(i),
+                                    wsmsReplacedByBU: model.isWSMSReplacedByBU)
                 }
             }
         }
@@ -48,6 +49,7 @@ private struct DungeonCardView: View {
     @Bindable var dungeon: Dungeon
     var instance: DungeonTrackerInstance
     var isLocated: Bool
+    var wsmsReplacedByBU: Bool = false
 
     var body: some View {
         VStack(spacing: 4) {
@@ -69,7 +71,7 @@ private struct DungeonCardView: View {
                 }
             }
             ForEach(Array(dungeon.boxes.enumerated()), id: \.offset) { _, box in
-                BoxView(box: box, instance: instance, label: nil)
+                BoxView(box: box, instance: instance, label: nil, wsmsReplacedByBU: wsmsReplacedByBU)
             }
         }
         .padding(6)
@@ -90,6 +92,8 @@ struct BoxView: View {
     @Bindable var box: Box
     var instance: DungeonTrackerInstance
     var label: String?
+    /// Swordless seed: render the white-sword item as a bomb upgrade.
+    var wsmsReplacedByBU: Bool = false
 
     @State private var showPicker = false
 
@@ -108,7 +112,7 @@ struct BoxView: View {
             ZStack {
                 RoundedRectangle(cornerRadius: 4).fill(Color.black)
                 if box.cellCurrent != -1,
-                   let icon = ItemIconAtlas.icon(forItemIndex: box.cellCurrent),
+                   let icon = ItemIconAtlas.icon(forItemIndex: box.cellCurrent, wsmsReplacedByBU: wsmsReplacedByBU),
                    let image = Image(atlasIcon: ItemIconAtlas.cgImage(icon)) {
                     image
                         .interpolation(.none)
@@ -139,7 +143,7 @@ struct BoxView: View {
             // Right-click a placed box -> "don't have it".
             .onRightClick { box.setPlayerHas(.no) }
             .popover(isPresented: $showPicker, arrowEdge: .bottom) {
-                BoxItemPicker(box: box, instance: instance) { showPicker = false }
+                BoxItemPicker(box: box, instance: instance, wsmsReplacedByBU: wsmsReplacedByBU) { showPicker = false }
             }
             if let label {
                 Text(label).font(.system(size: 8)).foregroundStyle(.secondary)
@@ -155,6 +159,7 @@ struct BoxView: View {
 struct BoxItemPicker: View {
     @Bindable var box: Box
     var instance: DungeonTrackerInstance
+    var wsmsReplacedByBU: Bool = false
     var dismiss: () -> Void
 
     private let columns = Array(repeating: GridItem(.fixed(30), spacing: 4), count: 8)
@@ -170,7 +175,7 @@ struct BoxItemPicker: View {
                     let available = instance.canSelectItem(item, forBox: box)
                     let isCurrent = box.cellCurrent == item
                     Group {
-                        if let icon = ItemIconAtlas.icon(forItemIndex: item),
+                        if let icon = ItemIconAtlas.icon(forItemIndex: item, wsmsReplacedByBU: wsmsReplacedByBU),
                            let image = Image(atlasIcon: ItemIconAtlas.cgImage(icon)) {
                             image.interpolation(.none).resizable().frame(width: 22, height: 22)
                         } else {
