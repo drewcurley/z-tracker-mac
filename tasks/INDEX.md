@@ -62,6 +62,7 @@
 | [T-025.5](./T-025.5.md) | Item-grid chrome — Book/Shield toggle + Max Hearts | frontend-engineer | — | feat/chrome-book-shield-hearts | #44 | docs/reviews/feat-chrome-book-shield-hearts/final.md |
 | [T-030](./T-030.md) | Main-tracker layout — dungeons and items side by side | frontend-engineer | — | feat/side-by-side-layout | #45 | docs/reviews/feat-side-by-side-layout/final.md |
 | [T-031](./T-031.md) | Extra Candles option — blue candle in wood sword cave + 4-state take-any | frontend-engineer | — | feat/extra-candles | #46 | docs/reviews/feat-extra-candles/final.md |
+| [T-033](./T-033.md) | Chrome cleanup — Max Hearts read-only + icon-only toggles | frontend-engineer | — | fix/chrome-cleanup | #47 | docs/reviews/fix-chrome-cleanup/final.md |
 | [T-032](./T-032.md) | Fix — sword-cave labels wrongly BU-annotated (white sword item ≠ white sword) | frontend-engineer | — | fix/sword-cave-labels | #43 | docs/reviews/fix-sword-cave-labels/final.md |
 | [T-026](./T-026.md) | Auto-mark always-empty overworld tiles as permanent "don't care" | frontend-engineer | — | feat/always-empty-tiles | #36 | docs/reviews/feat-always-empty-tiles/final.md |
 | [T-027](./T-027.md) | Always-empty tile polish — drop the X, add fairy-spot icons | frontend-engineer | — | feat/always-empty-polish | #37 | docs/reviews/feat-always-empty-polish/final.md |
