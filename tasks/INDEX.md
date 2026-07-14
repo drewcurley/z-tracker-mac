@@ -25,6 +25,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-062](./T-062.md) | "Hide tile icons" view toggle — suppress overworld map marks to see terrain | frontend-engineer | — | feat/hide-tile-icons | — | docs/reviews/feat-hide-tile-icons/final.md |
 | [T-001](./T-001.md) | Bootstrap `/docs/` folder (Tier 1 + Tier 2) | review-coordinator | — | chore/bootstrap-docs | — | docs/reviews/chore-bootstrap-docs/final.md |
 | [T-002](./T-002.md) | Initial Xcode/SwiftPM project scaffold | architect | — | chore/initial-scaffold | — | docs/reviews/chore-initial-scaffold/final.md |
 | [T-003](./T-003.md) | Startup screen — quest selection, core toggles, responsive layout | frontend-engineer | — | feat/startup-screen | — | docs/reviews/feat-startup-screen/final.md |

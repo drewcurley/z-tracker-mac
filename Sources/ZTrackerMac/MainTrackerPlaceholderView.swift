@@ -62,7 +62,7 @@ struct MainTrackerPlaceholderView: View {
                         ObtainableItemsView(model: model, playerState: model.playerComputedStateSummary, mapState: mapState)
                     }
                     TopSectionGroup(title: "Flags") {
-                        SeedFlagsView(model: model, timer: timer)
+                        SeedFlagsView(model: model, timer: timer, overlays: overlays)
                     }
                     TopSectionGroup(title: "Info") {
                         MapInfoView(model: model, playerState: model.playerComputedStateSummary, mapState: mapState, overlays: overlays, timer: timer, onResetApp: onResetApp)

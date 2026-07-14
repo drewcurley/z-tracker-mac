@@ -25,6 +25,25 @@ struct OverworldOverlaysTests {
         #expect(s.hovered == .openCaves)
     }
 
+    @MainActor
+    @Test("hide-marks overlay: previews on hover, locks on click, independent of highlights")
+    func hideMarksState() {
+        let s = OverworldOverlayState()
+        #expect(!s.isActive(.hideMarks))
+        // Hover previews the suppression without committing it.
+        s.setHover(.hideMarks, true)
+        #expect(s.isActive(.hideMarks) && !s.isLocked(.hideMarks))
+        s.setHover(.hideMarks, false)
+        #expect(!s.isActive(.hideMarks))
+        // Click keeps it on.
+        s.toggleLock(.hideMarks)
+        #expect(s.isActive(.hideMarks) && s.isLocked(.hideMarks))
+        // It doesn't entangle with a highlight overlay.
+        #expect(!s.isActive(.money) && !s.isLocked(.money))
+        s.toggleLock(.hideMarks)
+        #expect(!s.isActive(.hideMarks))
+    }
+
     @Test("money tile: MMG + Unknown Secret always; sized secrets only when priced")
     func moneyTile() {
         #expect(OverworldOverlays.isMoneyTile(.moneyMakingGame, secretValue: 0))

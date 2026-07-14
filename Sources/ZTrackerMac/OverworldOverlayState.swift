@@ -13,6 +13,7 @@ final class OverworldOverlayState {
         case money       // highlight money-making-game / money secrets
         case zones       // tint each screen by its overworld region
         case coords      // overlay A1…H16 coordinates
+        case hideMarks   // suppress the tile-selection icons to reveal the terrain (T-062)
     }
 
     /// Overlays the user has clicked to keep on.
