@@ -406,7 +406,7 @@ struct OverworldMapView: View {
         .disabled(allExhausted((1...3).map { .swordCave($0) }, column: column, row: row, counts: counts))
         Menu("Shop") {
             ForEach(ShopKind.allCases, id: \.self) { kind in
-                Button(kind.displayName) { applyMark(.shop(kind), column: column, row: row) }
+                Button(kind.shortName) { applyMark(.shop(kind), column: column, row: row) }
             }
         }
         // A shop tile carries two items (T-060) — its second item is set here.
@@ -414,7 +414,7 @@ struct OverworldMapView: View {
             Menu("Shop — 2nd item") {
                 Button("None") { grid.setShopSecondItem(nil, column: column, row: row) }
                 ForEach(ShopKind.allCases, id: \.self) { kind in
-                    Button(kind.displayName) { grid.setShopSecondItem(kind, column: column, row: row) }
+                    Button(kind.shortName) { grid.setShopSecondItem(kind, column: column, row: row) }
                         .disabled(kind == item1) // no duplicate item
                 }
             }
