@@ -227,6 +227,14 @@ enum ItemProgressGrid {
         return layout[row][col]
     }
 
+    /// The number of unmarked overworld spots the player can currently uncover
+    /// (the "N gettable" readout) — `MapStateSummary` already gates each screen
+    /// by the player's items, per quest. Pulled out so the readout wiring is
+    /// unit-testable (T-035.1).
+    static func gettableCount(_ mapState: MapStateSummary) -> Int {
+        mapState.owGettableLocations.trueCount
+    }
+
     /// The take-any heart state advanced by `delta` (wrapping over all four
     /// states), generalizing the reference's 3-state `(cur + delta + 3) % 3`
     /// (`OverworldItemGridUI.fs:207`) to include the distinct potion/candle
@@ -275,7 +283,7 @@ struct ItemProgressGridView: View {
                 swordlessToggle
                 bookShieldToggle
                 Spacer(minLength: 8)
-                maxHeartsReadout
+                statusReadout
             }
         }
         .padding(8)
@@ -301,12 +309,23 @@ struct ItemProgressGridView: View {
         .help("When checked, item slot 0 is the Magic Shield instead of the Book (boomstick seeds)")
     }
 
-    /// Max hearts — a read-only, program-computed number (rises as the player
-    /// collects heart containers / take-any hearts); not user-editable.
-    private var maxHeartsReadout: some View {
-        Text("Max Hearts: \(playerState.playerHearts)")
-            .font(.system(size: 10)).foregroundStyle(.orange)
-            .help("Max hearts, computed from collected heart containers and take-any hearts")
+    /// Live map/heart status (T-035.1): unmarked overworld spots remaining, how
+    /// many are currently *gettable* with the player's items (both computed in
+    /// `MapStateSummary`, capability-aware + per quest), and the computed Max
+    /// Hearts. All read-only.
+    private var statusReadout: some View {
+        HStack(spacing: 12) {
+            Text("\(mapState.owSpotsRemain) OW spots left")
+                .foregroundStyle(.orange)
+                .help("Unmarked overworld screens remaining")
+            Text("\(ItemProgressGrid.gettableCount(mapState)) gettable")
+                .foregroundStyle(.green)
+                .help("Unmarked spots you can currently uncover with your items (raft / recorder / bracelet / candle / bombs), for this quest")
+            Text("Max Hearts: \(playerState.playerHearts)")
+                .foregroundStyle(.orange)
+                .help("Max hearts, computed from collected heart containers and take-any hearts")
+        }
+        .font(.system(size: 10))
     }
 
     @ViewBuilder

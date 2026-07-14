@@ -19,6 +19,7 @@
 | [T-016.3](./T-016.3.md) | HDN labeling UI + overworld lettered-dungeon rendering | frontend-engineer | proposed |
 | [T-018](./T-018.md) | Reminders, announcements, and Triforce-and-Go (umbrella) | frontend-engineer | split |
 | [T-025](./T-025.md) | Overworld item grid UI (owItemGrid render) (umbrella; book-atlas/open-caves chrome deferred) | frontend-engineer | split |
+| [T-035](./T-035.md) | Topmost section build-out (above the overworld map) (umbrella) | frontend-engineer | split |
 
 ## Completed
 
@@ -64,6 +65,7 @@
 | [T-031](./T-031.md) | Extra Candles option — blue candle in wood sword cave + 4-state take-any | frontend-engineer | — | feat/extra-candles | #46 | docs/reviews/feat-extra-candles/final.md |
 | [T-033](./T-033.md) | Chrome cleanup — Max Hearts read-only + icon-only toggles | frontend-engineer | — | fix/chrome-cleanup | #47 | docs/reviews/fix-chrome-cleanup/final.md |
 | [T-034](./T-034.md) | Remove Extra Candles flag + wood→candle (keep 4-state take-any) | frontend-engineer | — | fix/remove-extra-candles-flag | #48 | docs/reviews/fix-remove-extra-candles-flag/final.md |
+| [T-035.1](./T-035.1.md) | Dynamic status fields — OW spots left + gettable | frontend-engineer | — | feat/topsection-status-fields | #49 | docs/reviews/feat-topsection-status-fields/final.md |
 | [T-032](./T-032.md) | Fix — sword-cave labels wrongly BU-annotated (white sword item ≠ white sword) | frontend-engineer | — | fix/sword-cave-labels | #43 | docs/reviews/fix-sword-cave-labels/final.md |
 | [T-026](./T-026.md) | Auto-mark always-empty overworld tiles as permanent "don't care" | frontend-engineer | — | feat/always-empty-tiles | #36 | docs/reviews/feat-always-empty-tiles/final.md |
 | [T-027](./T-027.md) | Always-empty tile polish — drop the X, add fairy-spot icons | frontend-engineer | — | feat/always-empty-polish | #37 | docs/reviews/feat-always-empty-polish/final.md |
