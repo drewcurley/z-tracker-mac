@@ -314,10 +314,20 @@ struct OverworldMapView: View {
         }
     }
 
+    /// Set a tile's mark from the picker. A claimable mark (secret / take-any /
+    /// armos / letter / hint shop) defaults to **used** — you usually mark one
+    /// right after collecting it; a left-click flips it back to unused (T-056).
+    private func applyMark(_ mark: OverworldTileMark, column: Int, row: Int) {
+        grid.setMark(mark, column: column, row: row)
+        if mark.isUsedToggleable {
+            grid.setUsed(true, column: column, row: row)
+        }
+    }
+
     @ViewBuilder
     private func markMenu(column: Int, row: Int) -> some View {
-        Button("Clear (unmarked)") { grid.setMark(.unmarked, column: column, row: row) }
-        Button("Don't care") { grid.setMark(.dontCare, column: column, row: row) }
+        Button("Clear (unmarked)") { applyMark(.unmarked, column: column, row: row) }
+        Button("Don't care") { applyMark(.dontCare, column: column, row: row) }
         Divider()
         Menu("Dungeon") {
             ForEach(1...9, id: \.self) { number in
@@ -325,40 +335,40 @@ struct OverworldMapView: View {
                 // stores the slot number, so located-linking is unchanged.
                 let label = DungeonLabeling.slotLabel(number, hideDungeonNumbers: hideDungeonNumbers)
                 Button(number == 9 ? "Level 9" : "Dungeon \(label)") {
-                    grid.setMark(.dungeon(number), column: column, row: row)
+                    applyMark(.dungeon(number), column: column, row: row)
                 }
             }
         }
         Menu("Any road") {
             ForEach(1...4, id: \.self) { number in
-                Button("Any road \(number)") { grid.setMark(.anyRoad(number), column: column, row: row) }
+                Button("Any road \(number)") { applyMark(.anyRoad(number), column: column, row: row) }
             }
         }
         Menu("Sword cave") {
             ForEach(1...3, id: \.self) { number in
                 Button(Self.swordCaveLabel(number)) {
-                    grid.setMark(.swordCave(number), column: column, row: row)
+                    applyMark(.swordCave(number), column: column, row: row)
                 }
             }
         }
         Menu("Shop") {
             ForEach(ShopKind.allCases, id: \.self) { kind in
-                Button(kind.displayName) { grid.setMark(.shop(kind), column: column, row: row) }
+                Button(kind.displayName) { applyMark(.shop(kind), column: column, row: row) }
             }
         }
         Menu("Secret") {
             ForEach(SecretSize.allCases, id: \.self) { size in
-                Button(size.displayName) { grid.setMark(.secret(size), column: column, row: row) }
+                Button(size.displayName) { applyMark(.secret(size), column: column, row: row) }
             }
         }
         Divider()
-        Button("Door repair") { grid.setMark(.doorRepair, column: column, row: row) }
-        Button("Money making game") { grid.setMark(.moneyMakingGame, column: column, row: row) }
-        Button("The letter") { grid.setMark(.theLetter, column: column, row: row) }
-        Button("Armos") { grid.setMark(.armos, column: column, row: row) }
-        Button("Hint shop") { grid.setMark(.hintShop, column: column, row: row) }
-        Button("Take any") { grid.setMark(.takeAny, column: column, row: row) }
-        Button("Potion shop") { grid.setMark(.potionShop, column: column, row: row) }
+        Button("Door repair") { applyMark(.doorRepair, column: column, row: row) }
+        Button("Money making game") { applyMark(.moneyMakingGame, column: column, row: row) }
+        Button("The letter") { applyMark(.theLetter, column: column, row: row) }
+        Button("Armos") { applyMark(.armos, column: column, row: row) }
+        Button("Hint shop") { applyMark(.hintShop, column: column, row: row) }
+        Button("Take any") { applyMark(.takeAny, column: column, row: row) }
+        Button("Potion shop") { applyMark(.potionShop, column: column, row: row) }
     }
 }
 

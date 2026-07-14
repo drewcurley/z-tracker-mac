@@ -74,6 +74,15 @@ public final class OverworldGrid {
         setExtraData(current == key ? 0 : key, column: column, row: row, key: key)
     }
 
+    /// Explicitly set a claimable tile's used state (no-op if not toggleable).
+    /// Used when marking a claimable tile, which defaults to **used** (T-056).
+    public func setUsed(_ used: Bool, column: Int, row: Int) {
+        let mark = mark(column: column, row: row)
+        guard mark.isUsedToggleable else { return }
+        let key = mark.rawIndex
+        setExtraData(used ? key : 0, column: column, row: row, key: key)
+    }
+
     /// Resets every tile to `.unmarked` and clears all extra-data — not
     /// itself a confirmed reference-app gesture, but a useful testing/reset
     /// hook.
