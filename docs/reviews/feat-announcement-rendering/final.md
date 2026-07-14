@@ -9,16 +9,19 @@ reviewed sequentially wearing each of the 9 hats.
 - none
 
 ## Warnings (fix before next review)
-- [ ] **Interactive visual/audible confirmation is deferred.** The build
-      environment grants neither screen-recording nor assistive-access
-      permission, so the transient toast + speech couldn't be driven and
-      screenshotted here. Verification achieved: builds (debug + release),
-      the app launches and runs without crashing (the `.task` poll loop +
-      overlay don't break startup/render), and the engine/mapping/`poll-
-      Reminders` are exhaustively unit-tested. To confirm live: run the app,
-      pick a quest, expand the debug panel, toggle Ladder → within ~1 s a
-      "Don't forget that you have the ladder" toast should appear (+ speak if
-      the Have-key/ladder voice reminder is on).
+- [x] **Interactive visual confirmation — DONE (post-merge, 2026-07-13).**
+      Once screen-recording + assistive-access permissions were granted, the
+      full flow was driven and screenshotted: launched the release build →
+      selected First Quest → expanded the debug panel → toggled **Ladder** →
+      within ~1 s the toast **"Don't forget that you have the ladder"**
+      appeared at the top of the window, and it auto-dismissed after ~6 s
+      (Ladder stayed checked). This confirms the whole pipeline end-to-end:
+      toggle → 1 Hz `pollReminders()` → `PlayerComputedStateSummary`
+      recompute → `ReminderEngine` ladder-transition → `.remindShortly` →
+      `ReminderController` visual toast (category `haveKeyLadder`,
+      visual-enabled). Speech fires via `AVSpeechSynthesizer` on the same
+      path (not screenshot-verifiable). The overworld terrain art also
+      renders correctly in the main view.
 - [ ] Reminder icons and the HDN lettered "Dungeon X complete" text variant
       are deferred refinements (the reference shows small item icons beside
       the text).

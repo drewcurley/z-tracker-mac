@@ -666,12 +666,13 @@ JSON file holds options/settings, independent of save state.
       `ReminderOverlayView` shows transient toasts (honoring
       `visualReminders[category]`); `MainTrackerPlaceholderView` drives a
       ~1 Hz poll `.task`. 5 tests cover the mapping + `pollReminders`
-      integration. The app builds and runs without crashing; interactive
-      toast confirmation needs screen/assistive permissions unavailable in the
-      build environment. Refinements deferred: reminder icons and the HDN
-      lettered "Dungeon X complete" variant. **This makes the entire T-012→
-      T-018 player-state → reminders arc's logic *and* its first end-to-end
-      user-facing output complete.**
+      integration. **Visually verified end-to-end (2026-07-13):** toggling
+      Ladder in the running app pops the "Don't forget that you have the
+      ladder" toast within ~1 s and it auto-dismisses after ~6 s (see the
+      T-018.3 review artifact). Refinements deferred: reminder icons and the
+      HDN lettered "Dungeon X complete" variant. **This makes the entire
+      T-012→T-018 player-state → reminders arc's logic *and* its first
+      end-to-end user-facing output complete.**
   Also confirmed *not* part of this subsystem despite a similar name:
   `DungeonData.fs` (290 lines) is dungeon-room-shape ASCII grids + flavor
   tips for a future dungeon-map-drawing UI — unrelated to player state.
