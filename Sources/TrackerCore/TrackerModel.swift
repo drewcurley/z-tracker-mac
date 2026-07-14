@@ -60,6 +60,13 @@ public final class TrackerModel {
     /// separate and lands with its own consumer.
     public var isCurrentlyBook: Bool
 
+    /// Seed flag: whether the overworld is **mirrored** East↔West (T-047).
+    /// Ported from `TrackerModel.MirrorOverworld` (`TrackerModel.fs:31`,
+    /// options-menu "Mirror overworld — Flip the overworld map East<->West").
+    /// Flips the map display (and feeds the mirrored screen-scroll routing edge
+    /// `MapStateSummary` already reads). Off by default.
+    public var mirrorOverworld: Bool
+
     /// Per-target location hints (T-039) — which overworld region each dungeon /
     /// sword cave was hinted to be in. 11 slots (`HintTarget`: dungeons 1–9 →
     /// 0–8, white sword → 9, magical sword → 10). Map *knowledge*, so a
@@ -86,6 +93,7 @@ public final class TrackerModel {
         dungeonTracker: DungeonTrackerInstance = DungeonTrackerInstance(),
         isWSMSReplacedByBU: Bool = false,
         isCurrentlyBook: Bool = true,
+        mirrorOverworld: Bool = false,
         levelHints: [HintZone] = Array(repeating: .unknown, count: HintTarget.count),
         dungeonBlockers: DungeonBlockersContainer = DungeonBlockersContainer(),
         reminderEngine: ReminderEngine = ReminderEngine()
@@ -99,6 +107,7 @@ public final class TrackerModel {
         self.dungeonTracker = dungeonTracker
         self.isWSMSReplacedByBU = isWSMSReplacedByBU
         self.isCurrentlyBook = isCurrentlyBook
+        self.mirrorOverworld = mirrorOverworld
         self.levelHints = levelHints
         self.dungeonBlockers = dungeonBlockers
         self.reminderEngine = reminderEngine

@@ -337,10 +337,10 @@ struct ObtainableItemsView: View {
 }
 
 /// **Flags** group (T-043): the seed-option toggles — swordless (White/Magical
-/// Sword → Bomb Upgrade) and Book vs Magic Shield (boomstick seeds), icon-only
-/// with rollover tooltips. Book-as-atlas and mirror-overworld are listed in the
-/// reference but not yet modeled here, so they're intentionally absent (no
-/// invented flags).
+/// Sword → Bomb Upgrade), Book vs Magic Shield (boomstick seeds), and Mirror
+/// Overworld (T-047). Book-as-atlas is listed in the reference but its only
+/// consumer (`PlayerCanSeeMapOfThisDungeon`, a dungeon-map view) isn't built
+/// yet, so it's intentionally still absent (no dead toggle / invented flag).
 struct SeedFlagsView: View {
     @Bindable var model: TrackerModel
 
@@ -348,8 +348,20 @@ struct SeedFlagsView: View {
         VStack(alignment: .leading, spacing: 8) {
             swordlessToggle
             bookShieldToggle
+            mirrorToggle
         }
         .toggleStyle(.checkbox)
+    }
+
+    /// Mirror the overworld East↔West (T-047).
+    private var mirrorToggle: some View {
+        Toggle(isOn: $model.mirrorOverworld) {
+            HStack(spacing: 6) {
+                Image(systemName: "arrow.left.arrow.right").font(.system(size: 13))
+                Text("Mirror OW").font(.system(size: 11))
+            }
+        }
+        .help("Mirror the overworld map East↔West (mirrored seeds)")
     }
 
     /// The swordless (WSMS→Bomb Upgrade) seed toggle. When on, the White Sword

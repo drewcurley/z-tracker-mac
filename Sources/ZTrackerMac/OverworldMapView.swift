@@ -37,6 +37,14 @@ struct OverworldMapView: View {
     /// overlay); supplied by the parent from `dungeonTracker.armosBox`.
     var armosClaimed: Bool = false
 
+    /// Whether the overworld is mirrored East↔West (T-047). Flips the whole map
+    /// horizontally (`scaleEffect(x: -1)`), so a tap on the visually-left screen
+    /// still edits its true (mirrored) data column — no coordinate remap needed.
+    /// Readable glyphs (dungeon numerals, interior icons, fairy, coords) are
+    /// counter-flipped so they don't render backwards, matching the reference's
+    /// re-flip of `mirrorOverworldFEs` (`UI.fs:1302-1310`).
+    var mirrored: Bool = false
+
     /// Whether any active top-section overlay highlights this tile (T-035.2).
     private func overlayHighlights(column: Int, row: Int, mark: OverworldTileMark) -> Bool {
         guard let overlays else { return false }
@@ -154,7 +162,7 @@ struct OverworldMapView: View {
                                 let background = OverworldBackgroundAtlas.tile(quest: quest, column: column, row: row)
                                 let isAlwaysEmpty = overworldInstance.alwaysEmpty(x: column, y: row)
                                 let showsFairy = isAlwaysEmpty && OverworldFairySpots.isFairySpot(column: column, row: row, quest: quest)
-                                TileView(mark: mark, background: background, tileWidth: tileWidth, tileHeight: tileHeight, isAlwaysEmpty: isAlwaysEmpty, showsFairy: showsFairy)
+                                TileView(mark: mark, background: background, tileWidth: tileWidth, tileHeight: tileHeight, isAlwaysEmpty: isAlwaysEmpty, showsFairy: showsFairy, mirrored: mirrored)
                                     .overlay {
                                         if options.highlightNearby, !isAlwaysEmpty,
                                            let isBold = highlights[OverworldScreenCoordinate(x: column, y: row)] {
@@ -189,6 +197,9 @@ struct OverworldMapView: View {
                                                 .shadow(color: .black, radius: 1)
                                                 .padding(1)
                                                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                                                // Counter-flip so the coord reads normally under a
+                                                // mirrored map (it still marks its true screen).
+                                                .scaleEffect(x: mirrored ? -1 : 1, y: 1)
                                         }
                                     }
                                     .onTapGesture { handleLeftClick(column: column, row: row) }
@@ -222,6 +233,11 @@ struct OverworldMapView: View {
                         .allowsHitTesting(false)
                 }
             }
+            // Mirror the whole map East↔West (T-047). scaleEffect flips both the
+            // rendering and the hit-test coordinate space, so taps still land on
+            // the correct (mirrored) tile; per-tile glyphs are counter-flipped
+            // inside `TileView` / the coords overlay so they stay readable.
+            .scaleEffect(x: mirrored ? -1 : 1, y: 1)
         }
         .aspectRatio(tileAspectRatio * CGFloat(OverworldGrid.columnCount) / CGFloat(OverworldGrid.rowCount), contentMode: .fit)
     }
@@ -375,6 +391,11 @@ private struct TileView: View {
     /// This always-empty screen is a fixed fairy-fountain spot and shows the
     /// fairy icon (`WPFUI.fs:488-490`).
     var showsFairy: Bool = false
+    /// Whether the map is mirrored (T-047). The terrain sprite stays flipped
+    /// (the map is genuinely mirrored), but glyph layers — dungeon/any-road
+    /// numerals, interior icons, the fairy — are counter-flipped so they read
+    /// normally, matching the reference's re-flip of readable elements.
+    var mirrored: Bool = false
 
     private static let interiorOffsetXFraction: CGFloat = 5.0 / 16.0
     private static let interiorOffsetYFraction: CGFloat = 1.0 / 11.0
@@ -402,10 +423,12 @@ private struct TileView: View {
             // legible at map scale.
             digitBadge
                 .frame(width: tileWidth, height: tileHeight)
+                .scaleEffect(x: mirrored ? -1 : 1, y: 1)
             // Small interior sprites (secrets, shops, armos, …) keep the
             // reference's exact interior-icon placement.
             interiorIconView
                 .frame(width: tileWidth * Self.interiorWidthFraction, height: tileHeight * Self.interiorHeightFraction)
+                .scaleEffect(x: mirrored ? -1 : 1, y: 1)
                 .offset(x: tileWidth * Self.interiorOffsetXFraction, y: tileHeight * Self.interiorOffsetYFraction)
             // Permanent "always empty" screens are simply darkened (same as a
             // user `.dontCare` mark) — a darkened tile already reads as
@@ -421,6 +444,7 @@ private struct TileView: View {
                         .aspectRatio(contentMode: .fit)
                         .frame(width: tileHeight * 0.7, height: tileHeight * 0.7)
                         .frame(width: tileWidth, height: tileHeight)
+                        .scaleEffect(x: mirrored ? -1 : 1, y: 1)
                 }
             }
         }

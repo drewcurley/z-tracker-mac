@@ -28,7 +28,6 @@ struct MainTrackerPlaceholderView: View {
     /// The live overworld map-state summary (T-015.3) feeding the map's true
     /// GYR highlight. Recomputed here from the observable model each time the
     /// body evaluates, so the colors track marks / items / dungeon state.
-    /// `mirrorOverworld` has no live source until T-015.5, so it's `false`.
     private var mapState: MapStateSummary {
         MapStateSummary.compute(
             grid: model.overworldGrid,
@@ -38,7 +37,7 @@ struct MainTrackerPlaceholderView: View {
             progress: model.playerProgress,
             drawRoutes: options.drawRoutes,
             routesCanScreenScroll: options.showScreenScrolls,
-            mirrorOverworld: false
+            mirrorOverworld: model.mirrorOverworld
         )
     }
 
@@ -87,7 +86,8 @@ struct MainTrackerPlaceholderView: View {
                     playerState: model.playerComputedStateSummary,
                     mapState: mapState,
                     overlays: overlays,
-                    armosClaimed: model.dungeonTracker.armosBox.isDone
+                    armosClaimed: model.dungeonTracker.armosBox.isDone,
+                    mirrored: model.mirrorOverworld
                 )
                 .frame(maxWidth: 900)
             }
