@@ -696,6 +696,15 @@ JSON file holds options/settings, independent of save state.
     dungeon-cell icons incl. the `staircase` basement glyph) →
     `DungeonCellIconAtlas`, both matching the existing `Overworld*Atlas`
     pattern. Assets MIT-licensed (NOTICE.md). The UI pieces consume these.
+  - **T-021 — done.** The dungeon item-tracker view (`DungeonTrackerView.swift`)
+    — the first visible main-tracker surface. Nine dungeon cards render the
+    T-013/T-016 model with T-020 sprites: per-quest box counts, located
+    numerals + triforce pips, basement-stair glyphs (T-016.2), completion
+    highlight, the item picker (left-click box → 15 items + Have-it/Don't-want/
+    Don't-have/Clear), and the standalone Coast/Armos/WS-cave boxes. Verified
+    live: setting a box to Ladder shows the sprite + green border AND fires the
+    reminder toast (box → derived state → engine, end-to-end). Aesthetic
+    license: clean cards, not the cramped reference grid.
 - **Hint-decoding tables** ("Aquamentus Awaits" → location halos) — mapping
   logic exists in code (`GetLevelHint`-style) but wasn't fully extracted.
 - **Sprite atlas slicing offsets — resolved (T-006/T-007/T-008), icon

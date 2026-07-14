@@ -32,33 +32,32 @@ struct MainTrackerPlaceholderView: View {
     }
 
     var body: some View {
-        VStack(spacing: 12) {
-            Text("Main tracker view — mostly not built yet")
-                .font(.title2)
-                .foregroundStyle(.secondary)
-            if let quest = model.quest {
-                Text("Quest: \(quest.rawValue)")
-                    .foregroundStyle(.secondary)
-            }
-            Text("Heart Shuffle: \(model.heartShuffle ? "on" : "off"), Hide Dungeon Numbers: \(model.hideDungeonNumbers ? "on" : "off")")
+        ScrollView {
+            VStack(spacing: 14) {
+                // The dungeon item-tracker (T-013/T-016/T-020 rendered).
+                DungeonTrackerView(model: model)
+
+                DisclosureGroup("Player state (debug — starting items / progress toggles)") {
+                    PlayerStateDebugPanel(startingItems: model.startingItemsAndExtras, progress: model.playerProgress)
+                }
                 .font(.caption)
-                .foregroundStyle(.secondary)
+                .frame(maxWidth: 900)
 
-            PlayerStateDebugPanel(startingItems: model.startingItemsAndExtras, progress: model.playerProgress)
-
-            // ContentView only shows this view once model.quest is set
-            // (docs/domain.md § 4.1); the fallback here is defensive, not
-            // an expected path.
-            OverworldMapView(
-                grid: model.overworldGrid,
-                quest: model.quest ?? .first,
-                options: options,
-                playerState: model.playerComputedStateSummary,
-                mapState: mapState
-            )
-            .frame(maxWidth: 900)
+                // ContentView only shows this view once model.quest is set
+                // (docs/domain.md § 4.1); the fallback here is defensive, not
+                // an expected path.
+                OverworldMapView(
+                    grid: model.overworldGrid,
+                    quest: model.quest ?? .first,
+                    options: options,
+                    playerState: model.playerComputedStateSummary,
+                    mapState: mapState
+                )
+                .frame(maxWidth: 900)
+            }
+            .padding(24)
+            .frame(maxWidth: .infinity)
         }
-        .padding(32)
         .frame(minWidth: 420, minHeight: 320)
         .overlay(alignment: .top) {
             ReminderOverlayView(controller: reminders)
