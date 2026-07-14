@@ -270,14 +270,12 @@ struct ItemProgressGridView: View {
     private static let cellSize: CGFloat = 34
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 6) {
-                Text("Items").font(.caption2).foregroundStyle(.secondary)
-                Spacer()
-                // White / magical sword cave location hints (T-039).
-                swordHint(.whiteSword, index: HintTarget.whiteSwordCave, title: "White Sword Cave")
-                swordHint(.magicalSword, index: HintTarget.magicalSwordCave, title: "Magical Sword Cave")
-            }
+        VStack(alignment: .leading, spacing: 3) {
+            Text("Items").font(.caption2).foregroundStyle(.secondary)
+            // White / magical sword cave location hints (T-039), each sitting
+            // directly above its box: the White Sword indicator (col 0) and the
+            // Magical Sword box (col 2), matching the reference.
+            swordHintRow
             Grid(horizontalSpacing: 6, verticalSpacing: 6) {
                 ForEach(0..<ItemProgressGrid.rows, id: \.self) { row in
                     GridRow {
@@ -400,13 +398,25 @@ struct ItemProgressGridView: View {
             }
     }
 
-    /// A sword-cave hint: the sword icon + its location-hint label (T-039).
-    private func swordHint(_ icon: ItemIconAtlas.Icon, index: Int, title: String) -> some View {
-        HStack(spacing: 2) {
-            if let img = Image(atlasIcon: ItemIconAtlas.cgImage(icon)) {
-                img.interpolation(.none).resizable().frame(width: 13, height: 13)
+    /// A row of hint labels aligned with the item-grid columns: the White Sword
+    /// cave hint over the White Sword *item box* (col 1) and the Magical Sword
+    /// cave hint over the Magical Sword box (col 2). Every column reserves a
+    /// fixed-width slot (`Color.clear` for the empties) so the two labels stay
+    /// aligned over their boxes.
+    private var swordHintRow: some View {
+        HStack(spacing: 6) {
+            ForEach(0..<ItemProgressGrid.columns, id: \.self) { col in
+                Group {
+                    if col == 1 {
+                        HintLabel(hint: $model.levelHints[HintTarget.whiteSwordCave], title: "White Sword Cave")
+                    } else if col == 2 {
+                        HintLabel(hint: $model.levelHints[HintTarget.magicalSwordCave], title: "Magical Sword Cave")
+                    } else {
+                        Color.clear
+                    }
+                }
+                .frame(width: Self.cellSize, height: 15)
             }
-            HintLabel(hint: $model.levelHints[index], title: title)
         }
     }
 
