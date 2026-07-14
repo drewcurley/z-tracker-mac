@@ -383,20 +383,63 @@ struct SeedFlagsView: View {
 }
 
 /// **Informational** group (T-043): live read-only readouts (unmarked overworld
-/// spots left, how many are currently gettable, computed Max Hearts) plus the
-/// map-overlay toggle icons (open caves / money / zones / coords — hover to
-/// preview, click to lock). The groundhog/routers reset now lives in the paused-
-/// timer reset hub (T-046), alongside Reset App / Reset Timer.
+/// spots left, how many are currently gettable, computed Max Hearts), the map-
+/// overlay toggle icons (open caves / money / zones / coords — hover to preview,
+/// click to lock), and the three **omnipresent reset buttons** (T-048): Reset
+/// App, Reset Timer, and Reset (keep maps). They're always visible here (not
+/// gated behind pausing), and the groundhog reset never pauses the main timer.
 struct MapInfoView: View {
     @Bindable var model: TrackerModel
     var playerState: PlayerComputedStateSummary
     var mapState: MapStateSummary
     var overlays: OverworldOverlayState
+    /// The run timer — Reset Timer zeroes it; Reset (keep maps) restarts the lap
+    /// without pausing the main timer (T-048).
+    var timer: TrackerTimer
+    /// "Reset App" — discard everything and return to the startup screen (T-046).
+    var onResetApp: () -> Void = {}
+
+    @State private var confirmingResetApp = false
+    @State private var confirmingGroundhog = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             statusReadout
             overlayToggles
+            resetButtons
+        }
+    }
+
+    /// The three always-visible reset actions (T-048). Reset App and the
+    /// groundhog reset are destructive, so they confirm first; Reset Timer just
+    /// zeroes the clock.
+    private var resetButtons: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            Button("Reset App") { confirmingResetApp = true }
+                .help("Discard everything and return to the startup screen, as if you'd just reopened the app")
+            Button("Reset Timer") { timer.reset() }
+                .help("Set the run timer back to 0:00:00 (keeps your marks and items)")
+            Button("Reset (keep maps)") { confirmingGroundhog = true }
+                .help("Groundhog/routers restart: clear inventory but keep your overworld marks and known item locations. Does not pause the timer.")
+        }
+        .font(.system(size: 10))
+        .controlSize(.small)
+        .confirmationDialog("Reset the app?", isPresented: $confirmingResetApp, titleVisibility: .visible) {
+            Button("Reset App (discard everything)", role: .destructive, action: onResetApp)
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Returns to the startup screen as if you'd just reopened the app. All marks, items, hints, and the timer are discarded. This can't be undone (no save yet).")
+        }
+        .confirmationDialog("Reset inventory for a groundhog/routers restart?",
+                            isPresented: $confirmingGroundhog, titleVisibility: .visible) {
+            Button("Reset inventory (keep maps)", role: .destructive) {
+                model.resetForGroundhogOrRouters()
+                // Fresh lap only — the main timer keeps running (never paused).
+                timer.startLap()
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Removes all items, triforces, and take-any hearts so you can replay the same seed. Your overworld marks and known item locations stay, and the lap timer restarts while the main timer keeps running. This can't be undone (no save yet).")
         }
     }
 

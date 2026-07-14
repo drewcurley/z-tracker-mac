@@ -11,7 +11,7 @@ struct MainTrackerPlaceholderView: View {
     var model: TrackerModel
     var options: TrackerOptions
     /// "Reset App" — discard the run and return to the startup screen (T-046),
-    /// offered from the paused-timer panel.
+    /// offered from the Info group's reset buttons (T-048).
     var onResetApp: () -> Void = {}
 
     /// Drives + presents the reminder engine's announcements (T-018.3).
@@ -45,20 +45,11 @@ struct MainTrackerPlaceholderView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 14) {
-                // Run timer (T-035.4), top-right. Pausing reveals the reset
-                // hub (T-046): Reset App / Reset Timer / Reset (keep maps).
+                // Run timer (T-035.4), top-right. Just the clock + Pause/Resume;
+                // the reset actions live under the Info group (T-048).
                 HStack {
                     Spacer()
-                    TimerView(
-                        timer: timer,
-                        onResetApp: onResetApp,
-                        onGroundhogReset: {
-                            model.resetForGroundhogOrRouters()
-                            // Fresh lap; the main timer keeps its total and resumes.
-                            timer.startLap()
-                            timer.resume()
-                        }
-                    )
+                    TimerView(timer: timer)
                 }
 
                 // The top section, split into four logical groups laid out
@@ -75,7 +66,7 @@ struct MainTrackerPlaceholderView: View {
                         SeedFlagsView(model: model)
                     }
                     TopSectionGroup(title: "Info") {
-                        MapInfoView(model: model, playerState: model.playerComputedStateSummary, mapState: mapState, overlays: overlays)
+                        MapInfoView(model: model, playerState: model.playerComputedStateSummary, mapState: mapState, overlays: overlays, timer: timer, onResetApp: onResetApp)
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
