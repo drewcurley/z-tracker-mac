@@ -52,6 +52,14 @@ public final class TrackerModel {
     /// consumers — so they're added when those land, not here.
     public var isWSMSReplacedByBU: Bool
 
+    /// Seed flag: whether item slot 0 is the Book (`true`, default) or the
+    /// Magic Shield (`false`) — in boomstick seeds the book is a shield in the
+    /// item pool (`IsCurrentlyBook`, `TrackerModel.fs:156-168`;
+    /// `CustomComboBoxes.fs:46`). Consumed immediately by the item-icon display
+    /// (book vs shield sprite); the deferred `PlayerHasTheBook` logic helper is
+    /// separate and lands with its own consumer.
+    public var isCurrentlyBook: Bool
+
     /// Per-dungeon "why I left" blocker annotations (docs/domain.md § 6,
     /// T-017). Reads player state for staleness but doesn't feed back into
     /// it. The blocker-setting UI is a later task (uncharacterized).
@@ -71,6 +79,7 @@ public final class TrackerModel {
         playerProgress: PlayerProgressAndTakeAnyHearts = PlayerProgressAndTakeAnyHearts(),
         dungeonTracker: DungeonTrackerInstance = DungeonTrackerInstance(),
         isWSMSReplacedByBU: Bool = false,
+        isCurrentlyBook: Bool = true,
         dungeonBlockers: DungeonBlockersContainer = DungeonBlockersContainer(),
         reminderEngine: ReminderEngine = ReminderEngine()
     ) {
@@ -82,6 +91,7 @@ public final class TrackerModel {
         self.playerProgress = playerProgress
         self.dungeonTracker = dungeonTracker
         self.isWSMSReplacedByBU = isWSMSReplacedByBU
+        self.isCurrentlyBook = isCurrentlyBook
         self.dungeonBlockers = dungeonBlockers
         self.reminderEngine = reminderEngine
     }
