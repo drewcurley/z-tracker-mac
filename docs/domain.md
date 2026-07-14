@@ -676,6 +676,26 @@ JSON file holds options/settings, independent of save state.
   Also confirmed *not* part of this subsystem despite a similar name:
   `DungeonData.fs` (290 lines) is dungeon-room-shape ASCII grids + flavor
   tips for a future dungeon-map-drawing UI — unrelated to player state.
+- **Main-tracker UI epic — in progress.** The T-012→T-018 model/logic layer
+  is complete and tested; what remains is *rendering* it. A full drive of the
+  Windows reference (via Wineskin) established the layout + interactions:
+  dungeon item-tracker (per-dungeon boxes; left-click → item picker with a
+  3-way mouse — left/middle/right = Have it / Don't want it / Don't have it,
+  i.e. `Box.playerHas` YES/SKIPPED/NO; basement-stair glyphs = T-016.2;
+  located triforce numerals), an item-progress grid (renders T-014), a
+  blockers grid (8×3 = T-017), the overworld view (done), a **dungeon
+  room-grid view** (hover below the red line; tabs 1–8 + FQ/SQ + vanilla
+  dungeon maps), and the OW-completion timeline. The **destination picker**
+  (T-015.6) is a *mode* (Link icon glows green) that highlights existing
+  icons — overworld tile / shop-by-item / triforce→dungeon / sword cave /
+  open-caves — as clickable route targets, not a modal grid. **Aesthetic
+  license granted:** keep all functionality + the Zelda pixel sprites, but the
+  Mac UI may look nicer than the cramped Windows original.
+  - **T-020 — done.** Sprite-atlas foundation: `icons7x7.png` (32 item icons)
+    → `ItemIconAtlas` (+ `ITEMS`→icon mapping) and `zelda_items16x16.png` (13
+    dungeon-cell icons incl. the `staircase` basement glyph) →
+    `DungeonCellIconAtlas`, both matching the existing `Overworld*Atlas`
+    pattern. Assets MIT-licensed (NOTICE.md). The UI pieces consume these.
 - **Hint-decoding tables** ("Aquamentus Awaits" → location halos) — mapping
   logic exists in code (`GetLevelHint`-style) but wasn't fully extracted.
 - **Sprite atlas slicing offsets — resolved (T-006/T-007/T-008), icon
