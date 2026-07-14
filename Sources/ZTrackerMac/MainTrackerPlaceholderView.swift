@@ -34,13 +34,18 @@ struct MainTrackerPlaceholderView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 14) {
-                // The dungeon item-tracker (T-013/T-016/T-020 rendered).
-                DungeonTrackerView(model: model)
+                // Dungeon tracker and item grid sit side by side (T-030), not
+                // stacked — a step toward the reference's layout (the item grid
+                // lives beside, not above, the dungeon area).
+                HStack(alignment: .top, spacing: 16) {
+                    // The dungeon item-tracker (T-013/T-016/T-020 rendered).
+                    DungeonTrackerView(model: model)
 
-                // The overworld item grid (T-025.1): item toggles + the
-                // coast/armos/white-sword picker boxes, with located/superseded
-                // box highlighting (T-025.3) from the live derived state.
-                ItemProgressGridView(model: model, playerState: model.playerComputedStateSummary, mapState: mapState)
+                    // The overworld item grid (T-025.1): item toggles + the
+                    // coast/armos/white-sword picker boxes, with located/
+                    // superseded box highlighting (T-025.3) from live state.
+                    ItemProgressGridView(model: model, playerState: model.playerComputedStateSummary, mapState: mapState)
+                }
 
                 DisclosureGroup("Player state (debug — starting items / progress toggles)") {
                     PlayerStateDebugPanel(startingItems: model.startingItemsAndExtras, progress: model.playerProgress)
