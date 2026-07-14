@@ -264,6 +264,8 @@ struct ItemProgressGridView: View {
     /// Map-overlay toggles (T-035.2) — the top-section icons that hover-preview
     /// / click-lock highlights on the overworld map.
     var overlays: OverworldOverlayState
+    /// Run timer (T-035.4) — a groundhog reset starts a fresh lap.
+    var timer: TrackerTimer
 
     private static let cellSize: CGFloat = 34
 
@@ -383,6 +385,8 @@ struct ItemProgressGridView: View {
                                 isPresented: $confirmingReset, titleVisibility: .visible) {
                 Button("Reset inventory (keep maps)", role: .destructive) {
                     model.resetForGroundhogOrRouters()
+                    // Start a fresh lap; the main timer keeps running.
+                    timer.startLap()
                 }
                 Button("Cancel", role: .cancel) {}
             } message: {
