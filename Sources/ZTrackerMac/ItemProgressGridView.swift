@@ -274,7 +274,6 @@ struct ItemProgressGridView: View {
             HStack(spacing: 14) {
                 swordlessToggle
                 bookShieldToggle
-                extraCandlesToggle
                 Spacer(minLength: 8)
                 maxHeartsReadout
             }
@@ -302,15 +301,6 @@ struct ItemProgressGridView: View {
         .help("When checked, item slot 0 is the Magic Shield instead of the Book (boomstick seeds)")
     }
 
-    /// Extra Candles (T-031): a blue candle in the wood sword cave (the wood-
-    /// sword box shows a blue candle and counts as candle) + a blue candle as a
-    /// take-any option.
-    private var extraCandlesToggle: some View {
-        Toggle(isOn: $model.extraCandles) { iconOnly(.blueCandle) }
-            .toggleStyle(.checkbox)
-            .help("Extra Candles seed: the wood sword cave holds a blue candle, and blue candles appear in take-any caves")
-    }
-
     /// Max hearts — a read-only, program-computed number (rises as the player
     /// collects heart containers / take-any hearts); not user-editable.
     private var maxHeartsReadout: some View {
@@ -327,11 +317,9 @@ struct ItemProgressGridView: View {
     }
 
     /// Seed-option icon override for a toggle box: the magical-sword box shows
-    /// the bomb-upgrade under swordless (T-025.4), and the wood-sword box shows
-    /// the blue candle under Extra Candles (T-031).
+    /// the bomb-upgrade under swordless (T-025.4).
     private func iconOverride(for toggle: ItemProgressGrid.ItemToggle) -> ItemIconAtlas.Icon? {
         if toggle == .magicalSword && model.isWSMSReplacedByBU { return .wsMsBombUpgrade }
-        if toggle == .woodSword && model.extraCandles { return .blueCandle }
         return nil
     }
 
