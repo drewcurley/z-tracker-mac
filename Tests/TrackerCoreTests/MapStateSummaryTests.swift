@@ -206,6 +206,25 @@ struct MapStateSummaryTests {
         #expect(compute(playerState: PlayerComputedStateSummary(haveLadder: true, haveCoastItem: true)).owRouteworthySpots[15, 5] == false)
     }
 
+    @Test("any-road marks populate anyRoadLocations by warp number — the routing input (T-015.5)")
+    func anyRoadLocations() {
+        let grid = OverworldGrid()
+        let a = Self.safeScreen       // any-road 1
+        let b = Self.safeScreen2      // any-road 3
+        grid.setMark(.anyRoad(1), column: a.x, row: a.y)
+        grid.setMark(.anyRoad(3), column: b.x, row: b.y)
+
+        let s = compute(grid: grid)
+        #expect(s.anyRoadLocations[0] == OverworldScreenCoordinate(x: a.x, y: a.y)) // warp 1 -> index 0
+        #expect(s.anyRoadLocations[1] == nil)
+        #expect(s.anyRoadLocations[2] == OverworldScreenCoordinate(x: b.x, y: b.y)) // warp 3 -> index 2
+        #expect(s.anyRoadLocations[3] == nil)
+
+        // This is exactly what OverworldMapView feeds to dynamicGraph(anyRoads:).
+        let destinations = s.anyRoadLocations.compactMap { $0 }.map { (x: $0.x, y: $0.y) }
+        #expect(destinations.count == 2)
+    }
+
     @Test("coast island [15,2] screen-scroll special case needs draw+scroll+mirror")
     func coastIslandScreenScroll() {
         // Empty-handed the raftable coast-island screen is not routeworthy...

@@ -41,24 +41,35 @@ struct OverworldMapView: View {
     @State private var hoveredVertex: OverworldVertex?
     @State private var routeHighlight: OverworldRouteHighlight?
 
-    /// Ladder and raft are now live (`playerState.haveLadder`/`.haveRaft`,
-    /// T-014). The mirror-overworld toggle (`MirrorOverworld`) still has no
-    /// live state — its option/save wiring lands with the overworld map-
-    /// state work (T-015) — so it stays a documented placeholder, not
-    /// silently hardcoded. `RoutesCanScreenScroll` is already wired to a
-    /// real option below.
+    /// Ladder and raft are live (`playerState.haveLadder`/`.haveRaft`, T-014)
+    /// and any-roads are live (T-015.5). The mirror-overworld toggle
+    /// (`MirrorOverworld`) is a full display-flip feature (flips the whole
+    /// map's marks + background, not just routing) — split out as its own
+    /// task (T-015.7), so it stays a documented placeholder here, not
+    /// silently hardcoded. `RoutesCanScreenScroll` is already wired to a real
+    /// option below.
     private static let placeholderIsMirror = false
 
     /// Bold/pale highlight cap, matching the reference app's `MaxGYR`
     /// default (`OverworldRouteDrawing.fs:94`/`:28`).
     private static let maxGYR = 12
 
+    /// The marked any-road (warp) screens, from live map state (T-015.5).
+    /// Two or more marked any-roads warp between each other in the routing
+    /// graph (cost 4), so hover routing can use them.
+    private var anyRoadDestinations: [(x: Int, y: Int)] {
+        mapState.anyRoadLocations.compactMap { $0 }.map { (x: $0.x, y: $0.y) }
+    }
+
     private var dynamicGraph: OverworldDynamicGraph? {
         OverworldRoutingGraph.dynamicGraph(
             ladder: playerState.haveLadder,
             raft: playerState.haveRaft,
+            // Recorder-warp destinations depend on the recorder-dest
+            // derivation (recorder options + HDN + the T-018 orchestration),
+            // not yet ported — see docs/domain.md § 6 (T-015 follow-ons).
             recorderWarpDestinations: [],
-            anyRoads: [],
+            anyRoads: anyRoadDestinations,
             isMirror: Self.placeholderIsMirror,
             canScreenScroll: options.showScreenScrolls
         )
