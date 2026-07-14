@@ -70,6 +70,20 @@ struct SpotSummaryTests {
                 == .init(large: 3, medium: 7, small: 4))
     }
 
+    @Test("setUsed sets/clears used on a claimable mark; no-op otherwise (T-056)")
+    func setUsed() {
+        let grid = OverworldGrid()
+        grid.setMark(.secret(.medium), column: 3, row: 3)
+        grid.setUsed(true, column: 3, row: 3)
+        #expect(grid.isUsed(column: 3, row: 3))
+        grid.setUsed(false, column: 3, row: 3)
+        #expect(!grid.isUsed(column: 3, row: 3))
+        // Non-toggleable → no-op.
+        grid.setMark(.shop(.bomb), column: 4, row: 4)
+        grid.setUsed(true, column: 4, row: 4)
+        #expect(!grid.isUsed(column: 4, row: 4))
+    }
+
     @Test("a non-toggleable mark can't be used")
     func nonToggleable() {
         let grid = OverworldGrid()
