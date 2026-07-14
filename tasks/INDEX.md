@@ -51,6 +51,8 @@
 | [T-020](./T-020.md) | Item + dungeon-cell sprite atlases (main-tracker UI foundation) | frontend-engineer | — | feat/item-sprite-atlas | #29 | docs/reviews/feat-item-sprite-atlas/final.md |
 | [T-021](./T-021.md) | Dungeon item-tracker view (boxes + picker + basement stairs) | frontend-engineer | — | feat/dungeon-tracker-view | #30 | docs/reviews/feat-dungeon-tracker-view/final.md |
 | [T-022](./T-022.md) | Playtest feedback — picker rules, floor hearts, right-click; OW numbers + dark overlay | frontend-engineer | — | fix/overworld-tile-rendering | #31 | docs/reviews/fix-playtest-feedback-1/final.md |
+| [T-023](./T-023.md) | Speech synthesizer warm-up (superseded by T-024) | frontend-engineer | — | fix/speech-warmup | #32 | — |
+| [T-024](./T-024.md) | Pre-rendered reminder audio (neural Zoe voice) | frontend-engineer | — | feat/prerendered-reminder-audio | #33 | docs/reviews/feat-prerendered-reminder-audio/final.md |
 | [T-019](./T-019.md) | Bugfix: overworld tile icons used a dead ZHelper asset, wrong mapping | frontend-engineer | — | fix/overworld-tile-icons-wrong-asset | — | docs/reviews/fix-overworld-tile-icons-wrong-asset/final.md |
 
 ## Cancelled / Superseded

@@ -16,6 +16,44 @@ extension ReminderAnnouncement {
         }
     }
 
+    /// The pre-rendered audio clip key for this announcement (a filename in
+    /// the app's `audio/` resources, without extension), or `nil` if there's
+    /// no clip (falls back to live TTS). Bounded set — see
+    /// `scripts/generate-reminder-audio.sh`, which must stay in sync.
+    public var audioKey: String? {
+        switch self {
+        case .considerSword2: "consider_sword2"
+        case .considerSword3: "consider_sword3"
+        case .completedDungeon(let i) where (0...8).contains(i): "dungeon_complete_\(i + 1)"
+        case .foundDungeonCount(let n) where (1...9).contains(n): "located_\(n)"
+        case .triforceCount(let n) where (1...8).contains(n): "triforce_\(n)"
+        case .triforceAndGo(_, let summary):
+            switch summary.level {
+            case 103: "tag_go"
+            case 102: "tag_probably"
+            case 101: "tag_might"
+            default: "tag_need"
+            }
+        case .remindUnblock(let blocker, _, _):
+            switch blocker.hardCanonical {
+            case .ladder: "unblock_ladder"
+            case .recorder: "unblock_recorder"
+            case .bowAndArrow: "unblock_bow"
+            case .key: "unblock_key"
+            case .bomb: "unblock_bomb"
+            case .combat: "unblock_combat"
+            default: nil
+            }
+        case .remindShortly(let itemId):
+            switch itemId {
+            case ITEMS.ladder: "have_ladder"
+            case ITEMS.anyKey: "have_key"
+            default: nil
+            }
+        case .completedDungeon, .foundDungeonCount, .triforceCount: nil
+        }
+    }
+
     /// The human-readable reminder text. Ported from the reference's
     /// `SendReminder` strings. (The Hidden-Dungeon-Numbers lettered variant
     /// of "Dungeon N is complete" is a later refinement — this uses the
