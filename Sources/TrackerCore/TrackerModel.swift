@@ -130,6 +130,38 @@ public final class TrackerModel {
         )
     }
 
+    /// "Groundhog / routers / 4+4" reset — **remove inventory but preserve
+    /// maps** (`OverworldItemGridUI.fs:678-717` reset button;
+    /// `ResetForGroundhogOrRoutersOrFourPlusFourEtc`). For replaying the same
+    /// seed from scratch while keeping everything you've learned:
+    ///
+    /// **Reset** (run progress): dungeon triforces; every non-`.skipped` box's
+    /// *possession* (`.no`) while keeping its item *identity* and skipped marks;
+    /// all `playerProgress` (progress items + take-any hearts — the "used"
+    /// state); the reminder engine (so announcements fire again).
+    ///
+    /// **Kept** (knowledge): the overworld tile marks, the box item identities,
+    /// dungeon labels, blockers (`:709` keeps them for 4+4 keyblock), and the
+    /// seed's starting items (`startingItemsAndExtras` is not reset — same seed).
+    ///
+    /// The reference makes a hard save first; this app has no save/load yet, so
+    /// callers should confirm before invoking (the operation is destructive).
+    public func resetForGroundhogOrRouters() {
+        // Remove triforces (dungeons 1–8; dungeon 9 has none).
+        for i in 0..<8 where dungeonTracker.dungeon(i).playerHasTriforce {
+            dungeonTracker.dungeon(i).toggleTriforce()
+        }
+        // Red-ify obtained items: keep the item identity + any SKIPPED marks,
+        // reset "have it" → NO.
+        for box in dungeonTracker.allBoxes() where box.playerHas != .skipped {
+            box.setPlayerHas(.no)
+        }
+        // Clear progress items + take-any hearts (their "used" state).
+        playerProgress.resetAll()
+        // Let reminders announce again.
+        reminderEngine.resetForGroundhogOrRouters()
+    }
+
     /// Selects the overworld quest for this run. Mirrors the reference app's
     /// startup-screen quest buttons (docs/domain.md § 4.1) — once a quest is
     /// chosen, the reference app moves from the startup screen to the main
