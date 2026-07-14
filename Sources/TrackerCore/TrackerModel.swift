@@ -60,6 +60,12 @@ public final class TrackerModel {
     /// separate and lands with its own consumer.
     public var isCurrentlyBook: Bool
 
+    /// Per-target location hints (T-039) — which overworld region each dungeon /
+    /// sword cave was hinted to be in. 11 slots (`HintTarget`: dungeons 1–9 →
+    /// 0–8, white sword → 9, magical sword → 10). Map *knowledge*, so a
+    /// groundhog reset keeps these.
+    public var levelHints: [HintZone]
+
     /// Per-dungeon "why I left" blocker annotations (docs/domain.md § 6,
     /// T-017). Reads player state for staleness but doesn't feed back into
     /// it. The blocker-setting UI is a later task (uncharacterized).
@@ -80,6 +86,7 @@ public final class TrackerModel {
         dungeonTracker: DungeonTrackerInstance = DungeonTrackerInstance(),
         isWSMSReplacedByBU: Bool = false,
         isCurrentlyBook: Bool = true,
+        levelHints: [HintZone] = Array(repeating: .unknown, count: HintTarget.count),
         dungeonBlockers: DungeonBlockersContainer = DungeonBlockersContainer(),
         reminderEngine: ReminderEngine = ReminderEngine()
     ) {
@@ -92,6 +99,7 @@ public final class TrackerModel {
         self.dungeonTracker = dungeonTracker
         self.isWSMSReplacedByBU = isWSMSReplacedByBU
         self.isCurrentlyBook = isCurrentlyBook
+        self.levelHints = levelHints
         self.dungeonBlockers = dungeonBlockers
         self.reminderEngine = reminderEngine
     }

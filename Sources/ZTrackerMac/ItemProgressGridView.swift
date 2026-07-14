@@ -271,7 +271,13 @@ struct ItemProgressGridView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Text("Items").font(.caption2).foregroundStyle(.secondary)
+            HStack(spacing: 6) {
+                Text("Items").font(.caption2).foregroundStyle(.secondary)
+                Spacer()
+                // White / magical sword cave location hints (T-039).
+                swordHint(.whiteSword, index: HintTarget.whiteSwordCave, title: "White Sword Cave")
+                swordHint(.magicalSword, index: HintTarget.magicalSwordCave, title: "Magical Sword Cave")
+            }
             Grid(horizontalSpacing: 6, verticalSpacing: 6) {
                 ForEach(0..<ItemProgressGrid.rows, id: \.self) { row in
                     GridRow {
@@ -392,6 +398,16 @@ struct ItemProgressGridView: View {
             } message: {
                 Text("Removes all items, triforces, and take-any hearts so you can replay the same seed. Your overworld marks and known item locations stay. This can't be undone (no save yet).")
             }
+    }
+
+    /// A sword-cave hint: the sword icon + its location-hint label (T-039).
+    private func swordHint(_ icon: ItemIconAtlas.Icon, index: Int, title: String) -> some View {
+        HStack(spacing: 2) {
+            if let img = Image(atlasIcon: ItemIconAtlas.cgImage(icon)) {
+                img.interpolation(.none).resizable().frame(width: 13, height: 13)
+            }
+            HintLabel(hint: $model.levelHints[index], title: title)
+        }
     }
 
     @ViewBuilder
