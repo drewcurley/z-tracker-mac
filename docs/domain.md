@@ -655,10 +655,23 @@ JSON file holds options/settings, independent of save state.
       `hardCanonical` maybe-blocker matching, and reset. Deferred: recorder-
       warp dests (a routing concern that only fed the dropped `RoutingInfo`)
       and the timeline data.
-    - **T-018.3** — announcement *rendering*: speech (`AVSpeechSynthesizer`)
-      + a visual reminder surface, driven by a ~1 Hz poll of `ReminderEngine`,
-      honoring the per-category Voice/Visual reminder options. Needs a
-      reminder UI surface this project hasn't built.
+    - **T-018.3 — done.** Announcement *rendering*, making the reminder
+      engine live. `ReminderAnnouncement.category`/`.displayText`
+      (`ReminderAnnouncement+Display.swift`) map each announcement to its
+      reminder category + text, ported from the reference's `SendReminder`
+      call sites (`Z1R_Avalonia/UI.fs:1399-1615`). `TrackerModel` owns the
+      engine (`reminderEngine`) and exposes `pollReminders()`.
+      `ReminderView.swift` renders: a `ReminderController` speaks via
+      `AVSpeechSynthesizer` (honoring `voiceReminders[category]` + volume) and
+      `ReminderOverlayView` shows transient toasts (honoring
+      `visualReminders[category]`); `MainTrackerPlaceholderView` drives a
+      ~1 Hz poll `.task`. 5 tests cover the mapping + `pollReminders`
+      integration. The app builds and runs without crashing; interactive
+      toast confirmation needs screen/assistive permissions unavailable in the
+      build environment. Refinements deferred: reminder icons and the HDN
+      lettered "Dungeon X complete" variant. **This makes the entire T-012→
+      T-018 player-state → reminders arc's logic *and* its first end-to-end
+      user-facing output complete.**
   Also confirmed *not* part of this subsystem despite a similar name:
   `DungeonData.fs` (290 lines) is dungeon-room-shape ASCII grids + flavor
   tips for a future dungeon-map-drawing UI — unrelated to player state.

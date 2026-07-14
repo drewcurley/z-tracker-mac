@@ -57,6 +57,11 @@ public final class TrackerModel {
     /// it. The blocker-setting UI is a later task (uncharacterized).
     public let dungeonBlockers: DungeonBlockersContainer
 
+    /// The edge-triggered reminder/announcement engine (T-018.2). Owned here
+    /// so its transition state survives view redraws; driven by the app's
+    /// poll loop via `pollReminders()` (T-018.3).
+    public let reminderEngine: ReminderEngine
+
     public init(
         quest: OverworldQuest? = nil,
         heartShuffle: Bool = false,
@@ -66,7 +71,8 @@ public final class TrackerModel {
         playerProgress: PlayerProgressAndTakeAnyHearts = PlayerProgressAndTakeAnyHearts(),
         dungeonTracker: DungeonTrackerInstance = DungeonTrackerInstance(),
         isWSMSReplacedByBU: Bool = false,
-        dungeonBlockers: DungeonBlockersContainer = DungeonBlockersContainer()
+        dungeonBlockers: DungeonBlockersContainer = DungeonBlockersContainer(),
+        reminderEngine: ReminderEngine = ReminderEngine()
     ) {
         self.quest = quest
         self.heartShuffle = heartShuffle
@@ -77,6 +83,26 @@ public final class TrackerModel {
         self.dungeonTracker = dungeonTracker
         self.isWSMSReplacedByBU = isWSMSReplacedByBU
         self.dungeonBlockers = dungeonBlockers
+        self.reminderEngine = reminderEngine
+    }
+
+    /// Polls the reminder engine with the model's current derived state,
+    /// returning the announcements to fire this tick (T-018.3). The app calls
+    /// this on a ~1 Hz timer. The map-state's routing flags don't affect any
+    /// reminder input, so they're passed as `false`.
+    public func pollReminders() -> [ReminderAnnouncement] {
+        let instance = OverworldInstance(quest: quest ?? .first)
+        let mapState = MapStateSummary.compute(
+            grid: overworldGrid, instance: instance, dungeonTracker: dungeonTracker,
+            playerState: playerComputedStateSummary, progress: playerProgress,
+            drawRoutes: false, routesCanScreenScroll: false, mirrorOverworld: false)
+        let tag = TriforceAndGoSummary.compute(
+            playerState: playerComputedStateSummary, dungeonTracker: dungeonTracker,
+            mapState: mapState, progress: playerProgress, grid: overworldGrid, instance: instance)
+        return reminderEngine.poll(
+            playerState: playerComputedStateSummary, mapState: mapState,
+            dungeonTracker: dungeonTracker, blockers: dungeonBlockers,
+            progress: playerProgress, startingItems: startingItemsAndExtras, tagSummary: tag)
     }
 
     /// The derived player state (item possession, levels, hearts) read by
