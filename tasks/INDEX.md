@@ -19,7 +19,6 @@
 | [T-016.3](./T-016.3.md) | HDN labeling UI + overworld lettered-dungeon rendering | frontend-engineer | proposed |
 | [T-018](./T-018.md) | Reminders, announcements, and Triforce-and-Go (umbrella) | frontend-engineer | split |
 | [T-025](./T-025.md) | Overworld item grid UI (owItemGrid render) (umbrella; book-atlas/open-caves chrome deferred) | frontend-engineer | split |
-| [T-030](./T-030.md) | Main-tracker layout — dungeons and items side by side (deferred by user) | frontend-engineer | proposed |
 | [T-031](./T-031.md) | Extra Candles option — blue candle in wood sword cave + take-any caves | frontend-engineer | proposed |
 
 ## Completed
@@ -62,6 +61,7 @@
 | [T-025.3](./T-025.3.md) | Item-box located (yellow) / superseded (gray-X) highlighting | frontend-engineer | — | feat/item-box-highlighting | #41 | docs/reviews/feat-item-box-highlighting/final.md |
 | [T-025.4](./T-025.4.md) | Swordless (WSMS→Bomb Upgrade) support + sword-cave relabel + BU toggle | frontend-engineer | — | feat/swordless-bu-support | #42 | docs/reviews/feat-swordless-bu-support/final.md |
 | [T-025.5](./T-025.5.md) | Item-grid chrome — Book/Shield toggle + Max Hearts | frontend-engineer | — | feat/chrome-book-shield-hearts | #44 | docs/reviews/feat-chrome-book-shield-hearts/final.md |
+| [T-030](./T-030.md) | Main-tracker layout — dungeons and items side by side | frontend-engineer | — | feat/side-by-side-layout | #45 | docs/reviews/feat-side-by-side-layout/final.md |
 | [T-032](./T-032.md) | Fix — sword-cave labels wrongly BU-annotated (white sword item ≠ white sword) | frontend-engineer | — | fix/sword-cave-labels | #43 | docs/reviews/fix-sword-cave-labels/final.md |
 | [T-026](./T-026.md) | Auto-mark always-empty overworld tiles as permanent "don't care" | frontend-engineer | — | feat/always-empty-tiles | #36 | docs/reviews/feat-always-empty-tiles/final.md |
 | [T-027](./T-027.md) | Always-empty tile polish — drop the X, add fairy-spot icons | frontend-engineer | — | feat/always-empty-polish | #37 | docs/reviews/feat-always-empty-polish/final.md |
