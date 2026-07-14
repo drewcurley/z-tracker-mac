@@ -1,5 +1,29 @@
+import AppKit
 import SwiftUI
 import TrackerCore
+
+/// Catches a secondary (right) click while letting normal taps pass through
+/// to SwiftUI — macOS SwiftUI has no native right-click gesture. Used to set
+/// a box / picker item to "don't have it".
+private struct RightClickCatcher: NSViewRepresentable {
+    var action: () -> Void
+    func makeNSView(context: Context) -> NSView { CatcherView(action: action) }
+    func updateNSView(_ nsView: NSView, context: Context) {
+        (nsView as? CatcherView)?.action = action
+    }
+    private final class CatcherView: NSView {
+        var action: () -> Void
+        init(action: @escaping () -> Void) { self.action = action; super.init(frame: .zero) }
+        required init?(coder: NSCoder) { nil }
+        override func rightMouseDown(with event: NSEvent) { action() }
+    }
+}
+
+private extension View {
+    func onRightClick(perform action: @escaping () -> Void) -> some View {
+        background(RightClickCatcher(action: action))
+    }
+}
 
 /// The dungeon item-tracker (T-013/T-016 model, rendered). Nine dungeon
 /// cards, each with its located triforce numeral and its item boxes; a box
@@ -141,8 +165,10 @@ private struct BoxView: View {
             .frame(width: Self.size, height: Self.size)
             .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(borderColor, lineWidth: 1.5))
             .onTapGesture { showPicker = true }
+            // Right-click a placed box -> "don't have it".
+            .onRightClick { box.setPlayerHas(.no) }
             .popover(isPresented: $showPicker, arrowEdge: .bottom) {
-                BoxItemPicker(box: box) { showPicker = false }
+                BoxItemPicker(box: box, instance: instance) { showPicker = false }
             }
             if let label {
                 Text(label).font(.system(size: 8)).foregroundStyle(.secondary)
@@ -157,19 +183,22 @@ private struct BoxView: View {
 /// license (macOS lacks a clean middle-click in SwiftUI).
 private struct BoxItemPicker: View {
     @Bindable var box: Box
+    var instance: DungeonTrackerInstance
     var dismiss: () -> Void
 
     private let columns = Array(repeating: GridItem(.fixed(30), spacing: 4), count: 8)
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Set item").font(.caption).bold()
+            Text("Set item — left-click = have it, right-click = don't have it")
+                .font(.caption).foregroundStyle(.secondary)
             LazyVGrid(columns: columns, spacing: 4) {
                 ForEach(0..<Box.itemCount, id: \.self) { item in
-                    Button {
-                        box.set(cellCurrent: item, playerHas: .yes)
-                        dismiss()
-                    } label: {
+                    // An item already placed elsewhere (unique items, except
+                    // the 9 hearts) is disabled and can't be picked again.
+                    let available = instance.canSelectItem(item, forBox: box)
+                    let isCurrent = box.cellCurrent == item
+                    Group {
                         if let icon = ItemIconAtlas.icon(forItemIndex: item),
                            let image = Image(atlasIcon: ItemIconAtlas.cgImage(icon)) {
                             image.interpolation(.none).resizable().frame(width: 22, height: 22)
@@ -177,16 +206,25 @@ private struct BoxItemPicker: View {
                             Color.gray.frame(width: 22, height: 22)
                         }
                     }
-                    .buttonStyle(.plain)
+                    .opacity(available ? 1 : 0.28)
                     .padding(3)
-                    .background(RoundedRectangle(cornerRadius: 4).fill(box.cellCurrent == item ? Color.accentColor.opacity(0.4) : Color(white: 0.15)))
-                    .help("Have it")
+                    .background(RoundedRectangle(cornerRadius: 4).fill(isCurrent ? Color.accentColor.opacity(0.4) : Color(white: 0.15)))
+                    .onTapGesture {
+                        guard available else { return }
+                        box.set(cellCurrent: item, playerHas: .yes)
+                        dismiss()
+                    }
+                    .onRightClick {
+                        guard available else { return }
+                        box.set(cellCurrent: item, playerHas: .no)
+                        dismiss()
+                    }
+                    .help(available ? "Left-click: have it · Right-click: don't have it" : "Already placed elsewhere")
                 }
             }
             Divider()
             HStack(spacing: 8) {
                 Button("Don't want it") { box.setPlayerHas(.skipped); dismiss() }
-                Button("Don't have it") { box.setPlayerHas(.no); dismiss() }
                 Button("Clear") { box.set(cellCurrent: -1, playerHas: .no); dismiss() }
             }
             .font(.caption)

@@ -208,6 +208,43 @@ public final class DungeonTrackerInstance {
         }
     }
 
+    /// Max times an item may appear across all boxes — the item's
+    /// `ITEMS.itemNamesAndCounts` count (`TrackerModel.fs:179-194`): every item
+    /// is unique (1) except the Heart Container, which may appear **9** times
+    /// (8 dungeon floor hearts + the coast heart). This is the reference's
+    /// `allItemWithHeartShuffleChoiceDomain` max-use.
+    public static func maxUses(ofItem item: Int) -> Int {
+        item == ITEMS.heartContainer ? 9 : 1
+    }
+
+    /// How many boxes currently hold `item`.
+    public func itemUseCount(_ item: Int) -> Int {
+        allBoxes().reduce(0) { $0 + ($1.cellCurrent == item ? 1 : 0) }
+    }
+
+    /// Whether `item` can still be placed in `box` without exceeding its
+    /// max-uses — the reference's `ChoiceDomain.CanAddUse`. `box`'s own current
+    /// contents are excluded so re-picking the same item is always allowed.
+    public func canSelectItem(_ item: Int, forBox box: Box) -> Bool {
+        let usedElsewhere = itemUseCount(item) - (box.cellCurrent == item ? 1 : 0)
+        return usedElsewhere < Self.maxUses(ofItem: item)
+    }
+
+    /// Applies the floor-item heart default at session start. Ported from
+    /// `UI.fs:142-144` / `turnHeartShuffleOff` (`Program.fs:584`): when Heart
+    /// Shuffle is **off**, dungeons 1–8 (indices 0–7) have a Heart Container as
+    /// their known-but-unobtained floor item; when **on**, those boxes are
+    /// empty (hearts shuffled into the pool). Dungeon 9 has no floor heart.
+    public func applyFloorItemHearts(heartShuffle: Bool) {
+        for i in 0..<8 {
+            if heartShuffle {
+                dungeons[i].baseBoxes[0].set(cellCurrent: -1, playerHas: .no)
+            } else {
+                dungeons[i].baseBoxes[0].set(cellCurrent: ITEMS.heartContainer, playerHas: .no)
+            }
+        }
+    }
+
     /// `dungeons[i]`, `0...8`. Ported from `Dungeons(i)`
     /// (`TrackerModel.fs:730`) / the module-level `GetDungeon(i)`.
     public func dungeon(_ i: Int) -> Dungeon { dungeons[i] }
