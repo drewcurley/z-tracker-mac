@@ -611,9 +611,18 @@ JSON file holds options/settings, independent of save state.
     - **T-016.3** — HDN labeling UI + overworld lettered-dungeon rendering
       (`Color`/`LabelChar` UI; `OverworldTileMark.iconSource`'s HDN variant),
       deferred until a dungeon-tracker UI host exists.
-  - **T-017** — Dungeon blockers ("why I left this dungeon" reminders,
-    `TrackerModel.fs:1147-1273`) — reads player-state, doesn't feed back
-    into it, cleanly deferrable.
+  - **T-017 — model done.** Dungeon blockers ("why I left this dungeon"
+    annotations, `TrackerModel.fs:1147-1273`) ported to `DungeonBlocker.swift`:
+    the `DungeonBlocker` enum (16 cases + `hardCanonical`,
+    `playerCouldBeBlockedByThis` staleness check reading
+    `PlayerComputedStateSummary`, `asHotKeyName`↔`fromHotKeyName`,
+    `displayDescription`, `next`/`prev`), `CombatUnblockerDetail`,
+    `DungeonBlockerAppliesTo` (6-flag), and `DungeonBlockersContainer` (8×3
+    grid + `asJsonString` save shape). Owned by `TrackerModel.dungeonBlockers`;
+    reads player state for staleness but doesn't feed back. 9 tests. **Parity
+    gap remaining:** the blocker-*setting* UI is uncharacterized and needs a
+    dungeon-tracker UI host that doesn't exist yet — read the reference's
+    blocker-UI when that host lands.
   - **T-018** — Reminders/announcements/Triforce-and-Go orchestration
     (`TrackerModel.fs:1439-1750`, ~310 lines) — the top-of-stack consumer
     of everything else; includes a real architecture decision (reactive

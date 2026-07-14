@@ -52,6 +52,11 @@ public final class TrackerModel {
     /// consumers — so they're added when those land, not here.
     public var isWSMSReplacedByBU: Bool
 
+    /// Per-dungeon "why I left" blocker annotations (docs/domain.md § 6,
+    /// T-017). Reads player state for staleness but doesn't feed back into
+    /// it. The blocker-setting UI is a later task (uncharacterized).
+    public let dungeonBlockers: DungeonBlockersContainer
+
     public init(
         quest: OverworldQuest? = nil,
         heartShuffle: Bool = false,
@@ -60,7 +65,8 @@ public final class TrackerModel {
         startingItemsAndExtras: StartingItemsAndExtras = StartingItemsAndExtras(),
         playerProgress: PlayerProgressAndTakeAnyHearts = PlayerProgressAndTakeAnyHearts(),
         dungeonTracker: DungeonTrackerInstance = DungeonTrackerInstance(),
-        isWSMSReplacedByBU: Bool = false
+        isWSMSReplacedByBU: Bool = false,
+        dungeonBlockers: DungeonBlockersContainer = DungeonBlockersContainer()
     ) {
         self.quest = quest
         self.heartShuffle = heartShuffle
@@ -70,6 +76,7 @@ public final class TrackerModel {
         self.playerProgress = playerProgress
         self.dungeonTracker = dungeonTracker
         self.isWSMSReplacedByBU = isWSMSReplacedByBU
+        self.dungeonBlockers = dungeonBlockers
     }
 
     /// The derived player state (item possession, levels, hearts) read by
