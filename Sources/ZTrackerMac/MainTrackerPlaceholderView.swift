@@ -48,18 +48,24 @@ struct MainTrackerPlaceholderView: View {
                     TimerView(timer: timer)
                 }
 
-                // Dungeon tracker and item grid sit side by side (T-030), not
-                // stacked — a step toward the reference's layout (the item grid
-                // lives beside, not above, the dungeon area).
-                HStack(alignment: .top, spacing: 16) {
-                    // The dungeon item-tracker (T-013/T-016/T-020 rendered).
-                    DungeonTrackerView(model: model)
-
-                    // The overworld item grid (T-025.1): item toggles + the
-                    // coast/armos/white-sword picker boxes, with located/
-                    // superseded box highlighting (T-025.3) from live state.
-                    ItemProgressGridView(model: model, playerState: model.playerComputedStateSummary, mapState: mapState, overlays: overlays, timer: timer)
+                // The top section, split into four logical groups laid out
+                // left-to-right and reflowing to new rows when the window is
+                // narrowed (T-043): dungeons · obtainables · flags · info.
+                FlowLayout(spacing: 12, lineSpacing: 12) {
+                    TopSectionGroup(title: "Dungeons") {
+                        DungeonTrackerView(model: model)
+                    }
+                    TopSectionGroup(title: "Items") {
+                        ObtainableItemsView(model: model, playerState: model.playerComputedStateSummary, mapState: mapState)
+                    }
+                    TopSectionGroup(title: "Flags") {
+                        SeedFlagsView(model: model)
+                    }
+                    TopSectionGroup(title: "Info") {
+                        MapInfoView(model: model, playerState: model.playerComputedStateSummary, mapState: mapState, overlays: overlays, timer: timer)
+                    }
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
 
                 DisclosureGroup("Player state (debug — starting items / progress toggles)") {
                     PlayerStateDebugPanel(startingItems: model.startingItemsAndExtras, progress: model.playerProgress)
