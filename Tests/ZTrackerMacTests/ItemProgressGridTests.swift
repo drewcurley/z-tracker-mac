@@ -126,15 +126,16 @@ struct ItemProgressGridToggleTests {
         #expect(model.playerComputedStateSummary.ringLevel >= 1)
     }
 
-    @Test("take-any heart cycles the tri-state forward and backward, wrapping")
+    @Test("take-any cycles all four states forward and backward, wrapping")
     func heartCycle() {
-        // Forward: untaken -> takenHeart -> takenPotionOrCandle -> untaken.
+        // Forward: untaken -> heart -> potion -> candle -> untaken.
         #expect(ItemProgressGrid.cycledHeart(.untaken, by: 1) == .takenHeart)
-        #expect(ItemProgressGrid.cycledHeart(.takenHeart, by: 1) == .takenPotionOrCandle)
-        #expect(ItemProgressGrid.cycledHeart(.takenPotionOrCandle, by: 1) == .untaken)
+        #expect(ItemProgressGrid.cycledHeart(.takenHeart, by: 1) == .takenPotion)
+        #expect(ItemProgressGrid.cycledHeart(.takenPotion, by: 1) == .takenCandle)
+        #expect(ItemProgressGrid.cycledHeart(.takenCandle, by: 1) == .untaken)
         // Backward wraps the other way.
-        #expect(ItemProgressGrid.cycledHeart(.untaken, by: -1) == .takenPotionOrCandle)
-        #expect(ItemProgressGrid.cycledHeart(.takenPotionOrCandle, by: -1) == .takenHeart)
+        #expect(ItemProgressGrid.cycledHeart(.untaken, by: -1) == .takenCandle)
+        #expect(ItemProgressGrid.cycledHeart(.takenCandle, by: -1) == .takenPotion)
         #expect(ItemProgressGrid.cycledHeart(.takenHeart, by: -1) == .untaken)
     }
 
@@ -145,7 +146,7 @@ struct ItemProgressGridToggleTests {
         model.playerProgress.takeAnyHearts[0] = .takenHeart
         #expect(model.playerComputedStateSummary.playerHearts == base + 1)
         // The potion/candle choice is not a heart, so it doesn't add one.
-        model.playerProgress.takeAnyHearts[1] = .takenPotionOrCandle
+        model.playerProgress.takeAnyHearts[1] = .takenPotion
         #expect(model.playerComputedStateSummary.playerHearts == base + 1)
     }
 

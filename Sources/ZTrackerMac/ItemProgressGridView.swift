@@ -64,6 +64,18 @@ enum OverworldHeartAtlas {
 /// `Z1R_Avalonia/OverworldMapTileCustomization.fs:17-42`), 5 columns × 3 rows.
 /// Separated from the SwiftUI view so the cell → content mapping is unit-
 /// testable without a running app.
+extension TakeAnyHeartState {
+    /// Short UI label for the take-any box tooltip (T-031).
+    var label: String {
+        switch self {
+        case .untaken: "unclaimed"
+        case .takenHeart: "heart"
+        case .takenPotion: "potion"
+        case .takenCandle: "blue candle"
+        }
+    }
+}
+
 enum ItemProgressGrid {
     static let columns = 5
     static let rows = 4
@@ -215,10 +227,13 @@ enum ItemProgressGrid {
         return layout[row][col]
     }
 
-    /// The take-any heart tri-state advanced by `delta` (wrapping), ported
-    /// from the reference's `(cur + delta + 3) % 3` (`OverworldItemGridUI.fs:207`).
+    /// The take-any heart state advanced by `delta` (wrapping over all four
+    /// states), generalizing the reference's 3-state `(cur + delta + 3) % 3`
+    /// (`OverworldItemGridUI.fs:207`) to include the distinct potion/candle
+    /// states (T-031): untaken → heart → potion → candle → untaken.
     static func cycledHeart(_ state: TakeAnyHeartState, by delta: Int) -> TakeAnyHeartState {
-        TakeAnyHeartState(rawValue: ((state.rawValue + delta) % 3 + 3) % 3) ?? state
+        let n = TakeAnyHeartState.allCases.count
+        return TakeAnyHeartState(rawValue: ((state.rawValue + delta) % n + n) % n) ?? state
     }
 }
 
@@ -255,6 +270,7 @@ struct ItemProgressGridView: View {
             Divider().overlay(Color(white: 0.2))
             swordlessToggle
             bookShieldToggle
+            extraCandlesToggle
             MaxHeartsControl(startingItems: model.startingItemsAndExtras, hearts: playerState.playerHearts)
         }
         .padding(8)
@@ -282,6 +298,17 @@ struct ItemProgressGridView: View {
         .help("When checked, item slot 0 is the Magic Shield instead of the Book (boomstick seeds)")
     }
 
+    /// Extra Candles (T-031): a blue candle in the wood sword cave (the wood-
+    /// sword box shows a blue candle and counts as candle) + a blue candle as a
+    /// take-any option.
+    private var extraCandlesToggle: some View {
+        Toggle(isOn: $model.extraCandles) {
+            iconLabel(.blueCandle, "Extra Candles (blue candle in wood sword cave + take-any)")
+        }
+        .toggleStyle(.checkbox)
+        .help("Extra Candles seed: the wood sword cave holds a blue candle, and blue candles appear in take-any caves")
+    }
+
     private func iconLabel(_ icon: ItemIconAtlas.Icon, _ text: String) -> some View {
         HStack(spacing: 5) {
             if let img = Image(atlasIcon: ItemIconAtlas.cgImage(icon)) {
@@ -289,6 +316,15 @@ struct ItemProgressGridView: View {
             }
             Text(text).font(.system(size: 10))
         }
+    }
+
+    /// Seed-option icon override for a toggle box: the magical-sword box shows
+    /// the bomb-upgrade under swordless (T-025.4), and the wood-sword box shows
+    /// the blue candle under Extra Candles (T-031).
+    private func iconOverride(for toggle: ItemProgressGrid.ItemToggle) -> ItemIconAtlas.Icon? {
+        if toggle == .magicalSword && model.isWSMSReplacedByBU { return .wsMsBombUpgrade }
+        if toggle == .woodSword && model.extraCandles { return .blueCandle }
+        return nil
     }
 
     @ViewBuilder
@@ -304,7 +340,7 @@ struct ItemProgressGridView: View {
             ItemToggleBox(
                 progress: model.playerProgress,
                 toggle: toggle,
-                iconOverride: (toggle == .magicalSword && model.isWSMSReplacedByBU) ? .wsMsBombUpgrade : nil,
+                iconOverride: iconOverride(for: toggle),
                 located: toggle.located(playerState: playerState, mapState: mapState),
                 superseded: toggle.superseded(playerState: playerState),
                 size: Self.cellSize
@@ -387,12 +423,12 @@ private struct ItemToggleBox: View {
     }
 }
 
-/// One of the 4 overworld "take-any" heart-cave slots. Left-click cycles the
-/// tri-state forward, right-click backward — the reference's
-/// `(cur + delta + 3) % 3` on `MouseLeftButtonDown`/`MouseRightButtonDown`
-/// (`OverworldItemGridUI.fs:207-209`): untaken → taken-heart → taken-
-/// potion/candle. The heart sprite is full when a heart was taken, empty
-/// otherwise; an X marks the potion/candle choice.
+/// One of the 4 overworld "take-any" heart-cave slots. Left-click cycles
+/// forward, right-click backward, over four states (T-031): untaken →
+/// taken-heart → taken-potion → taken-candle. The empty-heart sprite stays as
+/// the background (so the slot is recognizable in the UI); a taken *heart*
+/// fills it, while a taken *potion* or *candle* keeps the empty heart and
+/// overlays that item's icon.
 private struct TakeAnyHeartBox: View {
     var progress: PlayerProgressAndTakeAnyHearts
     let index: Int
@@ -403,16 +439,14 @@ private struct TakeAnyHeartBox: View {
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 4).fill(Color.black)
+            // Background heart: full (pink) when a heart was taken, empty
+            // otherwise (kept under the potion/candle overlays too).
             let sprite: OverworldHeartAtlas.Icon = state == .takenHeart ? .full : .empty
             if let image = Image(atlasIcon: OverworldHeartAtlas.cgImage(sprite)) {
                 image.interpolation(.none).resizable()
                     .frame(width: size - 12, height: size - 12)
             }
-            if state == .takenPotionOrCandle {
-                Image(systemName: "xmark")
-                    .font(.system(size: 12, weight: .heavy))
-                    .foregroundStyle(.white.opacity(0.85))
-            }
+            overlayIcon
         }
         .frame(width: size, height: size)
         .overlay(
@@ -420,7 +454,27 @@ private struct TakeAnyHeartBox: View {
         )
         .onTapGesture { cycle(1) }
         .onRightClick { cycle(-1) }
-        .help("Take-any cave \(index + 1): heart / potion-or-candle")
+        .help("Take-any cave \(index + 1): \(state.label)")
+    }
+
+    /// The item taken, overlaid on the empty heart (potion / blue candle).
+    @ViewBuilder
+    private var overlayIcon: some View {
+        switch state {
+        case .takenPotion:
+            // The potion-shop sprite (ow_icons5x9 index 5) doubles as the potion.
+            if let potion = Image(atlasIcon: OverworldInteriorIconAtlas.icon(at: 5)) {
+                potion.interpolation(.none).resizable()
+                    .frame(width: (size - 12) * 0.7, height: (size - 12) * 0.9)
+            }
+        case .takenCandle:
+            if let candle = Image(atlasIcon: ItemIconAtlas.cgImage(.blueCandle)) {
+                candle.interpolation(.none).resizable()
+                    .frame(width: (size - 12) * 0.8, height: (size - 12) * 0.8)
+            }
+        case .untaken, .takenHeart:
+            EmptyView()
+        }
     }
 
     private func cycle(_ delta: Int) {

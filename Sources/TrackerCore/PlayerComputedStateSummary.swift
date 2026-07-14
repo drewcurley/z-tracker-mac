@@ -93,7 +93,8 @@ public struct PlayerComputedStateSummary: Equatable, Sendable {
         dungeonTracker: DungeonTrackerInstance,
         startingItems: StartingItemsAndExtras,
         progress: PlayerProgressAndTakeAnyHearts,
-        isWSMSReplacedByBU: Bool
+        isWSMSReplacedByBU: Bool,
+        extraCandles: Bool = false
     ) -> PlayerComputedStateSummary {
         var haveRecorder = false
         var haveLadder = false
@@ -139,7 +140,13 @@ public struct PlayerComputedStateSummary: Equatable, Sendable {
         // Progress flags (`:913-922`).
         if progress.hasBlueCandle { candleLevel = max(candleLevel, 1) }
         if progress.hasMagicalSword && !isWSMSReplacedByBU { swordLevel = 3 }
-        if progress.hasWoodSword { swordLevel = max(swordLevel, 1) }
+        // Extra Candles (T-031, beyond the reference): the wood sword cave holds
+        // a blue candle, so a taken wood-sword-cave item counts as a candle, not
+        // a sword.
+        if progress.hasWoodSword {
+            if extraCandles { candleLevel = max(candleLevel, 1) }
+            else { swordLevel = max(swordLevel, 1) }
+        }
         if progress.hasBlueRing { ringLevel = max(ringLevel, 1) }
         if progress.hasWoodArrow { arrowLevel = max(arrowLevel, 1) }
 
