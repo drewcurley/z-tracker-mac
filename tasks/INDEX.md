@@ -57,6 +57,7 @@
 | [T-019](./T-019.md) | Bugfix: overworld tile icons used a dead ZHelper asset, wrong mapping | frontend-engineer | — | fix/overworld-tile-icons-wrong-asset | — | docs/reviews/fix-overworld-tile-icons-wrong-asset/final.md |
 | [T-025.1](./T-025.1.md) | Item grid scaffold + toggle item boxes + relocated coast boxes | frontend-engineer | — | feat/item-progress-grid | #34 | docs/reviews/feat-item-progress-grid/final.md |
 | [T-025.2](./T-025.2.md) | Take-any hearts row (overworld heart-cave tri-state boxes) | frontend-engineer | — | feat/take-any-hearts | #35 | docs/reviews/feat-take-any-hearts/final.md |
+| [T-026](./T-026.md) | Auto-mark always-empty overworld tiles as permanent "don't care" | frontend-engineer | — | feat/always-empty-tiles | #36 | docs/reviews/feat-always-empty-tiles/final.md |
 
 ## Cancelled / Superseded
 
