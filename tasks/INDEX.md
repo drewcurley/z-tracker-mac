@@ -86,6 +86,7 @@
 | [T-050](./T-050.md) | HDN dungeon-number chooser + triforce reference diagram + two-boxer third-box disable | frontend-engineer | — | feat/hdn-number-chooser | #67 | docs/reviews/feat-hdn-number-chooser/final.md |
 | [T-051](./T-051.md) | Confirm state-destructive controls — mid-run flag toggles + always-on Reset Timer | frontend-engineer | — | feat/confirm-destructive-when-running | #68 | docs/reviews/feat-confirm-destructive-when-running/final.md |
 | [T-052](./T-052.md) | Confirm destructive toggles anytime after Go (including while paused) | frontend-engineer | T-051 | fix/confirm-destructive-after-go | #69 | docs/reviews/fix-confirm-destructive-after-go/final.md |
+| [T-053](./T-053.md) | Spot Summary — remaining unique locations + money secrets by size | frontend-engineer | — | feat/spot-summary | #70 | docs/reviews/feat-spot-summary/final.md |
 | [T-032](./T-032.md) | Fix — sword-cave labels wrongly BU-annotated (white sword item ≠ white sword) | frontend-engineer | — | fix/sword-cave-labels | #43 | docs/reviews/fix-sword-cave-labels/final.md |
 | [T-026](./T-026.md) | Auto-mark always-empty overworld tiles as permanent "don't care" | frontend-engineer | — | feat/always-empty-tiles | #36 | docs/reviews/feat-always-empty-tiles/final.md |
 | [T-027](./T-027.md) | Always-empty tile polish — drop the X, add fairy-spot icons | frontend-engineer | — | feat/always-empty-polish | #37 | docs/reviews/feat-always-empty-polish/final.md |

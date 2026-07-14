@@ -463,13 +463,30 @@ struct MapInfoView: View {
     @State private var confirmingResetApp = false
     @State private var confirmingResetTimer = false
     @State private var confirmingGroundhog = false
+    @State private var showingSpotSummary = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             statusReadout
+            spotSummaryButton
             overlayToggles
             resetButtons
         }
+    }
+
+    /// "Spot Summary" (T-053): opens the remaining-locations popover — which
+    /// unique spots and money secrets are still to be found.
+    private var spotSummaryButton: some View {
+        Button("Spot Summary…") { showingSpotSummary = true }
+            .font(.system(size: 10))
+            .controlSize(.small)
+            .help("What overworld locations and secrets you still have left to find")
+            .popover(isPresented: $showingSpotSummary, arrowEdge: .bottom) {
+                SpotSummaryView(
+                    summary: SpotSummary.compute(grid: model.overworldGrid, quest: model.quest ?? .first),
+                    hideDungeonNumbers: model.hideDungeonNumbers
+                )
+            }
     }
 
     /// The three always-visible reset actions (T-048). All three confirm first
