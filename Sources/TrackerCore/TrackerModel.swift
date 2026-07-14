@@ -60,13 +60,6 @@ public final class TrackerModel {
     /// separate and lands with its own consumer.
     public var isCurrentlyBook: Bool
 
-    /// Seed option (T-031, beyond the reference): "Extra Candles" puts a **blue
-    /// candle** in the wood sword cave (so a taken wood-sword-cave item counts
-    /// as a candle, not a sword — read by `PlayerComputedStateSummary.compute`)
-    /// and makes a blue candle a possible take-any-cave item. User-confirmed
-    /// mechanic; the reference does not model it.
-    public var extraCandles: Bool
-
     /// Per-dungeon "why I left" blocker annotations (docs/domain.md § 6,
     /// T-017). Reads player state for staleness but doesn't feed back into
     /// it. The blocker-setting UI is a later task (uncharacterized).
@@ -87,7 +80,6 @@ public final class TrackerModel {
         dungeonTracker: DungeonTrackerInstance = DungeonTrackerInstance(),
         isWSMSReplacedByBU: Bool = false,
         isCurrentlyBook: Bool = true,
-        extraCandles: Bool = false,
         dungeonBlockers: DungeonBlockersContainer = DungeonBlockersContainer(),
         reminderEngine: ReminderEngine = ReminderEngine()
     ) {
@@ -100,7 +92,6 @@ public final class TrackerModel {
         self.dungeonTracker = dungeonTracker
         self.isWSMSReplacedByBU = isWSMSReplacedByBU
         self.isCurrentlyBook = isCurrentlyBook
-        self.extraCandles = extraCandles
         self.dungeonBlockers = dungeonBlockers
         self.reminderEngine = reminderEngine
     }
@@ -135,8 +126,7 @@ public final class TrackerModel {
             dungeonTracker: dungeonTracker,
             startingItems: startingItemsAndExtras,
             progress: playerProgress,
-            isWSMSReplacedByBU: isWSMSReplacedByBU,
-            extraCandles: extraCandles
+            isWSMSReplacedByBU: isWSMSReplacedByBU
         )
     }
 
