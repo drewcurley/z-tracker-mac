@@ -11,6 +11,23 @@ struct MainTrackerPlaceholderView: View {
     var model: TrackerModel
     var options: TrackerOptions
 
+    /// The live overworld map-state summary (T-015.3) feeding the map's true
+    /// GYR highlight. Recomputed here from the observable model each time the
+    /// body evaluates, so the colors track marks / items / dungeon state.
+    /// `mirrorOverworld` has no live source until T-015.5, so it's `false`.
+    private var mapState: MapStateSummary {
+        MapStateSummary.compute(
+            grid: model.overworldGrid,
+            instance: OverworldInstance(quest: model.quest ?? .first),
+            dungeonTracker: model.dungeonTracker,
+            playerState: model.playerComputedStateSummary,
+            progress: model.playerProgress,
+            drawRoutes: options.drawRoutes,
+            routesCanScreenScroll: options.showScreenScrolls,
+            mirrorOverworld: false
+        )
+    }
+
     var body: some View {
         VStack(spacing: 12) {
             Text("Main tracker view — mostly not built yet")
@@ -33,7 +50,8 @@ struct MainTrackerPlaceholderView: View {
                 grid: model.overworldGrid,
                 quest: model.quest ?? .first,
                 options: options,
-                playerState: model.playerComputedStateSummary
+                playerState: model.playerComputedStateSummary,
+                mapState: mapState
             )
             .frame(maxWidth: 900)
         }
