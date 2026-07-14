@@ -18,6 +18,10 @@ struct MainTrackerPlaceholderView: View {
     /// grid icons (hover/click) and the overworld map (rendering).
     @State private var overlays = OverworldOverlayState()
 
+    /// The run timer (T-035.4): main stopwatch + a lap that resets on each
+    /// groundhog reset. Owned here so it survives view redraws.
+    @State private var timer = TrackerTimer()
+
     /// The live overworld map-state summary (T-015.3) feeding the map's true
     /// GYR highlight. Recomputed here from the observable model each time the
     /// body evaluates, so the colors track marks / items / dungeon state.
@@ -38,6 +42,12 @@ struct MainTrackerPlaceholderView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 14) {
+                // Run timer (T-035.4), top-right.
+                HStack {
+                    Spacer()
+                    TimerView(timer: timer)
+                }
+
                 // Dungeon tracker and item grid sit side by side (T-030), not
                 // stacked — a step toward the reference's layout (the item grid
                 // lives beside, not above, the dungeon area).
@@ -48,7 +58,7 @@ struct MainTrackerPlaceholderView: View {
                     // The overworld item grid (T-025.1): item toggles + the
                     // coast/armos/white-sword picker boxes, with located/
                     // superseded box highlighting (T-025.3) from live state.
-                    ItemProgressGridView(model: model, playerState: model.playerComputedStateSummary, mapState: mapState, overlays: overlays)
+                    ItemProgressGridView(model: model, playerState: model.playerComputedStateSummary, mapState: mapState, overlays: overlays, timer: timer)
                 }
 
                 DisclosureGroup("Player state (debug — starting items / progress toggles)") {
