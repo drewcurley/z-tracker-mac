@@ -47,7 +47,7 @@
 | [T-017](./T-017.md) | Dungeon blockers — model + container (`playerCouldBeBlockedByThis`) | frontend-engineer | — | feat/dungeon-blockers | #23 | docs/reviews/feat-dungeon-blockers/final.md |
 | [T-018.1](./T-018.1.md) | `TriforceAndGoSummary` scored advisor | frontend-engineer | — | feat/triforce-and-go-summary | #24 | docs/reviews/feat-triforce-and-go-summary/final.md |
 | [T-018.2](./T-018.2.md) | Reminder/announcement engine (`allUIEventingLogic`) | frontend-engineer | — | feat/reminder-engine | #25 | docs/reviews/feat-reminder-engine/final.md |
-| [T-016.2](./T-016.2.md) | HDN basement-stair metadata — `StairKind`/`BoxOwner`/`currentlyHasBasementStair` | frontend-engineer | — | feat/basement-stair-metadata | — | docs/reviews/feat-basement-stair-metadata/final.md |
+| [T-016.2](./T-016.2.md) | HDN basement-stair metadata — `StairKind`/`BoxOwner`/`currentlyHasBasementStair` | frontend-engineer | — | feat/basement-stair-metadata | #26 | docs/reviews/feat-basement-stair-metadata/final.md |
 | [T-019](./T-019.md) | Bugfix: overworld tile icons used a dead ZHelper asset, wrong mapping | frontend-engineer | — | fix/overworld-tile-icons-wrong-asset | — | docs/reviews/fix-overworld-tile-icons-wrong-asset/final.md |
 
 ## Cancelled / Superseded
