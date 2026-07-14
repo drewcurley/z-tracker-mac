@@ -24,15 +24,13 @@ struct SwordlessBUTests {
         #expect(ItemIconAtlas.icon(forItemIndex: ITEMS.ladder, wsmsReplacedByBU: true) == .ladder)
     }
 
-    @Test("sword-cave selector labels: relabeled, BU-annotated for WS/MS only")
+    @Test("sword-cave selector labels are plain location names, not BU-annotated")
     func swordCaveLabels() {
-        // Off: plain relabels.
-        #expect(OverworldMapView.swordCaveLabel(1, wsmsReplacedByBU: false) == "Wood Sword")
-        #expect(OverworldMapView.swordCaveLabel(2, wsmsReplacedByBU: false) == "White Sword Item")
-        #expect(OverworldMapView.swordCaveLabel(3, wsmsReplacedByBU: false) == "Magical Sword")
-        // On: only white/magical note the Bomb Upgrade; wood sword unchanged.
-        #expect(OverworldMapView.swordCaveLabel(1, wsmsReplacedByBU: true) == "Wood Sword")
-        #expect(OverworldMapView.swordCaveLabel(2, wsmsReplacedByBU: true) == "White Sword Item (Bomb Upgrade)")
-        #expect(OverworldMapView.swordCaveLabel(3, wsmsReplacedByBU: true) == "Magical Sword (Bomb Upgrade)")
+        // These are cave *locations* (holding random items); swordless does not
+        // annotate them — the bomb upgrade replaces the white-sword *weapon*
+        // (a box item), rendered on the item boxes/picker, not here.
+        #expect(OverworldMapView.swordCaveLabel(1) == "Wood Sword")
+        #expect(OverworldMapView.swordCaveLabel(2) == "White Sword Item")
+        #expect(OverworldMapView.swordCaveLabel(3) == "Magical Sword")
     }
 }

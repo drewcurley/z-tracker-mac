@@ -31,18 +31,17 @@ struct OverworldMapView: View {
     /// (T-015.4), replacing T-011's flat single-color "reachable" overlay.
     var mapState: MapStateSummary
 
-    /// Swordless seed (T-025.4): the White Sword Item / Magical Sword cave
-    /// marks are labeled as Bomb Upgrades in the tile selector.
-    var isWSMSReplacedByBU: Bool = false
-
-    /// The tile-selector label for a sword cave. Relabeled from "Sword cave N"
-    /// (user request); under swordless, the white/magical entries note they are
-    /// Bomb Upgrades. Sword cave 1 (Wood Sword) is never affected.
-    static func swordCaveLabel(_ number: Int, wsmsReplacedByBU: Bool) -> String {
+    /// The tile-selector label for a sword *cave* (a location). Relabeled from
+    /// "Sword cave N" (user request). These are **not** annotated for swordless:
+    /// the "White Sword Item" cave holds a *random* item, and it is the white-
+    /// sword *weapon* (`ITEMS.whiteSword`, a shuffled box item) — not the cave —
+    /// that the bomb upgrade replaces. The weapon's swap is rendered on the
+    /// item boxes/picker, not here.
+    nonisolated static func swordCaveLabel(_ number: Int) -> String {
         switch number {
         case 1: return "Wood Sword"
-        case 2: return wsmsReplacedByBU ? "White Sword Item (Bomb Upgrade)" : "White Sword Item"
-        case 3: return wsmsReplacedByBU ? "Magical Sword (Bomb Upgrade)" : "Magical Sword"
+        case 2: return "White Sword Item"
+        case 3: return "Magical Sword"
         default: return "Sword cave \(number)"
         }
     }
@@ -254,7 +253,7 @@ struct OverworldMapView: View {
         }
         Menu("Sword cave") {
             ForEach(1...3, id: \.self) { number in
-                Button(Self.swordCaveLabel(number, wsmsReplacedByBU: isWSMSReplacedByBU)) {
+                Button(Self.swordCaveLabel(number)) {
                     grid.setMark(.swordCave(number), column: column, row: row)
                 }
             }
