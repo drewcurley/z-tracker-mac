@@ -38,8 +38,9 @@ struct MainTrackerPlaceholderView: View {
                 DungeonTrackerView(model: model)
 
                 // The overworld item grid (T-025.1): item toggles + the
-                // coast/armos/white-sword picker boxes.
-                ItemProgressGridView(model: model)
+                // coast/armos/white-sword picker boxes, with located/superseded
+                // box highlighting (T-025.3) from the live derived state.
+                ItemProgressGridView(model: model, playerState: model.playerComputedStateSummary, mapState: mapState)
 
                 DisclosureGroup("Player state (debug — starting items / progress toggles)") {
                     PlayerStateDebugPanel(startingItems: model.startingItemsAndExtras, progress: model.playerProgress)
