@@ -31,6 +31,31 @@ struct OverworldMapView: View {
     /// (T-015.4), replacing T-011's flat single-color "reachable" overlay.
     var mapState: MapStateSummary
 
+    /// Top-section map-overlay toggles (T-035.2). `nil` = no overlays.
+    var overlays: OverworldOverlayState?
+    /// Whether the Armos item has been recorded (gates the late-game open-caves
+    /// overlay); supplied by the parent from `dungeonTracker.armosBox`.
+    var armosClaimed: Bool = false
+
+    /// Whether any active top-section overlay highlights this tile (T-035.2).
+    private func overlayHighlights(column: Int, row: Int, mark: OverworldTileMark) -> Bool {
+        guard let overlays else { return false }
+        if overlays.isActive(.money), OverworldOverlays.isMoneyTile(mark, secretValue: 0) {
+            return true
+        }
+        if overlays.isActive(.openCaves) {
+            let pastEarly = OverworldOverlays.openCavesPastEarlyGame(
+                woodSwordCaveFound: mapState.woodSwordCaveFound,
+                swordLevel: playerState.swordLevel, candleLevel: playerState.candleLevel)
+            return OverworldOverlays.isOpenCaveTile(
+                mark: mark,
+                nothingable: overworldInstance.nothingable(x: column, y: row),
+                hasArmos: overworldInstance.hasArmos(x: column, y: row),
+                pastEarlyGame: pastEarly, armosClaimed: armosClaimed)
+        }
+        return false
+    }
+
     /// The tile-selector label for a sword *cave* (a location). Relabeled from
     /// "Sword cave N" (user request). These are **not** annotated for swordless:
     /// the "White Sword Item" cave holds a *random* item, and it is the white-
@@ -138,6 +163,15 @@ struct OverworldMapView: View {
                                             // reference's doComputedDrawing cascade. Bold/pale is
                                             // the reachability `isBold` axis, rendered as opacity.
                                             Rectangle().fill(gyrColor(column: column, row: row, mark: mark).opacity(isBold ? 0.45 : 0.2))
+                                        }
+                                    }
+                                    .overlay {
+                                        // Top-section overlay toggles (T-035.2): open-caves /
+                                        // money highlights, previewed on hover / locked on click.
+                                        if !isAlwaysEmpty, overlayHighlights(column: column, row: row, mark: mark) {
+                                            RoundedRectangle(cornerRadius: 2)
+                                                .strokeBorder(Color.green, lineWidth: 2)
+                                                .background(RoundedRectangle(cornerRadius: 2).fill(Color.green.opacity(0.18)))
                                         }
                                     }
                                     .onTapGesture { handleLeftClick(column: column, row: row) }
