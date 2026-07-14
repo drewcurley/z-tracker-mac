@@ -623,11 +623,24 @@ JSON file holds options/settings, independent of save state.
     gap remaining:** the blocker-*setting* UI is uncharacterized and needs a
     dungeon-tracker UI host that doesn't exist yet — read the reference's
     blocker-UI when that host lands.
-  - **T-018** — Reminders/announcements/Triforce-and-Go orchestration
-    (`TrackerModel.fs:1439-1750`, ~310 lines) — the top-of-stack consumer
-    of everything else; includes a real architecture decision (reactive
-    `@Observable` vs. a literal `ITrackerEvents`-delegate port) flagged for
-    evaluation when that task starts, not decided here.
+  - **T-018 — split into T-018.1 (done) + T-018.2.** The top-of-stack
+    consumer (`TrackerModel.fs:1420-1750`) splits along a clean seam.
+    - **T-018.1 — done.** `TriforceAndGoSummary.swift`: the heuristic-scored
+      "beeline to L9?" advisor + `unreachablePossibleDungeonSpotCount`,
+      ported as a pure value struct + `compute(...)` (`mapState.dungeon-
+      Locations[i] != nil` = `HasBeenLocated()`). Scoring penalties and the
+      101/102/103 TAG-level gates transcribed constant-for-constant. **A
+      copy-paste bug in the reference is preserved for 1:1 parity:**
+      `haveRecorder` reads `HaveLadder` (`:1444`), which keys the recorder
+      penalty on the ladder and makes TAG level 102 unreachable — flagged in
+      code, an auto-memory note, and pinned by a test; do NOT "fix" without an
+      explicit decision to diverge. 8 tests.
+    - **T-018.2** — the `ITrackerEvents` callback contract + `allUIEventing-
+      Logic` announcement/reminder orchestration (`:1486-1750`), carrying the
+      real reactive-`@Observable`-vs-literal-`ITrackerEvents`-delegate
+      architecture decision (evaluate when that task starts) and the
+      recorder-warp-destination derivation deferred from T-015.5. Depends on
+      reminder UI surfaces this project mostly hasn't built.
   Also confirmed *not* part of this subsystem despite a similar name:
   `DungeonData.fs` (290 lines) is dungeon-room-shape ASCII grids + flavor
   tips for a future dungeon-map-drawing UI — unrelated to player state.
