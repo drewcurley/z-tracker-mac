@@ -167,7 +167,8 @@ struct OverworldMapView: View {
                                 let background = OverworldBackgroundAtlas.tile(quest: quest, column: column, row: row)
                                 let isAlwaysEmpty = overworldInstance.alwaysEmpty(x: column, y: row)
                                 let showsFairy = isAlwaysEmpty && OverworldFairySpots.isFairySpot(column: column, row: row, quest: quest)
-                                TileView(mark: mark, background: background, tileWidth: tileWidth, tileHeight: tileHeight, isAlwaysEmpty: isAlwaysEmpty, showsFairy: showsFairy, mirrored: mirrored, hideDungeonNumbers: hideDungeonNumbers)
+                                let used = grid.isUsed(column: column, row: row)
+                                TileView(mark: mark, background: background, tileWidth: tileWidth, tileHeight: tileHeight, isAlwaysEmpty: isAlwaysEmpty, showsFairy: showsFairy, mirrored: mirrored, hideDungeonNumbers: hideDungeonNumbers, used: used)
                                     .overlay {
                                         if options.highlightNearby, !isAlwaysEmpty,
                                            let isBold = highlights[OverworldScreenCoordinate(x: column, y: row)] {
@@ -303,8 +304,13 @@ struct OverworldMapView: View {
         // dark tile ... → popup" — SwiftUI's contextMenu also responds to a
         // plain click when attached this way is avoided by only mutating
         // state here for the unmarked case.
-        if grid.mark(column: column, row: row) == .unmarked {
+        let mark = grid.mark(column: column, row: row)
+        if mark == .unmarked {
             grid.setMark(.dontCare, column: column, row: row)
+        } else if mark.isUsedToggleable {
+            // A claimable tile (secret / take-any / armos / letter / hint shop):
+            // left-click toggles it used ⇄ unused (T-054).
+            grid.toggleUsed(column: column, row: row)
         }
     }
 
@@ -408,6 +414,9 @@ private struct TileView: View {
     var mirrored: Bool = false
     /// Hidden Dungeon Numbers (T-049): render dungeon digits 1–8 as A–H.
     var hideDungeonNumbers: Bool = false
+    /// This claimable tile has been marked **used** (collected) — T-054;
+    /// dimmed with a check so it reads as done.
+    var used: Bool = false
 
     private static let interiorOffsetXFraction: CGFloat = 5.0 / 16.0
     private static let interiorOffsetYFraction: CGFloat = 1.0 / 11.0
@@ -458,6 +467,12 @@ private struct TileView: View {
                         .frame(width: tileWidth, height: tileHeight)
                         .scaleEffect(x: mirrored ? -1 : 1, y: 1)
                 }
+            }
+            // A claimed ("used") tile is dimmed — the darkened tile + icon read
+            // as done, so no extra glyph is needed (T-054).
+            if used {
+                Rectangle().fill(.black.opacity(0.55))
+                    .frame(width: tileWidth, height: tileHeight)
             }
         }
         .frame(width: tileWidth, height: tileHeight)
