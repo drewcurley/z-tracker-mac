@@ -14,6 +14,21 @@ public enum ShopKind: String, Codable, CaseIterable, Sendable {
         case .shield: "Shield shop"
         }
     }
+
+    /// The item name without the redundant "shop" suffix — for the picker,
+    /// where the submenu is already titled "Shop" (T-061).
+    public var shortName: String {
+        switch self {
+        case .arrow: "Arrow"
+        case .bomb: "Bomb"
+        case .book: "Book"
+        case .candle: "Candle"
+        case .blueRing: "Blue Ring"
+        case .meat: "Meat"
+        case .key: "Key"
+        case .shield: "Shield"
+        }
+    }
 }
 
 /// The 4 "secret" tile sizes (docs/domain.md § 4.5).
