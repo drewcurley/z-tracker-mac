@@ -255,6 +255,7 @@ extension ItemProgressGrid.ItemToggle: Equatable {}
 /// take-any hearts row are later T-025 sub-tasks.
 struct ItemProgressGridView: View {
     @Bindable var model: TrackerModel
+    @State private var confirmingReset = false
     /// Live derived state driving the located (yellow) / superseded (gray-X)
     /// box highlighting (T-025.3). Supplied by the parent, which already
     /// computes them for the overworld map.
@@ -284,6 +285,7 @@ struct ItemProgressGridView: View {
                 bookShieldToggle
                 Spacer(minLength: 8)
                 statusReadout
+                resetButton
             }
         }
         .padding(8)
@@ -326,6 +328,24 @@ struct ItemProgressGridView: View {
                 .help("Max hearts, computed from collected heart containers and take-any hearts")
         }
         .font(.system(size: 10))
+    }
+
+    /// "Groundhog / routers" reset — remove inventory but keep maps
+    /// (`TrackerModel.resetForGroundhogOrRouters`). Destructive + no save/load
+    /// yet, so it confirms first.
+    private var resetButton: some View {
+        Button("Reset (keep maps)") { confirmingReset = true }
+            .font(.system(size: 10))
+            .help("Groundhog/routers restart: remove all inventory but keep your overworld marks and known item locations")
+            .confirmationDialog("Reset inventory for a groundhog/routers restart?",
+                                isPresented: $confirmingReset, titleVisibility: .visible) {
+                Button("Reset inventory (keep maps)", role: .destructive) {
+                    model.resetForGroundhogOrRouters()
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("Removes all items, triforces, and take-any hearts so you can replay the same seed. Your overworld marks and known item locations stay. This can't be undone (no save yet).")
+            }
     }
 
     @ViewBuilder
