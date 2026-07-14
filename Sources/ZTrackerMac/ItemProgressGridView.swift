@@ -121,6 +121,35 @@ enum ItemProgressGrid {
             case .zelda: "Rescued Zelda"
             }
         }
+
+        /// The box's shop/cave is found on the map but the item isn't held yet
+        /// → yellow border (`OverworldItemGridUI.fs:328-379`, `yellow*Logic` /
+        /// `foundBookShop` / `foundBombShop` / `magsCaveFound`).
+        func located(playerState: PlayerComputedStateSummary, mapState: MapStateSummary) -> Bool {
+            switch self {
+            case .woodSword: playerState.swordLevel == 0 && mapState.woodSwordCaveFound
+            case .woodArrow: playerState.arrowLevel == 0 && mapState.foundArrowShop
+            case .blueCandle: playerState.candleLevel == 0 && mapState.foundCandleShop
+            case .blueRing: playerState.ringLevel == 0 && mapState.foundBlueRingShop
+            case .magicalSword: mapState.magsCaveFound
+            case .boomBook: mapState.foundBookShop
+            case .bomb: mapState.foundBombShop
+            case .ganon, .zelda: false
+            }
+        }
+
+        /// A better item makes this one moot → gray border + X
+        /// (`OverworldItemGridUI.fs:329-347`, `*Superseded`). Only the
+        /// wood sword/arrow and blue candle/ring can be superseded.
+        func superseded(playerState: PlayerComputedStateSummary) -> Bool {
+            switch self {
+            case .woodSword: playerState.swordLevel >= 1
+            case .woodArrow: playerState.arrowLevel >= 2
+            case .blueCandle: playerState.candleLevel >= 2
+            case .blueRing: playerState.ringLevel >= 2
+            case .magicalSword, .boomBook, .bomb, .ganon, .zelda: false
+            }
+        }
     }
 
     /// One of the three off-map "item found here" picker boxes — the same
@@ -203,6 +232,11 @@ extension ItemProgressGrid.ItemToggle: Equatable {}
 /// take-any hearts row are later T-025 sub-tasks.
 struct ItemProgressGridView: View {
     var model: TrackerModel
+    /// Live derived state driving the located (yellow) / superseded (gray-X)
+    /// box highlighting (T-025.3). Supplied by the parent, which already
+    /// computes them for the overworld map.
+    var playerState: PlayerComputedStateSummary
+    var mapState: MapStateSummary
 
     private static let cellSize: CGFloat = 34
 
@@ -236,6 +270,8 @@ struct ItemProgressGridView: View {
                 progress: model.playerProgress,
                 toggle: toggle,
                 iconOverride: (toggle == .magicalSword && model.isWSMSReplacedByBU) ? .wsMsBombUpgrade : nil,
+                located: toggle.located(playerState: playerState, mapState: mapState),
+                superseded: toggle.superseded(playerState: playerState),
                 size: Self.cellSize
             )
         case .takeAnyHeart(let i):
@@ -273,9 +309,22 @@ private struct ItemToggleBox: View {
     var progress: PlayerProgressAndTakeAnyHearts
     let toggle: ItemProgressGrid.ItemToggle
     var iconOverride: ItemIconAtlas.Icon? = nil
+    /// The item's shop/cave is found but the item isn't held → yellow.
+    var located: Bool = false
+    /// A better item makes this one moot → gray + X.
+    var superseded: Bool = false
     let size: CGFloat
 
     private var has: Bool { progress[keyPath: toggle.keyPath] }
+
+    /// Border precedence ported from `veryBasicBoxImpl`'s redraw
+    /// (`OverworldItemGridUI.fs:295-306`): held → superseded → located → none.
+    private var borderColor: Color {
+        if has { return .green }
+        if superseded { return Color(white: 0.5) }
+        if located { return .yellow }
+        return Color(white: 0.3)
+    }
 
     var body: some View {
         ZStack {
@@ -285,11 +334,17 @@ private struct ItemToggleBox: View {
                     .frame(width: size - 10, height: size - 10)
                     .opacity(has ? 1 : 0.4)
             }
+            // Superseded items are moot — mark with an X (the reference's
+            // placeSkippedItemXDecoration).
+            if superseded && !has {
+                Image(systemName: "xmark")
+                    .font(.system(size: size * 0.4, weight: .bold))
+                    .foregroundStyle(.white.opacity(0.75))
+            }
         }
         .frame(width: size, height: size)
         .overlay(
-            RoundedRectangle(cornerRadius: 4)
-                .strokeBorder(has ? Color.green : Color(white: 0.3), lineWidth: 1.5)
+            RoundedRectangle(cornerRadius: 4).strokeBorder(borderColor, lineWidth: 1.5)
         )
         .onTapGesture { progress[keyPath: toggle.keyPath].toggle() }
         .onRightClick { progress[keyPath: toggle.keyPath] = false }

@@ -18,7 +18,7 @@
 | [T-016](./T-016.md) | Hide Dungeon Numbers (HDN) mode (umbrella) | frontend-engineer | split |
 | [T-016.3](./T-016.3.md) | HDN labeling UI + overworld lettered-dungeon rendering | frontend-engineer | proposed |
 | [T-018](./T-018.md) | Reminders, announcements, and Triforce-and-Go (umbrella) | frontend-engineer | split |
-| [T-025](./T-025.md) | Overworld item grid UI (owItemGrid render) (umbrella; .3/.4 sub-tasks pending) | frontend-engineer | split |
+| [T-025](./T-025.md) | Overworld item grid UI (owItemGrid render) (umbrella; .4 sub-task pending) | frontend-engineer | split |
 | [T-030](./T-030.md) | Main-tracker layout — dungeons and items side by side (deferred by user) | frontend-engineer | proposed |
 
 ## Completed
@@ -58,6 +58,7 @@
 | [T-019](./T-019.md) | Bugfix: overworld tile icons used a dead ZHelper asset, wrong mapping | frontend-engineer | — | fix/overworld-tile-icons-wrong-asset | — | docs/reviews/fix-overworld-tile-icons-wrong-asset/final.md |
 | [T-025.1](./T-025.1.md) | Item grid scaffold + toggle item boxes + relocated coast boxes | frontend-engineer | — | feat/item-progress-grid | #34 | docs/reviews/feat-item-progress-grid/final.md |
 | [T-025.2](./T-025.2.md) | Take-any hearts row (overworld heart-cave tri-state boxes) | frontend-engineer | — | feat/take-any-hearts | #35 | docs/reviews/feat-take-any-hearts/final.md |
+| [T-025.3](./T-025.3.md) | Item-box located (yellow) / superseded (gray-X) highlighting | frontend-engineer | — | feat/item-box-highlighting | #41 | docs/reviews/feat-item-box-highlighting/final.md |
 | [T-026](./T-026.md) | Auto-mark always-empty overworld tiles as permanent "don't care" | frontend-engineer | — | feat/always-empty-tiles | #36 | docs/reviews/feat-always-empty-tiles/final.md |
 | [T-027](./T-027.md) | Always-empty tile polish — drop the X, add fairy-spot icons | frontend-engineer | — | feat/always-empty-polish | #37 | docs/reviews/feat-always-empty-polish/final.md |
 | [T-028](./T-028.md) | Coast item can never be the ladder (deliberate rule beyond the reference) | frontend-engineer | — | feat/coast-item-not-ladder | #38 | docs/reviews/feat-coast-item-not-ladder/final.md |
