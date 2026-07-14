@@ -1,0 +1,60 @@
+import Testing
+@testable import TrackerCore
+
+@Suite("Dungeon labeling + HDN toggles (T-049)")
+struct DungeonLabelingTests {
+    @Test("slot labels: numbers when off, A–H when HDN, Level 9 stays 9")
+    func slotLabels() {
+        // Non-HDN: the number itself.
+        for n in 1...9 {
+            #expect(DungeonLabeling.slotLabel(n, hideDungeonNumbers: false) == "\(n)")
+        }
+        // HDN: 1–8 → A–H.
+        #expect(DungeonLabeling.slotLabel(1, hideDungeonNumbers: true) == "A")
+        #expect(DungeonLabeling.slotLabel(8, hideDungeonNumbers: true) == "H")
+        // Level 9 is always known, stays "9".
+        #expect(DungeonLabeling.slotLabel(9, hideDungeonNumbers: true) == "9")
+    }
+
+    @Test("setHideDungeonNumbers rebuilds the tracker (3 boxes) and back")
+    func hdnRebuildsTracker() {
+        let model = TrackerModel(quest: .first)
+        model.selectQuest(.first)
+        #expect(model.dungeonTracker.kind == .default)
+        #expect(model.dungeonTracker.dungeon(0).baseBoxes.count == 2)
+
+        model.setHideDungeonNumbers(true)
+        #expect(model.hideDungeonNumbers)
+        #expect(model.dungeonTracker.kind == .hideDungeonNumbers)
+        #expect(model.dungeonTracker.dungeon(0).baseBoxes.count == 3)  // 3 boxes per dungeon
+        #expect(model.dungeonTracker.dungeon(8).baseBoxes.count == 2)  // Level 9 keeps 2
+
+        // Toggling back restores DEFAULT.
+        model.setHideDungeonNumbers(false)
+        #expect(model.dungeonTracker.kind == .default)
+        #expect(model.dungeonTracker.dungeon(0).baseBoxes.count == 2)
+    }
+
+    @Test("setHideDungeonNumbers preserves the second-quest-dungeons choice")
+    func hdnPreservesSecondQuest() {
+        let model = TrackerModel()
+        model.dungeonTracker.toggleSecondQuestDungeons()
+        #expect(model.dungeonTracker.isSecondQuestDungeons)
+        model.setHideDungeonNumbers(true)
+        #expect(model.dungeonTracker.isSecondQuestDungeons)
+    }
+
+    @Test("setHeartShuffle re-seeds the dungeon floor hearts")
+    func heartShuffleReseeds() {
+        let model = TrackerModel(quest: .first)
+        model.selectQuest(.first)
+        // Shuffle off (default): dungeon 1's floor box knows a Heart Container.
+        #expect(model.dungeonTracker.dungeon(0).baseBoxes[0].cellCurrent == ITEMS.heartContainer)
+        // Turn shuffle on: that box empties (heart shuffled into the pool).
+        model.setHeartShuffle(true)
+        #expect(model.dungeonTracker.dungeon(0).baseBoxes[0].cellCurrent == -1)
+        // Back off: the known heart returns.
+        model.setHeartShuffle(false)
+        #expect(model.dungeonTracker.dungeon(0).baseBoxes[0].cellCurrent == ITEMS.heartContainer)
+    }
+}

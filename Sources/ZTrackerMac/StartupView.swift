@@ -25,7 +25,6 @@ struct StartupView: View {
                     Text("Z-Tracker Mac")
                         .font(.largeTitle.bold())
 
-                    togglesSection
                     questSection
                     savedStateSection
                     tipSection
@@ -40,15 +39,6 @@ struct StartupView: View {
             .padding(32)
         }
         .frame(minWidth: 420, minHeight: 320)
-    }
-
-    private var togglesSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Toggle("Heart Shuffle", isOn: Bindable(model).heartShuffle)
-            Toggle("Hide Dungeon Numbers", isOn: Bindable(model).hideDungeonNumbers)
-        }
-        .toggleStyle(.checkbox)
-        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private var questSection: some View {

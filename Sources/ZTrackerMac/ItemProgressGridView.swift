@@ -346,11 +346,37 @@ struct SeedFlagsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
+            heartShuffleToggle
+            hideDungeonNumbersToggle
             swordlessToggle
             bookShieldToggle
             mirrorToggle
         }
         .toggleStyle(.checkbox)
+    }
+
+    /// Heart Shuffle (T-049) — moved off the startup screen. Uses the model's
+    /// setter so the dungeon floor-item hearts re-seed on change.
+    private var heartShuffleToggle: some View {
+        Toggle(isOn: Binding(get: { model.heartShuffle }, set: { model.setHeartShuffle($0) })) {
+            HStack(spacing: 6) {
+                Image(systemName: "suit.heart.fill").font(.system(size: 12)).foregroundStyle(.red)
+                Text("Heart Shuffle").font(.system(size: 11))
+            }
+        }
+        .help("Heart Shuffle: dungeon floor hearts are shuffled into the item pool instead of being known")
+    }
+
+    /// Hidden Dungeon Numbers (T-049) — moved off the startup screen. Rebuilds
+    /// the dungeon tracker (3 boxes per dungeon) and relabels dungeons A–H.
+    private var hideDungeonNumbersToggle: some View {
+        Toggle(isOn: Binding(get: { model.hideDungeonNumbers }, set: { model.setHideDungeonNumbers($0) })) {
+            HStack(spacing: 6) {
+                Image(systemName: "questionmark.square.fill").font(.system(size: 12))
+                Text("Hide Dungeon #s").font(.system(size: 11))
+            }
+        }
+        .help("Hidden Dungeon Numbers: dungeons are labeled A–H (numbers unknown) and each has three item boxes. Toggling rebuilds the dungeon tracker.")
     }
 
     /// Mirror the overworld East↔West (T-047).

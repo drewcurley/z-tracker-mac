@@ -45,6 +45,11 @@ struct OverworldMapView: View {
     /// re-flip of `mirrorOverworldFEs` (`UI.fs:1302-1310`).
     var mirrored: Bool = false
 
+    /// Hidden Dungeon Numbers (T-049): dungeon marks are labeled A–H (1–8)
+    /// instead of numbers, both in the tile selector and on the map (Level 9
+    /// stays "9").
+    var hideDungeonNumbers: Bool = false
+
     /// Whether any active top-section overlay highlights this tile (T-035.2).
     private func overlayHighlights(column: Int, row: Int, mark: OverworldTileMark) -> Bool {
         guard let overlays else { return false }
@@ -162,7 +167,7 @@ struct OverworldMapView: View {
                                 let background = OverworldBackgroundAtlas.tile(quest: quest, column: column, row: row)
                                 let isAlwaysEmpty = overworldInstance.alwaysEmpty(x: column, y: row)
                                 let showsFairy = isAlwaysEmpty && OverworldFairySpots.isFairySpot(column: column, row: row, quest: quest)
-                                TileView(mark: mark, background: background, tileWidth: tileWidth, tileHeight: tileHeight, isAlwaysEmpty: isAlwaysEmpty, showsFairy: showsFairy, mirrored: mirrored)
+                                TileView(mark: mark, background: background, tileWidth: tileWidth, tileHeight: tileHeight, isAlwaysEmpty: isAlwaysEmpty, showsFairy: showsFairy, mirrored: mirrored, hideDungeonNumbers: hideDungeonNumbers)
                                     .overlay {
                                         if options.highlightNearby, !isAlwaysEmpty,
                                            let isBold = highlights[OverworldScreenCoordinate(x: column, y: row)] {
@@ -310,7 +315,12 @@ struct OverworldMapView: View {
         Divider()
         Menu("Dungeon") {
             ForEach(1...9, id: \.self) { number in
-                Button("Dungeon \(number)") { grid.setMark(.dungeon(number), column: column, row: row) }
+                // HDN labels dungeons A–H (Level 9 stays "9"); the mark still
+                // stores the slot number, so located-linking is unchanged.
+                let label = DungeonLabeling.slotLabel(number, hideDungeonNumbers: hideDungeonNumbers)
+                Button(number == 9 ? "Level 9" : "Dungeon \(label)") {
+                    grid.setMark(.dungeon(number), column: column, row: row)
+                }
             }
         }
         Menu("Any road") {
@@ -396,6 +406,8 @@ private struct TileView: View {
     /// numerals, interior icons, the fairy — are counter-flipped so they read
     /// normally, matching the reference's re-flip of readable elements.
     var mirrored: Bool = false
+    /// Hidden Dungeon Numbers (T-049): render dungeon digits 1–8 as A–H.
+    var hideDungeonNumbers: Bool = false
 
     private static let interiorOffsetXFraction: CGFloat = 5.0 / 16.0
     private static let interiorOffsetYFraction: CGFloat = 1.0 / 11.0
@@ -469,9 +481,11 @@ private struct TileView: View {
     private var digitBadge: some View {
         switch mark.iconSource {
         case .dungeonDigit(let number):
-            digitIcon(number, background: .yellow)
+            // HDN relabels dungeons 1–8 as A–H (Level 9 stays "9"); any-road
+            // digits are unaffected.
+            digitIcon(DungeonLabeling.slotLabel(number, hideDungeonNumbers: hideDungeonNumbers), background: .yellow)
         case .anyRoadDigit(let number):
-            digitIcon(number, background: Self.anyRoadBackground)
+            digitIcon("\(number)", background: Self.anyRoadBackground)
         default:
             EmptyView()
         }
@@ -507,14 +521,15 @@ private struct TileView: View {
         }
     }
 
-    /// A centered colored badge with a bold digit, sized to most of the tile
-    /// so dungeon/any-road numbers are legible at map scale.
-    private func digitIcon(_ number: Int, background: Color) -> some View {
+    /// A centered colored badge with a bold label (a dungeon/any-road number, or
+    /// an A–H dungeon letter under HDN), sized to most of the tile so it's
+    /// legible at map scale.
+    private func digitIcon(_ label: String, background: Color) -> some View {
         let badge = min(tileWidth, tileHeight) * 0.82
         return RoundedRectangle(cornerRadius: badge * 0.18)
             .fill(background)
             .overlay(
-                Text("\(number)")
+                Text(label)
                     .font(.system(size: badge * 0.8, weight: .heavy, design: .rounded))
                     .minimumScaleFactor(0.3)
                     .foregroundStyle(.black)

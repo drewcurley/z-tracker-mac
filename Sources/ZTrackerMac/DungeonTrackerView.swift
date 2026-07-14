@@ -39,6 +39,7 @@ struct DungeonTrackerView: View {
                 ForEach(0..<9, id: \.self) { i in
                     DungeonCardView(dungeon: dt.dungeon(i), instance: dt, isLocated: loc.contains(i),
                                     iconOptions: model.iconOptions,
+                                    hideDungeonNumbers: model.hideDungeonNumbers,
                                     hint: $model.levelHints[HintTarget.dungeon(i + 1)])
                 }
             }
@@ -53,14 +54,26 @@ private struct DungeonCardView: View {
     var instance: DungeonTrackerInstance
     var isLocated: Bool
     var iconOptions = ItemIconOptions()
+    /// Hidden Dungeon Numbers (T-049): label the slot A–H instead of 1–8, and
+    /// hide the location hint (replaced by the number chooser — a later task).
+    var hideDungeonNumbers: Bool = false
     @Binding var hint: HintZone
+
+    /// The slot label: A–H under HDN (1–8), else the number; Level 9 stays "9".
+    private var slotLabel: String {
+        DungeonLabeling.slotLabel(dungeon.id + 1, hideDungeonNumbers: hideDungeonNumbers)
+    }
 
     var body: some View {
         VStack(spacing: 4) {
-            // Location hint (T-039), above the dungeon numeral.
-            HintLabel(hint: $hint, title: "Dungeon \(dungeon.id + 1)")
+            // Location hint (T-039), above the dungeon numeral. In HDN this slot
+            // is replaced by the dungeon-number chooser (a later task), so the
+            // hint is hidden here for now.
+            if !hideDungeonNumbers {
+                HintLabel(hint: $hint, title: "Dungeon \(dungeon.id + 1)")
+            }
             HStack(spacing: 3) {
-                Text("\(dungeon.id + 1)")
+                Text(slotLabel)
                     .font(.system(size: 15, weight: .heavy, design: .rounded))
                     .foregroundStyle(isLocated ? Color.white : Color(white: 0.42))
                 // Triforce pip (ignore for dungeon 9).
