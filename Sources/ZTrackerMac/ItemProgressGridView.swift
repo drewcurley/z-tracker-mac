@@ -252,27 +252,43 @@ struct ItemProgressGridView: View {
                     }
                 }
             }
+            Divider().overlay(Color(white: 0.2))
             swordlessToggle
+            bookShieldToggle
+            MaxHeartsControl(startingItems: model.startingItemsAndExtras, hearts: playerState.playerHearts)
         }
         .padding(8)
         .background(RoundedRectangle(cornerRadius: 8).fill(Color(white: 0.09)))
     }
 
-    /// The swordless (WSMS→Bomb Upgrade) seed toggle — the start of the item-
-    /// grid chrome. When on, the White Sword and Magical Sword are Bomb
-    /// Upgrades (`isWSMSReplacedByBU`).
+    /// The swordless (WSMS→Bomb Upgrade) seed toggle. When on, the White Sword
+    /// and Magical Sword are Bomb Upgrades (`isWSMSReplacedByBU`).
     private var swordlessToggle: some View {
         Toggle(isOn: $model.isWSMSReplacedByBU) {
-            HStack(spacing: 5) {
-                if let img = Image(atlasIcon: ItemIconAtlas.cgImage(.wsMsBombUpgrade)) {
-                    img.interpolation(.none).resizable().frame(width: 16, height: 16)
-                }
-                Text("Swordless (White / Magical Sword → Bomb Upgrade)")
-                    .font(.system(size: 10))
-            }
+            iconLabel(.wsMsBombUpgrade, "Swordless (White / Magical Sword → Bomb Upgrade)")
         }
         .toggleStyle(.checkbox)
         .help("Swordless seed: the White Sword and Magical Sword are replaced by Bomb Upgrades")
+    }
+
+    /// Book vs Magic Shield for item slot 0 (boomstick seeds). Checked = shield
+    /// (`isCurrentlyBook == false`), matching the reference's "Shield instead of
+    /// book" checkbox.
+    private var bookShieldToggle: some View {
+        Toggle(isOn: Binding(get: { !model.isCurrentlyBook }, set: { model.isCurrentlyBook = !$0 })) {
+            iconLabel(model.isCurrentlyBook ? .book : .magicShield, "Shield instead of book (boomstick seeds)")
+        }
+        .toggleStyle(.checkbox)
+        .help("When checked, item slot 0 is the Magic Shield instead of the Book (boomstick seeds)")
+    }
+
+    private func iconLabel(_ icon: ItemIconAtlas.Icon, _ text: String) -> some View {
+        HStack(spacing: 5) {
+            if let img = Image(atlasIcon: ItemIconAtlas.cgImage(icon)) {
+                img.interpolation(.none).resizable().frame(width: 16, height: 16)
+            }
+            Text(text).font(.system(size: 10))
+        }
     }
 
     @ViewBuilder
@@ -282,7 +298,7 @@ struct ItemProgressGridView: View {
             IndicatorCell(icon: coast.indicator, help: coast.help, size: Self.cellSize)
         case .pickerBox(let coast):
             BoxView(box: coast.box(in: model.dungeonTracker), instance: model.dungeonTracker,
-                    label: nil, wsmsReplacedByBU: model.isWSMSReplacedByBU)
+                    label: nil, iconOptions: model.iconOptions)
                 .help(coast.help)
         case .toggle(let toggle):
             ItemToggleBox(
@@ -409,5 +425,24 @@ private struct TakeAnyHeartBox: View {
 
     private func cycle(_ delta: Int) {
         progress.takeAnyHearts[index] = ItemProgressGrid.cycledHeart(state, by: delta)
+    }
+}
+
+/// Max-hearts readout + adjust, ported from the reference's max-hearts panel
+/// (`OverworldItemGridUI.fs:542-556`): shows the derived `playerHearts` and
+/// steps `maxHeartsDifferential` (nested `@Bindable` so the stepper can mutate
+/// the observable starting-items object).
+private struct MaxHeartsControl: View {
+    @Bindable var startingItems: StartingItemsAndExtras
+    var hearts: Int
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Text("Max Hearts: \(hearts)")
+                .font(.system(size: 10)).foregroundStyle(.orange)
+            Stepper("", value: $startingItems.maxHeartsDifferential, in: -8...16)
+                .labelsHidden().controlSize(.mini)
+        }
+        .help("Adjust starting/bonus max hearts (the differential from the default of 3)")
     }
 }

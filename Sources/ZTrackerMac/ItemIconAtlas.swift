@@ -8,6 +8,22 @@ import TrackerCore
 /// order is transcribed exactly from `Graphics.fs:530-548`'s `icons7x7.png`
 /// destructuring (`boomerang` … `ws_ms_bomb_upgrade`); the reference treats
 /// pure black as transparent, matched here via a decode array.
+/// Seed-option flags that change how certain item slots display.
+struct ItemIconOptions: Equatable {
+    /// Swordless: the white-sword item shows as a bomb upgrade.
+    var wsmsReplacedByBU = false
+    /// Item slot 0 is the Book (true, default) or the Magic Shield (false).
+    var isCurrentlyBook = true
+}
+
+extension TrackerModel {
+    /// The seed-option flags that affect item-icon display, bundled for the
+    /// item boxes/picker.
+    var iconOptions: ItemIconOptions {
+        ItemIconOptions(wsmsReplacedByBU: isWSMSReplacedByBU, isCurrentlyBook: isCurrentlyBook)
+    }
+}
+
 enum ItemIconAtlas {
     static let iconWidth = 7
     static let iconHeight = 7
@@ -45,13 +61,16 @@ enum ItemIconAtlas {
         }
     }
 
-    /// The icon for an `ITEMS` index, honoring the swordless (WSMS→Bomb
-    /// Upgrade) seed option: the white-sword item (box-item domain index 13,
-    /// the reference's `CustomComboBoxes.fs:48`) renders as the bomb-upgrade
-    /// sprite when `wsmsReplacedByBU` is set. Every other item — including the
-    /// wood sword, which this option does not touch — is unchanged.
-    static func icon(forItemIndex itemIndex: Int, wsmsReplacedByBU: Bool) -> Icon? {
-        if wsmsReplacedByBU && itemIndex == ITEMS.whiteSword { return .wsMsBombUpgrade }
+    /// The icon for an `ITEMS` index, honoring the seed-option item swaps that
+    /// change how a slot displays (`CustomComboBoxes.fs:46,48`):
+    /// - swordless (`wsmsReplacedByBU`): the white-sword *item* (index 13, the
+    ///   shuffled white-sword weapon) renders as the bomb-upgrade sprite.
+    /// - book/shield (`isCurrentlyBook`): slot 0 renders as the book or the
+    ///   magic shield.
+    /// Every other item — including the wood sword — is unchanged.
+    static func icon(forItemIndex itemIndex: Int, options: ItemIconOptions) -> Icon? {
+        if options.wsmsReplacedByBU && itemIndex == ITEMS.whiteSword { return .wsMsBombUpgrade }
+        if itemIndex == ITEMS.bookOrShield { return options.isCurrentlyBook ? .book : .magicShield }
         return icon(forItemIndex: itemIndex)
     }
 
