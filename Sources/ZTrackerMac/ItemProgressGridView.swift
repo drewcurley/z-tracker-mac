@@ -344,7 +344,8 @@ struct ObtainableItemsView: View {
 struct SeedFlagsView: View {
     @Bindable var model: TrackerModel
     /// The run timer — Heart Shuffle / Hidden Dungeon Numbers rebuild dungeon
-    /// state, so while the timer is running they confirm first (T-051).
+    /// state, so once the run has started (even if paused) they confirm first
+    /// (T-051/T-052).
     var timer: TrackerTimer
     @State private var pending: DestructiveAction?
 
@@ -361,11 +362,11 @@ struct SeedFlagsView: View {
     }
 
     /// Heart Shuffle (T-049) — moved off the startup screen. Uses the model's
-    /// setter so the dungeon floor-item hearts re-seed on change. Confirms
-    /// mid-run (T-051), since it overwrites the floor-item boxes.
+    /// setter so the dungeon floor-item hearts re-seed on change. Confirms once
+    /// the run has started (T-051/T-052), since it overwrites the floor boxes.
     private var heartShuffleToggle: some View {
         Toggle(isOn: Binding(get: { model.heartShuffle }, set: { newValue in
-            runOrConfirm(timerIsRunning: timer.isRunning, into: &pending,
+            runOrConfirm(confirmFirst: timer.hasStarted, into: &pending,
                          title: "Change Heart Shuffle mid-run?",
                          message: "This re-seeds every dungeon's floor-item box, discarding what you've marked there. This can't be undone.",
                          confirmLabel: "Change Heart Shuffle") {
@@ -382,10 +383,11 @@ struct SeedFlagsView: View {
 
     /// Hidden Dungeon Numbers (T-049) — moved off the startup screen. Rebuilds
     /// the dungeon tracker (3 boxes per dungeon) and relabels dungeons A–H.
-    /// Confirms mid-run (T-051), since the rebuild wipes all dungeon progress.
+    /// Confirms once the run has started (T-051/T-052); the rebuild wipes all
+    /// dungeon progress.
     private var hideDungeonNumbersToggle: some View {
         Toggle(isOn: Binding(get: { model.hideDungeonNumbers }, set: { newValue in
-            runOrConfirm(timerIsRunning: timer.isRunning, into: &pending,
+            runOrConfirm(confirmFirst: timer.hasStarted, into: &pending,
                          title: "Change Hidden Dungeon Numbers mid-run?",
                          message: "This rebuilds the dungeon tracker, discarding all dungeon items, triforces, and number assignments. This can't be undone.",
                          confirmLabel: "Change Hidden Dungeon Numbers") {
