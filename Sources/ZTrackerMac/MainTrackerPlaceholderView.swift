@@ -10,6 +10,9 @@ import TrackerCore
 struct MainTrackerPlaceholderView: View {
     var model: TrackerModel
     var options: TrackerOptions
+    /// "Reset App" — discard the run and return to the startup screen (T-046),
+    /// offered from the paused-timer panel.
+    var onResetApp: () -> Void = {}
 
     /// Drives + presents the reminder engine's announcements (T-018.3).
     @State private var reminders = ReminderController()
@@ -42,10 +45,20 @@ struct MainTrackerPlaceholderView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 14) {
-                // Run timer (T-035.4), top-right.
+                // Run timer (T-035.4), top-right. Pausing reveals the reset
+                // hub (T-046): Reset App / Reset Timer / Reset (keep maps).
                 HStack {
                     Spacer()
-                    TimerView(timer: timer)
+                    TimerView(
+                        timer: timer,
+                        onResetApp: onResetApp,
+                        onGroundhogReset: {
+                            model.resetForGroundhogOrRouters()
+                            // Fresh lap; the main timer keeps its total and resumes.
+                            timer.startLap()
+                            timer.resume()
+                        }
+                    )
                 }
 
                 // The top section, split into four logical groups laid out
@@ -62,7 +75,7 @@ struct MainTrackerPlaceholderView: View {
                         SeedFlagsView(model: model)
                     }
                     TopSectionGroup(title: "Info") {
-                        MapInfoView(model: model, playerState: model.playerComputedStateSummary, mapState: mapState, overlays: overlays, timer: timer)
+                        MapInfoView(model: model, playerState: model.playerComputedStateSummary, mapState: mapState, overlays: overlays)
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)

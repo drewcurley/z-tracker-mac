@@ -385,20 +385,18 @@ struct SeedFlagsView: View {
 /// **Informational** group (T-043): live read-only readouts (unmarked overworld
 /// spots left, how many are currently gettable, computed Max Hearts) plus the
 /// map-overlay toggle icons (open caves / money / zones / coords — hover to
-/// preview, click to lock) and the groundhog/routers reset action.
+/// preview, click to lock). The groundhog/routers reset now lives in the paused-
+/// timer reset hub (T-046), alongside Reset App / Reset Timer.
 struct MapInfoView: View {
     @Bindable var model: TrackerModel
     var playerState: PlayerComputedStateSummary
     var mapState: MapStateSummary
     var overlays: OverworldOverlayState
-    var timer: TrackerTimer
-    @State private var confirmingReset = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             statusReadout
             overlayToggles
-            resetButton
         }
     }
 
@@ -457,26 +455,6 @@ struct MapInfoView: View {
         .onHover { overlays.setHover(overlay, $0) }
         .onTapGesture { overlays.toggleLock(overlay) }
         .help(help)
-    }
-
-    /// "Groundhog / routers" reset — remove inventory but keep maps
-    /// (`TrackerModel.resetForGroundhogOrRouters`). Destructive + no save/load
-    /// yet, so it confirms first.
-    private var resetButton: some View {
-        Button("Reset (keep maps)") { confirmingReset = true }
-            .font(.system(size: 10))
-            .help("Groundhog/routers restart: remove all inventory but keep your overworld marks and known item locations")
-            .confirmationDialog("Reset inventory for a groundhog/routers restart?",
-                                isPresented: $confirmingReset, titleVisibility: .visible) {
-                Button("Reset inventory (keep maps)", role: .destructive) {
-                    model.resetForGroundhogOrRouters()
-                    // Start a fresh lap; the main timer keeps running.
-                    timer.startLap()
-                }
-                Button("Cancel", role: .cancel) {}
-            } message: {
-                Text("Removes all items, triforces, and take-any hearts so you can replay the same seed. Your overworld marks and known item locations stay. This can't be undone (no save yet).")
-            }
     }
 }
 
