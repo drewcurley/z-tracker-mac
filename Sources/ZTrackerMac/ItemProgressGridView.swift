@@ -231,7 +231,7 @@ extension ItemProgressGrid.ItemToggle: Equatable {}
 /// pickers (reused `BoxView`). Located/superseded highlighting and the
 /// take-any hearts row are later T-025 sub-tasks.
 struct ItemProgressGridView: View {
-    var model: TrackerModel
+    @Bindable var model: TrackerModel
     /// Live derived state driving the located (yellow) / superseded (gray-X)
     /// box highlighting (T-025.3). Supplied by the parent, which already
     /// computes them for the overworld map.
@@ -252,9 +252,27 @@ struct ItemProgressGridView: View {
                     }
                 }
             }
+            swordlessToggle
         }
         .padding(8)
         .background(RoundedRectangle(cornerRadius: 8).fill(Color(white: 0.09)))
+    }
+
+    /// The swordless (WSMS→Bomb Upgrade) seed toggle — the start of the item-
+    /// grid chrome. When on, the White Sword and Magical Sword are Bomb
+    /// Upgrades (`isWSMSReplacedByBU`).
+    private var swordlessToggle: some View {
+        Toggle(isOn: $model.isWSMSReplacedByBU) {
+            HStack(spacing: 5) {
+                if let img = Image(atlasIcon: ItemIconAtlas.cgImage(.wsMsBombUpgrade)) {
+                    img.interpolation(.none).resizable().frame(width: 16, height: 16)
+                }
+                Text("Swordless (White / Magical Sword → Bomb Upgrade)")
+                    .font(.system(size: 10))
+            }
+        }
+        .toggleStyle(.checkbox)
+        .help("Swordless seed: the White Sword and Magical Sword are replaced by Bomb Upgrades")
     }
 
     @ViewBuilder
@@ -263,7 +281,8 @@ struct ItemProgressGridView: View {
         case .indicator(let coast):
             IndicatorCell(icon: coast.indicator, help: coast.help, size: Self.cellSize)
         case .pickerBox(let coast):
-            BoxView(box: coast.box(in: model.dungeonTracker), instance: model.dungeonTracker, label: nil)
+            BoxView(box: coast.box(in: model.dungeonTracker), instance: model.dungeonTracker,
+                    label: nil, wsmsReplacedByBU: model.isWSMSReplacedByBU)
                 .help(coast.help)
         case .toggle(let toggle):
             ItemToggleBox(

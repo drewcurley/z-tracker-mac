@@ -56,7 +56,8 @@ struct MainTrackerPlaceholderView: View {
                     quest: model.quest ?? .first,
                     options: options,
                     playerState: model.playerComputedStateSummary,
-                    mapState: mapState
+                    mapState: mapState,
+                    isWSMSReplacedByBU: model.isWSMSReplacedByBU
                 )
                 .frame(maxWidth: 900)
             }

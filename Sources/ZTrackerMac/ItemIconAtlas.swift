@@ -45,6 +45,16 @@ enum ItemIconAtlas {
         }
     }
 
+    /// The icon for an `ITEMS` index, honoring the swordless (WSMS→Bomb
+    /// Upgrade) seed option: the white-sword item (box-item domain index 13,
+    /// the reference's `CustomComboBoxes.fs:48`) renders as the bomb-upgrade
+    /// sprite when `wsmsReplacedByBU` is set. Every other item — including the
+    /// wood sword, which this option does not touch — is unchanged.
+    static func icon(forItemIndex itemIndex: Int, wsmsReplacedByBU: Bool) -> Icon? {
+        if wsmsReplacedByBU && itemIndex == ITEMS.whiteSword { return .wsMsBombUpgrade }
+        return icon(forItemIndex: itemIndex)
+    }
+
     private static let fullImage: CGImage? = AtlasLoader.load("icons7x7", blackIsTransparent: true)
 
     static func icon(at index: Int) -> CGImage? {
