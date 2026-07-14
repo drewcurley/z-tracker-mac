@@ -18,7 +18,8 @@
 | [T-016](./T-016.md) | Hide Dungeon Numbers (HDN) mode (umbrella) | frontend-engineer | split |
 | [T-016.2](./T-016.2.md) | HDN basement-stair metadata — `StairKind`/`BoxOwner`/`CurrentlyHasBasementStair` | frontend-engineer | proposed |
 | [T-016.3](./T-016.3.md) | HDN labeling UI + overworld lettered-dungeon rendering | frontend-engineer | proposed |
-| [T-018](./T-018.md) | Reminders, announcements, and Triforce-and-Go orchestration | frontend-engineer | proposed |
+| [T-018](./T-018.md) | Reminders, announcements, and Triforce-and-Go (umbrella) | frontend-engineer | split |
+| [T-018.2](./T-018.2.md) | `ITrackerEvents` + `allUIEventingLogic` announcement/reminder orchestration | frontend-engineer | proposed |
 
 ## Completed
 
@@ -45,6 +46,7 @@
 | [T-015.5](./T-015.5.md) | Any-road warp destination wiring | frontend-engineer | — | feat/anyroad-warp-wiring | #21 | docs/reviews/feat-anyroad-warp-wiring/final.md |
 | [T-016.1](./T-016.1.md) | HDN model core — box counts, completion, triforce indexing, label/color | frontend-engineer | — | feat/hdn-model-core | #22 | docs/reviews/feat-hdn-model-core/final.md |
 | [T-017](./T-017.md) | Dungeon blockers — model + container (`playerCouldBeBlockedByThis`) | frontend-engineer | — | feat/dungeon-blockers | #23 | docs/reviews/feat-dungeon-blockers/final.md |
+| [T-018.1](./T-018.1.md) | `TriforceAndGoSummary` scored advisor | frontend-engineer | — | feat/triforce-and-go-summary | #24 | docs/reviews/feat-triforce-and-go-summary/final.md |
 | [T-019](./T-019.md) | Bugfix: overworld tile icons used a dead ZHelper asset, wrong mapping | frontend-engineer | — | fix/overworld-tile-icons-wrong-asset | — | docs/reviews/fix-overworld-tile-icons-wrong-asset/final.md |
 
 ## Cancelled / Superseded
