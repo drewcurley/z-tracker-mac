@@ -1,5 +1,63 @@
+import CoreGraphics
 import SwiftUI
 import TrackerCore
+
+/// Loads the reference app's overworld-heart strip (`icons10x10.png`, 100×10px
+/// = 10 icons of 10×10px) and crops the take-any heart sprites. Order is
+/// transcribed from `Graphics.fs:602-618`'s `icons10x10.png` slicing
+/// (`brightTriforce`, `orangeTriforce`, `owHeartSkipped`, `owHeartEmpty`,
+/// `owHeartFull`, …). The PNG already carries its transparent background in
+/// alpha, so it loads directly like the other overworld-icon atlases.
+enum OverworldHeartAtlas {
+    static let iconWidth = 10
+    static let iconHeight = 10
+
+    /// Named indices into `icons10x10.png`.
+    enum Icon: Int {
+        case empty = 3   // owHeartEmpty_bmp
+        case full = 4    // owHeartFull_bmp
+    }
+
+    private static let fullImage: CGImage? = {
+        guard
+            let url = Bundle.module.url(forResource: "icons10x10", withExtension: "png"),
+            let provider = CGDataProvider(url: url as CFURL),
+            let image = CGImage(pngDataProviderSource: provider, decode: nil,
+                                shouldInterpolate: false, intent: .defaultIntent)
+        else { return nil }
+        // The sheet has a pure-white background (with an alpha channel, so the
+        // `maskingColorComponents` trick the other atlases use no-ops here).
+        // Key exact white → transparent, mirroring the reference
+        // (`Graphics.fs:611`: `color = White → Transparent`).
+        return whiteKeyed(image) ?? image
+    }()
+
+    /// Returns a copy of `image` with every pure-white (255,255,255) pixel made
+    /// fully transparent — the reference's overworld-sprite background key.
+    private static func whiteKeyed(_ image: CGImage) -> CGImage? {
+        let width = image.width, height = image.height
+        let bytesPerRow = width * 4
+        var pixels = [UInt8](repeating: 0, count: height * bytesPerRow)
+        guard let ctx = CGContext(
+            data: &pixels, width: width, height: height, bitsPerComponent: 8,
+            bytesPerRow: bytesPerRow, space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue
+        ) else { return nil }
+        ctx.draw(image, in: CGRect(x: 0, y: 0, width: width, height: height))
+        for i in stride(from: 0, to: pixels.count, by: 4) where
+            pixels[i] == 255 && pixels[i + 1] == 255 && pixels[i + 2] == 255 {
+            pixels[i] = 0; pixels[i + 1] = 0; pixels[i + 2] = 0; pixels[i + 3] = 0
+        }
+        return ctx.makeImage()
+    }
+
+    static func icon(at index: Int) -> CGImage? {
+        guard let fullImage else { return nil }
+        return fullImage.cropping(to: CGRect(x: index * iconWidth, y: 0, width: iconWidth, height: iconHeight))
+    }
+
+    static func cgImage(_ icon: Icon) -> CGImage? { self.icon(at: icon.rawValue) }
+}
 
 /// Pure, testable description of the overworld item-grid layout (T-025.1) —
 /// the reference's `owItemGrid` cell arrangement (`OW_ITEM_GRID_LOCATIONS`,
@@ -8,7 +66,7 @@ import TrackerCore
 /// testable without a running app.
 enum ItemProgressGrid {
     static let columns = 5
-    static let rows = 3
+    static let rows = 4
 
     /// A `PlayerProgressAndTakeAnyHearts` boolean the player toggles by
     /// clicking a fixed-sprite box (`veryBasicBoxImpl`,
@@ -102,11 +160,15 @@ enum ItemProgressGrid {
         case indicator(CoastBox)
         case pickerBox(CoastBox)
         case toggle(ItemToggle)
+        /// One of the 4 overworld take-any heart-cave slots (`HEARTS`,
+        /// `OverworldItemGridUI.fs:197-222`).
+        case takeAnyHeart(Int)
+        /// An unused grid position (`OW_ITEM_GRID_LOCATIONS` has nothing at 4,3).
+        case empty
     }
 
-    /// The 3×5 grid content, ported cell-for-cell from `OW_ITEM_GRID_LOCATIONS`
-    /// (only the columns/rows this sub-task renders; take-any hearts row is
-    /// T-025.2). `layout[row][col]`.
+    /// The 4×5 grid content, ported cell-for-cell from `OW_ITEM_GRID_LOCATIONS`.
+    /// `layout[row][col]`.
     static let layout: [[Cell]] = [
         // row 0
         [.indicator(.whiteSword), .pickerBox(.whiteSword), .toggle(.magicalSword), .toggle(.woodSword), .toggle(.boomBook)],
@@ -114,12 +176,20 @@ enum ItemProgressGrid {
         [.indicator(.coast), .pickerBox(.coast), .toggle(.blueCandle), .toggle(.woodArrow), .toggle(.blueRing)],
         // row 2
         [.indicator(.armos), .pickerBox(.armos), .toggle(.bomb), .toggle(.ganon), .toggle(.zelda)],
+        // row 3 — take-any heart caves (cols 0–3), nothing at 4,3
+        [.takeAnyHeart(0), .takeAnyHeart(1), .takeAnyHeart(2), .takeAnyHeart(3), .empty],
     ]
 
     /// The cell at a position (nil if out of range) — the testable mapping.
     static func cell(row: Int, col: Int) -> Cell? {
         guard layout.indices.contains(row), layout[row].indices.contains(col) else { return nil }
         return layout[row][col]
+    }
+
+    /// The take-any heart tri-state advanced by `delta` (wrapping), ported
+    /// from the reference's `(cur + delta + 3) % 3` (`OverworldItemGridUI.fs:207`).
+    static func cycledHeart(_ state: TakeAnyHeartState, by delta: Int) -> TakeAnyHeartState {
+        TakeAnyHeartState(rawValue: ((state.rawValue + delta) % 3 + 3) % 3) ?? state
     }
 }
 
@@ -168,6 +238,10 @@ struct ItemProgressGridView: View {
                 iconOverride: (toggle == .magicalSword && model.isWSMSReplacedByBU) ? .wsMsBombUpgrade : nil,
                 size: Self.cellSize
             )
+        case .takeAnyHeart(let i):
+            TakeAnyHeartBox(progress: model.playerProgress, index: i, size: Self.cellSize)
+        case .empty:
+            Color.clear.frame(width: Self.cellSize, height: Self.cellSize)
         }
     }
 }
@@ -220,5 +294,46 @@ private struct ItemToggleBox: View {
         .onTapGesture { progress[keyPath: toggle.keyPath].toggle() }
         .onRightClick { progress[keyPath: toggle.keyPath] = false }
         .help(toggle.help)
+    }
+}
+
+/// One of the 4 overworld "take-any" heart-cave slots. Left-click cycles the
+/// tri-state forward, right-click backward — the reference's
+/// `(cur + delta + 3) % 3` on `MouseLeftButtonDown`/`MouseRightButtonDown`
+/// (`OverworldItemGridUI.fs:207-209`): untaken → taken-heart → taken-
+/// potion/candle. The heart sprite is full when a heart was taken, empty
+/// otherwise; an X marks the potion/candle choice.
+private struct TakeAnyHeartBox: View {
+    var progress: PlayerProgressAndTakeAnyHearts
+    let index: Int
+    let size: CGFloat
+
+    private var state: TakeAnyHeartState { progress.takeAnyHearts[index] }
+
+    var body: some View {
+        ZStack {
+            RoundedRectangle(cornerRadius: 4).fill(Color.black)
+            let sprite: OverworldHeartAtlas.Icon = state == .takenHeart ? .full : .empty
+            if let image = Image(atlasIcon: OverworldHeartAtlas.cgImage(sprite)) {
+                image.interpolation(.none).resizable()
+                    .frame(width: size - 12, height: size - 12)
+            }
+            if state == .takenPotionOrCandle {
+                Image(systemName: "xmark")
+                    .font(.system(size: 12, weight: .heavy))
+                    .foregroundStyle(.white.opacity(0.85))
+            }
+        }
+        .frame(width: size, height: size)
+        .overlay(
+            RoundedRectangle(cornerRadius: 4).strokeBorder(Color(white: 0.3), lineWidth: 1.5)
+        )
+        .onTapGesture { cycle(1) }
+        .onRightClick { cycle(-1) }
+        .help("Take-any cave \(index + 1): heart / potion-or-candle")
+    }
+
+    private func cycle(_ delta: Int) {
+        progress.takeAnyHearts[index] = ItemProgressGrid.cycledHeart(state, by: delta)
     }
 }
