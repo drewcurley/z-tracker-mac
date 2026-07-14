@@ -2,29 +2,6 @@ import AppKit
 import SwiftUI
 import TrackerCore
 
-/// Catches a secondary (right) click while letting normal taps pass through
-/// to SwiftUI — macOS SwiftUI has no native right-click gesture. Used to set
-/// a box / picker item to "don't have it".
-private struct RightClickCatcher: NSViewRepresentable {
-    var action: () -> Void
-    func makeNSView(context: Context) -> NSView { CatcherView(action: action) }
-    func updateNSView(_ nsView: NSView, context: Context) {
-        (nsView as? CatcherView)?.action = action
-    }
-    private final class CatcherView: NSView {
-        var action: () -> Void
-        init(action: @escaping () -> Void) { self.action = action; super.init(frame: .zero) }
-        required init?(coder: NSCoder) { nil }
-        override func rightMouseDown(with event: NSEvent) { action() }
-    }
-}
-
-private extension View {
-    func onRightClick(perform action: @escaping () -> Void) -> some View {
-        background(RightClickCatcher(action: action))
-    }
-}
-
 /// The dungeon item-tracker (T-013/T-016 model, rendered). Nine dungeon
 /// cards, each with its located triforce numeral and its item boxes; a box
 /// left-click opens the item picker (Have it / Don't want it / Don't have it
@@ -60,12 +37,6 @@ struct DungeonTrackerView: View {
                 ForEach(0..<9, id: \.self) { i in
                     DungeonCardView(dungeon: dt.dungeon(i), instance: dt, isLocated: loc.contains(i))
                 }
-            }
-            HStack(spacing: 10) {
-                Text("Standalone").font(.caption2).foregroundStyle(.secondary)
-                BoxView(box: dt.ladderBox, instance: dt, label: "Coast")
-                BoxView(box: dt.armosBox, instance: dt, label: "Armos")
-                BoxView(box: dt.sword2Box, instance: dt, label: "WS cave")
             }
         }
     }
@@ -115,7 +86,7 @@ private struct DungeonCardView: View {
 
 /// One item box: the item sprite (if known) on a state-colored cell, with a
 /// basement-stair glyph when applicable. Left-click opens the picker.
-private struct BoxView: View {
+struct BoxView: View {
     @Bindable var box: Box
     var instance: DungeonTrackerInstance
     var label: String?
@@ -181,7 +152,7 @@ private struct BoxView: View {
 /// clear the box. Mirrors the reference's box popup (Have it / Don't want it
 /// / Don't have it), presented as explicit clear controls per the aesthetic
 /// license (macOS lacks a clean middle-click in SwiftUI).
-private struct BoxItemPicker: View {
+struct BoxItemPicker: View {
     @Bindable var box: Box
     var instance: DungeonTrackerInstance
     var dismiss: () -> Void

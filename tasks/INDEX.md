@@ -18,6 +18,7 @@
 | [T-016](./T-016.md) | Hide Dungeon Numbers (HDN) mode (umbrella) | frontend-engineer | split |
 | [T-016.3](./T-016.3.md) | HDN labeling UI + overworld lettered-dungeon rendering | frontend-engineer | proposed |
 | [T-018](./T-018.md) | Reminders, announcements, and Triforce-and-Go (umbrella) | frontend-engineer | split |
+| [T-025](./T-025.md) | Overworld item grid UI (owItemGrid render) (umbrella; .2/.3/.4 sub-tasks pending) | frontend-engineer | split |
 
 ## Completed
 
@@ -54,6 +55,7 @@
 | [T-023](./T-023.md) | Speech synthesizer warm-up (superseded by T-024) | frontend-engineer | — | fix/speech-warmup | #32 | — |
 | [T-024](./T-024.md) | Pre-rendered reminder audio (neural Zoe voice) | frontend-engineer | — | feat/prerendered-reminder-audio | #33 | docs/reviews/feat-prerendered-reminder-audio/final.md |
 | [T-019](./T-019.md) | Bugfix: overworld tile icons used a dead ZHelper asset, wrong mapping | frontend-engineer | — | fix/overworld-tile-icons-wrong-asset | — | docs/reviews/fix-overworld-tile-icons-wrong-asset/final.md |
+| [T-025.1](./T-025.1.md) | Item grid scaffold + toggle item boxes + relocated coast boxes | frontend-engineer | — | feat/item-progress-grid | #34 | docs/reviews/feat-item-progress-grid/final.md |
 
 ## Cancelled / Superseded
 

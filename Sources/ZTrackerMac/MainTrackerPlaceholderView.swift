@@ -37,6 +37,10 @@ struct MainTrackerPlaceholderView: View {
                 // The dungeon item-tracker (T-013/T-016/T-020 rendered).
                 DungeonTrackerView(model: model)
 
+                // The overworld item grid (T-025.1): item toggles + the
+                // coast/armos/white-sword picker boxes.
+                ItemProgressGridView(model: model)
+
                 DisclosureGroup("Player state (debug — starting items / progress toggles)") {
                     PlayerStateDebugPanel(startingItems: model.startingItemsAndExtras, progress: model.playerProgress)
                 }
