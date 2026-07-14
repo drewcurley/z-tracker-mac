@@ -83,6 +83,17 @@ public final class OverworldGrid {
         setExtraData(used ? key : 0, column: column, row: row, key: key)
     }
 
+    /// Clear every tile's **used** (claimed) state, keeping the marks and other
+    /// extra-data (shop items, etc.). Called by the groundhog/routers reset
+    /// (T-058) — a replay re-collects everything, but the map knowledge stays.
+    public func clearAllUsed() {
+        for c in 0..<Self.columnCount {
+            for r in 0..<Self.rowCount where isUsed(column: c, row: r) {
+                setUsed(false, column: c, row: r)
+            }
+        }
+    }
+
     /// Resets every tile to `.unmarked` and clears all extra-data — not
     /// itself a confirmed reference-app gesture, but a useful testing/reset
     /// hook.

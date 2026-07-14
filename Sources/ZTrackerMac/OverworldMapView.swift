@@ -337,8 +337,30 @@ struct OverworldMapView: View {
         if state != .untaken { onRecordTakeAny(state) }
     }
 
+    /// Count of each mark across the grid — for disabling exhausted picker
+    /// options (T-058).
+    private var markCounts: [OverworldTileMark: Int] {
+        var counts: [OverworldTileMark: Int] = [:]
+        for c in 0..<OverworldGrid.columnCount {
+            for r in 0..<OverworldGrid.rowCount {
+                counts[grid.mark(column: c, row: r), default: 0] += 1
+            }
+        }
+        return counts
+    }
+
+    /// Whether placing `mark` at this tile would exceed its per-quest max — i.e.
+    /// its option should be disabled. The current tile's own mark doesn't count
+    /// against the limit (re-selecting it is a no-op).
+    private func isExhausted(_ mark: OverworldTileMark, column: Int, row: Int, counts: [OverworldTileMark: Int]) -> Bool {
+        let current = grid.mark(column: column, row: row)
+        let otherCount = (counts[mark] ?? 0) - (current == mark ? 1 : 0)
+        return otherCount >= OverworldTileLimits.maxUses(mark, quest: quest)
+    }
+
     @ViewBuilder
     private func markMenu(column: Int, row: Int) -> some View {
+        let counts = markCounts
         Button("Clear (unmarked)") { applyMark(.unmarked, column: column, row: row) }
         Button("Don't care") { applyMark(.dontCare, column: column, row: row) }
         Divider()
@@ -350,11 +372,13 @@ struct OverworldMapView: View {
                 Button(number == 9 ? "Level 9" : "Dungeon \(label)") {
                     applyMark(.dungeon(number), column: column, row: row)
                 }
+                .disabled(isExhausted(.dungeon(number), column: column, row: row, counts: counts))
             }
         }
         Menu("Any road") {
             ForEach(1...4, id: \.self) { number in
                 Button("Any road \(number)") { applyMark(.anyRoad(number), column: column, row: row) }
+                    .disabled(isExhausted(.anyRoad(number), column: column, row: row, counts: counts))
             }
         }
         Menu("Sword cave") {
@@ -362,6 +386,7 @@ struct OverworldMapView: View {
                 Button(Self.swordCaveLabel(number)) {
                     applyMark(.swordCave(number), column: column, row: row)
                 }
+                .disabled(isExhausted(.swordCave(number), column: column, row: row, counts: counts))
             }
         }
         Menu("Shop") {
@@ -376,17 +401,24 @@ struct OverworldMapView: View {
         }
         Divider()
         Button("Door repair") { applyMark(.doorRepair, column: column, row: row) }
+            .disabled(isExhausted(.doorRepair, column: column, row: row, counts: counts))
         Button("Money making game") { applyMark(.moneyMakingGame, column: column, row: row) }
+            .disabled(isExhausted(.moneyMakingGame, column: column, row: row, counts: counts))
         Button("The letter") { applyMark(.theLetter, column: column, row: row) }
+            .disabled(isExhausted(.theLetter, column: column, row: row, counts: counts))
         Button("Armos") { applyMark(.armos, column: column, row: row) }
+            .disabled(isExhausted(.armos, column: column, row: row, counts: counts))
         Button("Hint shop") { applyMark(.hintShop, column: column, row: row) }
+            .disabled(isExhausted(.hintShop, column: column, row: row, counts: counts))
         Menu("Take any") {
             Button("Unclaimed") { applyTakeAny(.untaken, column: column, row: row) }
             Button("Potion") { applyTakeAny(.takenPotion, column: column, row: row) }
             Button("Blue candle") { applyTakeAny(.takenCandle, column: column, row: row) }
             Button("Heart") { applyTakeAny(.takenHeart, column: column, row: row) }
         }
+        .disabled(isExhausted(.takeAny, column: column, row: row, counts: counts))
         Button("Potion shop") { applyMark(.potionShop, column: column, row: row) }
+            .disabled(isExhausted(.potionShop, column: column, row: row, counts: counts))
     }
 }
 

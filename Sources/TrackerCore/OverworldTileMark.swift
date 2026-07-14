@@ -74,6 +74,9 @@ public enum OverworldTileMark: Hashable, Codable, Sendable {
     /// which are likewise claimed exactly once (user request).
     public var isUsedToggleable: Bool {
         switch self {
+        // An *unknown* secret has no known contents, so it's always unclaimed
+        // (T-058) — you can't have collected something you haven't identified.
+        case .secret(.unknown): false
         case .secret, .takeAny, .armos, .theLetter, .hintShop: true
         default: false
         }

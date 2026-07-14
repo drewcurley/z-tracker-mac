@@ -180,6 +180,9 @@ public final class TrackerModel {
         }
         // Clear progress items + take-any hearts (their "used" state).
         playerProgress.resetAll()
+        // Clear the overworld tiles' claimed ("used") state — a replay
+        // re-collects them — while keeping the marks (T-058).
+        overworldGrid.clearAllUsed()
         // Let reminders announce again.
         reminderEngine.resetForGroundhogOrRouters()
     }
