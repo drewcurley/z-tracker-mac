@@ -61,6 +61,7 @@
 | [T-025.2](./T-025.2.md) | Take-any hearts row (overworld heart-cave tri-state boxes) | frontend-engineer | — | feat/take-any-hearts | #35 | docs/reviews/feat-take-any-hearts/final.md |
 | [T-025.3](./T-025.3.md) | Item-box located (yellow) / superseded (gray-X) highlighting | frontend-engineer | — | feat/item-box-highlighting | #41 | docs/reviews/feat-item-box-highlighting/final.md |
 | [T-025.4](./T-025.4.md) | Swordless (WSMS→Bomb Upgrade) support + sword-cave relabel + BU toggle | frontend-engineer | — | feat/swordless-bu-support | #42 | docs/reviews/feat-swordless-bu-support/final.md |
+| [T-032](./T-032.md) | Fix — sword-cave labels wrongly BU-annotated (white sword item ≠ white sword) | frontend-engineer | — | fix/sword-cave-labels | #43 | docs/reviews/fix-sword-cave-labels/final.md |
 | [T-026](./T-026.md) | Auto-mark always-empty overworld tiles as permanent "don't care" | frontend-engineer | — | feat/always-empty-tiles | #36 | docs/reviews/feat-always-empty-tiles/final.md |
 | [T-027](./T-027.md) | Always-empty tile polish — drop the X, add fairy-spot icons | frontend-engineer | — | feat/always-empty-polish | #37 | docs/reviews/feat-always-empty-polish/final.md |
 | [T-028](./T-028.md) | Coast item can never be the ladder (deliberate rule beyond the reference) | frontend-engineer | — | feat/coast-item-not-ladder | #38 | docs/reviews/feat-coast-item-not-ladder/final.md |
