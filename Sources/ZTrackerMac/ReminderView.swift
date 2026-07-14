@@ -6,9 +6,14 @@ import TrackerCore
 /// (T-018.2) as spoken and/or on-screen reminders (T-018.3), honoring the
 /// per-category Voice/Visual toggles and the volume in `TrackerOptions`.
 /// The reference speaks + shows reminders driven by a ~1 Hz poll of
-/// `allUIEventingLogic`; this is the Swift equivalent (`AVSpeechSynthesizer`
-/// + a transient overlay), grounded in the `SendReminder` call sites
-/// (`Z1R_Avalonia/UI.fs:1399-1615`).
+/// `allUIEventingLogic`; this is the Swift equivalent, grounded in the
+/// `SendReminder` call sites (`Z1R_Avalonia/UI.fs:1399-1615`).
+///
+/// **Voice is pre-rendered audio (T-024), not live TTS.** Playing a bundled
+/// clip via `AVAudioPlayer` is instant (no `AVSpeechSynthesizer` first-use
+/// service spin-up, which lagged the first spoken reminder ~20s) and uses a
+/// nicer neural voice. Live TTS remains only as a fallback for any
+/// announcement without a clip.
 @Observable
 @MainActor
 final class ReminderController {
@@ -20,21 +25,12 @@ final class ReminderController {
     /// Currently-shown visual reminders (each auto-dismisses).
     private(set) var visible: [Item] = []
 
+    @ObservationIgnored private let audio = ReminderAudioPlayer()
     @ObservationIgnored private let synthesizer = AVSpeechSynthesizer()
 
     /// How long a visual reminder stays on screen.
     private let visibleDuration: Duration = .seconds(6)
     private let maxVisible = 5
-
-    init() {
-        // Warm up the speech service at launch. The first `AVSpeechSynthesizer`
-        // utterance is slow (macOS has to spin up the com.apple.speech
-        // service — often ~15-20s), so we absorb that latency here with a
-        // silent utterance rather than at the first real reminder.
-        let warmup = AVSpeechUtterance(string: " ")
-        warmup.volume = 0
-        synthesizer.speak(warmup)
-    }
 
     /// Speak/show each announcement whose category is enabled.
     func handle(_ announcements: [ReminderAnnouncement], options: TrackerOptions) {
@@ -44,7 +40,12 @@ final class ReminderController {
                 show(text)
             }
             if options.voiceReminders[announcement.category] == true {
-                speak(text, volume: options.reminderVolume, voiceIdentifier: options.preferredVoiceIdentifier)
+                let volume = max(0, min(1, Float(options.reminderVolume) / 100))
+                // Prefer the pre-rendered clip; fall back to live TTS only if
+                // there's no clip for this announcement.
+                if announcement.audioKey == nil || !audio.play(key: announcement.audioKey!, volume: volume) {
+                    speak(text, volume: options.reminderVolume, voiceIdentifier: options.preferredVoiceIdentifier)
+                }
             }
         }
     }
