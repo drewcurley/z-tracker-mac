@@ -579,6 +579,17 @@ JSON file holds options/settings, independent of save state.
       the selected route target is deferred to T-015.6** (there's no selected
       target until the picker exists). 6 cascade tests. This is the visible
       GYR payoff the whole T-012→T-015.3 stack was building toward.
+    - **T-015.5 — done (narrowed).** Any-road warp destinations wired:
+      `OverworldMapView` now feeds live `mapState.anyRoadLocations` to
+      `dynamicGraph(anyRoads:)` (was empty), so 2+ marked any-roads warp
+      between each other (cost 4) in hover routing — the graph machinery was
+      already ported (T-010), just fed empty. **Grounding-driven re-scope:**
+      recorder-warp destinations fold into **T-018** (derived in the
+      reminders/orchestration path, needing recorder options + HDN + vanilla
+      dungeon locations, none ported), and `MirrorOverworld` split to
+      **T-015.7** (a full display-flip feature, not just the routing
+      `isMirror` flag). Warp-line dashed/skipped styling deferred with those
+      (needs warp-vs-walk edge metadata the graph doesn't carry).
   - **T-016** — Hide Dungeon Numbers (HDN) mode's dungeon labeling +
     basement-stair-rendering metadata (`TrackerModel.fs:587-632`,
     `:816-818`) — deliberately deferred out of T-013 since it roughly
