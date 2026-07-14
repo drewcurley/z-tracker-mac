@@ -153,9 +153,14 @@ public enum OverworldTileMark: Hashable, Codable, Sendable {
             .dungeonDigit(number)
         case .anyRoad(let number) where (1...4).contains(number):
             .anyRoadDigit(number)
-        case .swordCave(3): .interiorSprite(0)
-        case .swordCave(2): .interiorSprite(1)
-        case .swordCave(1): .interiorSprite(2)
+        // Sword caves render with the high-fidelity Items-area sword sprites
+        // (wood / white / magical for levels 1 / 2 / 3), not the reference's
+        // tiny number-stamped `ow_icons5x9` swords — the level is already
+        // implied by which sword, so the stamped "1/2/3" is dropped (T-063,
+        // user request).
+        case .swordCave(1): .swordCaveItem(1)
+        case .swordCave(2): .swordCaveItem(2)
+        case .swordCave(3): .swordCaveItem(3)
         case .shop(.arrow): .shopSprite(0)
         case .shop(.bomb): .shopSprite(1)
         case .shop(.book): .shopSprite(2)
@@ -203,4 +208,9 @@ public enum OverworldTileIconSource: Hashable, Sendable {
     /// A 0-based index into `icons3x7.png` (8 icons, 3×7px each), to be
     /// composited onto a 5×9 orange background.
     case shopSprite(Int)
+    /// A sword cave (level `1...3`) rendered with the high-fidelity Items-area
+    /// sword sprite (`icons7x7`: wood / white / magical) instead of the
+    /// reference's number-stamped `ow_icons5x9` sword — the sword itself names
+    /// its level, so no digit is drawn (T-063).
+    case swordCaveItem(Int)
 }

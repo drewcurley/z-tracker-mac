@@ -29,6 +29,10 @@ struct OverworldMarkIcon: View {
             digit("\(n)", background: Self.anyRoadBg)
         case .interiorSprite(let idx):
             sprite(OverworldInteriorIconAtlas.icon(at: idx), inset: size * 0.14)
+        case .swordCaveItem(let level):
+            // High-fidelity Items-area sword sprite (T-063); the black box below
+            // already provides the plate, so just inset the sword.
+            sprite(ItemIconAtlas.cgImage(swordIcon(forCaveLevel: level)), inset: size * 0.16)
         case .shopSprite(let idx):
             ZStack {
                 Self.shopBg
@@ -38,6 +42,16 @@ struct OverworldMarkIcon: View {
             .padding(size * 0.1)
         case .none, .solidBlackTile:
             EmptyView()
+        }
+    }
+
+    /// Cave level 1 / 2 / 3 → wood / white / magical sword (T-063). Only levels
+    /// 1...3 reach here from `iconSource`; magical is the safe default.
+    private func swordIcon(forCaveLevel level: Int) -> ItemIconAtlas.Icon {
+        switch level {
+        case 1: .brownSword
+        case 2: .whiteSword
+        default: .magicalSword
         }
     }
 
