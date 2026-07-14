@@ -80,6 +80,7 @@
 | [T-044](./T-044.md) | Map-style box interaction — right-click opens picker, left-click toggles taken/untaken | frontend-engineer | — | feat/box-click-toggle | #61 | docs/reviews/feat-box-click-toggle/final.md |
 | [T-045](./T-045.md) | Preload the audio stack at launch, off the main thread (no first-play lag / UI hang) | frontend-engineer | — | feat/audio-warmup | #62 | docs/reviews/feat-audio-warmup/final.md |
 | [T-046](./T-046.md) | Paused-timer reset hub — Reset App / Reset Timer / Reset (keep maps) | frontend-engineer | — | feat/pause-reset-panel | #63 | docs/reviews/feat-pause-reset-panel/final.md |
+| [T-048](./T-048.md) | Reset buttons omnipresent under Info (revises T-046); groundhog never pauses the timer | frontend-engineer | — | fix/reset-buttons-info | #64 | docs/reviews/fix-reset-buttons-info/final.md |
 | [T-032](./T-032.md) | Fix — sword-cave labels wrongly BU-annotated (white sword item ≠ white sword) | frontend-engineer | — | fix/sword-cave-labels | #43 | docs/reviews/fix-sword-cave-labels/final.md |
 | [T-026](./T-026.md) | Auto-mark always-empty overworld tiles as permanent "don't care" | frontend-engineer | — | feat/always-empty-tiles | #36 | docs/reviews/feat-always-empty-tiles/final.md |
 | [T-027](./T-027.md) | Always-empty tile polish — drop the X, add fairy-spot icons | frontend-engineer | — | feat/always-empty-polish | #37 | docs/reviews/feat-always-empty-polish/final.md |
