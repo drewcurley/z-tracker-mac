@@ -29,4 +29,34 @@ final class ReminderAudioPlayer {
         Bundle.module.url(forResource: key, withExtension: "m4a", subdirectory: "audio")
             ?? Bundle.module.url(forResource: key, withExtension: "m4a")
     }
+
+    /// Any bundled reminder clip, used purely to prime the audio stack (T-045).
+    static func warmUpClipURL() -> URL? {
+        Bundle.module.urls(forResourcesWithExtension: "m4a", subdirectory: "audio")?.first
+            ?? Bundle.module.urls(forResourcesWithExtension: "m4a", subdirectory: nil)?.first
+    }
+
+    /// Primes the process's audio-output stack ahead of the first reminder
+    /// (T-045). The first `AVAudioPlayer` playback has to acquire the audio
+    /// hardware (coreaudiod), which can lag badly on a cold start — the same
+    /// spin-up that otherwise stalls the first spoken reminder. Doing it once
+    /// at launch, **on a background task at zero volume**, moves that cost off
+    /// the main thread (so the UI never beach-balls) and gets it out of the way
+    /// before any reminder fires. Once the process audio stack is engaged it
+    /// stays warm, so later real plays are instant. No clip bundled → no-op.
+    ///
+    /// The player is created and used entirely inside the detached task (never
+    /// crossing an actor boundary), so it needs no `Sendable` gymnastics; it's
+    /// released when the task ends, having already warmed the shared stack.
+    static func primeAudioStack() {
+        guard let url = warmUpClipURL() else { return }
+        Task.detached(priority: .utility) {
+            guard let player = try? AVAudioPlayer(contentsOf: url) else { return }
+            player.volume = 0
+            player.prepareToPlay()
+            player.play()
+            try? await Task.sleep(for: .milliseconds(250))
+            player.stop()
+        }
+    }
 }
