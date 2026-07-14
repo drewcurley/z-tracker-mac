@@ -347,6 +347,9 @@ struct SeedFlagsView: View {
     /// state, so once the run has started (even if paused) they confirm first
     /// (T-051/T-052).
     var timer: TrackerTimer
+    /// Map-overlay toggles — home of the "Hide tile icons" view control (T-062),
+    /// which suppresses the overworld map's mark glyphs to reveal the terrain.
+    var overlays: OverworldOverlayState
     @State private var pending: DestructiveAction?
 
     var body: some View {
@@ -356,9 +359,27 @@ struct SeedFlagsView: View {
             swordlessToggle
             bookShieldToggle
             mirrorToggle
+            hideTileIconsToggle
         }
         .toggleStyle(.checkbox)
         .destructiveActionConfirmation($pending)
+    }
+
+    /// "Hide tile icons" (T-062) — a **view** control, not a seed flag: it
+    /// suppresses the overworld map's tile-selection glyphs (dungeon numbers,
+    /// interior/shop icons, dark/used shading) so the underlying terrain is
+    /// legible. Follows the map-overlay model: the checkbox is the persistent
+    /// lock, and hovering the row previews the effect without committing it.
+    private var hideTileIconsToggle: some View {
+        Toggle(isOn: Binding(get: { overlays.isLocked(.hideMarks) },
+                             set: { _ in overlays.toggleLock(.hideMarks) })) {
+            HStack(spacing: 6) {
+                Image(systemName: "eye.slash").font(.system(size: 12))
+                Text("Hide tile icons").font(.system(size: 11))
+            }
+        }
+        .onHover { overlays.setHover(.hideMarks, $0) }
+        .help("Temporarily hide the overworld map's tile marks to see the terrain underneath. Hover to preview, click to keep it on.")
     }
 
     /// Heart Shuffle (T-049) — moved off the startup screen. Uses the model's

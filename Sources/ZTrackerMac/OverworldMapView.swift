@@ -173,7 +173,7 @@ struct OverworldMapView: View {
                                 let showsFairy = isAlwaysEmpty && OverworldFairySpots.isFairySpot(column: column, row: row, quest: quest)
                                 let used = grid.isUsed(column: column, row: row)
                                 let shopSecondItem = grid.shopSecondItem(column: column, row: row)
-                                TileView(mark: mark, background: background, tileWidth: tileWidth, tileHeight: tileHeight, isAlwaysEmpty: isAlwaysEmpty, showsFairy: showsFairy, mirrored: mirrored, hideDungeonNumbers: hideDungeonNumbers, used: used, shopSecondItem: shopSecondItem)
+                                TileView(mark: mark, background: background, tileWidth: tileWidth, tileHeight: tileHeight, isAlwaysEmpty: isAlwaysEmpty, showsFairy: showsFairy, mirrored: mirrored, hideDungeonNumbers: hideDungeonNumbers, used: used, shopSecondItem: shopSecondItem, hideMarks: overlays?.isActive(.hideMarks) ?? false)
                                     .overlay {
                                         if options.highlightNearby, !isAlwaysEmpty,
                                            let isBold = highlights[OverworldScreenCoordinate(x: column, y: row)] {
@@ -504,6 +504,10 @@ private struct TileView: View {
     var used: Bool = false
     /// A shop tile's second item (T-060); both are drawn in `ShopKind` order.
     var shopSecondItem: ShopKind? = nil
+    /// The "Hide tile icons" view control is active (T-062): suppress every
+    /// user-placed mark layer (digit badge, interior/shop icon, dark/used
+    /// shading) so only the raw terrain (plus always-empty / fairy truth) shows.
+    var hideMarks: Bool = false
 
     private static let interiorOffsetXFraction: CGFloat = 5.0 / 16.0
     private static let interiorOffsetYFraction: CGFloat = 1.0 / 11.0
@@ -520,24 +524,29 @@ private struct TileView: View {
     var body: some View {
         ZStack(alignment: .topLeading) {
             backgroundView
-            // .dontCare ("dark") darkens the terrain rather than blacking it
-            // out entirely, so the underlying map stays readable (aesthetic
-            // improvement over the reference's solid-black fill).
-            if mark.iconSource == .solidBlackTile {
-                Rectangle().fill(.black.opacity(0.62))
+            // When "Hide tile icons" is active (T-062), every user-placed mark
+            // layer is suppressed so the terrain reads cleanly — only the
+            // always-empty / fairy truth below still draws.
+            if !hideMarks {
+                // .dontCare ("dark") darkens the terrain rather than blacking it
+                // out entirely, so the underlying map stays readable (aesthetic
+                // improvement over the reference's solid-black fill).
+                if mark.iconSource == .solidBlackTile {
+                    Rectangle().fill(.black.opacity(0.62))
+                }
+                // Dungeon / any-road numbers render as a larger centered badge
+                // (not confined to the tiny 5px interior-icon region) so they're
+                // legible at map scale.
+                digitBadge
+                    .frame(width: tileWidth, height: tileHeight)
+                    .scaleEffect(x: mirrored ? -1 : 1, y: 1)
+                // Small interior sprites (secrets, shops, armos, …) keep the
+                // reference's exact interior-icon placement.
+                interiorIconView
+                    .frame(width: tileWidth * Self.interiorWidthFraction, height: tileHeight * Self.interiorHeightFraction)
+                    .scaleEffect(x: mirrored ? -1 : 1, y: 1)
+                    .offset(x: tileWidth * Self.interiorOffsetXFraction, y: tileHeight * Self.interiorOffsetYFraction)
             }
-            // Dungeon / any-road numbers render as a larger centered badge
-            // (not confined to the tiny 5px interior-icon region) so they're
-            // legible at map scale.
-            digitBadge
-                .frame(width: tileWidth, height: tileHeight)
-                .scaleEffect(x: mirrored ? -1 : 1, y: 1)
-            // Small interior sprites (secrets, shops, armos, …) keep the
-            // reference's exact interior-icon placement.
-            interiorIconView
-                .frame(width: tileWidth * Self.interiorWidthFraction, height: tileHeight * Self.interiorHeightFraction)
-                .scaleEffect(x: mirrored ? -1 : 1, y: 1)
-                .offset(x: tileWidth * Self.interiorOffsetXFraction, y: tileHeight * Self.interiorOffsetYFraction)
             // Permanent "always empty" screens are simply darkened (same as a
             // user `.dontCare` mark) — a darkened tile already reads as
             // "nothing here", so no extra glyph. A few of them are fixed
@@ -556,8 +565,9 @@ private struct TileView: View {
                 }
             }
             // A claimed ("used") tile is dimmed — the darkened tile + icon read
-            // as done, so no extra glyph is needed (T-054).
-            if used {
+            // as done, so no extra glyph is needed (T-054). Suppressed with the
+            // rest of the mark layers when "Hide tile icons" is on (T-062).
+            if used, !hideMarks {
                 Rectangle().fill(.black.opacity(0.55))
                     .frame(width: tileWidth, height: tileHeight)
             }
