@@ -487,13 +487,40 @@ struct MapInfoView: View {
     @State private var confirmingResetTimer = false
     @State private var confirmingGroundhog = false
     @State private var showingSpotSummary = false
+    @State private var confirmingVanilla = false
+    @State private var pendingVanillaSecondQuest = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             statusReadout
             spotSummaryButton
+            vanillaMapButton
             overlayToggles
             resetButtons
+        }
+    }
+
+    /// "Auto-map dungeons" (T-035.x): drop the vanilla First/Second-Quest
+    /// dungeon locations onto the map. Destructive (replaces the current dungeon
+    /// markers), so each choice confirms first.
+    private var vanillaMapButton: some View {
+        Menu("Auto-map dungeons…") {
+            Button("First Quest vanilla") { pendingVanillaSecondQuest = false; confirmingVanilla = true }
+            Button("Second Quest vanilla") { pendingVanillaSecondQuest = true; confirmingVanilla = true }
+        }
+        .menuStyle(.borderlessButton)
+        .font(.system(size: 10))
+        .controlSize(.small)
+        .fixedSize()
+        .help("Place the vanilla First/Second-Quest dungeon locations on the map. Replaces your current dungeon markers.")
+        .confirmationDialog("Auto-map \(pendingVanillaSecondQuest ? "Second" : "First") Quest dungeons?",
+                            isPresented: $confirmingVanilla, titleVisibility: .visible) {
+            Button("Replace dungeon markers", role: .destructive) {
+                model.autoMapVanillaDungeons(secondQuest: pendingVanillaSecondQuest)
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Removes your current dungeon markers and places the \(pendingVanillaSecondQuest ? "second" : "first")-quest vanilla dungeon locations. This can't be undone (no save yet).")
         }
     }
 

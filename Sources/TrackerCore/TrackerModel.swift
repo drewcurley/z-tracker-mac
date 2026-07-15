@@ -187,6 +187,32 @@ public final class TrackerModel {
         reminderEngine.resetForGroundhogOrRouters()
     }
 
+    /// Auto-map the vanilla dungeon locations for first or second quest
+    /// (T-035.x): clear every existing `.dungeon(_)` mark, then set dungeons
+    /// 1–9 at their canonical screens (`OverworldVanillaDungeons`). Other marks
+    /// (shops, secrets, …) are left alone, except a vanilla coordinate that
+    /// currently holds a take-any tile, whose Items-group slot is released first
+    /// (T-066) before it's overwritten. Destructive — callers confirm first.
+    public func autoMapVanillaDungeons(secondQuest: Bool) {
+        let locations = secondQuest
+            ? OverworldVanillaDungeons.secondQuest
+            : OverworldVanillaDungeons.firstQuest
+        // Remove all prior dungeon marks so the result is exactly these nine.
+        for c in 0..<OverworldGrid.columnCount {
+            for r in 0..<OverworldGrid.rowCount {
+                if case .dungeon = overworldGrid.mark(column: c, row: r) {
+                    overworldGrid.setMark(.unmarked, column: c, row: r)
+                }
+            }
+        }
+        for (i, loc) in locations.enumerated() {
+            if overworldGrid.mark(column: loc.column, row: loc.row) == .takeAny {
+                releaseOverworldTakeAny(column: loc.column, row: loc.row)
+            }
+            overworldGrid.setMark(.dungeon(i + 1), column: loc.column, row: loc.row)
+        }
+    }
+
     // MARK: Overworld take-any ⇄ Items-group heart-slot sync (T-066)
 
     /// Mark an overworld tile as a `.takeAny` with `state`, keeping its linked
