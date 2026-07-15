@@ -65,11 +65,14 @@ struct MainTrackerPlaceholderView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 14) {
-                // Run timer (T-035.4), top-right. Just the clock + Pause/Resume;
-                // the reset actions live under the Info group (T-048).
-                HStack {
+                // Top strip (T-035.11): the enlarged OW-spots readout in the open
+                // space on the left, the run timer, and the three reset actions
+                // to its right.
+                HStack(alignment: .center, spacing: 16) {
+                    StatusReadoutView(mapState: mapState)
                     Spacer()
                     TimerView(timer: timer)
+                    ResetButtonsView(model: model, timer: timer, onResetApp: onResetApp)
                 }
 
                 // The top section, split into four logical groups laid out
@@ -83,7 +86,7 @@ struct MainTrackerPlaceholderView: View {
                         ObtainableItemsView(model: model, playerState: model.playerComputedStateSummary, mapState: mapState)
                     }
                     TopSectionGroup(title: "Flags") {
-                        SeedFlagsView(model: model, timer: timer, overlays: overlays)
+                        SeedFlagsView(model: model, timer: timer)
                     }
                     TopSectionGroup(title: "Info") {
                         MapInfoView(model: model, playerState: model.playerComputedStateSummary, mapState: mapState, overlays: overlays, timer: timer, onResetApp: onResetApp)

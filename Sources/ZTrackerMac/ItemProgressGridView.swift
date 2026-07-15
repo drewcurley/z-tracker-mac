@@ -354,9 +354,6 @@ struct SeedFlagsView: View {
     /// state, so once the run has started (even if paused) they confirm first
     /// (T-051/T-052).
     var timer: TrackerTimer
-    /// Map-overlay toggles — home of the "Hide tile icons" view control (T-062),
-    /// which suppresses the overworld map's mark glyphs to reveal the terrain.
-    var overlays: OverworldOverlayState
     @State private var pending: DestructiveAction?
 
     var body: some View {
@@ -366,27 +363,12 @@ struct SeedFlagsView: View {
             swordlessToggle
             bookShieldToggle
             mirrorToggle
-            hideTileIconsToggle
+            // Auto-map dungeons is game config, so it lives with the Flags
+            // (T-035.11); "Hide tile icons" moved to the Info overlay-icon row.
+            AutoMapDungeonsMenu(model: model)
         }
         .toggleStyle(.checkbox)
         .destructiveActionConfirmation($pending)
-    }
-
-    /// "Hide tile icons" (T-062) — a **view** control, not a seed flag: it
-    /// suppresses the overworld map's tile-selection glyphs (dungeon numbers,
-    /// interior/shop icons, dark/used shading) so the underlying terrain is
-    /// legible. Follows the map-overlay model: the checkbox is the persistent
-    /// lock, and hovering the row previews the effect without committing it.
-    private var hideTileIconsToggle: some View {
-        Toggle(isOn: Binding(get: { overlays.isLocked(.hideMarks) },
-                             set: { _ in overlays.toggleLock(.hideMarks) })) {
-            HStack(spacing: 6) {
-                Image(systemName: "eye.slash").font(.system(size: 12))
-                Text("Hide tile icons").font(.system(size: 11))
-            }
-        }
-        .onHover { overlays.setHover(.hideMarks, $0) }
-        .help("Temporarily hide the overworld map's tile marks to see the terrain underneath. Hover to preview, click to keep it on.")
     }
 
     /// Heart Shuffle (T-049) — moved off the startup screen. Uses the model's
@@ -488,46 +470,14 @@ struct MapInfoView: View {
     /// "Reset App" — discard everything and return to the startup screen (T-046).
     var onResetApp: () -> Void = {}
 
-    @State private var confirmingResetApp = false
-    @State private var confirmingResetTimer = false
-    @State private var confirmingGroundhog = false
     @State private var showingSpotSummary = false
-    @State private var confirmingVanilla = false
-    @State private var pendingVanillaSecondQuest = false
     @Environment(\.openWindow) private var openWindow
     @Environment(\.dismissWindow) private var dismissWindow
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            statusReadout
             spotSummaryButton
-            vanillaMapButton
             overlayToggles
-            resetButtons
-        }
-    }
-
-    /// "Auto-map dungeons" (T-035.x): drop the vanilla First/Second-Quest
-    /// dungeon locations onto the map. Destructive (replaces the current dungeon
-    /// markers), so each choice confirms first.
-    private var vanillaMapButton: some View {
-        Menu("Auto-map dungeons…") {
-            Button("First Quest vanilla") { pendingVanillaSecondQuest = false; confirmingVanilla = true }
-            Button("Second Quest vanilla") { pendingVanillaSecondQuest = true; confirmingVanilla = true }
-        }
-        .menuStyle(.borderlessButton)
-        .font(.system(size: 10))
-        .controlSize(.small)
-        .fixedSize()
-        .help("Place the vanilla First/Second-Quest dungeon locations on the map. Replaces your current dungeon markers.")
-        .confirmationDialog("Auto-map \(pendingVanillaSecondQuest ? "Second" : "First") Quest dungeons?",
-                            isPresented: $confirmingVanilla, titleVisibility: .visible) {
-            Button("Replace dungeon markers", role: .destructive) {
-                model.autoMapVanillaDungeons(secondQuest: pendingVanillaSecondQuest)
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("Removes your current dungeon markers and places the \(pendingVanillaSecondQuest ? "second" : "first")-quest vanilla dungeon locations. This can't be undone (no save yet).")
         }
     }
 
@@ -546,65 +496,14 @@ struct MapInfoView: View {
             }
     }
 
-    /// The three always-visible reset actions (T-048). All three confirm first
-    /// (T-051), so a misclick in the crowded top section can't wipe a run's
-    /// state or its timer.
-    private var resetButtons: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Button("Reset App") { confirmingResetApp = true }
-                .help("Discard everything and return to the startup screen, as if you'd just reopened the app")
-            Button("Reset Timer") { confirmingResetTimer = true }
-                .help("Set the run timer back to 0:00:00 (keeps your marks and items)")
-            Button("Reset (keep maps)") { confirmingGroundhog = true }
-                .help("Groundhog/routers restart: clear inventory but keep your overworld marks and known item locations. Does not pause the timer.")
-        }
-        .font(.system(size: 10))
-        .controlSize(.small)
-        .confirmationDialog("Reset the app?", isPresented: $confirmingResetApp, titleVisibility: .visible) {
-            Button("Reset App (discard everything)", role: .destructive, action: onResetApp)
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("Returns to the startup screen as if you'd just reopened the app. All marks, items, hints, and the timer are discarded. This can't be undone (no save yet).")
-        }
-        .confirmationDialog("Reset the timer to 0:00:00?", isPresented: $confirmingResetTimer, titleVisibility: .visible) {
-            Button("Reset Timer", role: .destructive) { timer.reset() }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("Sets the run timer back to 0:00:00. Your marks and items are kept. This can't be undone.")
-        }
-        .confirmationDialog("Reset inventory for a groundhog/routers restart?",
-                            isPresented: $confirmingGroundhog, titleVisibility: .visible) {
-            Button("Reset inventory (keep maps)", role: .destructive) {
-                model.resetForGroundhogOrRouters()
-                // Fresh lap only — the main timer keeps running (never paused).
-                timer.startLap()
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("Removes all items, triforces, and take-any hearts so you can replay the same seed. Your overworld marks and known item locations stay, and the lap timer restarts while the main timer keeps running. This can't be undone (no save yet).")
-        }
-    }
-
-    /// Live map/heart status (T-035.1): unmarked overworld spots remaining, how
-    /// many are currently *gettable* with the player's items (both computed in
-    /// `MapStateSummary`, capability-aware + per quest), and the computed Max
-    /// Hearts. All read-only.
-    private var statusReadout: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            Text("\(mapState.owSpotsRemain) OW spots left")
-                .foregroundStyle(.orange)
-                .help("Unmarked overworld screens remaining")
-            Text("\(ItemProgressGrid.gettableCount(mapState)) gettable")
-                .foregroundStyle(.green)
-                .help("Unmarked spots you can currently uncover with your items (raft / recorder / bracelet / candle / bombs), for this quest")
-        }
-        .font(.system(size: 11))
-    }
-
     /// The map-overlay toggle icons (T-035.2): hover previews the highlight on
     /// the map, click locks it on. No separate checkboxes (user preference).
+    /// "Hide tile icons" leads (T-035.11), moved here from the Flags checkboxes
+    /// since it's the same hover-preview / click-lock overlay model.
     private var overlayToggles: some View {
         HStack(spacing: 6) {
+            overlayToggle(.hideMarks, systemImage: "eye.slash",
+                          help: "Temporarily hide the overworld map's tile marks to see the terrain. Hover to preview, click to keep it on.")
             overlayToggle(.openCaves, systemImage: "mountain.2.fill",
                           help: "Highlight open caves (unmarked spots that can hold a plain cave); late game, the Armos spots. Hover to preview, click to lock on.")
             overlayToggle(.money, atlasIcon: .rupee,
