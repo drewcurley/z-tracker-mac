@@ -136,6 +136,15 @@ struct MainTrackerPlaceholderView: View {
                     current: currentRecorderDestination,
                     hideDungeonNumbers: model.hideDungeonNumbers
                 )
+
+                // The dungeon band (T-019+): the reference's room-map grid +
+                // blockers + notes below the map. Built frame-first — Notes is
+                // the first slice; the room grid and blockers land above it next.
+                TopSectionGroup(title: "Notes") {
+                    NotesView(model: model)
+                        .frame(maxWidth: .infinity)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
             .padding(24)
             .frame(maxWidth: .infinity)
