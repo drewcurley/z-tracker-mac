@@ -55,13 +55,35 @@ app's fixed sizing, since OBS window capture wants a stable size.
 
 ## Accessibility baseline
 
-Not yet decided. Candidates worth deciding early rather than retrofitting:
-VoiceOver labels for icon-only controls (the reference app is heavily
-icon/gesture-driven with sparse text), keyboard-only operability (the
-reference app already has an extensive hotkey system — a good foundation),
-and respecting macOS "Reduce Motion" for the animation toggles already planned
-(`domain.md` § 4.9 AnimateTileChanges/AnimateShopHighlights). Not blocking
-initial scaffolding but should not be deferred past the first UI-bearing task.
+**Decided (T-067).** This app is heavily icon/gesture-driven, so VoiceOver
+support is not automatic — a plain `.onTapGesture` view is invisible to
+VoiceOver (confirmed by inspecting the AX tree). The convention, applied across
+all interactive views and required for every new one:
+
+- **Custom-gesture controls** (`.onTapGesture` / `Rectangle`-backed tiles, boxes,
+  labels): make each a single accessibility element —
+  `.accessibilityElement(children: .ignore)` + `.accessibilityLabel(...)` (what
+  it is) + `.accessibilityValue(...)` (its current state) +
+  `.accessibilityAddTraits(.isButton)` + `.accessibilityAction { primary }`.
+  Add `.accessibilityAction(named:)` for secondary gestures (e.g. a right-click
+  picker). Reference implementations: the overworld `TileView`
+  (`OverworldMapView.swift`) and the dungeon `BoxView` / `HintLabel` /
+  `DungeonNumberLabel`.
+- **Icon-only standard controls** (a `Button`/`Toggle` whose label is only an
+  `Image`, or `Toggle("", …)`): add an explicit `.accessibilityLabel(...)`
+  (and `.accessibilityValue(...)` for state). Text-labeled buttons need nothing.
+- **Purely decorative layers** (terrain sprites, the faux HUD image, glows):
+  `.accessibilityHidden(true)` — keeps the AX tree small and VoiceOver focused.
+- **Reduce Motion**: honor `@Environment(\.accessibilityReduceMotion)` /
+  `.animation(nil)` where animations are added (ties into the AnimateTileChanges
+  / AnimateShopHighlights toggles, `domain.md` § 4.9).
+
+Note: SwiftUI's `.accessibilityIdentifier` does **not** bridge to the AppKit AX
+interface that `System Events` scripting reads (confirmed on-device), and an
+auto-generated `Button`'s label doesn't either — but an *explicit*
+`.accessibilityElement()` + `.accessibilityLabel()` does. This is why AX
+scripting can only target our controls once they carry explicit accessibility
+elements; XCUITest (a separate interface) would read identifiers directly.
 
 ## Update-this-doc-when
 

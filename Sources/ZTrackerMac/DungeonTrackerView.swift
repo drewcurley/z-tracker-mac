@@ -93,6 +93,8 @@ private struct DungeonCardView: View {
                     }
                     .buttonStyle(.plain)
                     .help("Toggle triforce")
+                    .accessibilityLabel("Dungeon triforce")
+                    .accessibilityValue(dungeon.playerHasTriforce ? "Obtained" : "Not obtained")
                 }
             }
             ForEach(Array(dungeon.boxes.enumerated()), id: \.offset) { idx, box in
@@ -147,6 +149,12 @@ private struct GhostBoxView: View {
             .contentShape(Rectangle())
             .onTapGesture(perform: onToggle)
             .help("Move the extra floor item here (1st-quest overworld ↔ 2nd-quest dungeons)")
+            // Custom-gesture control → expose to VoiceOver (T-067).
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Move the extra floor item")
+            .accessibilityHint("Toggles which dungeon carries the shared extra item")
+            .accessibilityAddTraits(.isButton)
+            .accessibilityAction { onToggle() }
     }
 }
 
@@ -172,6 +180,16 @@ struct BoxView: View {
         case .yes: .green
         case .skipped: Color(white: 0.55)
         case .no: box.cellCurrent == -1 ? Color.red.opacity(0.7) : Color.orange
+        }
+    }
+
+    /// VoiceOver value for the box's state (T-067).
+    private var boxA11yValue: String {
+        if disabled { return "Unavailable" }
+        switch box.playerHas {
+        case .skipped: return "Skipped"
+        case .yes: return box.hasKnownItem ? "Item obtained" : "Obtained"
+        case .no: return box.hasKnownItem ? "Item known, not obtained" : "Empty"
         }
     }
 
@@ -240,6 +258,20 @@ struct BoxView: View {
             .popover(isPresented: $showPicker, arrowEdge: .bottom) {
                 BoxItemPicker(box: box, instance: instance, iconOptions: iconOptions) { showPicker = false }
             }
+            // Custom-gesture control → expose to VoiceOver (T-067): reads the
+            // box's state, primary action toggles taken / opens the picker.
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel(label.map { "Dungeon box \($0)" } ?? "Dungeon item box")
+            .accessibilityValue(boxA11yValue)
+            .accessibilityAddTraits(disabled ? [] : .isButton)
+            .accessibilityAction {
+                guard !disabled else { return }
+                if box.hasKnownItem { box.toggleTaken() } else { showPicker = true }
+            }
+            .accessibilityAction(named: "Set item") {
+                guard !disabled else { return }
+                showPicker = true
+            }
             if let label {
                 Text(label).font(.system(size: 8)).foregroundStyle(.secondary)
             }
@@ -291,6 +323,19 @@ struct BoxItemPicker: View {
                         dismiss()
                     }
                     .help(available ? "Left-click: have it · Right-click: don't have it" : "Already placed elsewhere")
+                    // Icon-only custom-gesture item → expose to VoiceOver (T-067).
+                    .accessibilityElement(children: .ignore)
+                    .accessibilityLabel(ItemIconAtlas.itemName(forItemIndex: item, options: iconOptions))
+                    .accessibilityValue(isCurrent ? "Current" : (available ? "" : "Unavailable"))
+                    .accessibilityAddTraits(available ? .isButton : [])
+                    .accessibilityAction {
+                        guard available else { return }
+                        box.set(cellCurrent: item, playerHas: .yes); dismiss()
+                    }
+                    .accessibilityAction(named: "Mark as not having it") {
+                        guard available else { return }
+                        box.set(cellCurrent: item, playerHas: .no); dismiss()
+                    }
                 }
             }
             Divider()

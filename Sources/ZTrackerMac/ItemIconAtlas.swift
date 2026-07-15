@@ -35,6 +35,44 @@ enum ItemIconAtlas {
         case book, key, silverArrow, woodArrow, redRing, magicShield, boomBook, heartContainer
         case powerBracelet, whiteSword, owKeyArmos, brownSword, magicalSword, blueCandle, blueRing, ganon
         case zelda, bomb, bowAndArrow, bait, questionMarks, rupee, basementStair, wsMsBombUpgrade
+
+        /// A human-readable name for VoiceOver / tooltips (T-067).
+        var displayName: String {
+            switch self {
+            case .boomerang: "Boomerang"
+            case .bow: "Bow"
+            case .magicBoomerang: "Magic Boomerang"
+            case .raft: "Raft"
+            case .ladder: "Ladder"
+            case .recorder: "Recorder"
+            case .wand: "Wand"
+            case .redCandle: "Red Candle"
+            case .book: "Book"
+            case .key: "Any Key"
+            case .silverArrow: "Silver Arrow"
+            case .woodArrow: "Wood Arrow"
+            case .redRing: "Red Ring"
+            case .magicShield: "Magic Shield"
+            case .boomBook: "Boom Book"
+            case .heartContainer: "Heart Container"
+            case .powerBracelet: "Power Bracelet"
+            case .whiteSword: "White Sword"
+            case .owKeyArmos: "Armos"
+            case .brownSword: "Wood Sword"
+            case .magicalSword: "Magical Sword"
+            case .blueCandle: "Blue Candle"
+            case .blueRing: "Blue Ring"
+            case .ganon: "Ganon"
+            case .zelda: "Zelda"
+            case .bomb: "Bomb"
+            case .bowAndArrow: "Bow and Arrow"
+            case .bait: "Bait"
+            case .questionMarks: "Unknown"
+            case .rupee: "Rupee"
+            case .basementStair: "Basement Stair"
+            case .wsMsBombUpgrade: "Bomb Upgrade"
+            }
+        }
     }
 
     /// The `icons7x7` icon for an `ITEMS` index (`Box.cellCurrent`, `0…14`).
@@ -72,6 +110,15 @@ enum ItemIconAtlas {
         if options.wsmsReplacedByBU && itemIndex == ITEMS.whiteSword { return .wsMsBombUpgrade }
         if itemIndex == ITEMS.bookOrShield { return options.isCurrentlyBook ? .book : .magicShield }
         return icon(forItemIndex: itemIndex)
+    }
+
+    /// A human-readable name for a dungeon-box item, for VoiceOver (T-067).
+    /// Falls back to a positional name if the index has no icon mapping.
+    static func itemName(forItemIndex itemIndex: Int, options: ItemIconOptions) -> String {
+        guard let icon = icon(forItemIndex: itemIndex, options: options) else {
+            return "Item \(itemIndex + 1)"
+        }
+        return icon.displayName
     }
 
     private static let fullImage: CGImage? = AtlasLoader.load("icons7x7", blackIsTransparent: true)
