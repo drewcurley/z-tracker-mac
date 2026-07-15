@@ -9,8 +9,8 @@
 /// "found" here means "at least one tile is marked with it".
 public struct SpotSummary: Equatable, Sendable {
     /// One unique overworld location: whether it's been **placed** (marked on
-    /// the map) and, for claimable ones (armos, the letter), whether it's been
-    /// **used** (collected, T-054).
+    /// the map) and, for claimable ones (armos, the letter, the three sword
+    /// caves), whether it's been **used** (collected, T-054/T-065).
     public struct UniqueSpot: Equatable, Sendable {
         public let mark: OverworldTileMark
         public let placed: Bool
@@ -71,7 +71,7 @@ public struct SpotSummary: Equatable, Sendable {
         var uniques: [UniqueSpot] = []
         for n in 1...9 { uniques.append(UniqueSpot(mark: .dungeon(n), placed: has(.dungeon(n)), used: false)) }
         for n in 1...4 { uniques.append(UniqueSpot(mark: .anyRoad(n), placed: has(.anyRoad(n)), used: false)) }
-        for n in 1...3 { uniques.append(UniqueSpot(mark: .swordCave(n), placed: has(.swordCave(n)), used: false)) }
+        for n in 1...3 { uniques.append(UniqueSpot(mark: .swordCave(n), placed: has(.swordCave(n)), used: usedAny(.swordCave(n)))) }
         uniques.append(UniqueSpot(mark: .theLetter, placed: has(.theLetter), used: usedAny(.theLetter)))
         uniques.append(UniqueSpot(mark: .armos, placed: has(.armos), used: usedAny(.armos)))
 
