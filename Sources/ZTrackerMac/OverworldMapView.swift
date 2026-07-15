@@ -437,12 +437,37 @@ struct OverworldMapView: View {
         marks.allSatisfy { isExhausted($0, column: column, row: row, counts: counts) }
     }
 
+    /// The Shop submenu (+ its "2nd item" submenu once a shop is marked, T-060).
+    /// Extracted so "Shops before dungeons" can place it at the top of the popup
+    /// or in its default spot (T-004.2).
+    @ViewBuilder
+    private func shopMenus(column: Int, row: Int) -> some View {
+        Menu("Shop") {
+            ForEach(ShopKind.allCases, id: \.self) { kind in
+                Button(kind.shortName) { applyMark(.shop(kind), column: column, row: row) }
+            }
+        }
+        // A shop tile carries two items (T-060) — its second item is set here.
+        if case .shop(let item1) = grid.mark(column: column, row: row) {
+            Menu("Shop — 2nd item") {
+                Button("None") { grid.setShopSecondItem(nil, column: column, row: row) }
+                ForEach(ShopKind.allCases, id: \.self) { kind in
+                    Button(kind.shortName) { grid.setShopSecondItem(kind, column: column, row: row) }
+                        .disabled(kind == item1) // no duplicate item
+                }
+            }
+        }
+    }
+
     @ViewBuilder
     private func markMenu(column: Int, row: Int) -> some View {
         let counts = markCounts
         Button("Clear (unmarked)") { applyMark(.unmarked, column: column, row: row) }
         Button("Don't care") { applyMark(.dontCare, column: column, row: row) }
         Divider()
+        // "Shops before dungeons" (Overworld.ShopsFirst): the popup starts with
+        // shops when on, dungeons when off (OptionsMenu.fs:49).
+        if options.shopsBeforeDungeons { shopMenus(column: column, row: row) }
         Menu("Dungeon") {
             ForEach(1...9, id: \.self) { number in
                 // HDN labels dungeons A–H (Level 9 stays "9"); the mark still
@@ -471,21 +496,7 @@ struct OverworldMapView: View {
             }
         }
         .disabled(allExhausted((1...3).map { .swordCave($0) }, column: column, row: row, counts: counts))
-        Menu("Shop") {
-            ForEach(ShopKind.allCases, id: \.self) { kind in
-                Button(kind.shortName) { applyMark(.shop(kind), column: column, row: row) }
-            }
-        }
-        // A shop tile carries two items (T-060) — its second item is set here.
-        if case .shop(let item1) = grid.mark(column: column, row: row) {
-            Menu("Shop — 2nd item") {
-                Button("None") { grid.setShopSecondItem(nil, column: column, row: row) }
-                ForEach(ShopKind.allCases, id: \.self) { kind in
-                    Button(kind.shortName) { grid.setShopSecondItem(kind, column: column, row: row) }
-                        .disabled(kind == item1) // no duplicate item
-                }
-            }
-        }
+        if !options.shopsBeforeDungeons { shopMenus(column: column, row: row) }
         Menu("Secret") {
             ForEach(SecretSize.allCases, id: \.self) { size in
                 Button(size.displayName) { applyMark(.secret(size), column: column, row: row) }

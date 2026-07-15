@@ -25,6 +25,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-004.2](./T-004.2.md) | Wire "Shops before dungeons" — reorder the overworld tile popup | frontend-engineer | T-004 | feat/wire-shops-before-dungeons | — | docs/reviews/feat-wire-shops-before-dungeons/final.md |
 | [T-046.1](./T-046.1.md) | Remember the main window's position + size across launches | frontend-engineer | T-046 | feat/window-position-persistence | — | docs/reviews/feat-window-position-persistence/final.md |
 | [T-004.1](./T-004.1.md) | Reminder settings persist across launches + fix Voice/Visual header alignment | frontend-engineer | T-004 | feat/reminder-settings-persistence | — | docs/reviews/feat-reminder-settings-persistence/final.md |
 | [T-035.13](./T-035.13.md) | Flags area — toggleable icon tiles instead of checkboxes | frontend-engineer | T-035.12 | feat/flag-toggle-icons | — | docs/reviews/feat-flag-toggle-icons/final.md |
