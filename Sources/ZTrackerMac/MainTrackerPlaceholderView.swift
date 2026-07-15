@@ -41,6 +41,27 @@ struct MainTrackerPlaceholderView: View {
         )
     }
 
+    /// The ordered available recorder-warp destinations for the current state
+    /// (T-035.7). Empty unless the player has the recorder.
+    private var recorderDestinations: [RecorderDestinations.Destination] {
+        RecorderDestinations.compute(
+            haveRecorder: model.playerComputedStateSummary.haveRecorder,
+            dungeonTracker: model.dungeonTracker,
+            hideDungeonNumbers: model.hideDungeonNumbers,
+            dungeonLocations: mapState.dungeonLocations,
+            toNewDungeons: model.recorderToNewDungeons,
+            toUnbeatenDungeons: model.recorderToUnbeatenDungeons)
+    }
+
+    /// The destination the stepper currently points at (wrapping the whistle
+    /// index against the live list), or `nil` when there are none.
+    private var currentRecorderDestination: RecorderDestinations.Destination? {
+        let d = recorderDestinations
+        guard !d.isEmpty else { return nil }
+        let i = ((model.recorderDestinationIndex % d.count) + d.count) % d.count
+        return d[i]
+    }
+
     var body: some View {
         ScrollView {
             VStack(spacing: 14) {
@@ -87,11 +108,22 @@ struct MainTrackerPlaceholderView: View {
                     dungeonComplete: { slot in
                         (1...9).contains(slot) && model.dungeonTracker.dungeon(slot - 1).isComplete
                     },
+                    recorderDestination: currentRecorderDestination?.coordinate,
                     onSetTakeAny: { state, c, r in model.setOverworldTakeAny(state, column: c, row: r) },
                     onCycleTakeAny: { c, r in model.cycleOverworldTakeAny(column: c, row: r) },
                     onReleaseTakeAny: { c, r in model.releaseOverworldTakeAny(column: c, row: r) }
                 )
                 .frame(maxWidth: .infinity)
+
+                // The recorder-destination stepper (T-035.7): the single place to
+                // see where the whistle would take you, with arrows to step your
+                // whistle count. Lives directly below the map.
+                RecorderDestinationBar(
+                    model: model,
+                    destinations: recorderDestinations,
+                    current: currentRecorderDestination,
+                    hideDungeonNumbers: model.hideDungeonNumbers
+                )
             }
             .padding(24)
             .frame(maxWidth: .infinity)
