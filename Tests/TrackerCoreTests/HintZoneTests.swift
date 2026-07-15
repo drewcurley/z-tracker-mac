@@ -23,6 +23,18 @@ struct HintZoneTests {
         }
     }
 
+    @Test("forZoneChar inverts zoneChar; unknown/nil → .unknown (T-039.1)")
+    func forZoneChar() {
+        for zone in HintZone.allCases {
+            #expect(HintZone.forZoneChar(zone.zoneChar) == zone)
+        }
+        #expect(HintZone.forZoneChar(nil) == .unknown)
+        #expect(HintZone.forZoneChar("_") == .unknown)
+        #expect(HintZone.forZoneChar("Z") == .unknown)
+        #expect(HintZone.forZoneChar("M") == .deathMountain)
+        #expect(HintZone.forZoneChar("D") == .desert)
+    }
+
     @Test("hint-target indices: dungeons 1–9 → 0–8, WS → 9, MS → 10")
     func targets() {
         #expect(HintTarget.dungeon(1) == 0)

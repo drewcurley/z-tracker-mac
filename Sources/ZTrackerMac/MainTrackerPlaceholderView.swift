@@ -117,7 +117,12 @@ struct MainTrackerPlaceholderView: View {
                     onClearStartSpot: { model.startSpot = nil },
                     onSetTakeAny: { state, c, r in model.setOverworldTakeAny(state, column: c, row: r) },
                     onCycleTakeAny: { c, r in model.cycleOverworldTakeAny(column: c, row: r) },
-                    onReleaseTakeAny: { c, r in model.releaseOverworldTakeAny(column: c, row: r) }
+                    onReleaseTakeAny: { c, r in model.releaseOverworldTakeAny(column: c, row: r) },
+                    onPlaceDungeon: { number, c, r in
+                        guard (1...9).contains(number) else { return }
+                        model.levelHints[HintTarget.dungeon(number)] =
+                            HintZone.forZoneChar(OverworldZones.zone(column: c, row: r))
+                    }
                 )
                 .frame(maxWidth: .infinity)
 

@@ -48,6 +48,14 @@ public enum HintZone: Int, CaseIterable, Sendable {
         }
     }
 
+    /// The zone for an `owMapZone` letter (the inverse of `zoneChar`), used to
+    /// auto-set a dungeon's hint from the region of the screen it's placed on
+    /// (T-039.1). Unknown letters (or `nil`) map to `.unknown`.
+    public static func forZoneChar(_ char: Character?) -> HintZone {
+        guard let char else { return .unknown }
+        return HintZone.allCases.first { $0.zoneChar == char } ?? .unknown
+    }
+
     /// The `owMapZone` letter for this zone (`_` for unknown), matching the
     /// Zones overlay (`AsDataChar`, `TrackerModel.fs:1337-1349`).
     public var zoneChar: Character {
