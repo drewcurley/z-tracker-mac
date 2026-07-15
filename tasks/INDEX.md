@@ -25,6 +25,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-066](./T-066.md) | Fix — overworld take-any tiles now stay in sync with their Items-group heart slot | frontend-engineer | — | fix/take-any-tile-slot-sync | — | docs/reviews/fix-take-any-tile-slot-sync/final.md |
 | [T-065](./T-065.md) | Sword-cave tiles support the claimed (used) state like other claimable tiles | frontend-engineer | — | feat/sword-cave-claimed-state | — | docs/reviews/feat-sword-cave-claimed-state/final.md |
 | [T-064](./T-064.md) | Enlarge and center the overworld interior-sprite tile icons | frontend-engineer | — | feat/enlarge-interior-icons | — | docs/reviews/feat-enlarge-interior-icons/final.md |
 | [T-063](./T-063.md) | Sword-cave tiles use the high-fidelity Items sword icons; Take-any moved to the submenu group | frontend-engineer | — | feat/sword-cave-item-icons | — | docs/reviews/feat-sword-cave-item-icons/final.md |

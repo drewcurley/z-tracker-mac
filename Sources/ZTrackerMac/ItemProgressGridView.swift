@@ -240,8 +240,7 @@ enum ItemProgressGrid {
     /// (`OverworldItemGridUI.fs:207`) to include the distinct potion/candle
     /// states (T-031): untaken → heart → potion → candle → untaken.
     static func cycledHeart(_ state: TakeAnyHeartState, by delta: Int) -> TakeAnyHeartState {
-        let n = TakeAnyHeartState.allCases.count
-        return TakeAnyHeartState(rawValue: ((state.rawValue + delta) % n + n) % n) ?? state
+        state.cycled(by: delta)
     }
 }
 
@@ -329,7 +328,10 @@ struct ObtainableItemsView: View {
                 size: itemGridCellSize
             )
         case .takeAnyHeart(let i):
-            TakeAnyHeartBox(progress: model.playerProgress, index: i, size: itemGridCellSize)
+            // Cycling a heart box routes through the model so a take-any tile
+            // linked to this slot updates its dim in sync (T-066).
+            TakeAnyHeartBox(progress: model.playerProgress, index: i, size: itemGridCellSize,
+                            onCycle: { delta in model.cycleTakeAnySlot(i, by: delta) })
         case .empty:
             Color.clear.frame(width: itemGridCellSize, height: itemGridCellSize)
         }
@@ -687,6 +689,9 @@ private struct TakeAnyHeartBox: View {
     var progress: PlayerProgressAndTakeAnyHearts
     let index: Int
     let size: CGFloat
+    /// Cycle by `delta` — routed through the model so a linked take-any tile
+    /// stays in sync (T-066).
+    var onCycle: (Int) -> Void
 
     private var state: TakeAnyHeartState { progress.takeAnyHearts[index] }
 
@@ -731,8 +736,6 @@ private struct TakeAnyHeartBox: View {
         }
     }
 
-    private func cycle(_ delta: Int) {
-        progress.takeAnyHearts[index] = ItemProgressGrid.cycledHeart(state, by: delta)
-    }
+    private func cycle(_ delta: Int) { onCycle(delta) }
 }
 

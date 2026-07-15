@@ -187,6 +187,68 @@ public final class TrackerModel {
         reminderEngine.resetForGroundhogOrRouters()
     }
 
+    // MARK: Overworld take-any ⇄ Items-group heart-slot sync (T-066)
+
+    /// Mark an overworld tile as a `.takeAny` with `state`, keeping its linked
+    /// Items-group heart slot in sync. The tile owns exactly one slot: if it
+    /// already has one, that same slot is updated (so re-marking the tile a
+    /// different way never fills a second slot); otherwise the next slot not
+    /// already owned by a take-any tile (and currently empty) is claimed.
+    /// `.untaken` frees the tile's slot back to an empty heart. Fixes the T-057
+    /// bug where re-marking double-recorded and clearing left the slot stranded.
+    public func setOverworldTakeAny(_ state: TakeAnyHeartState, column: Int, row: Int) {
+        overworldGrid.setMark(.takeAny, column: column, row: row)
+        let existing = overworldGrid.takeAnySlot(column: column, row: row)
+        if state == .untaken {
+            if let existing { playerProgress.takeAnyHearts[existing] = .untaken }
+            overworldGrid.setTakeAnySlot(nil, column: column, row: row)
+            overworldGrid.setUsed(false, column: column, row: row)
+            return
+        }
+        let slot = existing ?? firstClaimableTakeAnySlot()
+        if let slot {
+            playerProgress.takeAnyHearts[slot] = state
+            overworldGrid.setTakeAnySlot(slot, column: column, row: row)
+        }
+        overworldGrid.setUsed(true, column: column, row: row)
+    }
+
+    /// Left-click cycling of a take-any tile (untaken → heart → potion → candle
+    /// → …), routed through `setOverworldTakeAny` so its slot stays in sync.
+    public func cycleOverworldTakeAny(column: Int, row: Int) {
+        let current = overworldGrid.takeAnySlot(column: column, row: row)
+            .map { playerProgress.takeAnyHearts[$0] } ?? .untaken
+        setOverworldTakeAny(current.cycled(by: 1), column: column, row: row)
+    }
+
+    /// Free a tile's linked Items-group slot (back to an empty heart) — called
+    /// when a take-any tile is changed to another mark or cleared (T-066).
+    /// A no-op if the tile owns no slot.
+    public func releaseOverworldTakeAny(column: Int, row: Int) {
+        guard let slot = overworldGrid.takeAnySlot(column: column, row: row) else { return }
+        playerProgress.takeAnyHearts[slot] = .untaken
+        overworldGrid.setTakeAnySlot(nil, column: column, row: row)
+    }
+
+    /// Cycle an Items-group heart box directly, reflecting the change back onto
+    /// the linked take-any tile's dim so the two stay in sync (T-066).
+    public func cycleTakeAnySlot(_ index: Int, by delta: Int) {
+        let next = playerProgress.takeAnyHearts[index].cycled(by: delta)
+        playerProgress.takeAnyHearts[index] = next
+        if let tile = overworldGrid.tileForTakeAnySlot(index) {
+            overworldGrid.setUsed(next != .untaken, column: tile.column, row: tile.row)
+        }
+    }
+
+    /// The first Items-group slot that is empty **and** not already owned by a
+    /// take-any tile — the slot a newly-claimed tile may take (T-066).
+    private func firstClaimableTakeAnySlot() -> Int? {
+        let owned = overworldGrid.linkedTakeAnySlots()
+        return (0..<playerProgress.takeAnyHearts.count).first {
+            !owned.contains($0) && playerProgress.takeAnyHearts[$0] == .untaken
+        }
+    }
+
     /// Selects the overworld quest for this run. Mirrors the reference app's
     /// startup-screen quest buttons (docs/domain.md § 4.1) — once a quest is
     /// chosen, the reference app moves from the startup screen to the main

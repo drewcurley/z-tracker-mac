@@ -14,6 +14,14 @@ public enum TakeAnyHeartState: Int, Sendable, CaseIterable {
     case takenHeart = 1
     case takenPotion = 2
     case takenCandle = 3
+
+    /// The state advanced by `delta`, wrapping over all four states
+    /// (untaken → heart → potion → candle → untaken). Shared by the overworld
+    /// take-any tiles and the Items-group heart boxes so they cycle identically.
+    public func cycled(by delta: Int) -> TakeAnyHeartState {
+        let n = TakeAnyHeartState.allCases.count
+        return TakeAnyHeartState(rawValue: ((rawValue + delta) % n + n) % n) ?? self
+    }
 }
 
 /// Runtime-acquired player progress that isn't tied to a spatial dungeon-
@@ -61,17 +69,6 @@ public final class PlayerProgressAndTakeAnyHearts {
         self.hasDefeatedGanon = hasDefeatedGanon
         self.hasRescuedZelda = hasRescuedZelda
         self.hasBombs = hasBombs
-    }
-
-    /// Record a claimed take-any item into the **next unclaimed** slot (T-057),
-    /// so marking a take-any cave on the overworld (with what you took) fills
-    /// the Items-group take-any tracker. A `.untaken` state or a full tracker is
-    /// a no-op. Returns the slot filled, or `nil`.
-    @discardableResult
-    public func recordTakeAny(_ state: TakeAnyHeartState) -> Int? {
-        guard state != .untaken, let slot = takeAnyHearts.firstIndex(of: .untaken) else { return nil }
-        takeAnyHearts[slot] = state
-        return slot
     }
 
     /// Ported from `ResetAll()` (`TrackerModel.fs:520-531`) — a full reset
