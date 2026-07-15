@@ -108,6 +108,7 @@ struct MainTrackerPlaceholderView: View {
                     armosClaimed: model.dungeonTracker.armosBox.isDone,
                     mirrored: model.mirrorOverworld,
                     hideDungeonNumbers: model.hideDungeonNumbers,
+                    hasRescuedZelda: model.playerProgress.hasRescuedZelda,
                     dungeonComplete: { slot in
                         (1...9).contains(slot) && model.dungeonTracker.dungeon(slot - 1).isComplete
                     },
