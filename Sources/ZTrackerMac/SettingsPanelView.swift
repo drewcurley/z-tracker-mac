@@ -72,9 +72,13 @@ struct SettingsPanelView: View {
 
             Grid(alignment: .leading, horizontalSpacing: 8, verticalSpacing: 4) {
                 GridRow {
-                    Text("").frame(width: 1)
+                    // Center each header over its checkbox column; the third
+                    // column (category name) has no header.
                     Text("Voice").font(.caption).foregroundStyle(.secondary)
+                        .gridColumnAlignment(.center)
                     Text("Visual").font(.caption).foregroundStyle(.secondary)
+                        .gridColumnAlignment(.center)
+                    Text("")
                 }
                 ForEach(ReminderCategory.allCases, id: \.self) { category in
                     GridRow {

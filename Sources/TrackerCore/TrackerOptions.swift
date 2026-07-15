@@ -1,3 +1,4 @@
+import Foundation
 import Observation
 
 /// The 8 reminder categories (docs/domain.md § 4.10), verified directly
@@ -150,14 +151,15 @@ public final class TrackerOptions {
 
     /// `Volume`, default `30` (reference app range appears to be 0...100 —
     /// see the `max 0 (min 100 ...)` clamp in `TrackerModelOptions.fs:345`).
-    public var reminderVolume: Int
+    /// Persisted across launches once `enableReminderPersistence` is called.
+    public var reminderVolume: Int { didSet { persistRemindersIfNeeded() } }
     /// `VoiceReminders.*` — one entry per category. Defaults match source
     /// exactly: all `true` except `.recorderPBSpotsAndBoomstickBook` (`false`).
-    public var voiceReminders: [ReminderCategory: Bool]
+    public var voiceReminders: [ReminderCategory: Bool] { didSet { persistRemindersIfNeeded() } }
     /// `VisualReminders.*` — same categories and defaults as `voiceReminders`.
-    public var visualReminders: [ReminderCategory: Bool]
+    public var visualReminders: [ReminderCategory: Bool] { didSet { persistRemindersIfNeeded() } }
     /// `PreferredVoice`, default empty (no preference / system default).
-    public var preferredVoiceIdentifier: String?
+    public var preferredVoiceIdentifier: String? { didSet { persistRemindersIfNeeded() } }
 
     // MARK: Other
 
@@ -282,5 +284,86 @@ public final class TrackerOptions {
             voiceReminders[category] = false
             visualReminders[category] = false
         }
+    }
+
+    // MARK: Reminder-settings persistence (T-004.1)
+
+    /// Where the reminder settings persist. `nil` (the default) disables
+    /// persistence, so plain `TrackerOptions()` — used throughout the tests and
+    /// previews — never touches `UserDefaults`. The app opts in once at launch
+    /// via `enableReminderPersistence`.
+    @ObservationIgnored private var reminderStore: UserDefaults?
+    /// Set while `enableReminderPersistence` applies loaded values, so the
+    /// `didSet` observers don't immediately write them straight back.
+    @ObservationIgnored private var isApplyingPersistedReminders = false
+
+    private static let volumeKey = "ztracker.reminders.volume"
+    private static let voiceKey = "ztracker.reminders.voice"
+    private static let visualKey = "ztracker.reminders.visual"
+    private static let preferredVoiceKey = "ztracker.reminders.preferredVoice"
+
+    /// Turns on reminder-settings persistence to `store` and applies whatever
+    /// was saved on a previous launch over the current defaults (T-004.1). Only
+    /// the Reminders section persists for now: volume, the per-category voice /
+    /// visual toggles, and the preferred voice. Categories missing from a saved
+    /// dictionary keep their default, so adding a category later is safe.
+    public func enableReminderPersistence(store: UserDefaults = .standard) {
+        reminderStore = store
+        isApplyingPersistedReminders = true
+        defer { isApplyingPersistedReminders = false }
+
+        if store.object(forKey: Self.volumeKey) != nil {
+            reminderVolume = max(0, min(100, store.integer(forKey: Self.volumeKey)))
+        }
+        if let raw = store.dictionary(forKey: Self.voiceKey) as? [String: Bool] {
+            voiceReminders = Self.decodeToggles(raw, over: voiceReminders)
+        }
+        if let raw = store.dictionary(forKey: Self.visualKey) as? [String: Bool] {
+            visualReminders = Self.decodeToggles(raw, over: visualReminders)
+        }
+        if let id = store.string(forKey: Self.preferredVoiceKey) {
+            preferredVoiceIdentifier = id
+        }
+    }
+
+    /// Writes the current reminder settings to the store, unless persistence is
+    /// off or we're mid-load. Driven by the `didSet` observers, so every UI
+    /// mutation (a toggle, the volume slider, "Disable all", the voice picker)
+    /// saves automatically.
+    private func persistRemindersIfNeeded() {
+        guard let store = reminderStore, !isApplyingPersistedReminders else { return }
+        store.set(reminderVolume, forKey: Self.volumeKey)
+        store.set(Self.encodeToggles(voiceReminders), forKey: Self.voiceKey)
+        store.set(Self.encodeToggles(visualReminders), forKey: Self.visualKey)
+        if let id = preferredVoiceIdentifier {
+            store.set(id, forKey: Self.preferredVoiceKey)
+        } else {
+            store.removeObject(forKey: Self.preferredVoiceKey)
+        }
+    }
+
+    /// `[ReminderCategory: Bool]` → a `[String: Bool]` keyed by the category's
+    /// stable `rawValue`, so `UserDefaults` (and any future JSON) can store it.
+    private static func encodeToggles(_ toggles: [ReminderCategory: Bool]) -> [String: Bool] {
+        Dictionary(uniqueKeysWithValues: toggles.map { ($0.key.rawValue, $0.value) })
+    }
+
+    /// Applies a saved `[String: Bool]` over `base`, ignoring unknown keys and
+    /// leaving categories absent from the save at their `base` value.
+    private static func decodeToggles(_ raw: [String: Bool],
+                                      over base: [ReminderCategory: Bool]) -> [ReminderCategory: Bool] {
+        var result = base
+        for (key, value) in raw {
+            if let category = ReminderCategory(rawValue: key) { result[category] = value }
+        }
+        return result
+    }
+
+    /// A `TrackerOptions` with reminder persistence enabled and any saved
+    /// reminder settings applied — the app's entry point (T-004.1).
+    public static func withReminderPersistence(store: UserDefaults = .standard) -> TrackerOptions {
+        let options = TrackerOptions()
+        options.enableReminderPersistence(store: store)
+        return options
     }
 }

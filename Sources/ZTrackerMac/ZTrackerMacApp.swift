@@ -7,7 +7,9 @@ let ProgressHUDWindowID = "z-progress-hud"
 @main
 struct ZTrackerMacApp: App {
     @State private var model = TrackerModel()
-    @State private var options = TrackerOptions()
+    // Reminder settings (volume, per-category voice/visual, preferred voice)
+    // persist across launches (T-004.1); other options are session-only for now.
+    @State private var options = TrackerOptions.withReminderPersistence()
 
     var body: some Scene {
         WindowGroup {
