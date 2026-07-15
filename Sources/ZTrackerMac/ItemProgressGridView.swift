@@ -515,18 +515,23 @@ struct MapInfoView: View {
     /// "Hide tile icons" leads (T-035.11), moved here from the Flags checkboxes
     /// since it's the same hover-preview / click-lock overlay model.
     private var overlayToggles: some View {
-        HStack(spacing: 6) {
-            overlayToggle(.hideMarks, systemImage: "eye.slash",
-                          help: "Temporarily hide the overworld map's tile marks to see the terrain. Hover to preview, click to keep it on.")
-            overlayToggle(.openCaves, systemImage: "mountain.2.fill",
-                          help: "Highlight open caves (unmarked spots that can hold a plain cave); late game, the Armos spots. Hover to preview, click to lock on.")
-            overlayToggle(.money, atlasIcon: .rupee,
-                          help: "Highlight money spots: Money Making Game, Unknown Secret, and known money secrets. Hover to preview, click to lock on.")
-            overlayToggle(.zones, systemImage: "map.fill",
-                          help: "Tint the map by overworld region (Zones). Hover to preview, click to lock on.")
-            overlayToggle(.coords, systemImage: "number",
-                          help: "Overlay screen coordinates (A1…H16). Hover to preview, click to lock on.")
-            progressToggle
+        // Two rows of three, sized to match the item icons (T-035.11 follow-up).
+        Grid(horizontalSpacing: 6, verticalSpacing: 6) {
+            GridRow {
+                overlayToggle(.hideMarks, systemImage: "eye.slash",
+                              help: "Temporarily hide the overworld map's tile marks to see the terrain. Hover to preview, click to keep it on.")
+                overlayToggle(.openCaves, systemImage: "mountain.2.fill",
+                              help: "Highlight open caves (unmarked spots that can hold a plain cave); late game, the Armos spots. Hover to preview, click to lock on.")
+                overlayToggle(.money, atlasIcon: .rupee,
+                              help: "Highlight money spots: Money Making Game, Unknown Secret, and known money secrets. Hover to preview, click to lock on.")
+            }
+            GridRow {
+                overlayToggle(.zones, systemImage: "map.fill",
+                              help: "Tint the map by overworld region (Zones). Hover to preview, click to lock on.")
+                overlayToggle(.coords, systemImage: "number",
+                              help: "Overlay screen coordinates (A1…H16). Hover to preview, click to lock on.")
+                progressToggle
+            }
         }
     }
 
@@ -537,12 +542,12 @@ struct MapInfoView: View {
     private var progressToggle: some View {
         let on = model.showProgressWindow
         return ZStack {
-            Image(systemName: "chart.bar.doc.horizontal").font(.system(size: 12))
+            Image(systemName: "chart.bar.doc.horizontal").font(.system(size: 18))
                 .foregroundStyle(on ? Color.green : Color(white: 0.75))
         }
-        .frame(width: 24, height: 20)
-        .background(RoundedRectangle(cornerRadius: 4).fill(on ? Color.green.opacity(0.3) : Color.clear))
-        .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(on ? Color.green : Color(white: 0.28), lineWidth: 1))
+        .frame(width: itemGridCellSize, height: itemGridCellSize)
+        .background(RoundedRectangle(cornerRadius: 6).fill(on ? Color.green.opacity(0.3) : Color.clear))
+        .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(on ? Color.green : Color(white: 0.28), lineWidth: 1))
         .contentShape(Rectangle())
         // A plain click toggles the standalone HUD window (no hover preview — a
         // popover just fought the click; user preference).
@@ -561,15 +566,15 @@ struct MapInfoView: View {
         let locked = overlays.isLocked(overlay)
         ZStack {
             if let systemImage {
-                Image(systemName: systemImage).font(.system(size: 12))
+                Image(systemName: systemImage).font(.system(size: 18))
                     .foregroundStyle(locked ? Color.green : Color(white: 0.75))
             } else if let atlasIcon, let img = Image(atlasIcon: ItemIconAtlas.cgImage(atlasIcon)) {
-                img.interpolation(.none).resizable().frame(width: 15, height: 15)
+                img.interpolation(.none).resizable().frame(width: 22, height: 22)
             }
         }
-        .frame(width: 24, height: 20)
-        .background(RoundedRectangle(cornerRadius: 4).fill(locked ? Color.green.opacity(0.3) : Color.clear))
-        .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(locked ? Color.green : Color(white: 0.28), lineWidth: 1))
+        .frame(width: itemGridCellSize, height: itemGridCellSize)
+        .background(RoundedRectangle(cornerRadius: 6).fill(locked ? Color.green.opacity(0.3) : Color.clear))
+        .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(locked ? Color.green : Color(white: 0.28), lineWidth: 1))
         .contentShape(Rectangle())
         .onHover { overlays.setHover(overlay, $0) }
         .onTapGesture { overlays.toggleLock(overlay) }
