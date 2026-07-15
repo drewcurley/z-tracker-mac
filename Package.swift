@@ -25,6 +25,9 @@ let package = Package(
                 .copy("Resources/icons8x16.png"),
                 .copy("Resources/icons10x10.png"),
                 .copy("Resources/zelda_items16x16.png"),
+                .copy("Resources/all-items-hud-pixels1.png"),
+                .copy("Resources/all-items-hud-pixels1-worse.png"),
+                .copy("Resources/icons8x8.png"),
                 .copy("Resources/audio")
             ]
         ),

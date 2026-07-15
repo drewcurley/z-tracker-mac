@@ -1,6 +1,9 @@
 import SwiftUI
 import TrackerCore
 
+/// The id of the detachable "Progress" HUD window (T-035.10).
+let ProgressHUDWindowID = "z-progress-hud"
+
 @main
 struct ZTrackerMacApp: App {
     @State private var model = TrackerModel()
@@ -10,6 +13,16 @@ struct ZTrackerMacApp: App {
         WindowGroup {
             ContentView(model: model, options: options, onResetApp: resetApp)
         }
+
+        // The break-out Progress HUD (T-035.10) — opened on demand by the
+        // "Progress" toggle (a secondary WindowGroup doesn't open at launch).
+        // Freely resizable; the HUD image stretches to fill (nearest-neighbor).
+        WindowGroup(id: ProgressHUDWindowID) {
+            ProgressHUDView(model: model)
+                .frame(minWidth: 196, minHeight: 158)
+                .onDisappear { model.showProgressWindow = false }
+        }
+        .defaultSize(width: 600, height: 484)
     }
 
     /// "Reset App" (T-046): discard the whole run and return to the startup /

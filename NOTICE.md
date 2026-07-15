@@ -1,7 +1,8 @@
 # Third-party asset attribution
 
 `ow_icons5x9.png`, `icons3x7.png`, `s_map_overworld_vanilla_strip8.png`,
-`icons7x7.png`, `icons8x16.png`, `icons10x10.png`, and `zelda_items16x16.png` are copied from
+`icons7x7.png`, `icons8x16.png`, `icons10x10.png`, `zelda_items16x16.png`,
+`all-items-hud-pixels1.png`, `all-items-hud-pixels1-worse.png`, and `icons8x8.png` are copied from
 [Zelda1RandoTools](https://github.com/brianmcn/Zelda1RandoTools) by Brian
 McNamara, used under the MIT License:
 

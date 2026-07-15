@@ -45,6 +45,10 @@ public final class PlayerProgressAndTakeAnyHearts {
     public var hasDefeatedGanon: Bool
     public var hasRescuedZelda: Bool
     public var hasBombs: Bool
+    /// Obtained the meat/bait (T-035.10). Beyond the reference, which never
+    /// tracks meat (its HUD always greys it out); the user wants an explicit
+    /// toggle so the Progress HUD's meat slot can light up.
+    public var hasMeat: Bool
 
     public init(
         takeAnyHearts: [TakeAnyHeartState] = Array(repeating: .untaken, count: 4),
@@ -56,7 +60,8 @@ public final class PlayerProgressAndTakeAnyHearts {
         hasMagicalSword: Bool = false,
         hasDefeatedGanon: Bool = false,
         hasRescuedZelda: Bool = false,
-        hasBombs: Bool = false
+        hasBombs: Bool = false,
+        hasMeat: Bool = false
     ) {
         precondition(takeAnyHearts.count == 4, "expected exactly 4 take-any heart slots")
         self.takeAnyHearts = takeAnyHearts
@@ -69,6 +74,7 @@ public final class PlayerProgressAndTakeAnyHearts {
         self.hasDefeatedGanon = hasDefeatedGanon
         self.hasRescuedZelda = hasRescuedZelda
         self.hasBombs = hasBombs
+        self.hasMeat = hasMeat
     }
 
     /// Ported from `ResetAll()` (`TrackerModel.fs:520-531`) — a full reset
@@ -84,5 +90,6 @@ public final class PlayerProgressAndTakeAnyHearts {
         hasDefeatedGanon = false
         hasRescuedZelda = false
         hasBombs = false
+        hasMeat = false
     }
 }

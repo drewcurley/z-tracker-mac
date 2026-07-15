@@ -72,6 +72,11 @@ public final class TrackerModel {
     /// `MapStateSummary` already reads). Off by default.
     public var mirrorOverworld: Bool
 
+    /// The "Progress" flag (T-035.10): when on, the compact items+hearts HUD is
+    /// broken out into a separate, placeable window (it also shows on hover of
+    /// the Flags checkbox regardless).
+    public var showProgressWindow: Bool = false
+
     /// The overworld screen the player spawned on (T-035.8), or `nil` if unset.
     /// Ported from `startIconX/startIconY` (`TrackerModel.fs:1295`, `NOTFOUND` =
     /// unset). Rendered as a lime/violet ring on the map; purely a marker.
