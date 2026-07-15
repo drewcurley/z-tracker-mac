@@ -50,6 +50,10 @@ struct OverworldMapView: View {
     /// stays "9").
     var hideDungeonNumbers: Bool = false
 
+    /// Whether the player has rescued Zelda (T-004.3) — the endgame reveal that
+    /// un-hides every "More settings"-hidden tile kind.
+    var hasRescuedZelda: Bool = false
+
     /// Whether the dungeon in slot `1…9` is 100% complete (all items +
     /// triforce, `Dungeon.isComplete`) — its overworld badge dims to dark
     /// yellow (T-035.6), matching the reference's completed-dungeon shading.
@@ -200,7 +204,8 @@ struct OverworldMapView: View {
                                 let used = grid.isUsed(column: column, row: row)
                                 let shopSecondItem = grid.shopSecondItem(column: column, row: row)
                                 let dungeonDone: Bool = { if case .dungeon(let n) = mark { return dungeonComplete(n) } else { return false } }()
-                                TileView(mark: mark, background: background, tileWidth: tileWidth, tileHeight: tileHeight, isAlwaysEmpty: isAlwaysEmpty, showsFairy: showsFairy, mirrored: mirrored, hideDungeonNumbers: hideDungeonNumbers, used: used, shopSecondItem: shopSecondItem, hideMarks: overlays?.isActive(.hideMarks) ?? false, dungeonComplete: dungeonDone)
+                                let kindHidden = OverworldTileHiding.isKindHidden(mark: mark, options: options, hasRescuedZelda: hasRescuedZelda)
+                                TileView(mark: mark, background: background, tileWidth: tileWidth, tileHeight: tileHeight, isAlwaysEmpty: isAlwaysEmpty, showsFairy: showsFairy, mirrored: mirrored, hideDungeonNumbers: hideDungeonNumbers, used: used, shopSecondItem: shopSecondItem, hideMarks: overlays?.isActive(.hideMarks) ?? false, dungeonComplete: dungeonDone, kindHidden: kindHidden)
                                     .overlay {
                                         if options.highlightNearby, !isAlwaysEmpty,
                                            let isBold = highlights[OverworldScreenCoordinate(x: column, y: row)] {
@@ -600,6 +605,17 @@ private struct TileView: View {
     /// This tile's dungeon is 100% complete (T-035.6) — its digit/letter badge
     /// dims from bright yellow to dark yellow.
     var dungeonComplete: Bool = false
+    /// This marked tile's *kind* is set to hide in "More settings" (T-004.3):
+    /// its icon is dimmed on the map, revealed on hover.
+    var kindHidden: Bool = false
+
+    /// Reveals a `kindHidden` tile's icon while the pointer is over it (the
+    /// reference's `temporarilyDisplayHiddenOverworldTileMarks` peek).
+    @State private var revealHovered = false
+
+    /// How faint a hidden-kind tile's icon is when not being hovered — matches
+    /// the reference's dark-X dimming (`X_OPACITY`).
+    private static let hiddenIconOpacity: CGFloat = 0.28
 
     private static let interiorOffsetXFraction: CGFloat = 5.0 / 16.0
     private static let interiorOffsetYFraction: CGFloat = 1.0 / 11.0
@@ -623,38 +639,44 @@ private struct TileView: View {
             // layer is suppressed so the terrain reads cleanly — only the
             // always-empty / fairy truth below still draws.
             if !hideMarks {
-                // .dontCare ("dark") darkens the terrain rather than blacking it
-                // out entirely, so the underlying map stays readable (aesthetic
-                // improvement over the reference's solid-black fill).
-                if mark.iconSource == .solidBlackTile {
-                    Rectangle().fill(.black.opacity(0.62))
+                Group {
+                    // .dontCare ("dark") darkens the terrain rather than blacking
+                    // it out entirely, so the underlying map stays readable
+                    // (aesthetic improvement over the reference's solid-black fill).
+                    if mark.iconSource == .solidBlackTile {
+                        Rectangle().fill(.black.opacity(0.62))
+                    }
+                    // Dungeon / any-road numbers render as a larger centered badge
+                    // (not confined to the tiny 5px interior-icon region) so they're
+                    // legible at map scale.
+                    digitBadge
+                        .frame(width: tileWidth, height: tileHeight)
+                        .scaleEffect(x: mirrored ? -1 : 1, y: 1)
+                    // Sword caves use the high-fidelity Items-area sword sprite on a
+                    // dark plate (like the item boxes), sized like the digit badge
+                    // so it reads at map scale — T-063.
+                    swordCaveBadge
+                        .frame(width: tileWidth, height: tileHeight)
+                        .scaleEffect(x: mirrored ? -1 : 1, y: 1)
+                    // Interior sprites (secrets, door repair, money game, letter,
+                    // armos, hint shop, take-any, potion) are enlarged and centered
+                    // so they read at map scale, matching the dungeon-number / sword
+                    // fidelity — no longer confined to the tiny off-center reference
+                    // interior region (T-064, same art, just bigger + centered).
+                    interiorSpriteView
+                        .frame(width: tileWidth, height: tileHeight)
+                        .scaleEffect(x: mirrored ? -1 : 1, y: 1)
+                    // Shops keep the orange-plate presentation in the reference
+                    // interior region (their two 3×7 item icons already read well).
+                    shopIconView
+                        .frame(width: tileWidth * Self.interiorWidthFraction, height: tileHeight * Self.interiorHeightFraction)
+                        .scaleEffect(x: mirrored ? -1 : 1, y: 1)
+                        .offset(x: tileWidth * Self.interiorOffsetXFraction, y: tileHeight * Self.interiorOffsetYFraction)
                 }
-                // Dungeon / any-road numbers render as a larger centered badge
-                // (not confined to the tiny 5px interior-icon region) so they're
-                // legible at map scale.
-                digitBadge
-                    .frame(width: tileWidth, height: tileHeight)
-                    .scaleEffect(x: mirrored ? -1 : 1, y: 1)
-                // Sword caves use the high-fidelity Items-area sword sprite on a
-                // dark plate (like the item boxes), sized like the digit badge
-                // so it reads at map scale — T-063.
-                swordCaveBadge
-                    .frame(width: tileWidth, height: tileHeight)
-                    .scaleEffect(x: mirrored ? -1 : 1, y: 1)
-                // Interior sprites (secrets, door repair, money game, letter,
-                // armos, hint shop, take-any, potion) are enlarged and centered
-                // so they read at map scale, matching the dungeon-number / sword
-                // fidelity — no longer confined to the tiny off-center reference
-                // interior region (T-064, same art, just bigger + centered).
-                interiorSpriteView
-                    .frame(width: tileWidth, height: tileHeight)
-                    .scaleEffect(x: mirrored ? -1 : 1, y: 1)
-                // Shops keep the orange-plate presentation in the reference
-                // interior region (their two 3×7 item icons already read well).
-                shopIconView
-                    .frame(width: tileWidth * Self.interiorWidthFraction, height: tileHeight * Self.interiorHeightFraction)
-                    .scaleEffect(x: mirrored ? -1 : 1, y: 1)
-                    .offset(x: tileWidth * Self.interiorOffsetXFraction, y: tileHeight * Self.interiorOffsetYFraction)
+                // "More settings" per-kind hiding (T-004.3): dim this tile's mark
+                // when its kind is hidden, unless the pointer is over it (peek).
+                .opacity(kindHidden && !revealHovered ? Self.hiddenIconOpacity : 1)
+                .onHover { revealHovered = $0 }
             }
             // Permanent "always empty" screens are simply darkened (same as a
             // user `.dontCare` mark) — a darkened tile already reads as

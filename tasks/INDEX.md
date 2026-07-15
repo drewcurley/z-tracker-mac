@@ -25,6 +25,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-004.3](./T-004.3.md) | Wire "More settings" overworld tile hiding (12 kinds) — dim + hover reveal | frontend-engineer | T-004 | feat/wire-more-settings-hiding | — | docs/reviews/feat-wire-more-settings-hiding/final.md |
 | [T-004.2](./T-004.2.md) | Wire "Shops before dungeons" — reorder the overworld tile popup | frontend-engineer | T-004 | feat/wire-shops-before-dungeons | — | docs/reviews/feat-wire-shops-before-dungeons/final.md |
 | [T-046.1](./T-046.1.md) | Remember the main window's position + size across launches | frontend-engineer | T-046 | feat/window-position-persistence | — | docs/reviews/feat-window-position-persistence/final.md |
 | [T-004.1](./T-004.1.md) | Reminder settings persist across launches + fix Voice/Visual header alignment | frontend-engineer | T-004 | feat/reminder-settings-persistence | — | docs/reviews/feat-reminder-settings-persistence/final.md |
