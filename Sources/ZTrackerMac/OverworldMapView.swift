@@ -549,9 +549,17 @@ private struct TileView: View {
                 swordCaveBadge
                     .frame(width: tileWidth, height: tileHeight)
                     .scaleEffect(x: mirrored ? -1 : 1, y: 1)
-                // Small interior sprites (secrets, shops, armos, …) keep the
-                // reference's exact interior-icon placement.
-                interiorIconView
+                // Interior sprites (secrets, door repair, money game, letter,
+                // armos, hint shop, take-any, potion) are enlarged and centered
+                // so they read at map scale, matching the dungeon-number / sword
+                // fidelity — no longer confined to the tiny off-center reference
+                // interior region (T-064, same art, just bigger + centered).
+                interiorSpriteView
+                    .frame(width: tileWidth, height: tileHeight)
+                    .scaleEffect(x: mirrored ? -1 : 1, y: 1)
+                // Shops keep the orange-plate presentation in the reference
+                // interior region (their two 3×7 item icons already read well).
+                shopIconView
                     .frame(width: tileWidth * Self.interiorWidthFraction, height: tileHeight * Self.interiorHeightFraction)
                     .scaleEffect(x: mirrored ? -1 : 1, y: 1)
                     .offset(x: tileWidth * Self.interiorOffsetXFraction, y: tileHeight * Self.interiorOffsetYFraction)
@@ -644,18 +652,25 @@ private struct TileView: View {
         }
     }
 
+    /// The plain interior sprites (everything except shops), rendered large and
+    /// centered within the tile at their native 5×9 aspect (T-064). `.fit` keeps
+    /// the pixel art undistorted; the height cap leaves a small margin so the
+    /// sprite doesn't touch the tile border.
     @ViewBuilder
-    private var interiorIconView: some View {
-        switch mark.iconSource {
-        case .none, .solidBlackTile, .dungeonDigit, .anyRoadDigit, .swordCaveItem:
-            EmptyView()
-        case .interiorSprite(let index):
-            if let icon = OverworldInteriorIconAtlas.icon(at: index) {
-                Image(decorative: icon, scale: 1, orientation: .up)
-                    .resizable()
-                    .interpolation(.none) // crisp nearest-neighbor, matches the reference app's own integer scaling
-            }
-        case .shopSprite:
+    private var interiorSpriteView: some View {
+        if case .interiorSprite(let index) = mark.iconSource,
+           let icon = OverworldInteriorIconAtlas.icon(at: index) {
+            Image(decorative: icon, scale: 1, orientation: .up)
+                .resizable()
+                .interpolation(.none) // crisp nearest-neighbor, matches the reference's integer scaling
+                .aspectRatio(contentMode: .fit)
+                .frame(width: tileWidth, height: tileHeight * 0.9)
+        }
+    }
+
+    @ViewBuilder
+    private var shopIconView: some View {
+        if case .shopSprite = mark.iconSource {
             let interiorBoxHeight = tileHeight * Self.interiorHeightFraction
             ZStack {
                 Self.shopBackground
