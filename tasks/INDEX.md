@@ -25,6 +25,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-046.1](./T-046.1.md) | Remember the main window's position + size across launches | frontend-engineer | T-046 | feat/window-position-persistence | — | docs/reviews/feat-window-position-persistence/final.md |
 | [T-004.1](./T-004.1.md) | Reminder settings persist across launches + fix Voice/Visual header alignment | frontend-engineer | T-004 | feat/reminder-settings-persistence | — | docs/reviews/feat-reminder-settings-persistence/final.md |
 | [T-035.13](./T-035.13.md) | Flags area — toggleable icon tiles instead of checkboxes | frontend-engineer | T-035.12 | feat/flag-toggle-icons | — | docs/reviews/feat-flag-toggle-icons/final.md |
 | [T-035.12](./T-035.12.md) | Info overlay toggles — item-icon sized, two rows of three | frontend-engineer | T-035.11 | feat/overlay-toggle-sizing | — | docs/reviews/feat-overlay-toggle-sizing/final.md |

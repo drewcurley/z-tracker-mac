@@ -24,6 +24,9 @@ struct ContentView: View {
         // cost mid-game — and warming it never hangs the UI. Fires once here on
         // the very first appearance (the startup screen), before any reminder.
         .task { ReminderAudioPlayer.primeAudioStack() }
+        // Remember where the user puts the window, and restore it next launch
+        // (T-046.1) — so it reopens on the same display/spot every time.
+        .persistWindowFrame("ZTrackerMainWindow")
     }
 }
 
