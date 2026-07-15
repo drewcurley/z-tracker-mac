@@ -25,6 +25,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-035.8](./T-035.8.md) | Start spot — placeable spawn-screen marker | frontend-engineer | — | feat/start-spot | — | docs/reviews/feat-start-spot/final.md |
 | [T-035.7](./T-035.7.md) | Recorder-destination tracker — below-map stepper + current-destination diamond | frontend-engineer | — | feat/recorder-destinations | — | docs/reviews/feat-recorder-destinations/final.md |
 | [T-035.6](./T-035.6.md) | Completed-dungeon overworld marker — dark-yellow badge + full-tile dim | frontend-engineer | — | feat/dungeon-complete-marker | — | docs/reviews/feat-dungeon-complete-marker/final.md |
 | [T-035.5](./T-035.5.md) | Auto-map vanilla First/Second-Quest dungeon locations | frontend-engineer | — | feat/fqsq-auto-map | — | docs/reviews/feat-fqsq-auto-map/final.md |
