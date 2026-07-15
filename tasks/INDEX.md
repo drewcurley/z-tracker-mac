@@ -25,6 +25,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-035.11](./T-035.11.md) | Top-section layout consistency — reset/readout by the timer, hide-icons + auto-map regrouped | frontend-engineer | — | feat/top-section-consistency | — | docs/reviews/feat-top-section-consistency/final.md |
 | [T-035.10](./T-035.10.md) | Progress HUD — faux items+hearts inventory HUD in a detachable window | frontend-engineer | — | feat/progress-hud | — | docs/reviews/feat-progress-hud/final.md |
 | [T-035.9](./T-035.9.md) | Item Progress bar — read-only progression strip (superseded by T-035.10) | frontend-engineer | — | feat/item-progress-bar | — | docs/reviews/feat-item-progress-bar/final.md |
 | [T-035.8](./T-035.8.md) | Start spot — placeable spawn-screen marker | frontend-engineer | — | feat/start-spot | — | docs/reviews/feat-start-spot/final.md |
