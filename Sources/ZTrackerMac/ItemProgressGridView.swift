@@ -358,98 +358,112 @@ struct SeedFlagsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            heartShuffleToggle
-            hideDungeonNumbersToggle
-            swordlessToggle
-            bookShieldToggle
-            mirrorToggle
+            // Seed/config flags as toggleable icon tiles (T-035.13), matching the
+            // Info overlay tiles for a consistent look; tooltips carry each
+            // flag's name. Clicking a tile is the same as the old checkbox/label.
+            Grid(horizontalSpacing: 6, verticalSpacing: 6) {
+                GridRow {
+                    heartShuffleTile
+                    hideDungeonNumbersTile
+                    swordlessTile
+                }
+                GridRow {
+                    bookShieldTile
+                    mirrorTile
+                    Color.clear.frame(width: itemGridCellSize, height: itemGridCellSize)
+                }
+            }
             // Auto-map dungeons is game config, so it lives with the Flags
             // (T-035.11); "Hide tile icons" moved to the Info overlay-icon row.
             AutoMapDungeonsMenu(model: model)
         }
-        .toggleStyle(.checkbox)
         .destructiveActionConfirmation($pending)
     }
 
     /// Heart Shuffle (T-049) — moved off the startup screen. Uses the model's
     /// setter so the dungeon floor-item hearts re-seed on change. Confirms once
     /// the run has started (T-051/T-052), since it overwrites the floor boxes.
-    private var heartShuffleToggle: some View {
-        Toggle(isOn: Binding(get: { model.heartShuffle }, set: { newValue in
+    private var heartShuffleTile: some View {
+        flagTile(on: model.heartShuffle, systemImage: "suit.heart.fill", tint: .red,
+                 help: "Heart Shuffle: dungeon floor hearts are shuffled into the item pool instead of being known") {
+            let newValue = !model.heartShuffle
             runOrConfirm(confirmFirst: timer.hasStarted, into: &pending,
                          title: "Change Heart Shuffle mid-run?",
                          message: "This re-seeds every dungeon's floor-item box, discarding what you've marked there. This can't be undone.",
                          confirmLabel: "Change Heart Shuffle") {
                 model.setHeartShuffle(newValue)
             }
-        })) {
-            HStack(spacing: 6) {
-                Image(systemName: "suit.heart.fill").font(.system(size: 12)).foregroundStyle(.red)
-                Text("Heart Shuffle").font(.system(size: 11))
-            }
         }
-        .help("Heart Shuffle: dungeon floor hearts are shuffled into the item pool instead of being known")
     }
 
     /// Hidden Dungeon Numbers (T-049) — moved off the startup screen. Rebuilds
     /// the dungeon tracker (3 boxes per dungeon) and relabels dungeons A–H.
     /// Confirms once the run has started (T-051/T-052); the rebuild wipes all
     /// dungeon progress.
-    private var hideDungeonNumbersToggle: some View {
-        Toggle(isOn: Binding(get: { model.hideDungeonNumbers }, set: { newValue in
+    private var hideDungeonNumbersTile: some View {
+        flagTile(on: model.hideDungeonNumbers, systemImage: "questionmark.square.fill",
+                 help: "Hidden Dungeon Numbers: dungeons are labeled A–H (numbers unknown) and each has three item boxes. Toggling rebuilds the dungeon tracker.") {
+            let newValue = !model.hideDungeonNumbers
             runOrConfirm(confirmFirst: timer.hasStarted, into: &pending,
                          title: "Change Hidden Dungeon Numbers mid-run?",
                          message: "This rebuilds the dungeon tracker, discarding all dungeon items, triforces, and number assignments. This can't be undone.",
                          confirmLabel: "Change Hidden Dungeon Numbers") {
                 model.setHideDungeonNumbers(newValue)
             }
-        })) {
-            HStack(spacing: 6) {
-                Image(systemName: "questionmark.square.fill").font(.system(size: 12))
-                Text("Hide Dungeon #s").font(.system(size: 11))
-            }
         }
-        .help("Hidden Dungeon Numbers: dungeons are labeled A–H (numbers unknown) and each has three item boxes. Toggling rebuilds the dungeon tracker.")
-    }
-
-    /// Mirror the overworld East↔West (T-047).
-    private var mirrorToggle: some View {
-        Toggle(isOn: $model.mirrorOverworld) {
-            HStack(spacing: 6) {
-                Image(systemName: "arrow.left.arrow.right").font(.system(size: 13))
-                Text("Mirror OW").font(.system(size: 11))
-            }
-        }
-        .help("Mirror the overworld map East↔West (mirrored seeds)")
     }
 
     /// The swordless (WSMS→Bomb Upgrade) seed toggle. When on, the White Sword
     /// and Magical Sword are Bomb Upgrades (`isWSMSReplacedByBU`).
-    private var swordlessToggle: some View {
-        Toggle(isOn: $model.isWSMSReplacedByBU) {
-            HStack(spacing: 6) { iconOnly(.wsMsBombUpgrade); Text("Swordless").font(.system(size: 11)) }
+    private var swordlessTile: some View {
+        flagTile(on: model.isWSMSReplacedByBU, atlasIcon: .wsMsBombUpgrade,
+                 help: "Swordless seed: the White Sword and Magical Sword are replaced by Bomb Upgrades") {
+            model.isWSMSReplacedByBU.toggle()
         }
-        .help("Swordless seed: the White Sword and Magical Sword are replaced by Bomb Upgrades")
     }
 
-    /// Book vs Magic Shield for item slot 0 (boomstick seeds). Checked = shield
+    /// Book vs Magic Shield for item slot 0 (boomstick seeds). On = shield
     /// (`isCurrentlyBook == false`), matching the reference's "Shield instead of
-    /// book" checkbox.
-    private var bookShieldToggle: some View {
-        Toggle(isOn: Binding(get: { !model.isCurrentlyBook }, set: { model.isCurrentlyBook = !$0 })) {
-            HStack(spacing: 6) {
-                iconOnly(model.isCurrentlyBook ? .book : .magicShield)
-                Text("Boomstick").font(.system(size: 11))
+    /// book" flag. The tile's icon reflects the current mode.
+    private var bookShieldTile: some View {
+        flagTile(on: !model.isCurrentlyBook,
+                 atlasIcon: model.isCurrentlyBook ? .book : .magicShield,
+                 help: "Boomstick: when on, item slot 0 is the Magic Shield instead of the Book") {
+            model.isCurrentlyBook.toggle()
+        }
+    }
+
+    /// Mirror the overworld East↔West (T-047).
+    private var mirrorTile: some View {
+        flagTile(on: model.mirrorOverworld, systemImage: "arrow.left.arrow.right",
+                 help: "Mirror the overworld map East↔West (mirrored seeds)") {
+            model.mirrorOverworld.toggle()
+        }
+    }
+
+    /// A flag as a toggleable icon tile, styled like the Info overlay tiles
+    /// (T-035.13): item-icon sized, green fill+border when on. Takes either an SF
+    /// Symbol (tinted) or an atlas icon. `action` runs on tap.
+    @ViewBuilder
+    private func flagTile(on: Bool,
+                          systemImage: String? = nil,
+                          tint: Color = Color(white: 0.85),
+                          atlasIcon: ItemIconAtlas.Icon? = nil,
+                          help: String,
+                          action: @escaping () -> Void) -> some View {
+        ZStack {
+            if let systemImage {
+                Image(systemName: systemImage).font(.system(size: 18)).foregroundStyle(tint)
+            } else if let atlasIcon, let img = Image(atlasIcon: ItemIconAtlas.cgImage(atlasIcon)) {
+                img.interpolation(.none).resizable().frame(width: 22, height: 22)
             }
         }
-        .help("When checked, item slot 0 is the Magic Shield instead of the Book (boomstick seeds)")
-    }
-
-    @ViewBuilder
-    private func iconOnly(_ icon: ItemIconAtlas.Icon) -> some View {
-        if let img = Image(atlasIcon: ItemIconAtlas.cgImage(icon)) {
-            img.interpolation(.none).resizable().frame(width: 16, height: 16)
-        }
+        .frame(width: itemGridCellSize, height: itemGridCellSize)
+        .background(RoundedRectangle(cornerRadius: 6).fill(on ? Color.green.opacity(0.3) : Color.clear))
+        .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(on ? Color.green : Color(white: 0.28), lineWidth: 1))
+        .contentShape(Rectangle())
+        .onTapGesture(perform: action)
+        .help(help)
     }
 }
 
