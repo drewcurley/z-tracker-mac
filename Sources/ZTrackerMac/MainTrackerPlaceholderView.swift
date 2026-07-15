@@ -138,11 +138,17 @@ struct MainTrackerPlaceholderView: View {
                 )
 
                 // The dungeon band (T-019+): the reference's room-map grid +
-                // blockers + notes below the map. Built frame-first — Notes is
-                // the first slice; the room grid and blockers land above it next.
-                TopSectionGroup(title: "Notes") {
-                    NotesView(model: model)
-                        .frame(maxWidth: .infinity)
+                // blockers + notes below the map. Built frame-first — Blockers
+                // and Notes are in; the per-dungeon room grid lands beside them
+                // next.
+                FlowLayout(spacing: 12, lineSpacing: 12) {
+                    TopSectionGroup(title: "Blockers") {
+                        BlockersView(model: model)
+                    }
+                    TopSectionGroup(title: "Notes") {
+                        NotesView(model: model)
+                            .frame(minWidth: 260)
+                    }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }

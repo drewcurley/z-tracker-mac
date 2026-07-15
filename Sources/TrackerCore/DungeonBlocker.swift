@@ -43,6 +43,10 @@ public enum DungeonBlocker: String, CaseIterable, Sendable, Codable {
         }
     }
 
+    /// A `maybe*` (uncertain) blocker — rendered with the green→red gradient
+    /// border rather than the solid definite one (T-019.2).
+    public var isMaybe: Bool { hardCanonical != self }
+
     /// Whether the player *could still* be blocked by this, given current
     /// derived state — i.e. the annotation isn't yet stale. Ported from
     /// `PlayerCouldBeBlockedByThis()` (`TrackerModel.fs:1188-1194`): only

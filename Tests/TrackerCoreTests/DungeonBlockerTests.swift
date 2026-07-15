@@ -28,6 +28,17 @@ struct DungeonBlockerTests {
         #expect(DungeonBlocker.nothing.hardCanonical == .nothing)
     }
 
+    @Test("isMaybe: only the maybe* variants (T-019.2)")
+    func isMaybe() {
+        for b in DungeonBlocker.allCases {
+            let expected = String(describing: b).hasPrefix("maybe")
+            #expect(b.isMaybe == expected)
+        }
+        #expect(!DungeonBlocker.nothing.isMaybe)
+        #expect(!DungeonBlocker.combat.isMaybe)
+        #expect(DungeonBlocker.maybeBomb.isMaybe)
+    }
+
     @Test("playerCouldBeBlockedByThis is stale only once the gating item is held")
     func playerCouldBeBlocked() {
         let none = PlayerComputedStateSummary()
