@@ -72,6 +72,17 @@ public final class TrackerModel {
     /// `MapStateSummary` already reads). Off by default.
     public var mirrorOverworld: Bool
 
+    /// Recorder-warp destination settings (T-035.7). `recorderToNewDungeons`
+    /// (default true) selects discovered map locations vs the fixed vanilla-1Q
+    /// screens; `recorderToUnbeatenDungeons` (default false) inverts the triforce
+    /// filter to not-yet-beaten dungeons. Ported from `TrackerModel.fs:1293-1294`.
+    public var recorderToNewDungeons: Bool = true
+    public var recorderToUnbeatenDungeons: Bool = false
+    /// Which of the ordered available recorder destinations is "current" — the
+    /// whistle-count position the below-map stepper points at (T-035.7). Wraps
+    /// against the live destination list; stepping it mirrors whistling in game.
+    public var recorderDestinationIndex: Int = 0
+
     /// Per-target location hints (T-039) — which overworld region each dungeon /
     /// sword cave was hinted to be in. 11 slots (`HintTarget`: dungeons 1–9 →
     /// 0–8, white sword → 9, magical sword → 10). Map *knowledge*, so a

@@ -55,6 +55,11 @@ struct OverworldMapView: View {
     /// yellow (T-035.6), matching the reference's completed-dungeon shading.
     var dungeonComplete: (Int) -> Bool = { _ in false }
 
+    /// The single **current** recorder-warp destination (T-035.7) — the screen
+    /// the whistle would take you to right now, per the stepper below the map.
+    /// Gets a lone diamond marker; `nil` when there's no valid destination.
+    var recorderDestination: OverworldScreenCoordinate? = nil
+
     /// Mark a take-any tile with what was taken, syncing its linked Items-group
     /// heart slot (T-066). `(state, column, row)`.
     var onSetTakeAny: (TakeAnyHeartState, Int, Int) -> Void = { _, _, _ in }
@@ -222,6 +227,21 @@ struct OverworldMapView: View {
                                                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                                                 // Counter-flip so the coord reads normally under a
                                                 // mirrored map (it still marks its true screen).
+                                                .scaleEffect(x: mirrored ? -1 : 1, y: 1)
+                                        }
+                                    }
+                                    .overlay {
+                                        // Recorder-warp destination marker (T-035.7): a lone cyan
+                                        // diamond on the *current* destination screen only.
+                                        if !isAlwaysEmpty,
+                                           recorderDestination == OverworldScreenCoordinate(x: column, y: row) {
+                                            Rectangle()
+                                                .fill(Color.cyan)
+                                                .frame(width: tileHeight * 0.24, height: tileHeight * 0.24)
+                                                .rotationEffect(.degrees(45))
+                                                .overlay(Rectangle().stroke(.black, lineWidth: 0.5).rotationEffect(.degrees(45)))
+                                                .padding(2)
+                                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
                                                 .scaleEffect(x: mirrored ? -1 : 1, y: 1)
                                         }
                                     }
