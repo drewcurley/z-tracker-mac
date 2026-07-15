@@ -25,6 +25,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-019.4](./T-019.4.md) | Stack Blockers over Notes as a narrow left column (band layout fix) | frontend-engineer | T-019.2 | fix/blockers-notes-stacked | — | docs/reviews/fix-blockers-notes-stacked/final.md |
 | [T-019.3](./T-019.3.md) | Dungeon room-map model foundation (D0) — rooms, doors, transports | data-engineer | T-019 | feat/dungeon-room-model | — | docs/reviews/feat-dungeon-room-model/final.md |
 | [T-019.2](./T-019.2.md) | Dungeon band — Blockers UI (view over the existing model) | frontend-engineer | T-019 | feat/blockers-ui | — | docs/reviews/feat-blockers-ui/final.md |
 | [T-067](./T-067.md) | Accessibility (VoiceOver) catch-up pass on the existing interactive views | frontend-engineer | — | feat/a11y-catchup-pass | — | docs/reviews/feat-a11y-catchup-pass/final.md |
