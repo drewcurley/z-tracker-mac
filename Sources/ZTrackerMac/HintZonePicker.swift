@@ -22,6 +22,15 @@ struct HintLabel: View {
             .popover(isPresented: $showPicker, arrowEdge: .bottom) {
                 HintZonePicker(hint: $hint, title: title) { showPicker = false }
             }
+            // A custom-gesture control is invisible to VoiceOver by default
+            // (T-067) — expose it as a button that reads its target + current
+            // hint and opens the zone picker.
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("\(title) location hint")
+            .accessibilityValue(hint.displayName)
+            .accessibilityHint("Choose the hinted region")
+            .accessibilityAddTraits(.isButton)
+            .accessibilityAction { showPicker = true }
     }
 }
 

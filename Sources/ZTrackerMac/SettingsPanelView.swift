@@ -66,6 +66,7 @@ struct SettingsPanelView: View {
             HStack {
                 Text("Volume")
                 Slider(value: Bindable(options).reminderVolume.doubleBinding, in: 0...100)
+                    .accessibilityLabel("Reminder volume")
             }
 
             Button("Disable all") { options.disableAllReminders() }
@@ -84,8 +85,10 @@ struct SettingsPanelView: View {
                     GridRow {
                         Toggle("", isOn: voiceBinding(for: category))
                             .labelsHidden()
+                            .accessibilityLabel("Voice reminder: \(category.displayName)")
                         Toggle("", isOn: visualBinding(for: category))
                             .labelsHidden()
+                            .accessibilityLabel("Visual reminder: \(category.displayName)")
                         Text(category.displayName)
                     }
                 }

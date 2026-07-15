@@ -57,6 +57,13 @@ struct DungeonNumberLabel: View {
             .popover(isPresented: $showPicker, arrowEdge: .bottom) {
                 DungeonNumberPicker(dungeon: dungeon, slotLabel: slotLabel) { showPicker = false }
             }
+            // Custom-gesture control → expose to VoiceOver (T-067).
+            .accessibilityElement(children: .ignore)
+            .accessibilityLabel("Dungeon \(slotLabel) number")
+            .accessibilityValue(isUnassigned ? "Unknown" : String(dungeon.labelChar))
+            .accessibilityHint("Choose the color and number")
+            .accessibilityAddTraits(.isButton)
+            .accessibilityAction { showPicker = true }
     }
 }
 
@@ -145,6 +152,8 @@ struct DungeonNumberPicker: View {
                         }
                         .buttonStyle(.plain)
                         .help(rgb == DungeonColorPalette.unset ? "No color" : String(format: "#%06X", rgb))
+                        .accessibilityLabel(rgb == DungeonColorPalette.unset ? "No color" : String(format: "Color %06X", rgb))
+                        .accessibilityAddTraits(selected ? [.isButton, .isSelected] : .isButton)
                     }
                 }
             }

@@ -25,6 +25,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-067](./T-067.md) | Accessibility (VoiceOver) catch-up pass on the existing interactive views | frontend-engineer | — | feat/a11y-catchup-pass | — | docs/reviews/feat-a11y-catchup-pass/final.md |
 | [T-019.1](./T-019.1.md) | Dungeon band — Notes box + scaffold; fix app keyboard focus | frontend-engineer | T-019 | feat/dungeon-band-notes | — | docs/reviews/feat-dungeon-band-notes/final.md |
 | [T-004.3](./T-004.3.md) | Wire "More settings" overworld tile hiding (12 kinds) — dim + hover reveal | frontend-engineer | T-004 | feat/wire-more-settings-hiding | — | docs/reviews/feat-wire-more-settings-hiding/final.md |
 | [T-004.2](./T-004.2.md) | Wire "Shops before dungeons" — reorder the overworld tile popup | frontend-engineer | T-004 | feat/wire-shops-before-dungeons | — | docs/reviews/feat-wire-shops-before-dungeons/final.md |
