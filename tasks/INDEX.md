@@ -16,7 +16,7 @@
 | [T-015.6](./T-015.6.md) | Destination-picker menu | frontend-engineer | proposed |
 | [T-015.7](./T-015.7.md) | MirrorOverworld — display flip + routing | frontend-engineer | proposed |
 | [T-016](./T-016.md) | Hide Dungeon Numbers (HDN) mode (umbrella) | frontend-engineer | split |
-| [T-016.3](./T-016.3.md) | HDN labeling UI + overworld lettered-dungeon rendering | frontend-engineer | proposed |
+| [T-016.4](./T-016.4.md) | Overworld dungeon tile — green "warpable" variant (triforce + recorder) | frontend-engineer | proposed |
 | [T-018](./T-018.md) | Reminders, announcements, and Triforce-and-Go (umbrella) | frontend-engineer | split |
 | [T-025](./T-025.md) | Overworld item grid UI (owItemGrid render) (umbrella; book-atlas/open-caves chrome deferred) | frontend-engineer | split |
 | [T-035](./T-035.md) | Topmost section build-out (above the overworld map) (umbrella) | frontend-engineer | split |
@@ -25,6 +25,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-016.3](./T-016.3.md) | HDN labeling UI + overworld lettered-dungeon rendering | frontend-engineer | — | feat/hdn-lettered-dungeons | — | docs/reviews/feat-hdn-lettered-dungeons/final.md |
 | [T-066](./T-066.md) | Fix — overworld take-any tiles now stay in sync with their Items-group heart slot | frontend-engineer | — | fix/take-any-tile-slot-sync | — | docs/reviews/fix-take-any-tile-slot-sync/final.md |
 | [T-065](./T-065.md) | Sword-cave tiles support the claimed (used) state like other claimable tiles | frontend-engineer | — | feat/sword-cave-claimed-state | — | docs/reviews/feat-sword-cave-claimed-state/final.md |
 | [T-064](./T-064.md) | Enlarge and center the overworld interior-sprite tile icons | frontend-engineer | — | feat/enlarge-interior-icons | — | docs/reviews/feat-enlarge-interior-icons/final.md |

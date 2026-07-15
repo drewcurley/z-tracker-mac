@@ -1,11 +1,24 @@
 import SwiftUI
 import TrackerCore
 
-/// The Hidden-Dungeon-Numbers slot label (T-050): shows the dungeon's assigned
-/// number (`labelChar`, "?" until identified) and opens the number chooser.
-/// Placed above the A–H dungeon slot in HDN, where the location hint sits in
-/// default mode. Mirrors the reference's `HiddenDungeonNumberChooserPopup`
-/// (`Z1R_WPF/Dungeon.fs`).
+extension Color {
+    /// A SwiftUI `Color` from a `0xRRGGBB` int (the reference's dungeon-color
+    /// encoding — see `DungeonColorPalette`).
+    init(rgb: Int) {
+        self.init(
+            red: Double((rgb & 0xFF0000) >> 16) / 255.0,
+            green: Double((rgb & 0x00FF00) >> 8) / 255.0,
+            blue: Double(rgb & 0x0000FF) / 255.0
+        )
+    }
+}
+
+/// The Hidden-Dungeon-Numbers slot label (T-050 / T-016.3): shows the dungeon's
+/// player-assigned real number (`labelChar`, "?" until identified) on its
+/// player-assigned color (`color`), and opens the color+number chooser. Placed
+/// above the A–H dungeon slot in HDN, where the location hint sits in default
+/// mode. Mirrors the reference's triforce-row color swatch (`UI.fs:235-241`) +
+/// `HiddenDungeonCustomizerPopup` (`Z1R_Avalonia/Dungeon.fs`).
 struct DungeonNumberLabel: View {
     @Bindable var dungeon: Dungeon
     /// The slot letter (A–H), for the popover title.
@@ -13,19 +26,34 @@ struct DungeonNumberLabel: View {
     @State private var showPicker = false
 
     private var isUnassigned: Bool { dungeon.labelChar == "?" }
+    private var hasColor: Bool { dungeon.color != DungeonColorPalette.unset }
+
+    /// The swatch background: the assigned color, or a neutral dark chip when
+    /// still unset (so it stays visible/tappable on the dark card).
+    private var swatch: Color {
+        hasColor ? Color(rgb: dungeon.color) : Color(white: 0.16)
+    }
+
+    /// The number glyph color: black or white for contrast on the assigned
+    /// color (reference `isBlackGoodContrast`); a muted "?" when unassigned.
+    private var glyph: Color {
+        if isUnassigned { return Color(white: 0.55) }
+        if !hasColor { return .white }
+        return DungeonColorPalette.isBlackGoodContrast(dungeon.color) ? .black : .white
+    }
 
     var body: some View {
-        Text(String(dungeon.labelChar))
+        Text(isUnassigned ? "?" : String(dungeon.labelChar))
             .font(.system(size: 10, weight: .heavy, design: .rounded))
-            .foregroundStyle(isUnassigned ? Color(white: 0.5) : .cyan)
+            .foregroundStyle(glyph)
             .frame(minWidth: 18)
             .padding(.horizontal, 3).padding(.vertical, 1)
-            .background(RoundedRectangle(cornerRadius: 3).fill(Color(white: 0.16)))
+            .background(RoundedRectangle(cornerRadius: 3).fill(swatch))
             .overlay(RoundedRectangle(cornerRadius: 3)
-                .strokeBorder(isUnassigned ? Color.clear : Color.cyan.opacity(0.7), lineWidth: 1))
+                .strokeBorder(Color(white: 0.35), lineWidth: 1))
             .contentShape(Rectangle())
             .onTapGesture { showPicker = true }
-            .help("Dungeon \(slotLabel): assigned number \(isUnassigned ? "unknown" : String(dungeon.labelChar))")
+            .help("Dungeon \(slotLabel): assigned number \(isUnassigned ? "unknown" : String(dungeon.labelChar)) — tap to set color & number")
             .popover(isPresented: $showPicker, arrowEdge: .bottom) {
                 DungeonNumberPicker(dungeon: dungeon, slotLabel: slotLabel) { showPicker = false }
             }
@@ -47,6 +75,15 @@ struct DungeonNumberPicker: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Dungeon \(slotLabel)").font(.headline)
+
+            // Color chooser (T-016.3): the reference's 3-row × 14-column shade
+            // grid. Click a swatch to assign; the change is live so you can set
+            // color and number in either order before dismissing.
+            Text("Color").font(.caption).foregroundStyle(.secondary)
+            colorGrid
+
+            Divider()
+
             Text("Assign its real dungeon number")
                 .font(.caption).foregroundStyle(.secondary)
 
@@ -87,6 +124,31 @@ struct DungeonNumberPicker: View {
         }
         .padding(12)
         .frame(width: 300)
+    }
+
+    /// The 3-row × 14-column swatch grid. Selecting a swatch sets `color` live
+    /// (no dismiss); the black column is the reference's "unset" default.
+    private var colorGrid: some View {
+        VStack(spacing: 4) {
+            ForEach(DungeonColorPalette.rows.indices, id: \.self) { r in
+                HStack(spacing: 3) {
+                    ForEach(DungeonColorPalette.rows[r].indices, id: \.self) { c in
+                        let rgb = DungeonColorPalette.rows[r][c]
+                        let selected = dungeon.color == rgb && rgb != DungeonColorPalette.unset
+                        Button { dungeon.color = rgb } label: {
+                            RoundedRectangle(cornerRadius: 3)
+                                .fill(Color(rgb: rgb))
+                                .frame(width: 16, height: 16)
+                                .overlay(RoundedRectangle(cornerRadius: 3)
+                                    .strokeBorder(selected ? Color.white : Color(white: 0.3),
+                                                  lineWidth: selected ? 2 : 0.5))
+                        }
+                        .buttonStyle(.plain)
+                        .help(rgb == DungeonColorPalette.unset ? "No color" : String(format: "#%06X", rgb))
+                    }
+                }
+            }
+        }
     }
 
     private func diagram(title: String, ordering: String) -> some View {
