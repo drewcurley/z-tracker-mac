@@ -87,6 +87,7 @@ enum ItemProgressGrid {
         case woodSword, magicalSword, boomBook
         case blueCandle, woodArrow, blueRing
         case bomb, ganon, zelda
+        case meat
 
         /// The `PlayerProgressAndTakeAnyHearts` flag this box toggles.
         var keyPath: ReferenceWritableKeyPath<PlayerProgressAndTakeAnyHearts, Bool> {
@@ -100,6 +101,7 @@ enum ItemProgressGrid {
             case .bomb: \.hasBombs
             case .ganon: \.hasDefeatedGanon
             case .zelda: \.hasRescuedZelda
+            case .meat: \.hasMeat
             }
         }
 
@@ -117,6 +119,7 @@ enum ItemProgressGrid {
             case .bomb: .bomb
             case .ganon: .ganon
             case .zelda: .zelda
+            case .meat: .bait
             }
         }
 
@@ -131,6 +134,7 @@ enum ItemProgressGrid {
             case .bomb: "Acquired bombs"
             case .ganon: "Killed Ganon"
             case .zelda: "Rescued Zelda"
+            case .meat: "Obtained the meat/bait"
             }
         }
 
@@ -146,7 +150,7 @@ enum ItemProgressGrid {
             case .magicalSword: mapState.magsCaveFound
             case .boomBook: mapState.foundBookShop
             case .bomb: mapState.foundBombShop
-            case .ganon, .zelda: false
+            case .ganon, .zelda, .meat: false
             }
         }
 
@@ -159,7 +163,7 @@ enum ItemProgressGrid {
             case .woodArrow: playerState.arrowLevel >= 2
             case .blueCandle: playerState.candleLevel >= 2
             case .blueRing: playerState.ringLevel >= 2
-            case .magicalSword, .boomBook, .bomb, .ganon, .zelda: false
+            case .magicalSword, .boomBook, .bomb, .ganon, .zelda, .meat: false
             }
         }
     }
@@ -217,8 +221,9 @@ enum ItemProgressGrid {
         [.indicator(.coast), .pickerBox(.coast), .toggle(.blueCandle), .toggle(.woodArrow), .toggle(.blueRing)],
         // row 2
         [.indicator(.armos), .pickerBox(.armos), .toggle(.bomb), .toggle(.ganon), .toggle(.zelda)],
-        // row 3 — take-any heart caves (cols 0–3), nothing at 4,3
-        [.takeAnyHeart(0), .takeAnyHeart(1), .takeAnyHeart(2), .takeAnyHeart(3), .empty],
+        // row 3 — take-any heart caves (cols 0–3); the meat toggle under Zelda
+        // (T-035.10) fills the previously-empty 4,3.
+        [.takeAnyHeart(0), .takeAnyHeart(1), .takeAnyHeart(2), .takeAnyHeart(3), .toggle(.meat)],
     ]
 
     /// The cell at a position (nil if out of range) — the testable mapping.
@@ -489,6 +494,8 @@ struct MapInfoView: View {
     @State private var showingSpotSummary = false
     @State private var confirmingVanilla = false
     @State private var pendingVanillaSecondQuest = false
+    @Environment(\.openWindow) private var openWindow
+    @Environment(\.dismissWindow) private var dismissWindow
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -590,9 +597,6 @@ struct MapInfoView: View {
             Text("\(ItemProgressGrid.gettableCount(mapState)) gettable")
                 .foregroundStyle(.green)
                 .help("Unmarked spots you can currently uncover with your items (raft / recorder / bracelet / candle / bombs), for this quest")
-            Text("Max Hearts: \(playerState.playerHearts)")
-                .foregroundStyle(.orange)
-                .help("Max hearts, computed from collected heart containers and take-any hearts")
         }
         .font(.system(size: 11))
     }
@@ -609,7 +613,31 @@ struct MapInfoView: View {
                           help: "Tint the map by overworld region (Zones). Hover to preview, click to lock on.")
             overlayToggle(.coords, systemImage: "number",
                           help: "Overlay screen coordinates (A1…H16). Hover to preview, click to lock on.")
+            progressToggle
         }
+    }
+
+    /// The "Progress" toggle icon (T-035.10), styled like the overlay toggles:
+    /// hover peeks the items+hearts HUD; clicking breaks it out into a separate,
+    /// placeable window. Replaces the old "Max Hearts" readout (the HUD shows the
+    /// heart row).
+    private var progressToggle: some View {
+        let on = model.showProgressWindow
+        return ZStack {
+            Image(systemName: "chart.bar.doc.horizontal").font(.system(size: 12))
+                .foregroundStyle(on ? Color.green : Color(white: 0.75))
+        }
+        .frame(width: 24, height: 20)
+        .background(RoundedRectangle(cornerRadius: 4).fill(on ? Color.green.opacity(0.3) : Color.clear))
+        .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(on ? Color.green : Color(white: 0.28), lineWidth: 1))
+        .contentShape(Rectangle())
+        // A plain click toggles the standalone HUD window (no hover preview — a
+        // popover just fought the click; user preference).
+        .onTapGesture { model.showProgressWindow.toggle() }
+        .onChange(of: model.showProgressWindow) { _, isOn in
+            if isOn { openWindow(id: ProgressHUDWindowID) } else { dismissWindow(id: ProgressHUDWindowID) }
+        }
+        .help("Items + hearts HUD — click to open/close it as a separate, resizable window you can place anywhere.")
     }
 
     @ViewBuilder

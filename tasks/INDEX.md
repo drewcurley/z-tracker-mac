@@ -25,7 +25,8 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
-| [T-035.9](./T-035.9.md) | Item Progress bar — read-only progression strip below the map | frontend-engineer | — | feat/item-progress-bar | — | docs/reviews/feat-item-progress-bar/final.md |
+| [T-035.10](./T-035.10.md) | Progress HUD — faux items+hearts inventory HUD in a detachable window | frontend-engineer | — | feat/progress-hud | — | docs/reviews/feat-progress-hud/final.md |
+| [T-035.9](./T-035.9.md) | Item Progress bar — read-only progression strip (superseded by T-035.10) | frontend-engineer | — | feat/item-progress-bar | — | docs/reviews/feat-item-progress-bar/final.md |
 | [T-035.8](./T-035.8.md) | Start spot — placeable spawn-screen marker | frontend-engineer | — | feat/start-spot | — | docs/reviews/feat-start-spot/final.md |
 | [T-035.7](./T-035.7.md) | Recorder-destination tracker — below-map stepper + current-destination diamond | frontend-engineer | — | feat/recorder-destinations | — | docs/reviews/feat-recorder-destinations/final.md |
 | [T-035.6](./T-035.6.md) | Completed-dungeon overworld marker — dark-yellow badge + full-tile dim | frontend-engineer | — | feat/dungeon-complete-marker | — | docs/reviews/feat-dungeon-complete-marker/final.md |

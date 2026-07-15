@@ -118,10 +118,6 @@ struct MainTrackerPlaceholderView: View {
                 )
                 .frame(maxWidth: .infinity)
 
-                // Read-only progression strip (T-035.9), below the map.
-                ItemProgressBar(playerState: model.playerComputedStateSummary,
-                                iconOptions: model.iconOptions)
-
                 // The recorder-destination stepper (T-035.7): the single place to
                 // see where the whistle would take you, with arrows to step your
                 // whistle count. Lives directly below the map.

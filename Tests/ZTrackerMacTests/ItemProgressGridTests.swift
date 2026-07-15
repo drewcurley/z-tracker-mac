@@ -64,12 +64,12 @@ struct ItemProgressGridLayoutTests {
         #expect(ItemProgressGrid.cell(row: 2, col: 2) == .toggle(.bomb))
         #expect(ItemProgressGrid.cell(row: 2, col: 3) == .toggle(.ganon))
         #expect(ItemProgressGrid.cell(row: 2, col: 4) == .toggle(.zelda))
-        // Row 3: four take-any hearts, then an empty cell at col 4.
+        // Row 3: four take-any hearts, then the meat toggle at col 4 (T-035.10).
         #expect(ItemProgressGrid.cell(row: 3, col: 0) == .takeAnyHeart(0))
         #expect(ItemProgressGrid.cell(row: 3, col: 1) == .takeAnyHeart(1))
         #expect(ItemProgressGrid.cell(row: 3, col: 2) == .takeAnyHeart(2))
         #expect(ItemProgressGrid.cell(row: 3, col: 3) == .takeAnyHeart(3))
-        #expect(ItemProgressGrid.cell(row: 3, col: 4) == .empty)
+        #expect(ItemProgressGrid.cell(row: 3, col: 4) == .toggle(.meat))
     }
 
     @Test("out-of-range positions are nil")
@@ -79,13 +79,13 @@ struct ItemProgressGridLayoutTests {
         #expect(ItemProgressGrid.cell(row: 0, col: 5) == nil)
     }
 
-    @Test("every toggle appears exactly once and covers all nine flags")
+    @Test("every toggle appears exactly once and covers all ten flags")
     func togglesComplete() {
         let toggles = ItemProgressGrid.layout.flatMap { $0 }.compactMap { cell -> ItemProgressGrid.ItemToggle? in
             if case .toggle(let t) = cell { return t } else { return nil }
         }
-        #expect(toggles.count == 9)
-        #expect(Set(toggles).count == 9)
+        #expect(toggles.count == 10)
+        #expect(Set(toggles).count == 10)
         #expect(Set(toggles) == Set(ItemProgressGrid.ItemToggle.allCases))
     }
 }
