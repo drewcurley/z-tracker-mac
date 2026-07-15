@@ -84,6 +84,9 @@ struct MainTrackerPlaceholderView: View {
                     armosClaimed: model.dungeonTracker.armosBox.isDone,
                     mirrored: model.mirrorOverworld,
                     hideDungeonNumbers: model.hideDungeonNumbers,
+                    dungeonComplete: { slot in
+                        (1...9).contains(slot) && model.dungeonTracker.dungeon(slot - 1).isComplete
+                    },
                     onSetTakeAny: { state, c, r in model.setOverworldTakeAny(state, column: c, row: r) },
                     onCycleTakeAny: { c, r in model.cycleOverworldTakeAny(column: c, row: r) },
                     onReleaseTakeAny: { c, r in model.releaseOverworldTakeAny(column: c, row: r) }
