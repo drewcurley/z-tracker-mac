@@ -60,6 +60,12 @@ struct OverworldMapView: View {
     /// Gets a lone diamond marker; `nil` when there's no valid destination.
     var recorderDestination: OverworldScreenCoordinate? = nil
 
+    /// The player's start screen (T-035.8) — a lime/violet ring marker; `nil`
+    /// when unset. Set/cleared from the tile context menu.
+    var startSpot: OverworldScreenCoordinate? = nil
+    var onSetStartSpot: (Int, Int) -> Void = { _, _ in }
+    var onClearStartSpot: () -> Void = {}
+
     /// Mark a take-any tile with what was taken, syncing its linked Items-group
     /// heart slot (T-066). `(state, column, row)`.
     var onSetTakeAny: (TakeAnyHeartState, Int, Int) -> Void = { _, _, _ in }
@@ -243,6 +249,19 @@ struct OverworldMapView: View {
                                                 .padding(2)
                                                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
                                                 .scaleEffect(x: mirrored ? -1 : 1, y: 1)
+                                        }
+                                    }
+                                    .overlay {
+                                        // Start-spot marker (T-035.8): a lime ring on a violet
+                                        // glow, centered on the player's spawn screen.
+                                        if startSpot == OverworldScreenCoordinate(x: column, y: row) {
+                                            Circle()
+                                                .stroke(Color(red: 0.58, green: 0, blue: 0.83), lineWidth: 4)
+                                                .overlay(Circle().stroke(Color(red: 0.5, green: 1, blue: 0), lineWidth: 2))
+                                                .frame(width: tileHeight * 0.62, height: tileHeight * 0.62)
+                                                .shadow(color: Color(red: 0.58, green: 0, blue: 0.83), radius: 2)
+                                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                                .allowsHitTesting(false)
                                         }
                                     }
                                     .onTapGesture { handleLeftClick(column: column, row: row) }
@@ -486,6 +505,14 @@ struct OverworldMapView: View {
             .disabled(isExhausted(.hintShop, column: column, row: row, counts: counts))
         Button("Potion shop") { applyMark(.potionShop, column: column, row: row) }
             .disabled(isExhausted(.potionShop, column: column, row: row, counts: counts))
+        Divider()
+        // Start spot (T-035.8): a placeable spawn-screen marker, independent of
+        // the tile's mark.
+        if startSpot == OverworldScreenCoordinate(x: column, y: row) {
+            Button("Clear start spot") { onClearStartSpot() }
+        } else {
+            Button("Set as start spot") { onSetStartSpot(column, row) }
+        }
     }
 }
 
