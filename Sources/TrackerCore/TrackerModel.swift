@@ -99,6 +99,12 @@ public final class TrackerModel {
     /// groundhog reset keeps these.
     public var levelHints: [HintZone]
 
+    /// Free-text notes (T-019.1) — the reference's single global notes box
+    /// (`WPFUI.fs:1219-1229`). Player *knowledge*, so a groundhog reset keeps it
+    /// (like `levelHints`). Session-only for now; persistence rides with the
+    /// future save/load.
+    public var notes: String = ""
+
     /// Per-dungeon "why I left" blocker annotations (docs/domain.md § 6,
     /// T-017). Reads player state for staleness but doesn't feed back into
     /// it. The blocker-setting UI is a later task (uncharacterized).

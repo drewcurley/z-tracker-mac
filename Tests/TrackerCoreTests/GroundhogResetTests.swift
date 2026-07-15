@@ -56,6 +56,16 @@ struct GroundhogResetTests {
         #expect(model.startingItemsAndExtras.hasRaft)
     }
 
+    @Test("notes survive a groundhog reset (they're knowledge) — T-019.1")
+    func notesSurviveReset() {
+        let model = TrackerModel(quest: .first)
+        model.selectQuest(.first)
+        #expect(model.notes.isEmpty)                 // default empty
+        model.notes = "L1 has bombs; skip L5 until raft"
+        model.resetForGroundhogOrRouters()
+        #expect(model.notes == "L1 has bombs; skip L5 until raft")
+    }
+
     @Test("reset is idempotent on a fresh model")
     func idempotentOnFresh() {
         let model = TrackerModel(quest: .first)
