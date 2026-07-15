@@ -110,6 +110,11 @@ public final class TrackerModel {
     /// it. The blocker-setting UI is a later task (uncharacterized).
     public let dungeonBlockers: DungeonBlockersContainer
 
+    /// The nine dungeons' room maps (T-019.3) — the 8×8 room-type/monster/
+    /// floor-drop/door grids. Grid *knowledge*, so a groundhog reset keeps them.
+    /// Indexed `0…8` for dungeons 1–9.
+    public let dungeonRoomMaps: [DungeonRoomMap] = (0..<9).map { _ in DungeonRoomMap() }
+
     /// The edge-triggered reminder/announcement engine (T-018.2). Owned here
     /// so its transition state survives view redraws; driven by the app's
     /// poll loop via `pollReminders()` (T-018.3).
