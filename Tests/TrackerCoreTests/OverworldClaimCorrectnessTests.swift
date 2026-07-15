@@ -28,6 +28,10 @@ struct OverworldClaimCorrectnessTests {
     func unknownSecretUnclaimable() {
         #expect(!OverworldTileMark.secret(.unknown).isUsedToggleable)
         #expect(OverworldTileMark.secret(.large).isUsedToggleable)
+        // Sword caves are claimable now that they render as item icons (T-065).
+        #expect(OverworldTileMark.swordCave(1).isUsedToggleable)
+        #expect(OverworldTileMark.swordCave(2).isUsedToggleable)
+        #expect(OverworldTileMark.swordCave(3).isUsedToggleable)
         // Setting used on an unknown secret is a no-op.
         let grid = OverworldGrid()
         grid.setMark(.secret(.unknown), column: 0, row: 0)

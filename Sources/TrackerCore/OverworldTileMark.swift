@@ -84,15 +84,18 @@ public enum OverworldTileMark: Hashable, Codable, Sendable {
     /// **used** (collected) vs unused via a left-click (T-054) — dimming it on
     /// the map and updating the Spot Summary. The reference's `toggleables`
     /// (`OverworldMapTileCustomization.fs:229`) are take-any, the wood-sword
-    /// cave, hint shop, and the three sized secrets; this set drops the sword
-    /// cave (tracked via its item box) and adds the armos item and the letter,
-    /// which are likewise claimed exactly once (user request).
+    /// cave, hint shop, and the three sized secrets; this set adds the armos
+    /// item and the letter, which are likewise claimed exactly once, and — now
+    /// that the sword caves render as prominent Items-area sword icons (T-063)
+    /// — makes **all three** sword caves claimable (T-065, user request), not
+    /// just the wood-sword cave. The map dim is a visual "collected" marker
+    /// independent of the Items-box sword tracking, which still stands.
     public var isUsedToggleable: Bool {
         switch self {
         // An *unknown* secret has no known contents, so it's always unclaimed
         // (T-058) — you can't have collected something you haven't identified.
         case .secret(.unknown): false
-        case .secret, .takeAny, .armos, .theLetter, .hintShop: true
+        case .secret, .takeAny, .armos, .theLetter, .hintShop, .swordCave: true
         default: false
         }
     }

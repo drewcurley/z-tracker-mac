@@ -70,6 +70,28 @@ struct SpotSummaryTests {
                 == .init(large: 3, medium: 7, small: 4))
     }
 
+    @Test("sword caves are claimable: placed→found, used→collected/done (T-065)")
+    func swordCaveClaimed() {
+        let grid = OverworldGrid()
+        grid.setMark(.swordCave(1), column: 0, row: 0)
+        grid.setMark(.swordCave(2), column: 1, row: 0)
+
+        // Placed but not collected.
+        let placed = SpotSummary.compute(grid: grid, quest: .first)
+        #expect(placed.uniques.first { $0.mark == .swordCave(1) }?.placed == true)
+        #expect(placed.uniques.first { $0.mark == .swordCave(1) }?.used == false)
+        // A claimable spot is "done" only once used, not merely placed.
+        #expect(placed.uniques.first { $0.mark == .swordCave(1) }?.done == false)
+
+        // Collect the wood-sword cave.
+        grid.setUsed(true, column: 0, row: 0)
+        let done = SpotSummary.compute(grid: grid, quest: .first)
+        #expect(done.uniques.first { $0.mark == .swordCave(1) }?.used == true)
+        #expect(done.uniques.first { $0.mark == .swordCave(1) }?.done == true)
+        // The other sword cave stays found-not-collected.
+        #expect(done.uniques.first { $0.mark == .swordCave(2) }?.done == false)
+    }
+
     @Test("setUsed sets/clears used on a claimable mark; no-op otherwise (T-056)")
     func setUsed() {
         let grid = OverworldGrid()

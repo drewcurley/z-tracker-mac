@@ -25,6 +25,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-065](./T-065.md) | Sword-cave tiles support the claimed (used) state like other claimable tiles | frontend-engineer | — | feat/sword-cave-claimed-state | — | docs/reviews/feat-sword-cave-claimed-state/final.md |
 | [T-064](./T-064.md) | Enlarge and center the overworld interior-sprite tile icons | frontend-engineer | — | feat/enlarge-interior-icons | — | docs/reviews/feat-enlarge-interior-icons/final.md |
 | [T-063](./T-063.md) | Sword-cave tiles use the high-fidelity Items sword icons; Take-any moved to the submenu group | frontend-engineer | — | feat/sword-cave-item-icons | — | docs/reviews/feat-sword-cave-item-icons/final.md |
 | [T-062](./T-062.md) | "Hide tile icons" view toggle — suppress overworld map marks to see terrain | frontend-engineer | — | feat/hide-tile-icons | — | docs/reviews/feat-hide-tile-icons/final.md |
