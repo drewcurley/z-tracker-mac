@@ -60,23 +60,15 @@ struct PlayerProgressAndTakeAnyHeartsTests {
         #expect(progress.hasBombs == false)
     }
 
-    @Test("recordTakeAny fills the next unclaimed slot; no-op on untaken or when full (T-057)")
-    func recordTakeAny() {
-        let p = PlayerProgressAndTakeAnyHearts()
-        // Untaken is a no-op.
-        #expect(p.recordTakeAny(.untaken) == nil)
-        #expect(p.takeAnyHearts.allSatisfy { $0 == .untaken })
-
-        // Each claimed item fills the next slot in order.
-        #expect(p.recordTakeAny(.takenPotion) == 0)
-        #expect(p.recordTakeAny(.takenHeart) == 1)
-        #expect(p.takeAnyHearts == [.takenPotion, .takenHeart, .untaken, .untaken])
-
-        // Fill the rest, then a further record is a no-op (all 4 taken).
-        p.recordTakeAny(.takenCandle)
-        p.recordTakeAny(.takenHeart)
-        #expect(p.takeAnyHearts == [.takenPotion, .takenHeart, .takenCandle, .takenHeart])
-        #expect(p.recordTakeAny(.takenPotion) == nil)
+    @Test("TakeAnyHeartState.cycled wraps forward and backward over all four states (T-066)")
+    func cycled() {
+        #expect(TakeAnyHeartState.untaken.cycled(by: 1) == .takenHeart)
+        #expect(TakeAnyHeartState.takenHeart.cycled(by: 1) == .takenPotion)
+        #expect(TakeAnyHeartState.takenPotion.cycled(by: 1) == .takenCandle)
+        #expect(TakeAnyHeartState.takenCandle.cycled(by: 1) == .untaken)
+        // Backward wraps too.
+        #expect(TakeAnyHeartState.untaken.cycled(by: -1) == .takenCandle)
+        #expect(TakeAnyHeartState.takenHeart.cycled(by: -1) == .untaken)
     }
 
     @Test("TakeAnyHeartState raw values: reference 0/1/2 preserved, candle added at 3")

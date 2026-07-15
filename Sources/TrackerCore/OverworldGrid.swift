@@ -26,9 +26,19 @@ public final class OverworldGrid {
 
     private var extraData: [Int]
 
+    /// Per-tile link from a `.takeAny` tile to the Items-group take-any heart
+    /// slot (`0…3`) it owns, or `-1` for none (T-066). Keeps each overworld
+    /// take-any tile mapped to exactly one Items-group slot so their states stay
+    /// in sync: re-marking the tile reuses its slot, and clearing/changing the
+    /// tile frees it. Stored as its own flat array rather than in `extraData`
+    /// (which mirrors reference `mapSquare` indices) since this link is a
+    /// project-specific convenience with no reference analogue.
+    private var takeAnySlotLinks: [Int]
+
     public init() {
         tiles = Array(repeating: .unmarked, count: Self.columnCount * Self.rowCount)
         extraData = Array(repeating: 0, count: Self.columnCount * Self.rowCount * Self.extraDataKeyCount)
+        takeAnySlotLinks = Array(repeating: -1, count: Self.columnCount * Self.rowCount)
     }
 
     public func mark(column: Int, row: Int) -> OverworldTileMark {
@@ -112,15 +122,46 @@ public final class OverworldGrid {
         }
     }
 
-    /// Clear every tile's **used** (claimed) state, keeping the marks and other
-    /// extra-data (shop items, etc.). Called by the groundhog/routers reset
-    /// (T-058) — a replay re-collects everything, but the map knowledge stays.
+    /// The Items-group take-any heart slot (`0…3`) this `.takeAny` tile is
+    /// linked to (T-066), or `nil` if unlinked. Only meaningful on take-any
+    /// tiles.
+    public func takeAnySlot(column: Int, row: Int) -> Int? {
+        let v = takeAnySlotLinks[Self.index(column: column, row: row)]
+        return v >= 0 ? v : nil
+    }
+
+    /// Link (or unlink, with `nil`) a take-any tile to an Items-group slot.
+    public func setTakeAnySlot(_ slot: Int?, column: Int, row: Int) {
+        takeAnySlotLinks[Self.index(column: column, row: row)] = slot ?? -1
+    }
+
+    /// The take-any tile currently linked to Items-group slot `slot`, if any —
+    /// the reverse lookup used to keep a tile's dim in sync when its heart box
+    /// is edited directly (T-066).
+    public func tileForTakeAnySlot(_ slot: Int) -> (column: Int, row: Int)? {
+        guard let idx = takeAnySlotLinks.firstIndex(of: slot) else { return nil }
+        return (column: idx % Self.columnCount, row: idx / Self.columnCount)
+    }
+
+    /// The set of Items-group slots currently owned by some take-any tile — a
+    /// slot in here is not free to claim for a newly-marked tile (T-066).
+    public func linkedTakeAnySlots() -> Set<Int> {
+        Set(takeAnySlotLinks.filter { $0 >= 0 })
+    }
+
+    /// Clear every tile's **used** (claimed) state and take-any slot links,
+    /// keeping the marks and other extra-data (shop items, etc.). Called by the
+    /// groundhog/routers reset (T-058/T-066) — a replay re-collects everything,
+    /// but the map knowledge stays.
     public func clearAllUsed() {
         for c in 0..<Self.columnCount {
             for r in 0..<Self.rowCount where isUsed(column: c, row: r) {
                 setUsed(false, column: c, row: r)
             }
         }
+        // Take-any tiles keep their `.takeAny` mark, but their claimed link back
+        // to an Items-group slot is part of the run's collected state.
+        takeAnySlotLinks = Array(repeating: -1, count: Self.columnCount * Self.rowCount)
     }
 
     /// Resets every tile to `.unmarked` and clears all extra-data — not
@@ -129,6 +170,7 @@ public final class OverworldGrid {
     public func clearAll() {
         tiles = Array(repeating: .unmarked, count: Self.columnCount * Self.rowCount)
         extraData = Array(repeating: 0, count: Self.columnCount * Self.rowCount * Self.extraDataKeyCount)
+        takeAnySlotLinks = Array(repeating: -1, count: Self.columnCount * Self.rowCount)
     }
 
     private static func index(column: Int, row: Int) -> Int {

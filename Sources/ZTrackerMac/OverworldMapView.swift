@@ -50,9 +50,15 @@ struct OverworldMapView: View {
     /// stays "9").
     var hideDungeonNumbers: Bool = false
 
-    /// Record a claimed take-any item into the next Items-group take-any slot
-    /// (T-057) — invoked when a take-any tile is marked with what was taken.
-    var onRecordTakeAny: (TakeAnyHeartState) -> Void = { _ in }
+    /// Mark a take-any tile with what was taken, syncing its linked Items-group
+    /// heart slot (T-066). `(state, column, row)`.
+    var onSetTakeAny: (TakeAnyHeartState, Int, Int) -> Void = { _, _, _ in }
+    /// Left-click a take-any tile to cycle its claimed state, keeping its slot
+    /// in sync (T-066). `(column, row)`.
+    var onCycleTakeAny: (Int, Int) -> Void = { _, _ in }
+    /// Free a take-any tile's linked slot when the tile is changed to another
+    /// mark or cleared (T-066). `(column, row)`.
+    var onReleaseTakeAny: (Int, Int) -> Void = { _, _ in }
 
     /// Whether any active top-section overlay highlights this tile (T-035.2).
     private func overlayHighlights(column: Int, row: Int, mark: OverworldTileMark) -> Bool {
@@ -312,8 +318,12 @@ struct OverworldMapView: View {
         let mark = grid.mark(column: column, row: row)
         if mark == .unmarked {
             grid.setMark(.dontCare, column: column, row: row)
+        } else if mark == .takeAny {
+            // A take-any tile cycles its claimed version (untaken → heart →
+            // potion → candle), kept in sync with its Items-group slot (T-066).
+            onCycleTakeAny(column, row)
         } else if mark.isUsedToggleable {
-            // A claimable tile (secret / take-any / armos / letter / hint shop):
+            // A claimable tile (secret / armos / letter / hint shop / sword):
             // left-click toggles it used ⇄ unused (T-054).
             grid.toggleUsed(column: column, row: row)
         }
@@ -323,6 +333,11 @@ struct OverworldMapView: View {
     /// armos / letter / hint shop) defaults to **used** — you usually mark one
     /// right after collecting it; a left-click flips it back to unused (T-056).
     private func applyMark(_ mark: OverworldTileMark, column: Int, row: Int) {
+        // If this tile was a take-any, changing it to anything else frees its
+        // linked Items-group heart slot back to empty (T-066).
+        if grid.mark(column: column, row: row) == .takeAny {
+            onReleaseTakeAny(column, row)
+        }
         grid.setMark(mark, column: column, row: row)
         if mark.isUsedToggleable {
             grid.setUsed(true, column: column, row: row)
@@ -334,13 +349,11 @@ struct OverworldMapView: View {
         }
     }
 
-    /// Mark a take-any cave and record what was taken (T-057): `.untaken` leaves
-    /// it unclaimed (not used, no Items-group slot); a potion/candle/heart marks
-    /// it used and fills the next take-any slot.
+    /// Mark a take-any cave and record what was taken (T-057/T-066). Delegated
+    /// to the model so the tile's linked Items-group heart slot stays in sync:
+    /// the tile reuses its own slot when re-marked, and `.untaken` frees it.
     private func applyTakeAny(_ state: TakeAnyHeartState, column: Int, row: Int) {
-        grid.setMark(.takeAny, column: column, row: row)
-        grid.setUsed(state != .untaken, column: column, row: row)
-        if state != .untaken { onRecordTakeAny(state) }
+        onSetTakeAny(state, column, row)
     }
 
     /// Count of each mark across the grid — for disabling exhausted picker
