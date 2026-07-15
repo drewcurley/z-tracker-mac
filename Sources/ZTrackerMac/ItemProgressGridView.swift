@@ -471,14 +471,28 @@ struct MapInfoView: View {
     var onResetApp: () -> Void = {}
 
     @State private var showingSpotSummary = false
+    @State private var showingHintDecoder = false
     @Environment(\.openWindow) private var openWindow
     @Environment(\.dismissWindow) private var dismissWindow
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             spotSummaryButton
+            hintDecoderButton
             overlayToggles
         }
+    }
+
+    /// "Hint Decoder" (T-039.1): the consolidated per-target location-hint
+    /// editor (writes the same `levelHints` the dungeon cards use).
+    private var hintDecoderButton: some View {
+        Button("Hint Decoder…") { showingHintDecoder = true }
+            .font(.system(size: 10))
+            .controlSize(.small)
+            .help("Record the hinted overworld region for each dungeon and sword cave")
+            .popover(isPresented: $showingHintDecoder, arrowEdge: .bottom) {
+                HintDecoderView(model: model)
+            }
     }
 
     /// "Spot Summary" (T-053): opens the remaining-locations popover — which

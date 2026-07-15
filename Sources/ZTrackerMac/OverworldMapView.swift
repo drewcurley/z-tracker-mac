@@ -76,6 +76,10 @@ struct OverworldMapView: View {
     /// mark or cleared (T-066). `(column, row)`.
     var onReleaseTakeAny: (Int, Int) -> Void = { _, _ in }
 
+    /// A dungeon marker was placed (T-039.1) — the parent auto-sets that
+    /// dungeon's location hint to the screen's region. `(number, column, row)`.
+    var onPlaceDungeon: (Int, Int, Int) -> Void = { _, _, _ in }
+
     /// Whether any active top-section overlay highlights this tile (T-035.2).
     private func overlayHighlights(column: Int, row: Int, mark: OverworldTileMark) -> Bool {
         guard let overlays else { return false }
@@ -391,6 +395,11 @@ struct OverworldMapView: View {
         // matches the recorded second item, clear the second.
         if case .shop(let item1) = mark, grid.shopSecondItem(column: column, row: row) == item1 {
             grid.setShopSecondItem(nil, column: column, row: row)
+        }
+        // Placing a dungeon auto-sets its location hint to this screen's region
+        // (T-039.1).
+        if case .dungeon(let number) = mark {
+            onPlaceDungeon(number, column, row)
         }
     }
 
