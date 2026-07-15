@@ -25,6 +25,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-035.6](./T-035.6.md) | Completed-dungeon overworld marker — dark-yellow badge + full-tile dim | frontend-engineer | — | feat/dungeon-complete-marker | — | docs/reviews/feat-dungeon-complete-marker/final.md |
 | [T-035.5](./T-035.5.md) | Auto-map vanilla First/Second-Quest dungeon locations | frontend-engineer | — | feat/fqsq-auto-map | — | docs/reviews/feat-fqsq-auto-map/final.md |
 | [T-016.3](./T-016.3.md) | HDN labeling UI + overworld lettered-dungeon rendering | frontend-engineer | — | feat/hdn-lettered-dungeons | — | docs/reviews/feat-hdn-lettered-dungeons/final.md |
 | [T-066](./T-066.md) | Fix — overworld take-any tiles now stay in sync with their Items-group heart slot | frontend-engineer | — | fix/take-any-tile-slot-sync | — | docs/reviews/fix-take-any-tile-slot-sync/final.md |

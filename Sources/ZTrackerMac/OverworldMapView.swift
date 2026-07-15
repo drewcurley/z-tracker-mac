@@ -50,6 +50,11 @@ struct OverworldMapView: View {
     /// stays "9").
     var hideDungeonNumbers: Bool = false
 
+    /// Whether the dungeon in slot `1…9` is 100% complete (all items +
+    /// triforce, `Dungeon.isComplete`) — its overworld badge dims to dark
+    /// yellow (T-035.6), matching the reference's completed-dungeon shading.
+    var dungeonComplete: (Int) -> Bool = { _ in false }
+
     /// Mark a take-any tile with what was taken, syncing its linked Items-group
     /// heart slot (T-066). `(state, column, row)`.
     var onSetTakeAny: (TakeAnyHeartState, Int, Int) -> Void = { _, _, _ in }
@@ -179,7 +184,8 @@ struct OverworldMapView: View {
                                 let showsFairy = isAlwaysEmpty && OverworldFairySpots.isFairySpot(column: column, row: row, quest: quest)
                                 let used = grid.isUsed(column: column, row: row)
                                 let shopSecondItem = grid.shopSecondItem(column: column, row: row)
-                                TileView(mark: mark, background: background, tileWidth: tileWidth, tileHeight: tileHeight, isAlwaysEmpty: isAlwaysEmpty, showsFairy: showsFairy, mirrored: mirrored, hideDungeonNumbers: hideDungeonNumbers, used: used, shopSecondItem: shopSecondItem, hideMarks: overlays?.isActive(.hideMarks) ?? false)
+                                let dungeonDone: Bool = { if case .dungeon(let n) = mark { return dungeonComplete(n) } else { return false } }()
+                                TileView(mark: mark, background: background, tileWidth: tileWidth, tileHeight: tileHeight, isAlwaysEmpty: isAlwaysEmpty, showsFairy: showsFairy, mirrored: mirrored, hideDungeonNumbers: hideDungeonNumbers, used: used, shopSecondItem: shopSecondItem, hideMarks: overlays?.isActive(.hideMarks) ?? false, dungeonComplete: dungeonDone)
                                     .overlay {
                                         if options.highlightNearby, !isAlwaysEmpty,
                                            let isBold = highlights[OverworldScreenCoordinate(x: column, y: row)] {
@@ -524,6 +530,9 @@ private struct TileView: View {
     /// user-placed mark layer (digit badge, interior/shop icon, dark/used
     /// shading) so only the raw terrain (plus always-empty / fairy truth) shows.
     var hideMarks: Bool = false
+    /// This tile's dungeon is 100% complete (T-035.6) — its digit/letter badge
+    /// dims from bright yellow to dark yellow.
+    var dungeonComplete: Bool = false
 
     private static let interiorOffsetXFraction: CGFloat = 5.0 / 16.0
     private static let interiorOffsetYFraction: CGFloat = 1.0 / 11.0
@@ -533,6 +542,9 @@ private struct TileView: View {
     /// Ported from `Color.Orchid` (`Z1R_WPF/Graphics.fs:886-892`, any-road
     /// digit background) — .NET's standard Orchid RGB value.
     private static let anyRoadBackground = Color(red: 218.0 / 255, green: 112.0 / 255, blue: 214.0 / 255)
+    /// The completed-dungeon dark yellow (`RGB(153,153,0)`,
+    /// `Graphics.fs:874-884`) — a 100%-complete dungeon's badge dims to this.
+    private static let completeDungeonBackground = Color(red: 153.0 / 255, green: 153.0 / 255, blue: 0)
     /// Ported from `itemBackgroundColor` (`Z1R_WPF/Graphics.fs:830`, shop
     /// icon background).
     private static let shopBackground = Color(red: 0xEF / 255.0, green: 0x83 / 255.0, blue: 0)
@@ -594,10 +606,13 @@ private struct TileView: View {
                         .scaleEffect(x: mirrored ? -1 : 1, y: 1)
                 }
             }
-            // A claimed ("used") tile is dimmed — the darkened tile + icon read
-            // as done, so no extra glyph is needed (T-054). Suppressed with the
-            // rest of the mark layers when "Hide tile icons" is on (T-062).
-            if used, !hideMarks {
+            // A claimed ("used") tile — or a 100%-complete dungeon (T-035.6) —
+            // gets the full-tile dim so it reads as "done" like every other
+            // collected tile (the dark-yellow badge alone wasn't enough). The
+            // darkened tile + icon convey done, so no extra glyph (T-054).
+            // Suppressed with the rest of the mark layers under "Hide tile
+            // icons" (T-062).
+            if used || dungeonComplete, !hideMarks {
                 Rectangle().fill(.black.opacity(0.55))
                     .frame(width: tileWidth, height: tileHeight)
             }
@@ -624,8 +639,9 @@ private struct TileView: View {
         switch mark.iconSource {
         case .dungeonDigit(let number):
             // HDN relabels dungeons 1–8 as A–H (Level 9 stays "9"); any-road
-            // digits are unaffected.
-            digitIcon(DungeonLabeling.slotLabel(number, hideDungeonNumbers: hideDungeonNumbers), background: .yellow)
+            // digits are unaffected. A completed dungeon dims to dark yellow.
+            digitIcon(DungeonLabeling.slotLabel(number, hideDungeonNumbers: hideDungeonNumbers),
+                      background: dungeonComplete ? Self.completeDungeonBackground : .yellow)
         case .anyRoadDigit(let number):
             digitIcon("\(number)", background: Self.anyRoadBackground)
         default:
