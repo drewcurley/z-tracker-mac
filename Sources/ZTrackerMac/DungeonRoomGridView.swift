@@ -201,21 +201,43 @@ private struct RoomCellView: View {
         .frame(width: width, height: height)
         .overlay(RoundedRectangle(cornerRadius: 3).strokeBorder(Color(white: 0.2), lineWidth: 0.5))
         .contentShape(Rectangle())
-        .onTapGesture { showingPicker = true }
+        // Precise mouse handling (D2a): left = the reference accelerator / cycle /
+        // completion toggle; right = the room-type picker. Shift+click details
+        // land in D2b.
+        .overlay(RoomMouseCatcher { gesture in
+            switch gesture {
+            case .left: applyLeftClick()
+            case .right: showingPicker = true
+            case .shiftLeft, .shiftRight, .middle: break   // D2b
+            }
+        })
         .popover(isPresented: $showingPicker, arrowEdge: .bottom) {
             RoomTypePicker(current: room.roomType) { newType in
                 var r = room
                 r.roomType = newType
                 map.setRoom(r, col: col, row: row)
+                map.firstInteractionDone = true
                 showingPicker = false
             }
         }
-        // VoiceOver (docs/ux.md § Accessibility).
+        // VoiceOver (docs/ux.md § Accessibility). Default action = the primary
+        // left-click; a named action opens the room-type picker.
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Room column \(col + 1), row \(row + 1)")
-        .accessibilityValue(room.roomType.isNotMarked ? "Unmarked" : room.roomType.displayDescription)
+        .accessibilityValue(accessibilityValue)
         .accessibilityAddTraits(.isButton)
-        .accessibilityAction { showingPicker = true }
+        .accessibilityAction { applyLeftClick() }
+        .accessibilityAction(named: "Set room type") { showingPicker = true }
+    }
+
+    /// Apply the reference's plain left-click behavior at this cell.
+    private func applyLeftClick() {
+        map.leftClick(col: col, row: row)
+    }
+
+    private var accessibilityValue: String {
+        let type = room.roomType.isNotMarked ? "Unmarked" : room.roomType.displayDescription
+        return room.isCompleted ? "\(type), completed" : type
     }
 }
 

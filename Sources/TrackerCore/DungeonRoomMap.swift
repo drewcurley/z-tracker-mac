@@ -24,6 +24,12 @@ public final class DungeonRoomMap {
     /// unused). A pair is complete at 2; a third is rejected.
     private var transportCounts: [Int]
 
+    /// Whether the user has interacted with this dungeon's map yet. The reference's
+    /// per-level `isFirstTimeClickingAnyRoom`: the first left-click drops the
+    /// entrance (rather than the usual mark), and any interaction clears the flag.
+    /// Knowledge (persists across a groundhog reset).
+    public var firstInteractionDone = false
+
     public init() {
         rooms = Array(repeating: DungeonRoom(), count: Self.cols * Self.rows)
         horizontalDoors = Array(repeating: .unknown, count: 7 * Self.rows)
@@ -53,6 +59,19 @@ public final class DungeonRoomMap {
         if let new { transportCounts[new] += 1 }
         rooms[idx] = newRoom
         return true
+    }
+
+    /// Apply a plain **left-click** at `(col,row)` (D2a): run the gesture
+    /// resolver, commit via `setRoom` (so transport limits still hold), and clear
+    /// the first-interaction flag as the reference does on any interaction.
+    /// Returns the committed room.
+    @discardableResult
+    public func leftClick(col: Int, row: Int) -> DungeonRoom {
+        let outcome = DungeonRoomGesture.leftClick(on: room(col: col, row: row),
+                                                   isFirstInteraction: !firstInteractionDone)
+        setRoom(outcome.room, col: col, row: row)
+        firstInteractionDone = true
+        return room(col: col, row: row)
     }
 
     /// Whether placing transport number `n` here is legal (fewer than two
