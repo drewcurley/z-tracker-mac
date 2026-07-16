@@ -148,6 +148,14 @@ public struct DungeonBlockerAppliesTo: Sendable, Equatable {
     public init() {
         data = Array(repeating: false, count: Self.max)
     }
+
+    /// Named indices into `data` (the reference's fixed element order). Box `n`
+    /// (0-based) is `box0 + n`.
+    public enum Element: Int, CaseIterable, Sendable {
+        case map = 0, compass, triforce, box0, box1, box2
+        /// The applies-to element for item box `n` (0-based).
+        public static func box(_ n: Int) -> Int { Element.box0.rawValue + n }
+    }
 }
 
 /// The 8×3 grid of dungeon blockers (up to 3 per dungeon) plus the parallel
@@ -187,6 +195,16 @@ public final class DungeonBlockersContainer {
     public func setDungeonBlockerAppliesTo(_ b: Bool, dungeon i: Int, slot j: Int, element k: Int) {
         precondition((0..<DungeonBlockerAppliesTo.max).contains(k), "element \(k) out of range")
         appliesTo[Self.index(i, j)].data[k] = b
+    }
+
+    /// The set blockers (kind ≠ `.nothing`) whose "applies to" flag for UI
+    /// element `k` is on — i.e. the chips to draw on that dungeon's map / compass
+    /// / triforce / item-box cell (`Views.fs:134,306`). Ordered by slot.
+    public func blockersApplyingTo(dungeon i: Int, element k: Int) -> [DungeonBlocker] {
+        (0..<Self.maxBlockersPerDungeon).compactMap { j in
+            let b = dungeonBlocker(dungeon: i, slot: j)
+            return (b != .nothing && dungeonBlockerAppliesTo(dungeon: i, slot: j, element: k)) ? b : nil
+        }
     }
 
     /// The save-file JSON fragment for one blocker slot. Ported from

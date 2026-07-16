@@ -40,6 +40,8 @@ struct DungeonTrackerView: View {
                     DungeonCardView(dungeon: dt.dungeon(i), instance: dt, isLocated: loc.contains(i),
                                     iconOptions: model.iconOptions,
                                     hideDungeonNumbers: model.hideDungeonNumbers,
+                                    blockers: model.dungeonBlockers,
+                                    chipPlayerState: model.playerComputedStateSummary,
                                     hint: $model.levelHints[HintTarget.dungeon(i + 1)])
                 }
             }
@@ -61,6 +63,10 @@ struct DungeonCardView: View {
     /// top-row cards; the dungeon-map item inset (T-019.10) drops it — the room
     /// map is about interior contents, not where the dungeon sits on the map.
     var showLocationHeader: Bool = true
+    /// The blocker container + player state, so this card can draw "applies to"
+    /// chips on its triforce and item boxes (T-082). `nil` → no chips.
+    var blockers: DungeonBlockersContainer? = nil
+    var chipPlayerState: PlayerComputedStateSummary? = nil
     @Binding var hint: HintZone
 
     /// The slot label: A–H under HDN (1–8), else the number; Level 9 stays "9".
@@ -103,12 +109,24 @@ struct DungeonCardView: View {
                     .accessibilityValue(dungeon.playerHasTriforce ? "Obtained" : "Not obtained")
                 }
             }
+            // Triforce "applies to" chips — only while the triforce is unobtained
+            // (once you have it, you're no longer blocked there — Views.fs:131).
+            if let blockers, let ps = chipPlayerState, dungeon.id != 8, !dungeon.playerHasTriforce {
+                BlockerChipRow(
+                    blockers: blockers.blockersApplyingTo(
+                        dungeon: dungeon.id, element: DungeonBlockerAppliesTo.Element.triforce.rawValue),
+                    playerState: ps)
+            }
             ForEach(Array(dungeon.boxes.enumerated()), id: \.offset) { idx, box in
                 // In HDN, an identified two-boxer dungeon has no third item, so
                 // its last box is disabled (T-050, beyond the reference).
                 let isDisabledThirdBox = dungeon.identifiedAsTwoBoxer && idx == dungeon.boxes.count - 1
                 BoxView(box: box, instance: instance, label: nil, iconOptions: iconOptions,
-                        disabled: isDisabledThirdBox)
+                        disabled: isDisabledThirdBox,
+                        chips: (blockers != nil && dungeon.id != 8)
+                            ? blockers!.blockersApplyingTo(dungeon: dungeon.id, element: DungeonBlockerAppliesTo.Element.box(idx))
+                            : [],
+                        chipPlayerState: chipPlayerState)
             }
             // The "ghost" slot under whichever of L1/L4 doesn't hold the movable
             // extra floor item (1Q overworld ↔ 2Q dungeons). Clicking it moves
@@ -176,6 +194,10 @@ struct BoxView: View {
     /// The box carries no item (an identified HDN two-boxer's third box, T-050):
     /// rendered dimmed + non-interactive so it can't be filled.
     var disabled: Bool = false
+    /// Blocker "applies to" chips for this box + the player state that decides
+    /// whether each is resolved (T-082). Empty → no chips.
+    var chips: [DungeonBlocker] = []
+    var chipPlayerState: PlayerComputedStateSummary? = nil
 
     @State private var showPicker = false
 
@@ -253,6 +275,14 @@ struct BoxView: View {
             }
             .frame(width: Self.size, height: Self.size)
             .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(borderColor, lineWidth: 1.5))
+            // Blocker "applies to" chips (T-082), inside the box's bottom-left so
+            // each chip clearly belongs to its own box (not the gap below it).
+            .overlay(alignment: .bottomLeading) {
+                if let ps = chipPlayerState {
+                    BlockerChipRow(blockers: chips, playerState: ps)
+                        .padding(.leading, 1).padding(.bottom, 1)
+                }
+            }
             // Map-style interaction (T-044): left-click toggles taken/untaken
             // once an item is known here; right-click opens the picker to set /
             // change the item. An empty box has nothing to toggle, so a
