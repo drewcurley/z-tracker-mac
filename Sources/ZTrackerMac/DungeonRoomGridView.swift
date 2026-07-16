@@ -168,10 +168,56 @@ struct DungeonMapView: View {
                 .frame(width: 26, height: 22)
                 .background(RoundedRectangle(cornerRadius: 5)
                     .fill(selected == i ? Color.accentColor.opacity(0.5) : Color(white: 0.16)))
+                .overlay { if i < 9 { tabNeedsMarkers(dungeon: i) } }
         }
         .buttonStyle(.plain)
         .accessibilityLabel(i == 9 ? "Summary" : "Dungeon \(label)")
+        .accessibilityValue(i < 9 ? tabNeedsA11y(dungeon: i) : "")
         .accessibilityAddTraits(selected == i ? [.isButton, .isSelected] : .isButton)
+    }
+
+    /// The "what this dungeon needs" markers overlaid on a dungeon tab (T-084):
+    /// a bait-meat icon (Hungry-Goriya, lime-checked once fed) at the leading edge,
+    /// a DodgerBlue dot (unbought Bomb-Upgrade) top-trailing, and a red dot (unread
+    /// NPC hint — only with the "book for hints" option) bottom-trailing.
+    @ViewBuilder
+    private func tabNeedsMarkers(dungeon i: Int) -> some View {
+        let map = model.dungeonRoomMaps[i]
+        ZStack {
+            if map.hasHungryGoriya {
+                ZStack(alignment: .bottomTrailing) {
+                    if let img = Image(atlasIcon: ItemIconAtlas.cgImage(.bait)) {
+                        img.interpolation(.none).resizable().frame(width: 11, height: 11)
+                    }
+                    if map.hungryGoriyaFed {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 6, weight: .heavy)).foregroundStyle(.green)
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
+                .offset(x: -1)
+            }
+            VStack(spacing: 2) {
+                dot(Color(red: 30/255, green: 144/255, blue: 255/255), on: map.hasUnboughtBombUpgrade)  // DodgerBlue
+                dot(.red, on: options.bookForHelpfulHints && map.hasUnreadOldManHint)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
+            .offset(x: 1)
+        }
+        .allowsHitTesting(false)
+    }
+
+    private func dot(_ color: Color, on: Bool) -> some View {
+        Circle().fill(on ? color : .clear).frame(width: 5, height: 5)
+    }
+
+    private func tabNeedsA11y(dungeon i: Int) -> String {
+        let map = model.dungeonRoomMaps[i]
+        var parts: [String] = []
+        if map.hasHungryGoriya { parts.append(map.hungryGoriyaFed ? "hungry goriya fed" : "needs meat") }
+        if map.hasUnboughtBombUpgrade { parts.append("bomb upgrade available") }
+        if options.bookForHelpfulHints && map.hasUnreadOldManHint { parts.append("unread hint") }
+        return parts.joined(separator: ", ")
     }
 
     /// Quick per-dungeon reference beside the grid: the old-man count and the

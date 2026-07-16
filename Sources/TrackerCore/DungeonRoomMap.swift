@@ -353,6 +353,32 @@ public final class DungeonRoomMap {
     /// Whether any room is off-the-map (drives the reference's inverse-minimap).
     public var hasOffMapRoom: Bool { rooms.contains { $0.roomType.isOffMap } }
 
+    // MARK: Dungeon-tab "needs" markers (T-084)
+    // The reference decorates each dungeon tab with what that dungeon still needs:
+    // a bait-meat icon for a Hungry-Goriya block (checked once fed), a blue dot for
+    // an unbought Bomb-Upgrade, and a red dot for an unread NPC hint
+    // (`DungeonUI.fs:849-867`).
+
+    /// The dungeon has a Hungry-Goriya meat block.
+    public var hasHungryGoriya: Bool {
+        rooms.contains { $0.roomType == .hungryGoriyaMeatBlock }
+    }
+
+    /// A Hungry-Goriya block has been fed (its room marked complete).
+    public var hungryGoriyaFed: Bool {
+        rooms.contains { $0.roomType == .hungryGoriyaMeatBlock && $0.isCompleted }
+    }
+
+    /// The dungeon has a Bomb-Upgrade room not yet bought (incomplete).
+    public var hasUnboughtBombUpgrade: Bool {
+        rooms.contains { $0.roomType == .bombUpgrade && !$0.isCompleted }
+    }
+
+    /// The dungeon has an NPC-hint room whose hint is still unread (incomplete).
+    public var hasUnreadOldManHint: Bool {
+        rooms.contains { $0.roomType == .oldManHint && !$0.isCompleted }
+    }
+
     // MARK: Indexing
 
     private static func roomIndex(_ col: Int, _ row: Int) -> Int {
