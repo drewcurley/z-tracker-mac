@@ -164,8 +164,11 @@ struct DungeonMapView: View {
     private func tab(index i: Int, label: String) -> some View {
         Button { selected = i } label: {
             Text(label)
-                .font(.system(size: 13, weight: .bold, design: .rounded))
-                .frame(width: 26, height: 22)
+                .font(.system(size: 14, weight: .bold, design: .rounded))
+                // Wider than the label needs (T-087) so the "needs" markers — the
+                // bait icon at the leading edge and the dots trailing — have room
+                // to sit clear of the centered number without crowding.
+                .frame(width: 38, height: 24)
                 .background(RoundedRectangle(cornerRadius: 5)
                     .fill(selected == i ? Color.accentColor.opacity(0.5) : Color(white: 0.16)))
                 .overlay { if i < 9 { tabNeedsMarkers(dungeon: i) } }
@@ -187,28 +190,28 @@ struct DungeonMapView: View {
             if map.hasHungryGoriya {
                 ZStack(alignment: .bottomTrailing) {
                     if let img = Image(atlasIcon: ItemIconAtlas.cgImage(.bait)) {
-                        img.interpolation(.none).resizable().frame(width: 11, height: 11)
+                        img.interpolation(.none).resizable().frame(width: 13, height: 13)
                     }
                     if map.hungryGoriyaFed {
                         Image(systemName: "checkmark")
-                            .font(.system(size: 6, weight: .heavy)).foregroundStyle(.green)
+                            .font(.system(size: 7, weight: .heavy)).foregroundStyle(.green)
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
-                .offset(x: -1)
+                .offset(x: 1)
             }
-            VStack(spacing: 2) {
+            VStack(spacing: 3) {
                 dot(Color(red: 30/255, green: 144/255, blue: 255/255), on: map.hasUnboughtBombUpgrade)  // DodgerBlue
                 dot(.red, on: options.bookForHelpfulHints && map.hasUnreadOldManHint)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
-            .offset(x: 1)
+            .offset(x: -1)
         }
         .allowsHitTesting(false)
     }
 
     private func dot(_ color: Color, on: Bool) -> some View {
-        Circle().fill(on ? color : .clear).frame(width: 5, height: 5)
+        Circle().fill(on ? color : .clear).frame(width: 6, height: 6)
     }
 
     private func tabNeedsA11y(dungeon i: Int) -> String {
