@@ -100,6 +100,14 @@ public enum OverworldTileMark: Hashable, Codable, Sendable {
         }
     }
 
+    /// Whether this mark renders **permanently dimmed** the moment it's placed,
+    /// independent of the claimable "used" state — currently only `doorRepair`
+    /// (a one-shot charge you never revisit, so it's "always dark" per the
+    /// reference `OverworldMapTileCustomization.fs:218-220`). Because it derives
+    /// from the mark (knowledge), a groundhog reset — which only clears *used*
+    /// state — keeps it dimmed.
+    public var dimsPermanentlyWhenMarked: Bool { self == .doorRepair }
+
     public var displayName: String {
         switch self {
         case .unmarked: "Unmarked"

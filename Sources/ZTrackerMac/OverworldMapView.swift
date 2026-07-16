@@ -201,7 +201,12 @@ struct OverworldMapView: View {
                                 let background = OverworldBackgroundAtlas.tile(quest: quest, column: column, row: row)
                                 let isAlwaysEmpty = overworldInstance.alwaysEmpty(x: column, y: row)
                                 let showsFairy = isAlwaysEmpty && OverworldFairySpots.isFairySpot(column: column, row: row, quest: quest)
+                                // Dim = claimed ("used") OR a permanently-dimmed
+                                // mark (door repair — one-shot, never revisited).
+                                // The latter derives from the mark, so a groundhog
+                                // reset (clears only `used`) keeps it dimmed.
                                 let used = grid.isUsed(column: column, row: row)
+                                    || mark.dimsPermanentlyWhenMarked
                                 let shopSecondItem = grid.shopSecondItem(column: column, row: row)
                                 let dungeonDone: Bool = { if case .dungeon(let n) = mark { return dungeonComplete(n) } else { return false } }()
                                 let kindHidden = OverworldTileHiding.isKindHidden(mark: mark, options: options, hasRescuedZelda: hasRescuedZelda)
