@@ -366,4 +366,105 @@ public final class TrackerOptions {
         options.enableReminderPersistence(store: store)
         return options
     }
+
+    // MARK: Startup-settings persistence (T-004.2)
+
+    /// Where the startup settings persist. `nil` disables it (tests/previews).
+    @ObservationIgnored private var settingsStore: UserDefaults?
+    /// Set while a saved snapshot is being applied, so a keypath write doesn't
+    /// recurse. (Kept for symmetry with the reminders path; loads are one-shot.)
+    @ObservationIgnored private var isApplyingSettings = false
+
+    private static let settingsBoolsKey = "ztracker.settings.bools"
+    private static let broadcastSizeKey = "ztracker.settings.broadcastSize"
+    private static let hiddenTilesKey = "ztracker.settings.hiddenTiles"
+
+    /// Every persisted Bool setting, keyed by a stable name → its storage. This
+    /// is the single source of truth for what persists — add a setting here and
+    /// it saves + loads automatically. (Non-Bool settings — the broadcast size
+    /// and the hidden-tiles map — persist under their own keys below.)
+    // Immutable map; `nonisolated(unsafe)` because key paths of the (non-Sendable)
+    // options class aren't `Sendable`, though the dictionary itself never mutates.
+    nonisolated(unsafe) static let persistedBoolKeyPaths: [String: ReferenceWritableKeyPath<TrackerOptions, Bool>] = [
+        "drawRoutes": \.drawRoutes,
+        "showScreenScrolls": \.showScreenScrolls,
+        "highlightNearby": \.highlightNearby,
+        "showMagnifier": \.showMagnifier,
+        "shopsBeforeDungeons": \.shopsBeforeDungeons,
+        "boardInsteadOfLevel": \.boardInsteadOfLevel,
+        "showBasementInfo": \.showBasementInfo,
+        "doDoorInference": \.doDoorInference,
+        "bookForHelpfulHints": \.bookForHelpfulHints,
+        "leftDragAutoInverts": \.leftDragAutoInverts,
+        "defaultToNonDescript": \.defaultToNonDescript,
+        "dungeonSunglasses": \.dungeonSunglasses,
+        "hideNoLongerRelevantShopItems": \.hideNoLongerRelevantShopItems,
+        "alwaysHideMeatShops": \.alwaysHideMeatShops,
+        "animateTileChanges": \.animateTileChanges,
+        "animateShopHighlights": \.animateShopHighlights,
+        "saveOnCompletion": \.saveOnCompletion,
+        "snoopSeedAndFlags": \.snoopSeedAndFlags,
+        "displaySeedAndFlags": \.displaySeedAndFlags,
+        "listenForSpeech": \.listenForSpeech,
+        "confirmationSound": \.confirmationSound,
+        "showBroadcastWindow": \.showBroadcastWindow,
+        "broadcastWindowIncludesOverworldMagnifier": \.broadcastWindowIncludesOverworldMagnifier,
+        "showMouseMagnifierWindow": \.showMouseMagnifierWindow,
+        "hideTimer": \.hideTimer,
+    ]
+
+    /// Turn on startup-settings persistence and apply whatever a previous launch
+    /// saved over the current defaults (T-004.2). Unknown/missing keys keep their
+    /// default, so adding or removing a setting later is safe.
+    public func enableSettingsPersistence(store: UserDefaults = .standard) {
+        settingsStore = store
+        isApplyingSettings = true
+        defer { isApplyingSettings = false }
+
+        if let bools = store.dictionary(forKey: Self.settingsBoolsKey) as? [String: Bool] {
+            for (key, value) in bools {
+                if let keyPath = Self.persistedBoolKeyPaths[key] { self[keyPath: keyPath] = value }
+            }
+        }
+        if store.object(forKey: Self.broadcastSizeKey) != nil,
+           let size = BroadcastWindowSize(rawValue: store.integer(forKey: Self.broadcastSizeKey)) {
+            broadcastWindowSize = size
+        }
+        if let raw = store.dictionary(forKey: Self.hiddenTilesKey) as? [String: Bool] {
+            hiddenOverworldTiles = Self.decodeHiddenTiles(raw, over: hiddenOverworldTiles)
+        }
+    }
+
+    /// Write the current startup settings to the store (no-op if persistence is
+    /// off). Called at the commit point — when a quest starts — since the startup
+    /// settings are only editable before the run.
+    public func saveSettings() {
+        guard let store = settingsStore, !isApplyingSettings else { return }
+        var bools: [String: Bool] = [:]
+        for (key, keyPath) in Self.persistedBoolKeyPaths { bools[key] = self[keyPath: keyPath] }
+        store.set(bools, forKey: Self.settingsBoolsKey)
+        store.set(broadcastWindowSize.rawValue, forKey: Self.broadcastSizeKey)
+        store.set(Self.encodeHiddenTiles(hiddenOverworldTiles), forKey: Self.hiddenTilesKey)
+    }
+
+    private static func encodeHiddenTiles(_ tiles: [OverworldHiddenTileKind: Bool]) -> [String: Bool] {
+        Dictionary(uniqueKeysWithValues: tiles.map { ($0.key.rawValue, $0.value) })
+    }
+    private static func decodeHiddenTiles(_ raw: [String: Bool],
+                                          over base: [OverworldHiddenTileKind: Bool]) -> [OverworldHiddenTileKind: Bool] {
+        var result = base
+        for (key, value) in raw {
+            if let kind = OverworldHiddenTileKind(rawValue: key) { result[kind] = value }
+        }
+        return result
+    }
+
+    /// The app's entry point: a `TrackerOptions` with both reminder- and
+    /// startup-settings persistence enabled and any saved values applied.
+    public static func withPersistence(store: UserDefaults = .standard) -> TrackerOptions {
+        let options = TrackerOptions()
+        options.enableReminderPersistence(store: store)
+        options.enableSettingsPersistence(store: store)
+        return options
+    }
 }

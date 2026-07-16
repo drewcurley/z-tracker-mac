@@ -24,7 +24,7 @@ struct ZTrackerMacApp: App {
     @State private var model = TrackerModel()
     // Reminder settings (volume, per-category voice/visual, preferred voice)
     // persist across launches (T-004.1); other options are session-only for now.
-    @State private var options = TrackerOptions.withReminderPersistence()
+    @State private var options = TrackerOptions.withPersistence()
 
     var body: some Scene {
         WindowGroup {
