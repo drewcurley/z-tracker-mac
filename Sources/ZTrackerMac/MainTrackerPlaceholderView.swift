@@ -41,25 +41,21 @@ struct MainTrackerPlaceholderView: View {
         )
     }
 
-    /// The ordered available recorder-warp destinations for the current state
-    /// (T-035.7). Empty unless the player has the recorder.
-    private var recorderDestinations: [RecorderDestinations.Destination] {
-        RecorderDestinations.compute(
-            haveRecorder: model.playerComputedStateSummary.haveRecorder,
+    /// The overworld screen the recorder currently points at, for the map's lone
+    /// diamond marker (T-081) — driven by the same Info-widget selection so the
+    /// marker and the widget always agree. `nil` when there's no destination or
+    /// the selected dungeon isn't located on the map yet.
+    private var recorderDestinationCoordinate: OverworldScreenCoordinate? {
+        guard model.playerComputedStateSummary.haveRecorder else { return nil }
+        let entries = RecorderDestinations.infoEntries(
             dungeonTracker: model.dungeonTracker,
             hideDungeonNumbers: model.hideDungeonNumbers,
             dungeonLocations: mapState.dungeonLocations,
             toNewDungeons: model.recorderToNewDungeons,
             toUnbeatenDungeons: model.recorderToUnbeatenDungeons)
-    }
-
-    /// The destination the stepper currently points at (wrapping the whistle
-    /// index against the live list), or `nil` when there are none.
-    private var currentRecorderDestination: RecorderDestinations.Destination? {
-        let d = recorderDestinations
-        guard !d.isEmpty else { return nil }
-        let i = ((model.recorderDestinationIndex % d.count) + d.count) % d.count
-        return d[i]
+        return RecorderDestinations.selectedEntry(
+            entries: entries,
+            manualIndex: model.recorderDestinationManual ? model.recorderDestinationIndex : nil)?.coordinate
     }
 
     /// The dungeon band (T-019.5): the room-map grid + the blockers/notes column.
@@ -155,7 +151,7 @@ struct MainTrackerPlaceholderView: View {
                     dungeonComplete: { slot in
                         (1...9).contains(slot) && model.dungeonTracker.dungeon(slot - 1).isComplete
                     },
-                    recorderDestination: currentRecorderDestination?.coordinate,
+                    recorderDestination: recorderDestinationCoordinate,
                     startSpot: model.startSpot,
                     onSetStartSpot: { c, r in model.startSpot = OverworldScreenCoordinate(x: c, y: r) },
                     onClearStartSpot: { model.startSpot = nil },
@@ -170,15 +166,9 @@ struct MainTrackerPlaceholderView: View {
                 )
                 .frame(maxWidth: .infinity)
 
-                // The recorder-destination stepper (T-035.7): the single place to
-                // see where the whistle would take you, with arrows to step your
-                // whistle count. Lives directly below the map.
-                RecorderDestinationBar(
-                    model: model,
-                    destinations: recorderDestinations,
-                    current: currentRecorderDestination,
-                    hideDungeonNumbers: model.hideDungeonNumbers
-                )
+                // (T-081) The recorder destination moved into the Info group
+                // (RecorderInfoWidget) below the six overlay toggles; it no longer
+                // occupies a full-width bar between the maps.
 
                 // The dungeon band (T-019+): the reference's room-map grid +
                 // blockers + notes below the map. Blockers over Notes as a narrow

@@ -92,6 +92,10 @@ public final class TrackerModel {
     /// whistle-count position the below-map stepper points at (T-035.7). Wraps
     /// against the live destination list; stepping it mirrors whistling in game.
     public var recorderDestinationIndex: Int = 0
+    /// Whether the user has manually stepped the recorder destination with the
+    /// arrows (T-081). While `false`, the Info-area widget auto-tracks the lowest
+    /// obtained-triforce dungeon; the first arrow press pins it to `recorderDestinationIndex`.
+    public var recorderDestinationManual: Bool = false
 
     /// Per-target location hints (T-039) — which overworld region each dungeon /
     /// sword cave was hinted to be in. 11 slots (`HintTarget`: dungeons 1–9 →
