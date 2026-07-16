@@ -24,11 +24,11 @@ struct ContentView: View {
                 MainTrackerPlaceholderView(model: model, options: options, onResetApp: onResetApp)
             }
         }
-        // Warm the audio-output stack at launch, off the main thread (T-045),
-        // so the first spoken reminder doesn't pay the coreaudiod cold-start
-        // cost mid-game — and warming it never hangs the UI. Fires once here on
-        // the very first appearance (the startup screen), before any reminder.
-        .task { ReminderAudioPlayer.primeAudioStack() }
+        // Prime live TTS at launch (T-069/T-045): speaking a silent space loads
+        // the speech service, the Zoe voice model, and the audio-output stack
+        // (coreaudiod) now, on the startup screen, so the first real spoken
+        // reminder mid-game is instant. The synth speaks async — no UI hang.
+        .task { SpeechEngine.warmUp(preferredVoiceIdentifier: options.preferredVoiceIdentifier) }
         // Remember where the user puts the window, and restore it next launch
         // (T-046.1) — so it reopens on the same display/spot every time.
         .persistWindowFrame("ZTrackerMainWindow")

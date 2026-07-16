@@ -1,4 +1,3 @@
-import AVFoundation
 import SwiftUI
 import TrackerCore
 
@@ -9,11 +8,10 @@ import TrackerCore
 /// `allUIEventingLogic`; this is the Swift equivalent, grounded in the
 /// `SendReminder` call sites (`Z1R_Avalonia/UI.fs:1399-1615`).
 ///
-/// **Voice is pre-rendered audio (T-024), not live TTS.** Playing a bundled
-/// clip via `AVAudioPlayer` is instant (no `AVSpeechSynthesizer` first-use
-/// service spin-up, which lagged the first spoken reminder ~20s) and uses a
-/// nicer neural voice. Live TTS remains only as a fallback for any
-/// announcement without a clip.
+/// **Voice is live TTS (T-069), spoken through the shared `SpeechEngine`.** Its
+/// one `AVSpeechSynthesizer` queues utterances, so a batch speaks sequentially
+/// rather than overlapping (fixes T-068), and the launch warm-up removes the
+/// first-use lag that once justified pre-rendered clips (T-024, now retired).
 @Observable
 @MainActor
 final class ReminderController {
@@ -25,14 +23,12 @@ final class ReminderController {
     /// Currently-shown visual reminders (each auto-dismisses).
     private(set) var visible: [Item] = []
 
-    @ObservationIgnored private let audio = ReminderAudioPlayer()
-    @ObservationIgnored private let synthesizer = AVSpeechSynthesizer()
-
     /// How long a visual reminder stays on screen.
     private let visibleDuration: Duration = .seconds(6)
     private let maxVisible = 5
 
-    /// Speak/show each announcement whose category is enabled.
+    /// Speak/show each announcement whose category is enabled. Voice reminders go
+    /// to the shared `SpeechEngine`, which serializes them (no overlap).
     func handle(_ announcements: [ReminderAnnouncement], options: TrackerOptions) {
         for announcement in announcements {
             let text = announcement.displayText
@@ -40,12 +36,9 @@ final class ReminderController {
                 show(text)
             }
             if options.voiceReminders[announcement.category] == true {
-                let volume = max(0, min(1, Float(options.reminderVolume) / 100))
-                // Prefer the pre-rendered clip; fall back to live TTS only if
-                // there's no clip for this announcement.
-                if announcement.audioKey == nil || !audio.play(key: announcement.audioKey!, volume: volume) {
-                    speak(text, volume: options.reminderVolume, voiceIdentifier: options.preferredVoiceIdentifier)
-                }
+                SpeechEngine.speak(text,
+                                   volume: Float(options.reminderVolume) / 100,
+                                   preferredVoiceIdentifier: options.preferredVoiceIdentifier)
             }
         }
     }
@@ -62,14 +55,6 @@ final class ReminderController {
         }
     }
 
-    private func speak(_ text: String, volume: Int, voiceIdentifier: String?) {
-        let utterance = AVSpeechUtterance(string: text)
-        utterance.volume = max(0, min(1, Float(volume) / 100))
-        if let voiceIdentifier, let voice = AVSpeechSynthesisVoice(identifier: voiceIdentifier) {
-            utterance.voice = voice
-        }
-        synthesizer.speak(utterance)
-    }
 }
 
 /// A transient stack of reminder "toasts".
