@@ -27,6 +27,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-019.12](./T-019.12.md) | Dungeon door inference — auto-open the inferred entry door on marking | frontend-engineer | T-019 | feat/dungeon-door-inference | — | docs/reviews/feat-dungeon-door-inference/final.md |
 | [T-019.11](./T-019.11.md) | Dungeon trackpad gestures — scroll to cycle/pick + ⌥-click for middle | frontend-engineer | T-019 | feat/dungeon-trackpad-gestures | — | docs/reviews/feat-dungeon-trackpad-gestures/final.md |
 | [T-019.10](./T-019.10.md) | Dungeon map — local triforce/item inset (selected dungeon's card) | frontend-engineer | T-019 | feat/dungeon-item-inset | — | docs/reviews/feat-dungeon-item-inset/final.md |
 | [T-019.9](./T-019.9.md) | Dungeon Summary tab — all-9 overview with click-to-select | frontend-engineer | T-019 | feat/dungeon-summary | — | docs/reviews/feat-dungeon-summary/final.md |
