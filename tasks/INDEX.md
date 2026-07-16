@@ -20,6 +20,8 @@
 | [T-018](./T-018.md) | Reminders, announcements, and Triforce-and-Go (umbrella) | frontend-engineer | split |
 | [T-025](./T-025.md) | Overworld item grid UI (owItemGrid render) (umbrella; book-atlas/open-caves chrome deferred) | frontend-engineer | split |
 | [T-035](./T-035.md) | Topmost section build-out (above the overworld map) (umbrella) | frontend-engineer | split |
+| [T-068](./T-068.md) | Serial audio queue for reminders (overlapping playback bug) | frontend-engineer | proposed |
+| [T-069](./T-069.md) | Revisit live TTS (Zoe premium) now that the audio stack is pre-warmed | frontend-engineer | proposed |
 
 ## Completed
 
