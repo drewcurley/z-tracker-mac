@@ -26,6 +26,7 @@
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
 | [T-072.1](./T-072.1.md) | Fix ⌥-drag circling the first room (defer modified-left to release) | frontend-engineer | T-072 | fix/drag-paint-option-defer | — | docs/reviews/fix-drag-paint-option-defer/final.md |
+| [T-093](./T-093.md) | Recorder → New/Unbeaten toggles by the recorder widget | frontend-engineer | T-081 | feat/recorder-destination-toggles | — | docs/reviews/feat-recorder-destination-toggles/final.md |
 | [T-092](./T-092.md) | Book for Helpful Hints → Flags tile + "visit hints" reminder | frontend-engineer | T-091 | feat/book-hints-flag | — | docs/reviews/feat-book-hints-flag/final.md |
 | [T-091](./T-091.md) | Mid-game Settings window (gear + ⌘,), reusing the startup panel | frontend-engineer | T-004 | feat/mid-game-settings-window | — | docs/reviews/feat-mid-game-settings-window/final.md |
 | [T-090](./T-090.md) | Blockers — drop the redundant label column, add Level 9 | frontend-engineer | T-082 | feat/blockers-layout-d9 | — | docs/reviews/feat-blockers-layout-d9/final.md |

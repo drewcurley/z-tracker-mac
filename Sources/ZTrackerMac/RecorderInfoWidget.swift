@@ -51,6 +51,8 @@ struct RecorderInfoWidget: View {
     /// Whether the arrows can do anything (need the recorder and ≥1 destination).
     private var steppable: Bool { haveRecorder && !entries.isEmpty }
 
+    @State private var showingSettings = false
+
     var body: some View {
         HStack(spacing: 6) {
             stepButton(systemName: "chevron.left", delta: -1)
@@ -65,8 +67,32 @@ struct RecorderInfoWidget: View {
             Text(coordLabel)
                 .font(.system(size: 11, design: .monospaced))
                 .foregroundStyle(.secondary)
+
+            settingsButton
         }
         .help(helpText)
+    }
+
+    /// The "which dungeons" chooser (T-093) — the reference's '...' button next to
+    /// Recorder Destination. Holds the two seed-dependent recorder settings.
+    private var settingsButton: some View {
+        Button { showingSettings = true } label: {
+            Image(systemName: "ellipsis.circle").font(.system(size: 11))
+        }
+        .buttonStyle(.plain)
+        .help("Which dungeons the recorder warps to")
+        .popover(isPresented: $showingSettings, arrowEdge: .bottom) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Recorder destinations").font(.caption).foregroundStyle(.secondary)
+                Toggle("To new dungeons", isOn: $model.recorderToNewDungeons)
+                    .help("On: the dungeon locations you've marked on the map. Off: the fixed vanilla first-quest screens.")
+                Toggle("To unbeaten dungeons", isOn: $model.recorderToUnbeatenDungeons)
+                    .help("On: dungeons whose triforce you do NOT yet have. Off: the ones you've already beaten.")
+            }
+            .toggleStyle(.checkbox)
+            .padding(12)
+            .frame(width: 220, alignment: .leading)
+        }
     }
 
     private var coordLabel: String {
