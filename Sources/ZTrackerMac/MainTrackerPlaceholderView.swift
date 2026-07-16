@@ -62,6 +62,49 @@ struct MainTrackerPlaceholderView: View {
         return d[i]
     }
 
+    /// The dungeon band (T-019.5): the room-map grid + the blockers/notes column.
+    /// Side-by-side (map left) when there's room; the column wraps below the map
+    /// when the window narrows (`ViewThatFits`, per the responsive-layout ADR).
+    private var dungeonBand: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .top, spacing: 12) {
+                dungeonMapGroup
+                blockersNotesColumn
+                    .frame(maxHeight: .infinity)   // Notes fills the map's height
+            }
+            VStack(alignment: .leading, spacing: 12) {
+                dungeonMapGroup
+                blockersNotesColumn
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private var dungeonMapGroup: some View {
+        TopSectionGroup(title: "Dungeon Map") {
+            DungeonMapView(model: model, options: options)
+        }
+    }
+
+    /// Blockers over Notes; both fill the 390-wide column so their edges align.
+    private var blockersNotesColumn: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            TopSectionGroup(title: "Blockers") {
+                BlockersView(model: model)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            TopSectionGroup(title: "Notes") {
+                NotesView(model: model)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+            .frame(maxHeight: .infinity)
+        }
+        // Was a fixed 390; now grows to absorb window width the (capped) map
+        // can't use, so a wide window gives Notes room instead of dead space.
+        .frame(minWidth: 390, maxWidth: .infinity)
+    }
+
     var body: some View {
         ScrollView {
             VStack(spacing: 14) {
@@ -143,22 +186,7 @@ struct MainTrackerPlaceholderView: View {
                 // room-map grid — coming next — gets the horizontal space to its
                 // left; the map is tall, so the short blockers grid + notes stack
                 // beside it add no height.
-                HStack(alignment: .top, spacing: 12) {
-                    VStack(alignment: .leading, spacing: 12) {
-                        TopSectionGroup(title: "Blockers") {
-                            BlockersView(model: model)
-                        }
-                        TopSectionGroup(title: "Notes") {
-                            NotesView(model: model)
-                                .frame(minHeight: 150)
-                        }
-                    }
-                    .frame(width: 420)
-                    // The per-dungeon room-map grid lands in this reserved space
-                    // to the right of the column next (D1).
-                    Spacer(minLength: 0)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
+                dungeonBand
             }
             .padding(24)
             .frame(maxWidth: .infinity)
