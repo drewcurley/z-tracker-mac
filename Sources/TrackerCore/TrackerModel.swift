@@ -167,12 +167,17 @@ public final class TrackerModel {
         let tag = TriforceAndGoSummary.compute(
             playerState: playerComputedStateSummary, dungeonTracker: dungeonTracker,
             mapState: mapState, progress: playerProgress, grid: overworldGrid, instance: instance)
-        // Door-repair charges marked on the overworld (for the count reminder).
+        // Door-repair charges + book-shop presence marked on the overworld.
         let q = quest ?? .first
         var doorRepairFound = 0
+        var bookShopMarked = false
         for c in 0..<OverworldGrid.columnCount {
-            for r in 0..<OverworldGrid.rowCount where overworldGrid.mark(column: c, row: r) == .doorRepair {
-                doorRepairFound += 1
+            for r in 0..<OverworldGrid.rowCount {
+                switch overworldGrid.mark(column: c, row: r) {
+                case .doorRepair: doorRepairFound += 1
+                case .shop(.book): bookShopMarked = true
+                default: break
+                }
             }
         }
         return reminderEngine.poll(
@@ -180,7 +185,13 @@ public final class TrackerModel {
             dungeonTracker: dungeonTracker, blockers: dungeonBlockers,
             progress: playerProgress, startingItems: startingItemsAndExtras, tagSummary: tag,
             doorRepairFound: doorRepairFound,
-            doorRepairMax: OverworldTileLimits.maxUses(.doorRepair, quest: q))
+            doorRepairMax: OverworldTileLimits.maxUses(.doorRepair, quest: q),
+            now: Date(),
+            coastItemValue: dungeonTracker.ladderBox.cellCurrent,
+            isCurrentlyBook: isCurrentlyBook,
+            whistleSpotsRemain: mapState.owWhistleSpotsRemain.count,
+            powerBraceletSpotsRemain: mapState.owPowerBraceletSpotsRemain,
+            bookShopMarked: bookShopMarked)
     }
 
     /// The derived player state (item possession, levels, hearts) read by

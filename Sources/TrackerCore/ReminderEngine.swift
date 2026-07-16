@@ -1,3 +1,5 @@
+import Foundation
+
 /// One edge-triggered announcement the tracker wants to surface to the
 /// player (spoken and/or shown). The value payload of a reference
 /// `ITrackerEvents` *announcement* callback. Ported from the announcement
@@ -29,6 +31,17 @@ public enum ReminderAnnouncement: Equatable, Sendable {
     /// to `found` (of `max` for the quest). Ported from the reference's door-repair
     /// reminder (`Z1R_WPF/Reminders.fs:244-250`).
     case doorRepairCount(found: Int, max: Int)
+    // Periodic reminders (T-089), ported from `Z1R_WPF/Reminders.fs:193-243`.
+    /// Periodic nudge to grab the coast item with the ladder. `itemName` is the
+    /// known item's spoken name, or `nil` when the coast item is still unknown.
+    case getCoastItem(itemName: String?)
+    /// Periodic nudge: `count` recorder-warp spots still remain to visit.
+    case recorderSpots(Int)
+    /// Periodic nudge: `count` power-bracelet spots still remain.
+    case powerBraceletSpots(Int)
+    /// Periodic nudge to buy the boomstick book (have the wand, no book, a book
+    /// shop is marked).
+    case considerBoomstickBook
 }
 
 /// The edge-triggered reminder/announcement engine. Ported from
@@ -87,8 +100,24 @@ public final class ReminderEngine {
     private var previouslyAnnouncedTriforceAndGo = 0
     private var previousCompletedDungeonCount = 0
     private var previouslyAnnouncedDoorRepairCount = 0
+    // Periodic-reminder cooldowns (T-089): last time each fired, `nil` = never
+    // (so the first eligible poll fires it, matching the reference's "recentlyAgo"
+    // seed). Plus the prior spot counts, so a growing/steady count re-nags but a
+    // shrinking one (you're making progress) stays quiet.
+    private var lastCoastReminder: Date?
+    private var lastRecorderReminder: Date?
+    private var lastPowerBraceletReminder: Date?
+    private var lastBoomstickReminder: Date?
+    private var prevWhistleSpots = 0
+    private var prevPowerBraceletSpots = 0
 
     public init() {}
+
+    /// Whether `interval` minutes have passed since `last` (or it never fired).
+    private func cooldownElapsed(_ now: Date, _ last: Date?, minutes: Double) -> Bool {
+        guard let last else { return true }
+        return now.timeIntervalSince(last) >= minutes * 60
+    }
 
     /// Full-state reset for a "restart run" (groundhog/routers) feature.
     /// Ported from `ResetForGroundhogOrRoutersOrFourPlusFourEtc`
@@ -127,7 +156,13 @@ public final class ReminderEngine {
         startingItems: StartingItemsAndExtras,
         tagSummary: TriforceAndGoSummary,
         doorRepairFound: Int = 0,
-        doorRepairMax: Int = 0
+        doorRepairMax: Int = 0,
+        now: Date = .distantPast,
+        coastItemValue: Int = -1,
+        isCurrentlyBook: Bool = true,
+        whistleSpotsRemain: Int = 0,
+        powerBraceletSpotsRemain: Int = 0,
+        bookShopMarked: Bool = false
     ) -> [ReminderAnnouncement] {
         var out: [ReminderAnnouncement] = []
 
@@ -281,6 +316,48 @@ public final class ReminderEngine {
         if doorRepairFound > previouslyAnnouncedDoorRepairCount {
             out.append(.doorRepairCount(found: doorRepairFound, max: doorRepairMax))
             previouslyAnnouncedDoorRepairCount = doorRepairFound
+        }
+
+        // Periodic reminders (`Z1R_WPF/Reminders.fs:193-243`), gated by wall-clock
+        // cooldowns (the caller passes `now`).
+
+        // coast item — every 3 min while you have the ladder but not the coast item.
+        if cooldownElapsed(now, lastCoastReminder, minutes: 3),
+           playerState.haveLadder, !playerState.haveCoastItem {
+            if coastItemValue == -1 {
+                out.append(.getCoastItem(itemName: nil))
+            } else if !(coastItemValue == ITEMS.whiteSword && progress.hasMagicalSword) {
+                // (skip nagging for the white sword once you already have the mags)
+                out.append(.getCoastItem(itemName: ITEMS.spokenName(coastItemValue, isBook: isCurrentlyBook)))
+            }
+            lastCoastReminder = now
+        }
+
+        // recorder spots — every 5 min; only if the count hasn't shrunk (you're
+        // not making progress) and there's at least one left.
+        if cooldownElapsed(now, lastRecorderReminder, minutes: 5), playerState.haveRecorder {
+            if whistleSpotsRemain >= prevWhistleSpots, whistleSpotsRemain > 0 {
+                out.append(.recorderSpots(whistleSpotsRemain))
+            }
+            lastRecorderReminder = now
+            prevWhistleSpots = whistleSpotsRemain
+        }
+
+        // power-bracelet spots — same shape as recorder spots.
+        if cooldownElapsed(now, lastPowerBraceletReminder, minutes: 5), playerState.havePowerBracelet {
+            if powerBraceletSpotsRemain >= prevPowerBraceletSpots, powerBraceletSpotsRemain > 0 {
+                out.append(.powerBraceletSpots(powerBraceletSpotsRemain))
+            }
+            lastPowerBraceletReminder = now
+            prevPowerBraceletSpots = powerBraceletSpotsRemain
+        }
+
+        // boomstick book — every 5 min if you have the wand, no book, and a book
+        // shop is marked. Timer resets only when it actually fires.
+        if cooldownElapsed(now, lastBoomstickReminder, minutes: 5),
+           playerState.haveWand, !progress.hasBoomBook, bookShopMarked {
+            out.append(.considerBoomstickBook)
+            lastBoomstickReminder = now
         }
 
         return out

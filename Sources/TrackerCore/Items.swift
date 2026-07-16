@@ -30,4 +30,29 @@ public enum ITEMS {
 
     /// The number of distinct item identities (`itemNamesAndCounts.Length`).
     public static let count = 15
+
+    /// A spoken/display name for an item id, for reminder text (`AsPronounceString`,
+    /// `TrackerModel.fs:212-228`). Item 0 is book or shield depending on the seed.
+    /// Deviation: the reference spells item 2 "beau" as a phonetic hack for the old
+    /// TTS voice; we keep "bow" (correct on screen; the live voice reads it fine).
+    public static func spokenName(_ id: Int, isBook: Bool) -> String {
+        switch id {
+        case bookOrShield: return isBook ? "book" : "shield"
+        case boomerang: return "boomerang"
+        case bow: return "bow"
+        case powerBracelet: return "power bracelet"
+        case ladder: return "ladder"
+        case magicBoomerang: return "magic boomerang"
+        case anyKey: return "magic key"
+        case raft: return "raft"
+        case recorder: return "recorder"
+        case redCandle: return "red candle"
+        case redRing: return "red ring"
+        case silverArrow: return "silver arrow"
+        case wand: return "wand"
+        case whiteSword: return "white sword"
+        case heartContainer: return "heart container"
+        default: return "item"
+        }
+    }
 }
