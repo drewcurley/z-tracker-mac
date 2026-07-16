@@ -43,9 +43,11 @@ struct DungeonDoorView: View {
             switch gesture {
             case .left: set(s.toggled(to: .yes))
             case .right: set(s.toggled(to: .no))
-            case .middle: set(s.toggled(to: .yellow))
-            case .shiftLeft: set(s.prev)
-            case .shiftRight: set(s.next)
+            // Scroll (Windows wheel) and Shift+click both cycle the door.
+            case .shiftLeft, .scrollUp: set(s.prev)
+            case .shiftRight, .scrollDown: set(s.next)
+            // ⌥-click stands in for the reference middle-click (no middle button).
+            case .middle, .optionLeft: set(s.toggled(to: .yellow))
             }
         })
         .accessibilityElement(children: .ignore)
