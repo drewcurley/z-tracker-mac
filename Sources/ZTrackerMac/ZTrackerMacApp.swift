@@ -5,6 +5,20 @@ import TrackerCore
 /// The id of the detachable "Progress" HUD window (T-035.10).
 let ProgressHUDWindowID = "z-progress-hud"
 
+/// The id of the mid-game Settings window (T-091) — the same preference panel as
+/// the startup screen, reachable during play via a gear button or ⌘,.
+let SettingsWindowID = "z-settings"
+
+/// The Settings menu command (⌘,), replacing the default app-settings item so it
+/// opens our resizable Settings window instead of a native Settings scene.
+private struct OpenSettingsButton: View {
+    @Environment(\.openWindow) private var openWindow
+    var body: some View {
+        Button("Settings…") { openWindow(id: SettingsWindowID) }
+            .keyboardShortcut(",", modifiers: .command)
+    }
+}
+
 /// Forces a regular foreground activation policy (T-019.1). An unbundled
 /// SwiftPM executable launches with an accessory/background policy — its windows
 /// show and take mouse clicks, but the app never becomes the *key* window, so
@@ -30,6 +44,18 @@ struct ZTrackerMacApp: App {
         WindowGroup {
             ContentView(model: model, options: options, onResetApp: resetApp)
         }
+        .commands {
+            // ⌘, opens the mid-game Settings window (T-091) instead of a native
+            // Settings scene, so the same panel is reachable during play.
+            CommandGroup(replacing: .appSettings) { OpenSettingsButton() }
+        }
+
+        // The mid-game Settings window (T-091): a single, resizable window sharing
+        // the same `options` as the tracker — the startup preference panel, live.
+        Window("Settings", id: SettingsWindowID) {
+            SettingsWindowView(options: options)
+        }
+        .defaultSize(width: 460, height: 660)
 
         // The break-out Progress HUD (T-035.10) — opened on demand by the
         // "Progress" toggle (a secondary WindowGroup doesn't open at launch).
