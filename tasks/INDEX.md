@@ -27,6 +27,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-071](./T-071.md) | FQ/SQ vanilla dungeon-outline overlays | frontend-engineer | T-019 | feat/dungeon-vanilla-outlines | — | docs/reviews/feat-dungeon-vanilla-outlines/final.md |
 | [T-070](./T-070.md) | Persist the startup settings across launches | frontend-engineer | T-004 | feat/persist-startup-settings | — | docs/reviews/feat-persist-startup-settings/final.md |
 | [T-019.12](./T-019.12.md) | Dungeon door inference — auto-open the inferred entry door on marking | frontend-engineer | T-019 | feat/dungeon-door-inference | — | docs/reviews/feat-dungeon-door-inference/final.md |
 | [T-019.11](./T-019.11.md) | Dungeon trackpad gestures — scroll to cycle/pick + ⌥-click for middle | frontend-engineer | T-019 | feat/dungeon-trackpad-gestures | — | docs/reviews/feat-dungeon-trackpad-gestures/final.md |

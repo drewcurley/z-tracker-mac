@@ -10,6 +10,9 @@ struct DungeonMapView: View {
     var options: TrackerOptions
     /// 0…8 = dungeons 1–9; 9 = the Summary tab.
     @State private var selected = 0
+    /// The FQ/SQ vanilla-outline overlay mode (nil = off) — global across all
+    /// dungeons: toggling it shows each dungeon's own vanilla footprint (T-071).
+    @State private var outlineMode: VanillaQuest? = nil
 
     /// The info strip's fixed width (old-men count + reserved dungeon-items box).
     private static let infoStripWidth: CGFloat = 72
@@ -42,7 +45,8 @@ struct DungeonMapView: View {
                     DungeonRoomGridView(map: model.dungeonRoomMaps[selected],
                                         dungeonNumber: selected + 1,
                                         headerText: headerText,
-                                        inferDoors: options.doDoorInference)
+                                        inferDoors: options.doDoorInference,
+                                        outlineQuest: outlineMode)
                     dungeonInfoStrip
                 }
             }
@@ -62,17 +66,32 @@ struct DungeonMapView: View {
                 Spacer(minLength: 6)   // even inter-tab distribution; the last
                                        // one pushes FQ/SQ to the right edge
             }
-            // FQ / SQ vanilla-map-overlay buttons — placeholders (their own slice).
+            // FQ / SQ — toggle the vanilla footprint overlay for this dungeon.
             HStack(spacing: 4) {
-                ForEach(["FQ", "SQ"], id: \.self) { q in
-                    Button(q) {}
-                        .font(.system(size: 12, weight: .semibold))
-                        .disabled(true)
-                        .help("\(q == "FQ" ? "First" : "Second")-quest vanilla dungeon outline — coming soon")
-                }
+                outlineButton("FQ", quest: .first)
+                outlineButton("SQ", quest: .second)
             }
         }
         .frame(width: Self.contentWidth)
+    }
+
+    private func outlineButton(_ label: String, quest: VanillaQuest) -> some View {
+        let active = outlineMode == quest
+        return Button {
+            outlineMode = active ? nil : quest
+        } label: {
+            Text(label)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(active ? .white : .secondary)
+                .frame(width: 26, height: 20)
+                .background(RoundedRectangle(cornerRadius: 4)
+                    .fill(active ? Color(red: 147/255, green: 112/255, blue: 219/255).opacity(0.7) : Color(white: 0.16)))
+        }
+        .buttonStyle(.plain)
+        .disabled(isSummary)
+        .help("Overlay the vanilla \(quest == .first ? "first" : "second")-quest layout of this dungeon")
+        .accessibilityLabel("\(quest == .first ? "First" : "Second")-quest vanilla outline")
+        .accessibilityValue(active ? "Showing" : "Hidden")
     }
 
     private func tab(index i: Int, label: String) -> some View {
@@ -127,6 +146,8 @@ struct DungeonRoomGridView: View {
     var headerText: String = ""
     /// Forwarded to each room cell — auto-open an inferred entry door on marking.
     var inferDoors: Bool = false
+    /// When set, overlays this vanilla quest's footprint for this dungeon (FQ/SQ).
+    var outlineQuest: VanillaQuest? = nil
 
     /// Cell size — the 13×9 sprite scaled 4× (nearest-neighbor). The `gap` is the
     /// door channel between rooms (the reference's 12px gap at 3×, so 16 at 4×);
@@ -185,6 +206,11 @@ struct DungeonRoomGridView: View {
                         .offset(x: CGFloat(i) * Self.pitchX + (Self.cellW - 28) / 2,
                                 y: CGFloat(j) * Self.pitchY + Self.cellH)
                 }
+            }
+            // FQ/SQ vanilla footprint overlay (T-071), on top of rooms/doors.
+            if let outlineQuest {
+                VanillaOutlineOverlay(quest: outlineQuest, dungeon: dungeonNumber - 1,
+                                      cellW: Self.cellW, cellH: Self.cellH, gap: Self.gap)
             }
         }
         .frame(width: Self.roomsW, height: Self.roomsH, alignment: .topLeading)
