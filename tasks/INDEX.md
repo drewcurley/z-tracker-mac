@@ -27,6 +27,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-019.6](./T-019.6.md) | Dungeon room editing (D2a) — left-click gesture + right-click picker | frontend-engineer | T-019 | feat/dungeon-room-leftclick | — | docs/reviews/feat-dungeon-room-leftclick/final.md |
 | [T-046.2](./T-046.2.md) | Don't orphan the window when its saved display is disconnected | frontend-engineer | T-046.1 | fix/window-frame-orphan | — | docs/reviews/fix-window-frame-orphan/final.md |
 | [T-019.5](./T-019.5.md) | Dungeon band — room-map grid (D1) render + room-type picker | frontend-engineer | T-019 | feat/dungeon-room-grid | — | docs/reviews/feat-dungeon-room-grid/final.md |
 | [T-019.4](./T-019.4.md) | Stack Blockers over Notes as a narrow left column (band layout fix) | frontend-engineer | T-019.2 | fix/blockers-notes-stacked | — | docs/reviews/fix-blockers-notes-stacked/final.md |
