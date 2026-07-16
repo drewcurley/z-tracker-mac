@@ -103,14 +103,21 @@ struct RoomMouseCatcher: NSViewRepresentable {
             downShift = event.modifierFlags.contains(.shift)
             downLocation = event.locationInWindow
             didDrag = false
-            // Fire immediately for doors (no drag), and for the LEFT button even on
-            // rooms — left-click and left-drag-paint don't conflict (both no-op on
-            // a non-off-map room), so the primary click stays on mouse-down and is
-            // unaffected. Only right/middle on rooms defer to release (their click
-            // — picker / circle — would clash with a right/middle drag-paint).
-            if !dragEnabled || button == 0 {
+            // Fire immediately for doors (no drag), and for a *plain* left press on
+            // rooms — plain left-click and left-drag don't conflict (both no-op on a
+            // non-off-map room), so the primary click stays on mouse-down. Every
+            // modified/other press (⌥/shift-left, right, middle) defers to release,
+            // so a drag doesn't first fire its click — e.g. an ⌥-drag must not
+            // toggle the start room's circle before painting.
+            if !dragEnabled || isPlainLeft(button) {
                 fireClick(button: button, option: downOption, shift: downShift)
             }
+        }
+
+        /// A plain left press (no modifiers) — the one gesture that fires on
+        /// mouse-down even on rooms.
+        private func isPlainLeft(_ button: Int) -> Bool {
+            button == 0 && !downOption && !downShift
         }
 
         // MARK: Drag — paint the room under the cursor (rooms only).
@@ -147,9 +154,9 @@ struct RoomMouseCatcher: NSViewRepresentable {
 
         private func endPress(_ button: Int) {
             defer { downButton = nil }
-            // Left (and all door buttons) already fired on mouse-down; only the
-            // deferred right/middle room buttons fire here, and only on a click.
-            guard dragEnabled, button != 0, downButton == button, !didDrag else { return }
+            // A plain left press already fired on mouse-down; every deferred press
+            // (⌥/shift-left, right, middle) fires here, and only if it wasn't a drag.
+            guard dragEnabled, downButton == button, !didDrag, !isPlainLeft(button) else { return }
             fireClick(button: button, option: downOption, shift: downShift)
         }
 
