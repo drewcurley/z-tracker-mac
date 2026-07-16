@@ -130,4 +130,28 @@ struct DungeonBlockersContainerTests {
         #expect(c.asJsonString(dungeon: 0, slot: 0)
             == "{ \"Kind\": \"Blocker_Bomb\", \"AppliesTo\": [ false, true, false, false, false, false ] }")
     }
+
+    @Test("Element indices + box(n) helper match the reference order")
+    func elementIndices() {
+        #expect(DungeonBlockerAppliesTo.Element.triforce.rawValue == 2)
+        #expect(DungeonBlockerAppliesTo.Element.box(0) == 3)
+        #expect(DungeonBlockerAppliesTo.Element.box(2) == 5)
+    }
+
+    @Test("blockersApplyingTo: only set kinds with the element flag on, by slot")
+    func blockersApplyingTo() {
+        let c = DungeonBlockersContainer()
+        let triforce = DungeonBlockerAppliesTo.Element.triforce.rawValue
+        // Slot 0: ladder applies to triforce. Slot 1: key applies to a box, not triforce.
+        c.setDungeonBlocker(.ladder, dungeon: 3, slot: 0)
+        c.setDungeonBlockerAppliesTo(true, dungeon: 3, slot: 0, element: triforce)
+        c.setDungeonBlocker(.key, dungeon: 3, slot: 1)
+        c.setDungeonBlockerAppliesTo(true, dungeon: 3, slot: 1, element: DungeonBlockerAppliesTo.Element.box(0))
+        // Slot 2: nothing kind, flag on → excluded (a cleared blocker chips nothing).
+        c.setDungeonBlockerAppliesTo(true, dungeon: 3, slot: 2, element: triforce)
+
+        #expect(c.blockersApplyingTo(dungeon: 3, element: triforce) == [.ladder])
+        #expect(c.blockersApplyingTo(dungeon: 3, element: DungeonBlockerAppliesTo.Element.box(0)) == [.key])
+        #expect(c.blockersApplyingTo(dungeon: 3, element: DungeonBlockerAppliesTo.Element.box(1)).isEmpty)
+    }
 }

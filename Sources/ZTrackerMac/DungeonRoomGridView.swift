@@ -159,6 +159,8 @@ struct DungeonMapView: View {
                 iconOptions: model.iconOptions,
                 hideDungeonNumbers: model.hideDungeonNumbers,
                 showLocationHeader: false,
+                blockers: model.dungeonBlockers,
+                chipPlayerState: model.playerComputedStateSummary,
                 hint: $model.levelHints[HintTarget.dungeon(selected + 1)]
             )
             .frame(maxWidth: .infinity)
