@@ -123,9 +123,8 @@ struct DungeonCardView: View {
                 let isDisabledThirdBox = dungeon.identifiedAsTwoBoxer && idx == dungeon.boxes.count - 1
                 BoxView(box: box, instance: instance, label: nil, iconOptions: iconOptions,
                         disabled: isDisabledThirdBox,
-                        chips: (blockers != nil && dungeon.id != 8)
-                            ? blockers!.blockersApplyingTo(dungeon: dungeon.id, element: DungeonBlockerAppliesTo.Element.box(idx))
-                            : [],
+                        chips: blockers?.blockersApplyingTo(
+                            dungeon: dungeon.id, element: DungeonBlockerAppliesTo.Element.box(idx)) ?? [],
                         chipPlayerState: chipPlayerState)
             }
             // The "ghost" slot under whichever of L1/L4 doesn't hold the movable

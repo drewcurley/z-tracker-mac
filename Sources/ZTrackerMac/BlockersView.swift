@@ -24,17 +24,13 @@ struct BlockersView: View {
     private var located: Set<Int> { DungeonTrackerView.locatedDungeonIndices(in: model.overworldGrid) }
 
     var body: some View {
+        // A clean 3×3 of dungeons 1–9 (T-090). The old top-left "Blockers" label
+        // cell is dropped — the group header already says "Blockers" — so every
+        // dungeon shifts one column left and Level 9 fills the freed slot.
         Grid(horizontalSpacing: 10, verticalSpacing: 6) {
-            GridRow {
-                Text("Blockers")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.orange)
-                    .frame(minWidth: 90, alignment: .leading)
-                dungeonCell(0)
-                dungeonCell(1)
-            }
-            GridRow { dungeonCell(2); dungeonCell(3); dungeonCell(4) }
-            GridRow { dungeonCell(5); dungeonCell(6); dungeonCell(7) }
+            GridRow { dungeonCell(0); dungeonCell(1); dungeonCell(2) }
+            GridRow { dungeonCell(3); dungeonCell(4); dungeonCell(5) }
+            GridRow { dungeonCell(6); dungeonCell(7); dungeonCell(8) }
         }
     }
 
@@ -208,9 +204,13 @@ private struct BlockerAppliesToPanel: View {
         model.dungeonBlockers.dungeonBlocker(dungeon: dungeonIndex, slot: slot)
     }
 
-    /// The elements this tracker can chip: triforce, then each real item box.
+    /// The elements this tracker can chip: triforce (except Level 9, which has no
+    /// triforce cell — T-090), then each real item box.
     private var elements: [(name: String, k: Int)] {
-        var e: [(String, Int)] = [("Triforce", DungeonBlockerAppliesTo.Element.triforce.rawValue)]
+        var e: [(String, Int)] = []
+        if dungeonIndex != 8 {
+            e.append(("Triforce", DungeonBlockerAppliesTo.Element.triforce.rawValue))
+        }
         for n in 0..<boxCount { e.append(("Item Box \(n + 1)", DungeonBlockerAppliesTo.Element.box(n))) }
         return e
     }

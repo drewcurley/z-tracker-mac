@@ -131,6 +131,16 @@ struct DungeonBlockersContainerTests {
             == "{ \"Kind\": \"Blocker_Bomb\", \"AppliesTo\": [ false, true, false, false, false, false ] }")
     }
 
+    @Test("Level 9 (index 8) has blocker slots too (T-090)")
+    func level9Slots() {
+        #expect(DungeonBlockersContainer.dungeonCount == 9)
+        let c = DungeonBlockersContainer()
+        c.setDungeonBlocker(.combat, dungeon: 8, slot: 2)
+        c.setDungeonBlockerAppliesTo(true, dungeon: 8, slot: 2, element: DungeonBlockerAppliesTo.Element.box(0))
+        #expect(c.dungeonBlocker(dungeon: 8, slot: 2) == .combat)
+        #expect(c.blockersApplyingTo(dungeon: 8, element: DungeonBlockerAppliesTo.Element.box(0)) == [.combat])
+    }
+
     @Test("Element indices + box(n) helper match the reference order")
     func elementIndices() {
         #expect(DungeonBlockerAppliesTo.Element.triforce.rawValue == 2)

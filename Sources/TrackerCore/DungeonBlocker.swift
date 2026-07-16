@@ -167,7 +167,10 @@ public struct DungeonBlockerAppliesTo: Sendable, Equatable {
 @Observable
 public final class DungeonBlockersContainer {
     public static let maxBlockersPerDungeon = 3
-    public static let dungeonCount = 8
+    /// Nine, not the reference's eight (T-090): the user tracks blockers for
+    /// Level 9 too (what's preventing progress there). A deliberate deviation —
+    /// the reference excludes L9; the save format (deferred) will need the extra slot.
+    public static let dungeonCount = 9
 
     private var blockers: [DungeonBlocker]
     private var appliesTo: [DungeonBlockerAppliesTo]
