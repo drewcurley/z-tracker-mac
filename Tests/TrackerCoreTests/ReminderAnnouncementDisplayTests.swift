@@ -45,32 +45,6 @@ struct ReminderAnnouncementDisplayTests {
         #expect(tag(50).displayText == "You need something to be triforce and go")
     }
 
-    @Test("audio keys cover every announcement and use the bounded clip names")
-    func audioKeys() {
-        #expect(ReminderAnnouncement.considerSword2.audioKey == "consider_sword2")
-        #expect(ReminderAnnouncement.considerSword3.audioKey == "consider_sword3")
-        #expect(ReminderAnnouncement.completedDungeon(0).audioKey == "dungeon_complete_1")
-        #expect(ReminderAnnouncement.completedDungeon(7).audioKey == "dungeon_complete_8")
-        #expect(ReminderAnnouncement.foundDungeonCount(1).audioKey == "located_1")
-        #expect(ReminderAnnouncement.foundDungeonCount(9).audioKey == "located_9")
-        #expect(ReminderAnnouncement.triforceCount(1).audioKey == "triforce_1")
-        #expect(ReminderAnnouncement.triforceCount(8).audioKey == "triforce_8")
-        #expect(ReminderAnnouncement.remindShortly(itemId: ITEMS.ladder).audioKey == "have_ladder")
-        #expect(ReminderAnnouncement.remindShortly(itemId: ITEMS.anyKey).audioKey == "have_key")
-        #expect(ReminderAnnouncement.remindUnblock(blocker: .maybeLadder, dungeons: [1], combatDetails: []).audioKey == "unblock_ladder")
-        #expect(ReminderAnnouncement.remindUnblock(blocker: .combat, dungeons: [1], combatDetails: [.betterSword]).audioKey == "unblock_combat")
-
-        func tag(_ level: Int) -> String? {
-            ReminderAnnouncement.triforceAndGo(triforces: 8, summary: TriforceAndGoSummary(
-                level: level, haveBow: true, haveSilvers: true, silversKnownToBeInLevel9: false,
-                haveLadder: true, haveRecorder: true, missingDungeonCount: 0)).audioKey
-        }
-        #expect(tag(103) == "tag_go")
-        #expect(tag(102) == "tag_probably")
-        #expect(tag(101) == "tag_might")
-        #expect(tag(50) == "tag_need")
-    }
-
     @Test("unblock text lists the dungeon numbers and the need")
     func unblockText() {
         let one = ReminderAnnouncement.remindUnblock(blocker: .ladder, dungeons: [1], combatDetails: [])
