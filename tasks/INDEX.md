@@ -27,6 +27,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-073](./T-073.md) | Dungeon GRAB — cut/paste model foundation | data-engineer | T-019 | feat/dungeon-grab-model | — | docs/reviews/feat-dungeon-grab-model/final.md |
 | [T-072](./T-072.md) | Dungeon drag-paint (power tool) | frontend-engineer | T-019 | feat/dungeon-drag-paint | — | docs/reviews/feat-dungeon-drag-paint/final.md |
 | [T-071](./T-071.md) | FQ/SQ vanilla dungeon-outline overlays | frontend-engineer | T-019 | feat/dungeon-vanilla-outlines | — | docs/reviews/feat-dungeon-vanilla-outlines/final.md |
 | [T-070](./T-070.md) | Persist the startup settings across launches | frontend-engineer | T-004 | feat/persist-startup-settings | — | docs/reviews/feat-persist-startup-settings/final.md |
