@@ -213,6 +213,111 @@ public final class DungeonRoomMap {
         }
     }
 
+    // MARK: Grab (cut/paste a contiguous segment) — T-073 model foundation
+
+    /// A room's grid coordinate.
+    public struct RoomCoord: Hashable, Sendable {
+        public let col: Int
+        public let row: Int
+        public init(col: Int, row: Int) { self.col = col; self.row = row }
+    }
+
+    /// The contiguous region of non-empty rooms reachable from `(col,row)` by
+    /// 4-adjacency (reference `GrabHelper.PreviewGrab`, `Dungeon.fs:70-89`) — the
+    /// blob a GRAB would pick up. Empty if the start room is empty.
+    public func contiguousRegion(col: Int, row: Int) -> Set<RoomCoord> {
+        guard !room(col: col, row: row).isEmpty else { return [] }
+        var region: Set<RoomCoord> = []
+        var stack = [RoomCoord(col: col, row: row)]
+        while let p = stack.popLast() {
+            guard !region.contains(p) else { continue }
+            region.insert(p)
+            for (dc, dr) in [(-1, 0), (1, 0), (0, -1), (0, 1)] {
+                let n = RoomCoord(col: p.col + dc, row: p.row + dr)
+                guard (0..<Self.cols).contains(n.col), (0..<Self.rows).contains(n.row),
+                      !region.contains(n), !room(col: n.col, row: n.row).isEmpty else { continue }
+                stack.append(n)
+            }
+        }
+        return region
+    }
+
+    /// Move a grabbed `region` by `(dx, dy)` (reference `GrabHelper.DoDrop`,
+    /// `Dungeon.fs:119-149`): cut the region (its cells become empty, its touching
+    /// doors clear), then paste the rooms + circles + their set internal doors at
+    /// the offset. Cells that would land off-grid are dropped. Overlapped
+    /// destination cells are overwritten.
+    public func moveRegion(_ region: Set<RoomCoord>, byColumns dx: Int, rows dy: Int) {
+        guard !region.isEmpty, dx != 0 || dy != 0 else { return }
+        let oldRooms = rooms
+        let oldCircled = circled
+        let oldH = horizontalDoors
+        let oldV = verticalDoors
+
+        // 1. Cut: empty the region cells + uncircle; clear any door touching it.
+        for p in region {
+            rooms[Self.roomIndex(p.col, p.row)] = DungeonRoom()
+            circled[Self.roomIndex(p.col, p.row)] = false
+        }
+        for col in 0..<7 {
+            for row in 0..<Self.rows where region.contains(.init(col: col, row: row)) || region.contains(.init(col: col + 1, row: row)) {
+                horizontalDoors[Self.hDoorIndex(col, row)] = .unknown
+            }
+        }
+        for col in 0..<Self.cols {
+            for row in 0..<7 where region.contains(.init(col: col, row: row)) || region.contains(.init(col: col, row: row + 1)) {
+                verticalDoors[Self.vDoorIndex(col, row)] = .unknown
+            }
+        }
+
+        // 2. Paste at the offset (rooms, circles, and each set internal door).
+        for src in region {
+            let dc = src.col + dx, dr = src.row + dy
+            guard (0..<Self.cols).contains(dc), (0..<Self.rows).contains(dr) else { continue }
+            rooms[Self.roomIndex(dc, dr)] = oldRooms[Self.roomIndex(src.col, src.row)]
+            circled[Self.roomIndex(dc, dr)] = oldCircled[Self.roomIndex(src.col, src.row)]
+            // Carry each of the four surrounding doors that was set (≠ unknown).
+            if src.col < 7, dc < 7 {
+                let s = oldH[Self.hDoorIndex(src.col, src.row)]
+                if s != .unknown { horizontalDoors[Self.hDoorIndex(dc, dr)] = s }
+            }
+            if src.col > 0, dc > 0 {
+                let s = oldH[Self.hDoorIndex(src.col - 1, src.row)]
+                if s != .unknown { horizontalDoors[Self.hDoorIndex(dc - 1, dr)] = s }
+            }
+            if src.row < 7, dr < 7 {
+                let s = oldV[Self.vDoorIndex(src.col, src.row)]
+                if s != .unknown { verticalDoors[Self.vDoorIndex(dc, dr)] = s }
+            }
+            if src.row > 0, dr > 0 {
+                let s = oldV[Self.vDoorIndex(src.col, src.row - 1)]
+                if s != .unknown { verticalDoors[Self.vDoorIndex(dc, dr - 1)] = s }
+            }
+        }
+        recomputeTransportCounts()
+        firstInteractionDone = true
+    }
+
+    /// Whether a drop at `(dx, dy)` would overwrite existing rooms — the reference's
+    /// "warn" state driving the keep/undo prompt (`GrabHelper.PreviewDrop`,
+    /// `:102-117`). Region cells landing on a non-empty, non-region cell warn.
+    public func dropWouldOverwrite(_ region: Set<RoomCoord>, byColumns dx: Int, rows dy: Int) -> Bool {
+        for src in region {
+            let dc = src.col + dx, dr = src.row + dy
+            guard (0..<Self.cols).contains(dc), (0..<Self.rows).contains(dr) else { continue }
+            let dest = RoomCoord(col: dc, row: dr)
+            if region.contains(dest) { continue }   // landing on another grabbed cell is fine
+            if !room(col: dc, row: dr).isEmpty { return true }
+        }
+        return false
+    }
+
+    private func recomputeTransportCounts() {
+        var counts = Array(repeating: 0, count: 9)
+        for r in rooms { if let n = r.roomType.transportNumber { counts[n] += 1 } }
+        transportCounts = counts
+    }
+
     // MARK: Derived
 
     /// Count of marked "old man" NPC rooms (`IsOldMan`) — feeds the per-dungeon
