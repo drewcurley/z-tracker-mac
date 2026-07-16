@@ -14,7 +14,12 @@ struct ContentView: View {
     var body: some View {
         Group {
             if model.quest == nil {
-                StartupView(model: model, options: options, onQuestSelected: model.selectQuest)
+                StartupView(model: model, options: options, onQuestSelected: { quest in
+                    // Persist the startup settings at the commit point (T-004.2),
+                    // then start the run.
+                    options.saveSettings()
+                    model.selectQuest(quest)
+                })
             } else {
                 MainTrackerPlaceholderView(model: model, options: options, onResetApp: onResetApp)
             }
