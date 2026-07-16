@@ -2,6 +2,9 @@ import AppKit
 import SwiftUI
 import TrackerCore
 
+/// The id of the single main tracker window (T-097).
+let MainWindowID = "z-main"
+
 /// The id of the detachable "Progress" HUD window (T-035.10).
 let ProgressHUDWindowID = "z-progress-hud"
 
@@ -41,13 +44,19 @@ struct ZTrackerMacApp: App {
     @State private var options = TrackerOptions.withPersistence()
 
     var body: some Scene {
-        WindowGroup {
+        // A single-instance `Window` (not `WindowGroup`) — the tracker is one
+        // window (T-097). `WindowGroup` would let macOS spawn multiple full
+        // trackers as tabs / new windows (⌘N), which only share the game state and
+        // drift on view-local state; that was an unintended default, not a feature.
+        Window("Z-Tracker", id: MainWindowID) {
             ContentView(model: model, options: options, onResetApp: resetApp)
         }
         .commands {
             // ⌘, opens the mid-game Settings window (T-091) instead of a native
             // Settings scene, so the same panel is reachable during play.
             CommandGroup(replacing: .appSettings) { OpenSettingsButton() }
+            // No "New Window" for a single-window app.
+            CommandGroup(replacing: .newItem) {}
         }
 
         // The mid-game Settings window (T-091): a single, resizable window sharing
