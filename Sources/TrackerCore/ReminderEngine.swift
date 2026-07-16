@@ -316,9 +316,13 @@ public final class ReminderEngine {
             out.append(.remindShortly(itemId: ITEMS.anyKey))
             remindedAnyKey = true
         }
-        // book → visit hints (T-092): once you hold the Book and this seed's Book
-        // grants hints, nudge to go read the hint NPCs.
-        if !remindedBookHints, bookForHelpfulHints, playerState.haveBookOrShield, isCurrentlyBook {
+        // book → visit hints (T-092, fixed T-094): once you hold the Book and this
+        // seed's Book grants hints, nudge to go read the hint NPCs. "Hold the Book"
+        // means either the normal Book of Magic (item slot 0, when it's the book and
+        // not a shield) OR the boomstick book — which is the *same* book, just moved
+        // into a shop with extra wand functionality (so it grants hints too).
+        let hasTheBook = (playerState.haveBookOrShield && isCurrentlyBook) || progress.hasBoomBook
+        if !remindedBookHints, bookForHelpfulHints, hasTheBook {
             out.append(.remindVisitHints)
             remindedBookHints = true
         }

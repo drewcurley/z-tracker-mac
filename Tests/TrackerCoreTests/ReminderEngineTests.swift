@@ -58,6 +58,13 @@ struct ReminderEngineTests {
         // Shield seed (item 0 is the shield, not the book) → no hints nudge.
         #expect(!poll(ReminderEngine(), playerState: withBook, isCurrentlyBook: false,
                       bookForHelpfulHints: true).contains(.remindVisitHints))
+
+        // The boomstick book IS the same Book of Magic (moved into a shop), so
+        // buying it also grants hints — fires even without the dungeon-slot book (T-094).
+        let boom = PlayerProgressAndTakeAnyHearts(); boom.hasBoomBook = true
+        #expect(poll(ReminderEngine(), playerState: PlayerComputedStateSummary(),
+                     progress: boom, isCurrentlyBook: false,
+                     bookForHelpfulHints: true).contains(.remindVisitHints))
     }
 
     @Test("door-repair count announces on each increase, then goes quiet")
