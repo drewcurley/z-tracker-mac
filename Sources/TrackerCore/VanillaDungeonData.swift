@@ -51,3 +51,18 @@ public enum VanillaDungeonData {
         layout(quest, dungeon: dungeon).reduce(0) { $0 + $1.filter { $0 == "X" }.count }
     }
 }
+
+/// The expected number of "old man" NPC rooms (hint / bomb-upgrade / hungry-goriya
+/// / life-or-money) in each dungeon (T-074), from the reference
+/// `DungeonData.oldManCounts1Q`/`2Q` (`DungeonData.fs:69-70`). Used for the info
+/// strip's `X/Y` readout: `X` marked, `Y` expected. Constant per dungeon unless
+/// specific flags shuffle old men — the tracker just shows the vanilla total.
+public enum DungeonOldManCounts {
+    public static let firstQuest = [1, 1, 1, 1, 3, 2, 3, 2, 3]
+    public static let secondQuest = [0, 0, 1, 3, 0, 1, 2, 2, 1]
+
+    /// Expected old-man count for dungeon `0…8` on the given quest layout.
+    public static func expected(secondQuestDungeons: Bool, dungeon: Int) -> Int {
+        (secondQuestDungeons ? secondQuest : firstQuest)[dungeon]
+    }
+}

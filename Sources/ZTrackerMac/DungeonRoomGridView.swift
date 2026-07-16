@@ -35,6 +35,26 @@ struct DungeonMapView: View {
         "\(options.boardInsteadOfLevel ? "BOARD" : "LEVEL")-\(slotLabel)"
     }
 
+    /// The old-man readout (T-074): "X/Y" (marked / expected), or just "X" in HDN
+    /// mode when the slot isn't yet identified (the expected count is then unknown).
+    private var oldManText: String {
+        let marked = model.dungeonRoomMaps[selected].oldManCount
+        guard let expected = expectedOldMen else { return "\(marked)" }
+        return "\(marked)/\(expected)"
+    }
+
+    /// Expected old men for the selected dungeon, or nil when unknowable (HDN + the
+    /// slot has no assigned dungeon number yet). Uses the 1Q/2Q vanilla totals.
+    private var expectedOldMen: Int? {
+        let secondQuest = model.dungeonTracker.isSecondQuestDungeons
+        if model.hideDungeonNumbers {
+            guard let n = model.dungeonTracker.dungeon(selected).labelChar.wholeNumberValue,
+                  (1...9).contains(n) else { return nil }
+            return DungeonOldManCounts.expected(secondQuestDungeons: secondQuest, dungeon: n - 1)
+        }
+        return DungeonOldManCounts.expected(secondQuestDungeons: secondQuest, dungeon: selected)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             tabBar
@@ -115,9 +135,10 @@ struct DungeonMapView: View {
         VStack(alignment: .leading, spacing: 8) {
             VStack(alignment: .leading, spacing: 2) {
                 Text("OLD MEN").font(.system(size: 8, weight: .semibold)).foregroundStyle(.secondary)
-                Text("\(model.dungeonRoomMaps[selected].oldManCount)")
+                Text(oldManText)
                     .font(.system(size: 18, weight: .heavy, design: .rounded))
                     .foregroundStyle(.orange)
+                    .help("Marked old-man rooms (NPC hint / bomb-upgrade / hungry-goriya / life-or-money) vs. the number expected in this dungeon")
             }
             Divider()
             Text("ITEMS").font(.system(size: 8, weight: .semibold)).foregroundStyle(.secondary)
