@@ -189,8 +189,6 @@ public final class TrackerModel {
             now: Date(),
             coastItemValue: dungeonTracker.ladderBox.cellCurrent,
             isCurrentlyBook: isCurrentlyBook,
-            whistleSpotsRemain: mapState.owWhistleSpotsRemain.count,
-            powerBraceletSpotsRemain: mapState.owPowerBraceletSpotsRemain,
             bookShopMarked: bookShopMarked,
             bookForHelpfulHints: bookForHelpfulHints)
     }

@@ -61,12 +61,11 @@ struct ReminderAnnouncementDisplayTests {
         #expect(ReminderAnnouncement.getCoastItem(itemName: "white sword").displayText
                 == "Get the white sword off the coast")
         #expect(ReminderAnnouncement.getCoastItem(itemName: nil).category == .coastItem)
-        #expect(ReminderAnnouncement.recorderSpots(1).displayText == "There is one recorder spot")
-        #expect(ReminderAnnouncement.recorderSpots(4).displayText == "There are 4 recorder spots")
-        #expect(ReminderAnnouncement.powerBraceletSpots(1).displayText == "There is one power bracelet spot")
-        #expect(ReminderAnnouncement.powerBraceletSpots(3).displayText == "There are 3 power bracelet spots")
         #expect(ReminderAnnouncement.considerBoomstickBook.displayText == "Consider buying the boomstick book")
-        #expect(ReminderAnnouncement.recorderSpots(2).category == .recorderPBSpotsAndBoomstickBook)
+        #expect(ReminderAnnouncement.considerBoomstickBook.category == .recorderPBSpotsAndBoomstickBook)
+        // Recorder / power bracelet are now one-shot "you have X" nudges (T-095).
+        #expect(ReminderAnnouncement.remindShortly(itemId: ITEMS.recorder).displayText == "Don't forget that you have the recorder")
+        #expect(ReminderAnnouncement.remindShortly(itemId: ITEMS.powerBracelet).displayText == "Don't forget that you have the power bracelet")
         #expect(ReminderAnnouncement.remindVisitHints.displayText == "You have the book — visit the hint NPCs")
         #expect(ReminderAnnouncement.remindVisitHints.category == .haveKeyLadder)
     }
