@@ -125,6 +125,23 @@ public final class DungeonRoomMap {
         verticalDoors[Self.vDoorIndex(col, row)] = state
     }
 
+    /// Which wall a door sits on: `horizontal` = the vertical wall between two
+    /// side-by-side rooms; `vertical` = the horizontal wall between two stacked
+    /// rooms. (Named for the row/column the door *spans*, matching the reference's
+    /// `horizontalDoors` / `verticalDoors`.)
+    public enum DoorAxis: Sendable { case horizontal, vertical }
+
+    /// Unified door get/set (D3), so the door view has one code path.
+    public func door(_ axis: DoorAxis, col: Int, row: Int) -> DoorState {
+        axis == .horizontal ? horizontalDoor(col: col, row: row) : verticalDoor(col: col, row: row)
+    }
+    public func setDoor(_ state: DoorState, axis: DoorAxis, col: Int, row: Int) {
+        switch axis {
+        case .horizontal: setHorizontalDoor(state, col: col, row: row)
+        case .vertical: setVerticalDoor(state, col: col, row: row)
+        }
+    }
+
     // MARK: Derived
 
     /// Count of marked "old man" NPC rooms (`IsOldMan`) — feeds the per-dungeon

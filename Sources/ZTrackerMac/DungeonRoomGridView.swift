@@ -142,20 +142,53 @@ struct DungeonRoomGridView: View {
     static let contentWidth: CGFloat = cellW * CGFloat(DungeonRoomMap.cols)
         + gap * CGFloat(DungeonRoomMap.cols - 1) + 8
 
+    /// Column pitch / row pitch (cell + one gap).
+    private static var pitchX: CGFloat { cellW + gap }
+    private static var pitchY: CGFloat { cellH + gap }
+    private static var roomsW: CGFloat { cellW * CGFloat(DungeonRoomMap.cols) + gap * CGFloat(DungeonRoomMap.cols - 1) }
+    private static var roomsH: CGFloat { cellH * CGFloat(DungeonRoomMap.rows) + gap * CGFloat(DungeonRoomMap.rows - 1) }
+
     var body: some View {
-        VStack(spacing: Self.gap) {
+        VStack(alignment: .leading, spacing: Self.gap) {
             headerRow
-            ForEach(0..<DungeonRoomMap.rows, id: \.self) { row in
-                HStack(spacing: Self.gap) {
-                    ForEach(0..<DungeonRoomMap.cols, id: \.self) { col in
-                        RoomCellView(map: map, col: col, row: row,
-                                     width: Self.cellW, height: Self.cellH)
-                    }
-                }
-            }
+            roomsAndDoors
         }
         .padding(4)
         .background(RoundedRectangle(cornerRadius: 6).fill(.black.opacity(0.25)))
+    }
+
+    /// Rooms and the door segments in the gaps between them, absolutely placed in
+    /// one coordinate system (D3) — doors need to live in the gaps, which a plain
+    /// stack layout can't address.
+    private var roomsAndDoors: some View {
+        ZStack(alignment: .topLeading) {
+            ForEach(0..<DungeonRoomMap.rows, id: \.self) { row in
+                ForEach(0..<DungeonRoomMap.cols, id: \.self) { col in
+                    RoomCellView(map: map, col: col, row: row,
+                                 width: Self.cellW, height: Self.cellH)
+                        .offset(x: CGFloat(col) * Self.pitchX, y: CGFloat(row) * Self.pitchY)
+                }
+            }
+            // Horizontal-axis doors (vertical walls) — between columns i and i+1.
+            ForEach(0..<(DungeonRoomMap.cols - 1), id: \.self) { i in
+                ForEach(0..<DungeonRoomMap.rows, id: \.self) { j in
+                    DungeonDoorView(map: map, axis: .horizontal, col: i, row: j,
+                                    frameW: Self.gap, frameH: 22)
+                        .offset(x: CGFloat(i) * Self.pitchX + Self.cellW,
+                                y: CGFloat(j) * Self.pitchY + (Self.cellH - 22) / 2)
+                }
+            }
+            // Vertical-axis doors (horizontal walls) — between rows j and j+1.
+            ForEach(0..<DungeonRoomMap.cols, id: \.self) { i in
+                ForEach(0..<(DungeonRoomMap.rows - 1), id: \.self) { j in
+                    DungeonDoorView(map: map, axis: .vertical, col: i, row: j,
+                                    frameW: 28, frameH: Self.gap)
+                        .offset(x: CGFloat(i) * Self.pitchX + (Self.cellW - 28) / 2,
+                                y: CGFloat(j) * Self.pitchY + Self.cellH)
+                }
+            }
+        }
+        .frame(width: Self.roomsW, height: Self.roomsH, alignment: .topLeading)
     }
 
     /// The header letters spread one-per-column (`LEVEL-1` over columns 0…6), so

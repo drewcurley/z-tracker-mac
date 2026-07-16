@@ -27,6 +27,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-019.8](./T-019.8.md) | Dungeon doors (D3) — render + interact with the wall segments between rooms | frontend-engineer | T-019 | feat/dungeon-doors | — | docs/reviews/feat-dungeon-doors/final.md |
 | [T-019.7](./T-019.7.md) | Dungeon room details (D2b) — monster + floor-drop pickers, overlays, circle/brightness | frontend-engineer | T-019 | feat/dungeon-room-details | — | docs/reviews/feat-dungeon-room-details/final.md |
 | [T-019.6](./T-019.6.md) | Dungeon room editing (D2a) — left-click gesture + right-click picker | frontend-engineer | T-019 | feat/dungeon-room-leftclick | — | docs/reviews/feat-dungeon-room-leftclick/final.md |
 | [T-046.2](./T-046.2.md) | Don't orphan the window when its saved display is disconnected | frontend-engineer | T-046.1 | fix/window-frame-orphan | — | docs/reviews/fix-window-frame-orphan/final.md |
