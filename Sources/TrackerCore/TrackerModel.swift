@@ -158,7 +158,7 @@ public final class TrackerModel {
     /// returning the announcements to fire this tick (T-018.3). The app calls
     /// this on a ~1 Hz timer. The map-state's routing flags don't affect any
     /// reminder input, so they're passed as `false`.
-    public func pollReminders() -> [ReminderAnnouncement] {
+    public func pollReminders(bookForHelpfulHints: Bool = false) -> [ReminderAnnouncement] {
         let instance = OverworldInstance(quest: quest ?? .first)
         let mapState = MapStateSummary.compute(
             grid: overworldGrid, instance: instance, dungeonTracker: dungeonTracker,
@@ -191,7 +191,8 @@ public final class TrackerModel {
             isCurrentlyBook: isCurrentlyBook,
             whistleSpotsRemain: mapState.owWhistleSpotsRemain.count,
             powerBraceletSpotsRemain: mapState.owPowerBraceletSpotsRemain,
-            bookShopMarked: bookShopMarked)
+            bookShopMarked: bookShopMarked,
+            bookForHelpfulHints: bookForHelpfulHints)
     }
 
     /// The derived player state (item possession, levels, hearts) read by

@@ -125,7 +125,7 @@ struct MainTrackerPlaceholderView: View {
                         ObtainableItemsView(model: model, playerState: model.playerComputedStateSummary, mapState: mapState)
                     }
                     TopSectionGroup(title: "Flags") {
-                        SeedFlagsView(model: model, timer: timer)
+                        SeedFlagsView(model: model, options: options, timer: timer)
                     }
                     TopSectionGroup(title: "Info") {
                         MapInfoView(model: model, playerState: model.playerComputedStateSummary, mapState: mapState, overlays: overlays, timer: timer, onResetApp: onResetApp)
@@ -196,7 +196,7 @@ struct MainTrackerPlaceholderView: View {
         // and speak/show the returned announcements.
         .task {
             while !Task.isCancelled {
-                reminders.handle(model.pollReminders(), options: options)
+                reminders.handle(model.pollReminders(bookForHelpfulHints: options.bookForHelpfulHints), options: options)
                 try? await Task.sleep(for: .seconds(1))
             }
         }

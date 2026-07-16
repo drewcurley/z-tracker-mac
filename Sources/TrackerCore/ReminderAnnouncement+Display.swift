@@ -16,6 +16,7 @@ extension ReminderAnnouncement {
         case .doorRepairCount: .doorRepair
         case .getCoastItem: .coastItem
         case .recorderSpots, .powerBraceletSpots, .considerBoomstickBook: .recorderPBSpotsAndBoomstickBook
+        case .remindVisitHints: .haveKeyLadder
         }
     }
 
@@ -69,6 +70,8 @@ extension ReminderAnnouncement {
             return n == 1 ? "There is one power bracelet spot" : "There are \(n) power bracelet spots"
         case .considerBoomstickBook:
             return "Consider buying the boomstick book"
+        case .remindVisitHints:
+            return "You have the book — visit the hint NPCs"
         }
     }
 }

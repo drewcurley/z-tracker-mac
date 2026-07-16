@@ -51,7 +51,8 @@ struct SettingsPanelView: View {
             Toggle("BOARD instead of LEVEL", isOn: Bindable(options).boardInsteadOfLevel)
             Toggle("Show basement info", isOn: Bindable(options).showBasementInfo)
             Toggle("Do door inference", isOn: Bindable(options).doDoorInference)
-            Toggle("Book for Helpful Hints", isOn: Bindable(options).bookForHelpfulHints)
+            // "Book for Helpful Hints" is a seed flag now — it lives in the Flags
+            // section (T-092), not here.
             Toggle("Left-drag auto-inverts", isOn: Bindable(options).leftDragAutoInverts)
             Toggle("Default to NonDescript", isOn: Bindable(options).defaultToNonDescript)
             Toggle("Dungeon 'sunglasses'", isOn: Bindable(options).dungeonSunglasses)

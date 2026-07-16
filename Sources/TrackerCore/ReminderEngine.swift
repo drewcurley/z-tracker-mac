@@ -42,6 +42,10 @@ public enum ReminderAnnouncement: Equatable, Sendable {
     /// Periodic nudge to buy the boomstick book (have the wand, no book, a book
     /// shop is marked).
     case considerBoomstickBook
+    /// One-shot: you just got the Book and this seed's Book grants hints, so go
+    /// visit the hint NPCs (T-092, user request — fires only when the
+    /// "Book for Helpful Hints" flag is on).
+    case remindVisitHints
 }
 
 /// The edge-triggered reminder/announcement engine. Ported from
@@ -89,6 +93,7 @@ public final class ReminderEngine {
     private var previouslyLocatedDungeonCount = 0
     private var remindedLadder = false
     private var remindedAnyKey = false
+    private var remindedBookHints = false
     private var priorSwordLevel = 0
     private var priorSwordWandLevel = 0
     private var priorRingLevel = 0
@@ -131,6 +136,7 @@ public final class ReminderEngine {
         previouslyAnnouncedTriforceCount = 0
         remindedLadder = false
         remindedAnyKey = false
+        remindedBookHints = false
         priorSwordLevel = 0
         priorSwordWandLevel = 0
         priorRingLevel = 0
@@ -162,7 +168,8 @@ public final class ReminderEngine {
         isCurrentlyBook: Bool = true,
         whistleSpotsRemain: Int = 0,
         powerBraceletSpotsRemain: Int = 0,
-        bookShopMarked: Bool = false
+        bookShopMarked: Bool = false,
+        bookForHelpfulHints: Bool = false
     ) -> [ReminderAnnouncement] {
         var out: [ReminderAnnouncement] = []
 
@@ -308,6 +315,12 @@ public final class ReminderEngine {
         if !remindedAnyKey && playerState.haveAnyKey {
             out.append(.remindShortly(itemId: ITEMS.anyKey))
             remindedAnyKey = true
+        }
+        // book → visit hints (T-092): once you hold the Book and this seed's Book
+        // grants hints, nudge to go read the hint NPCs.
+        if !remindedBookHints, bookForHelpfulHints, playerState.haveBookOrShield, isCurrentlyBook {
+            out.append(.remindVisitHints)
+            remindedBookHints = true
         }
 
         // door-repair count (`Z1R_WPF/Reminders.fs:244-250`): each time a new
