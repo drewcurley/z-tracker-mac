@@ -65,14 +65,15 @@ struct DungeonMinimapHoverIcon: View {
     private let blue = Color(red: 71 / 255, green: 47 / 255, blue: 228 / 255)
 
     var body: some View {
-        VStack(spacing: 2) {
-            Rectangle().fill(blue).frame(width: 18, height: 6)
-            Rectangle().fill(blue).frame(width: 18, height: 6)
+        VStack(spacing: 6) {
+            Rectangle().fill(blue).frame(maxWidth: .infinity).frame(height: 13)
+            Rectangle().fill(blue).frame(maxWidth: .infinity).frame(height: 13)
         }
-        .padding(3)
-        .frame(width: 26, height: 22)
+        .padding(8)
+        .frame(width: 54, height: 44)
         .background(Color.black)
-        .overlay(RoundedRectangle(cornerRadius: 3).strokeBorder(showing ? .cyan : .gray, lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(showing ? .cyan : Color(white: 0.35), lineWidth: 1))
+        .contentShape(Rectangle())
         .onHover { showing = $0 }
         .popover(isPresented: $showing, arrowEdge: .leading) {
             DungeonMinimapView(map: map, headerText: headerText)
