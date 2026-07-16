@@ -36,7 +36,7 @@ struct DungeonMapView: View {
         VStack(alignment: .leading, spacing: 8) {
             tabBar
             if isSummary {
-                summaryPlaceholder
+                DungeonSummaryView(model: model, options: options) { selected = $0 }
             } else {
                 HStack(alignment: .top, spacing: 8) {
                     DungeonRoomGridView(map: model.dungeonRoomMaps[selected],
@@ -112,14 +112,6 @@ struct DungeonMapView: View {
         .frame(width: Self.infoStripWidth)
     }
 
-    private var summaryPlaceholder: some View {
-        VStack(spacing: 6) {
-            Text("Summary").font(.headline)
-            Text("The all-dungeons overview lands in its own slice.")
-                .font(.caption).foregroundStyle(.secondary)
-        }
-        .frame(maxWidth: .infinity, minHeight: 200)
-    }
 }
 
 /// One dungeon's 8×8 room grid.
