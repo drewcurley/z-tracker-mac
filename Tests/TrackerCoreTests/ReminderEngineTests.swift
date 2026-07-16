@@ -15,7 +15,9 @@ struct ReminderEngineTests {
         blockers: DungeonBlockersContainer = DungeonBlockersContainer(),
         playerState: PlayerComputedStateSummary = PlayerComputedStateSummary(),
         progress: PlayerProgressAndTakeAnyHearts = PlayerProgressAndTakeAnyHearts(),
-        startingItems: StartingItemsAndExtras = StartingItemsAndExtras()
+        startingItems: StartingItemsAndExtras = StartingItemsAndExtras(),
+        doorRepairFound: Int = 0,
+        doorRepairMax: Int = 9
     ) -> [ReminderAnnouncement] {
         let mapState = MapStateSummary.compute(
             grid: grid, instance: instance, dungeonTracker: dungeonTracker,
@@ -26,7 +28,22 @@ struct ReminderEngineTests {
             progress: progress, grid: grid, instance: instance)
         return engine.poll(
             playerState: playerState, mapState: mapState, dungeonTracker: dungeonTracker,
-            blockers: blockers, progress: progress, startingItems: startingItems, tagSummary: tag)
+            blockers: blockers, progress: progress, startingItems: startingItems, tagSummary: tag,
+            doorRepairFound: doorRepairFound, doorRepairMax: doorRepairMax)
+    }
+
+    @Test("door-repair count announces on each increase, then goes quiet")
+    func doorRepair() {
+        let engine = ReminderEngine()
+        // First charge marked → "1 of 9".
+        #expect(poll(engine, doorRepairFound: 1, doorRepairMax: 9)
+                .contains(.doorRepairCount(found: 1, max: 9)))
+        // Same count next poll → nothing.
+        #expect(!poll(engine, doorRepairFound: 1, doorRepairMax: 9)
+                .contains(where: { if case .doorRepairCount = $0 { return true }; return false }))
+        // Another charge → "2 of 9".
+        #expect(poll(engine, doorRepairFound: 2, doorRepairMax: 9)
+                .contains(.doorRepairCount(found: 2, max: 9)))
     }
 
     @Test("a fresh poll with nothing set emits nothing")

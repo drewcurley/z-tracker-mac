@@ -26,9 +26,11 @@
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
 | [T-072.1](./T-072.1.md) | Fix ⌥-drag circling the first room (defer modified-left to release) | frontend-engineer | T-072 | fix/drag-paint-option-defer | — | docs/reviews/fix-drag-paint-option-defer/final.md |
+| [T-088](./T-088.md) | Door-repair count voice reminder ("You found N of X door repairs") | frontend-engineer | T-018 | feat/door-repair-reminder | — | docs/reviews/feat-door-repair-reminder/final.md |
 | [T-087](./T-087.md) | Wider dungeon tabs to better fit the "needs" markers | frontend-engineer | T-084 | feat/wider-dungeon-tabs | — | docs/reviews/feat-wider-dungeon-tabs/final.md |
 | [T-086](./T-086.md) | Reminder pronunciation ("triforce" → "try force") for the voice engine | frontend-engineer | T-018 | feat/live-tts-reminders | — | docs/reviews/feat-live-tts-reminders/final.md |
 | [T-069](./T-069.md) | Revisit live TTS (Zoe premium) now that the audio stack is pre-warmed | frontend-engineer | T-018 | feat/live-tts-reminders | — | docs/reviews/feat-live-tts-reminders/final.md |
+| [T-089](./T-089.md) | Port the remaining periodic reminders (coast item, recorder/PB spots, boomstick book) | frontend-engineer | proposed |
 | [T-068](./T-068.md) | Serial audio queue for reminders (overlapping playback bug) | frontend-engineer | T-018 | feat/live-tts-reminders | — | docs/reviews/feat-live-tts-reminders/final.md |
 | [T-085](./T-085.md) | Door scroll quick-set — unknown door jumps to gold/purple | frontend-engineer | T-019.8 | feat/door-scroll-quickset | — | docs/reviews/feat-door-scroll-quickset/final.md |
 | [T-084](./T-084.md) | Dungeon-tab "needs" markers (Hungry-Goriya / Bomb-Upgrade / NPC-hint) | frontend-engineer | T-019.5 | feat/dungeon-tab-needs | — | docs/reviews/feat-dungeon-tab-needs/final.md |
