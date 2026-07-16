@@ -15,7 +15,7 @@ extension ReminderAnnouncement {
         case .remindShortly: .haveKeyLadder
         case .doorRepairCount: .doorRepair
         case .getCoastItem: .coastItem
-        case .recorderSpots, .powerBraceletSpots, .considerBoomstickBook: .recorderPBSpotsAndBoomstickBook
+        case .considerBoomstickBook: .recorderPBSpotsAndBoomstickBook
         case .remindVisitHints: .haveKeyLadder
         }
     }
@@ -56,6 +56,8 @@ extension ReminderAnnouncement {
             switch itemId {
             case ITEMS.ladder: return "Don't forget that you have the ladder"
             case ITEMS.anyKey: return "Don't forget that you have the any key"
+            case ITEMS.recorder: return "Don't forget that you have the recorder"
+            case ITEMS.powerBracelet: return "Don't forget that you have the power bracelet"
             default: return "Don't forget that you have an item"
             }
         case .doorRepairCount(let found, let max):
@@ -64,10 +66,6 @@ extension ReminderAnnouncement {
         case .getCoastItem(let itemName):
             return itemName.map { "Get the \($0) off the coast" }
                 ?? "Get the coast item with the ladder"
-        case .recorderSpots(let n):
-            return n == 1 ? "There is one recorder spot" : "There are \(n) recorder spots"
-        case .powerBraceletSpots(let n):
-            return n == 1 ? "There is one power bracelet spot" : "There are \(n) power bracelet spots"
         case .considerBoomstickBook:
             return "Consider buying the boomstick book"
         case .remindVisitHints:

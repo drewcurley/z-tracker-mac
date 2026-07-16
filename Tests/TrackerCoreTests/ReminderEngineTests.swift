@@ -22,8 +22,6 @@ struct ReminderEngineTests {
         now: Date = Date(timeIntervalSince1970: 0),
         coastItemValue: Int = -1,
         isCurrentlyBook: Bool = true,
-        whistleSpotsRemain: Int = 0,
-        powerBraceletSpotsRemain: Int = 0,
         bookShopMarked: Bool = false,
         bookForHelpfulHints: Bool = false
     ) -> [ReminderAnnouncement] {
@@ -39,7 +37,6 @@ struct ReminderEngineTests {
             blockers: blockers, progress: progress, startingItems: startingItems, tagSummary: tag,
             doorRepairFound: doorRepairFound, doorRepairMax: doorRepairMax,
             now: now, coastItemValue: coastItemValue, isCurrentlyBook: isCurrentlyBook,
-            whistleSpotsRemain: whistleSpotsRemain, powerBraceletSpotsRemain: powerBraceletSpotsRemain,
             bookShopMarked: bookShopMarked, bookForHelpfulHints: bookForHelpfulHints)
     }
 
@@ -117,23 +114,36 @@ struct ReminderEngineTests {
                                now: Date(timeIntervalSince1970: 0), coastItemValue: ITEMS.whiteSword)))
     }
 
-    @Test("recorder spots: announces the count, stays quiet as the count shrinks")
-    func recorderSpots() {
+    @Test("recorder is a one-shot nudge (not a perpetual spot count) that re-fires on re-mark (T-095)")
+    func recorderNudge() {
         let engine = ReminderEngine()
-        let player = PlayerComputedStateSummary(haveRecorder: true)
-        #expect(poll(engine, playerState: player, now: Date(timeIntervalSince1970: 0), whistleSpotsRemain: 3)
-                .contains(.recorderSpots(3)))
-        // 5+ min later with fewer spots (progress) → no nag.
-        let out = poll(engine, playerState: player, now: Date(timeIntervalSince1970: 400), whistleSpotsRemain: 2)
-        #expect(!out.contains { if case .recorderSpots = $0 { return true }; return false })
+        let withRec = PlayerComputedStateSummary(haveRecorder: true)
+        let without = PlayerComputedStateSummary(haveRecorder: false)
+        // Getting the recorder → one nudge; a steady state does not re-nag.
+        #expect(poll(engine, playerState: withRec).contains(.remindShortly(itemId: ITEMS.recorder)))
+        #expect(!poll(engine, playerState: withRec).contains(.remindShortly(itemId: ITEMS.recorder)))
+        // Unmark → re-mark → fires again.
+        _ = poll(engine, playerState: without)
+        #expect(poll(engine, playerState: withRec).contains(.remindShortly(itemId: ITEMS.recorder)))
     }
 
-    @Test("power-bracelet spots announce the count")
-    func powerBraceletSpots() {
-        let engine = ReminderEngine()
-        let player = PlayerComputedStateSummary(havePowerBracelet: true)
-        #expect(poll(engine, playerState: player, now: Date(timeIntervalSince1970: 0), powerBraceletSpotsRemain: 1)
-                .contains(.powerBraceletSpots(1)))
+    @Test("power bracelet is a one-shot nudge too (T-095)")
+    func powerBraceletNudge() {
+        #expect(poll(ReminderEngine(), playerState: PlayerComputedStateSummary(havePowerBracelet: true))
+                .contains(.remindShortly(itemId: ITEMS.powerBracelet)))
+    }
+
+    @Test("triforce count re-fires after unmark → re-mark (T-095)")
+    func unmarkRemarkReFires() {
+        let dt = DungeonTrackerInstance()
+        let e = ReminderEngine()
+        dt.dungeon(0).toggleTriforce()
+        #expect(poll(e, dungeonTracker: dt).contains(.triforceCount(1)))
+        #expect(!poll(e, dungeonTracker: dt).contains(.triforceCount(1)))  // steady → quiet
+        dt.dungeon(0).toggleTriforce()                // unmark
+        _ = poll(e, dungeonTracker: dt)
+        dt.dungeon(0).toggleTriforce()                // re-mark
+        #expect(poll(e, dungeonTracker: dt).contains(.triforceCount(1)))   // fires again
     }
 
     @Test("boomstick book: fires with wand + no book + a marked book shop")

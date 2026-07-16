@@ -35,10 +35,6 @@ public enum ReminderAnnouncement: Equatable, Sendable {
     /// Periodic nudge to grab the coast item with the ladder. `itemName` is the
     /// known item's spoken name, or `nil` when the coast item is still unknown.
     case getCoastItem(itemName: String?)
-    /// Periodic nudge: `count` recorder-warp spots still remain to visit.
-    case recorderSpots(Int)
-    /// Periodic nudge: `count` power-bracelet spots still remain.
-    case powerBraceletSpots(Int)
     /// Periodic nudge to buy the boomstick book (have the wand, no book, a book
     /// shop is marked).
     case considerBoomstickBook
@@ -93,6 +89,8 @@ public final class ReminderEngine {
     private var previouslyLocatedDungeonCount = 0
     private var remindedLadder = false
     private var remindedAnyKey = false
+    private var remindedRecorder = false
+    private var remindedPowerBracelet = false
     private var remindedBookHints = false
     private var priorSwordLevel = 0
     private var priorSwordWandLevel = 0
@@ -106,15 +104,11 @@ public final class ReminderEngine {
     private var previousCompletedDungeonCount = 0
     private var previouslyAnnouncedDoorRepairCount = 0
     // Periodic-reminder cooldowns (T-089): last time each fired, `nil` = never
-    // (so the first eligible poll fires it, matching the reference's "recentlyAgo"
-    // seed). Plus the prior spot counts, so a growing/steady count re-nags but a
-    // shrinking one (you're making progress) stays quiet.
+    // (so the first eligible poll fires it). The recorder/power-bracelet *spot
+    // count* reminders were removed (T-095): they nagged every 5 min and the count
+    // was wrong — replaced by one-shot "you have the recorder/power bracelet" nudges.
     private var lastCoastReminder: Date?
-    private var lastRecorderReminder: Date?
-    private var lastPowerBraceletReminder: Date?
     private var lastBoomstickReminder: Date?
-    private var prevWhistleSpots = 0
-    private var prevPowerBraceletSpots = 0
 
     public init() {}
 
@@ -122,6 +116,16 @@ public final class ReminderEngine {
     private func cooldownElapsed(_ now: Date, _ last: Date?, minutes: Double) -> Bool {
         guard let last else { return true }
         return now.timeIntervalSince(last) >= minutes * 60
+    }
+
+    /// A one-shot "don't forget you have X" nudge that re-arms when the item is
+    /// unmarked (T-095), so re-marking fires it again.
+    private func itemNudge(_ id: Int, have: Bool, reminded: inout Bool, into out: inout [ReminderAnnouncement]) {
+        if have {
+            if !reminded { out.append(.remindShortly(itemId: id)); reminded = true }
+        } else {
+            reminded = false
+        }
     }
 
     /// Full-state reset for a "restart run" (groundhog/routers) feature.
@@ -136,6 +140,8 @@ public final class ReminderEngine {
         previouslyAnnouncedTriforceCount = 0
         remindedLadder = false
         remindedAnyKey = false
+        remindedRecorder = false
+        remindedPowerBracelet = false
         remindedBookHints = false
         priorSwordLevel = 0
         priorSwordWandLevel = 0
@@ -166,15 +172,15 @@ public final class ReminderEngine {
         now: Date = .distantPast,
         coastItemValue: Int = -1,
         isCurrentlyBook: Bool = true,
-        whistleSpotsRemain: Int = 0,
-        powerBraceletSpotsRemain: Int = 0,
         bookShopMarked: Bool = false,
         bookForHelpfulHints: Bool = false
     ) -> [ReminderAnnouncement] {
         var out: [ReminderAnnouncement] = []
 
-        // hearts (`:1571-1581`)
+        // hearts (`:1571-1581`). Re-arm any level above the current heart count so
+        // dropping then regaining hearts re-fires (T-095, unmark→remark).
         let playerHearts = playerState.playerHearts
+        for n in haveAnnouncedHearts.indices where n > playerHearts { haveAnnouncedHearts[n] = false }
         if playerHearts >= 4, playerHearts <= 6, !haveAnnouncedHearts[playerHearts] {
             haveAnnouncedHearts[playerHearts] = true
             if !playerState.haveWhiteSwordItem && mapState.sword2Location != nil {
@@ -188,12 +194,23 @@ public final class ReminderEngine {
             }
         }
 
-        // dungeon completion + found count (`:1626-1637`)
-        for d in 0...7 where !haveAnnouncedCompletedDungeons[d] && dungeonTracker.dungeon(d).isComplete {
-            out.append(.completedDungeon(d))
-            haveAnnouncedCompletedDungeons[d] = true
+        // dungeon completion + found count (`:1626-1637`). Re-arm when a dungeon is
+        // un-completed (T-095), so re-completing it re-announces.
+        for d in 0...7 {
+            if dungeonTracker.dungeon(d).isComplete {
+                if !haveAnnouncedCompletedDungeons[d] {
+                    out.append(.completedDungeon(d))
+                    haveAnnouncedCompletedDungeons[d] = true
+                }
+            } else {
+                haveAnnouncedCompletedDungeons[d] = false
+            }
         }
         let numFound = (0...8).reduce(0) { $0 + (mapState.dungeonLocations[$1] != nil ? 1 : 0) }
+        // Re-arm the count reminders when the count drops (T-095, unmark→remark):
+        // clamp the "already announced" watermark down to the current count so
+        // re-reaching a level re-announces.
+        previouslyAnnouncedFoundDungeonCount = min(previouslyAnnouncedFoundDungeonCount, numFound)
         if numFound > previouslyAnnouncedFoundDungeonCount {
             out.append(.foundDungeonCount(numFound))
             previouslyAnnouncedFoundDungeonCount = numFound
@@ -205,6 +222,7 @@ public final class ReminderEngine {
             .lazy.filter { $0 }.count
         let locatedDungeons = numFound // see HasBeenLocated note in the type doc
         let completedDungeons = (0...8).reduce(0) { $0 + (dungeonTracker.dungeon($1).isComplete ? 1 : 0) }
+        previouslyAnnouncedTriforceCount = min(previouslyAnnouncedTriforceCount, triforces)
         var justAnnouncedTAG = false
         if triforces > previouslyAnnouncedTriforceCount {
             out.append(.triforceCount(triforces))
@@ -307,24 +325,30 @@ public final class ReminderEngine {
         }
         priorAnyKey = playerState.haveAnyKey
 
-        // one-shot item nudges (`:1738-1744`)
-        if !remindedLadder && playerState.haveLadder {
-            out.append(.remindShortly(itemId: ITEMS.ladder))
-            remindedLadder = true
-        }
-        if !remindedAnyKey && playerState.haveAnyKey {
-            out.append(.remindShortly(itemId: ITEMS.anyKey))
-            remindedAnyKey = true
-        }
+        // One-shot "don't forget you have X" nudges. The latch **re-arms when the
+        // item is unmarked** (T-095), so if you unmark then re-mark it, the reminder
+        // fires again — matching the user's expectation. Recorder + power bracelet
+        // are new here (T-095): the user wanted a plain "you have the recorder" nudge
+        // instead of the old perpetual "N recorder spots" count.
+        itemNudge(ITEMS.ladder, have: playerState.haveLadder, reminded: &remindedLadder, into: &out)
+        itemNudge(ITEMS.anyKey, have: playerState.haveAnyKey, reminded: &remindedAnyKey, into: &out)
+        itemNudge(ITEMS.recorder, have: playerState.haveRecorder, reminded: &remindedRecorder, into: &out)
+        itemNudge(ITEMS.powerBracelet, have: playerState.havePowerBracelet, reminded: &remindedPowerBracelet, into: &out)
+
         // book → visit hints (T-092, fixed T-094): once you hold the Book and this
         // seed's Book grants hints, nudge to go read the hint NPCs. "Hold the Book"
         // means either the normal Book of Magic (item slot 0, when it's the book and
         // not a shield) OR the boomstick book — which is the *same* book, just moved
-        // into a shop with extra wand functionality (so it grants hints too).
+        // into a shop with extra wand functionality (so it grants hints too). Re-arms
+        // when the book is unmarked (T-095).
         let hasTheBook = (playerState.haveBookOrShield && isCurrentlyBook) || progress.hasBoomBook
-        if !remindedBookHints, bookForHelpfulHints, hasTheBook {
-            out.append(.remindVisitHints)
-            remindedBookHints = true
+        if hasTheBook {
+            if bookForHelpfulHints, !remindedBookHints {
+                out.append(.remindVisitHints)
+                remindedBookHints = true
+            }
+        } else {
+            remindedBookHints = false
         }
 
         // door-repair count (`Z1R_WPF/Reminders.fs:244-250`): each time a new
@@ -350,24 +374,9 @@ public final class ReminderEngine {
             lastCoastReminder = now
         }
 
-        // recorder spots — every 5 min; only if the count hasn't shrunk (you're
-        // not making progress) and there's at least one left.
-        if cooldownElapsed(now, lastRecorderReminder, minutes: 5), playerState.haveRecorder {
-            if whistleSpotsRemain >= prevWhistleSpots, whistleSpotsRemain > 0 {
-                out.append(.recorderSpots(whistleSpotsRemain))
-            }
-            lastRecorderReminder = now
-            prevWhistleSpots = whistleSpotsRemain
-        }
-
-        // power-bracelet spots — same shape as recorder spots.
-        if cooldownElapsed(now, lastPowerBraceletReminder, minutes: 5), playerState.havePowerBracelet {
-            if powerBraceletSpotsRemain >= prevPowerBraceletSpots, powerBraceletSpotsRemain > 0 {
-                out.append(.powerBraceletSpots(powerBraceletSpotsRemain))
-            }
-            lastPowerBraceletReminder = now
-            prevPowerBraceletSpots = powerBraceletSpotsRemain
-        }
+        // (Recorder / power-bracelet spot-count reminders removed in T-095 — they
+        //  nagged every 5 min and the count was wrong; replaced by the one-shot
+        //  "you have the recorder / power bracelet" nudges above.)
 
         // boomstick book — every 5 min if you have the wand, no book, and a book
         // shop is marked. Timer resets only when it actually fires.
