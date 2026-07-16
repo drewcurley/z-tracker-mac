@@ -158,6 +158,14 @@ struct MainTrackerPlaceholderView: View {
                     onSetTakeAny: { state, c, r in model.setOverworldTakeAny(state, column: c, row: r) },
                     onCycleTakeAny: { c, r in model.cycleOverworldTakeAny(column: c, row: r) },
                     onReleaseTakeAny: { c, r in model.releaseOverworldTakeAny(column: c, row: r) },
+                    onOverwrite: { old, new, c, r in
+                        // Overworld-overwrite reminder (T-096): fire immediately on a
+                        // destructive mark change, in case it was accidental.
+                        if let a = OverworldOverwriteReminder.announcement(
+                            old: old, new: new, coordLabel: OverworldCoords.label(column: c, row: r)) {
+                            reminders.handle([a], options: options)
+                        }
+                    },
                     onPlaceDungeon: { number, c, r in
                         guard (1...9).contains(number) else { return }
                         model.levelHints[HintTarget.dungeon(number)] =

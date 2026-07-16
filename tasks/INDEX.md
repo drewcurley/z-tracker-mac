@@ -26,6 +26,7 @@
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
 | [T-072.1](./T-072.1.md) | Fix ⌥-drag circling the first room (defer modified-left to release) | frontend-engineer | T-072 | fix/drag-paint-option-defer | — | docs/reviews/fix-drag-paint-option-defer/final.md |
+| [T-096](./T-096.md) | Overworld-overwrite reminder ("You changed C4 from … to …") | backend-engineer | T-018 | feat/overworld-overwrite-reminder | — | docs/reviews/feat-overworld-overwrite-reminder/final.md |
 | [T-095](./T-095.md) | Reminder fixes — recorder one-shot (not perpetual spots), re-fire on re-mark | backend-engineer | T-089 | fix/reminder-behavior | — | docs/reviews/fix-reminder-behavior/final.md |
 | [T-094](./T-094.md) | Visit-hints reminder — the boomstick book IS the Book of Magic | backend-engineer | T-092 | fix/book-hints-boomstick | — | docs/reviews/fix-book-hints-boomstick/final.md |
 | [T-093](./T-093.md) | Recorder → New/Unbeaten toggles by the recorder widget | frontend-engineer | T-081 | feat/recorder-destination-toggles | — | docs/reviews/feat-recorder-destination-toggles/final.md |

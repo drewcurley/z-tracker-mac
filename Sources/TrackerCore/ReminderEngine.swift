@@ -42,6 +42,32 @@ public enum ReminderAnnouncement: Equatable, Sendable {
     /// visit the hint NPCs (T-092, user request — fires only when the
     /// "Book for Helpful Hints" flag is on).
     case remindVisitHints
+    /// You destructively changed an overworld mark, e.g. "C4 from door repair to
+    /// money making game" (T-096) — a safety net in case it was accidental.
+    /// Ported from the reference's `RemindOverworldOverwrites` (`Reminders.fs:130`).
+    case overworldOverwrite(coordLabel: String, from: String, to: String)
+}
+
+/// Builds the overworld-overwrite reminder (T-096) for a destructive change of an
+/// overworld mark, or `nil` when the change isn't reportable. Ported from
+/// `RemindOverworldOverwrites` (`Z1R_WPF/Reminders.fs:130-146`): only fires when
+/// the **old** mark was a real mark (not unmarked / don't-care) and it actually
+/// changed — skipping the reasonable refinement of an *unknown* secret into a
+/// sized secret.
+public enum OverworldOverwriteReminder {
+    public static func announcement(
+        old: OverworldTileMark, new: OverworldTileMark, coordLabel: String
+    ) -> ReminderAnnouncement? {
+        guard old != new else { return nil }
+        // Original must have been a real mark (the reference's DARK_X / -1 guard).
+        guard old != .unmarked, old != .dontCare else { return nil }
+        // Refining an unknown secret into a sized one isn't destructive — skip.
+        if case .secret(.unknown) = old, case .secret(let sz) = new, sz != .unknown {
+            return nil
+        }
+        return .overworldOverwrite(coordLabel: coordLabel,
+                                   from: old.displayName, to: new.displayName)
+    }
 }
 
 /// The edge-triggered reminder/announcement engine. Ported from
