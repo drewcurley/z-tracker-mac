@@ -13,7 +13,9 @@ struct DungeonMapView: View {
     /// The FQ/SQ vanilla-outline overlay mode (nil = off) — global across all
     /// dungeons: toggling it shows each dungeon's own vanilla footprint (T-071).
     @State private var outlineMode: VanillaQuest? = nil
-
+    /// The grid row the pointer is over (T-078) — set by the grid's room cells,
+    /// read by the info strip's row-locator widget.
+    @State private var hoveredRow: Int?
     /// The info strip's fixed width (old-men count + reserved dungeon-items box).
     private static let infoStripWidth: CGFloat = 72
 
@@ -66,7 +68,8 @@ struct DungeonMapView: View {
                                         dungeonNumber: selected + 1,
                                         headerText: headerText,
                                         inferDoors: options.doDoorInference,
-                                        outlineQuest: outlineMode)
+                                        outlineQuest: outlineMode,
+                                        hoveredRow: $hoveredRow)
                     dungeonInfoStrip
                 }
             }
@@ -133,12 +136,17 @@ struct DungeonMapView: View {
     /// (the reference's local dungeon-tracker panel).
     private var dungeonInfoStrip: some View {
         VStack(alignment: .leading, spacing: 8) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text("OLD MEN").font(.system(size: 8, weight: .semibold)).foregroundStyle(.secondary)
-                Text(oldManText)
-                    .font(.system(size: 18, weight: .heavy, design: .rounded))
-                    .foregroundStyle(.orange)
-                    .help("Marked old-man rooms (NPC hint / bomb-upgrade / hungry-goriya / life-or-money) vs. the number expected in this dungeon")
+            // Row-locator (T-078): always-visible rupee/key/bomb HUD-row icons; a
+            // highlight reveals the hovered room's in-game-map row beside them.
+            HStack(alignment: .top, spacing: 6) {
+                RowLocatorWidget(hoveredRow: hoveredRow)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("OLD MEN").font(.system(size: 8, weight: .semibold)).foregroundStyle(.secondary)
+                    Text(oldManText)
+                        .font(.system(size: 18, weight: .heavy, design: .rounded))
+                        .foregroundStyle(.orange)
+                        .help("Marked old-man rooms (NPC hint / bomb-upgrade / hungry-goriya / life-or-money) vs. the number expected in this dungeon")
+                }
             }
             Divider()
             Text("ITEMS").font(.system(size: 8, weight: .semibold)).foregroundStyle(.secondary)
@@ -176,18 +184,17 @@ struct DungeonRoomGridView: View {
     private static let cellW: CGFloat = 52
     private static let cellH: CGFloat = 36
     private static let gap: CGFloat = 16
-    /// Width reserved right of the grid for the hover row-locator strip (T-078).
-    private static let stripW: CGFloat = 26
 
     /// Which grid row the pointer is over (nil = not hovering) — drives the
-    /// row-locator reveal.
-    @State private var hoveredRow: Int?
+    /// row-locator widget in the info strip (T-078). Owned by `DungeonMapView`
+    /// so the grid (hover source) and the info-strip widget share it.
+    @Binding var hoveredRow: Int?
 
     /// The grid's natural width: 8 cells + the inter-cell door gaps + the 4pt
-    /// padding on each side + the row-locator strip. The map card uses this to cap
-    /// its total width so a wide window grows Blockers/Notes not the (fixed) grid.
+    /// padding on each side. The map card uses this to cap its total width so a
+    /// wide window grows Blockers/Notes rather than the (fixed-size) grid.
     static let contentWidth: CGFloat = cellW * CGFloat(DungeonRoomMap.cols)
-        + gap * CGFloat(DungeonRoomMap.cols - 1) + 8 + stripW
+        + gap * CGFloat(DungeonRoomMap.cols - 1) + 8
 
     /// Column pitch / row pitch (cell + one gap).
     private static var pitchX: CGFloat { cellW + gap }
@@ -244,37 +251,8 @@ struct DungeonRoomGridView: View {
                 VanillaOutlineOverlay(quest: outlineQuest, dungeon: dungeonNumber - 1,
                                       cellW: Self.cellW, cellH: Self.cellH, gap: Self.gap)
             }
-            rowLocator
         }
-        .frame(width: Self.roomsW + Self.stripW, height: Self.roomsH, alignment: .topLeading)
-    }
-
-    /// The rupee/blank/key/bomb row-locator (T-078): a strip right of the grid
-    /// keyed to the in-game HUD map's row bands (rows 0–1 = rupee, 2–3 = blank,
-    /// 4–5 = key, 6–7 = bomb). Revealed on hover — a gray bar marks the hovered
-    /// room's row so you can read off where it sits on the in-game HUD.
-    @ViewBuilder private var rowLocator: some View {
-        if let hoveredRow {
-            // Row highlight across the grid + strip.
-            Rectangle().fill(.gray.opacity(0.22))
-                .frame(width: Self.roomsW + Self.stripW, height: Self.cellH)
-                .offset(y: CGFloat(hoveredRow) * Self.pitchY)
-                .allowsHitTesting(false)
-            // The three band icons, centered on their row pairs.
-            rowBandIcon(.fiveRupee, rows: (0, 1))
-            rowBandIcon(.key, rows: (4, 5))
-            rowBandIcon(.bombPack, rows: (6, 7))
-        }
-    }
-
-    @ViewBuilder private func rowBandIcon(_ drop: FloorDropDetail, rows: (Int, Int)) -> some View {
-        if let image = Image(atlasIcon: DungeonFloorDropAtlas.sprite(drop)) {
-            let centerY = (CGFloat(rows.0) * Self.pitchY + CGFloat(rows.1) * Self.pitchY + Self.cellH) / 2
-            image.interpolation(.none).resizable()
-                .frame(width: 18, height: 18)
-                .offset(x: Self.roomsW + (Self.stripW - 18) / 2, y: centerY - 9)
-                .allowsHitTesting(false)
-        }
+        .frame(width: Self.roomsW, height: Self.roomsH, alignment: .topLeading)
     }
 
     /// The header letters spread one-per-column (`LEVEL-1` over columns 0…6), so
