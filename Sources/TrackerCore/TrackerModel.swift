@@ -167,10 +167,20 @@ public final class TrackerModel {
         let tag = TriforceAndGoSummary.compute(
             playerState: playerComputedStateSummary, dungeonTracker: dungeonTracker,
             mapState: mapState, progress: playerProgress, grid: overworldGrid, instance: instance)
+        // Door-repair charges marked on the overworld (for the count reminder).
+        let q = quest ?? .first
+        var doorRepairFound = 0
+        for c in 0..<OverworldGrid.columnCount {
+            for r in 0..<OverworldGrid.rowCount where overworldGrid.mark(column: c, row: r) == .doorRepair {
+                doorRepairFound += 1
+            }
+        }
         return reminderEngine.poll(
             playerState: playerComputedStateSummary, mapState: mapState,
             dungeonTracker: dungeonTracker, blockers: dungeonBlockers,
-            progress: playerProgress, startingItems: startingItemsAndExtras, tagSummary: tag)
+            progress: playerProgress, startingItems: startingItemsAndExtras, tagSummary: tag,
+            doorRepairFound: doorRepairFound,
+            doorRepairMax: OverworldTileLimits.maxUses(.doorRepair, quest: q))
     }
 
     /// The derived player state (item possession, levels, hearts) read by

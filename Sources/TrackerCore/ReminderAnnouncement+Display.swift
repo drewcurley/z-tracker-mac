@@ -13,6 +13,7 @@ extension ReminderAnnouncement {
         case .completedDungeon, .foundDungeonCount, .triforceCount, .triforceAndGo: .dungeonFeedback
         case .remindUnblock: .blockers
         case .remindShortly: .haveKeyLadder
+        case .doorRepairCount: .doorRepair
         }
     }
 
@@ -54,6 +55,9 @@ extension ReminderAnnouncement {
             case ITEMS.anyKey: return "Don't forget that you have the any key"
             default: return "Don't forget that you have an item"
             }
+        case .doorRepairCount(let found, let max):
+            // "You found all N of N door repairs" once complete, else "N of N".
+            return "You found \(found == max ? "all " : "")\(found) of \(max) door repairs"
         }
     }
 }

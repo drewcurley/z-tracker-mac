@@ -25,6 +25,10 @@ public enum ReminderAnnouncement: Equatable, Sendable {
     case remindUnblock(blocker: DungeonBlocker, dungeons: [Int], combatDetails: [CombatUnblockerDetail])
     /// A one-shot "you just got this, remember it" nudge for an `ITEMS` id.
     case remindShortly(itemId: Int)
+    /// The number of door-repair charges marked on the overworld just increased
+    /// to `found` (of `max` for the quest). Ported from the reference's door-repair
+    /// reminder (`Z1R_WPF/Reminders.fs:244-250`).
+    case doorRepairCount(found: Int, max: Int)
 }
 
 /// The edge-triggered reminder/announcement engine. Ported from
@@ -82,6 +86,7 @@ public final class ReminderEngine {
     private var priorAnyKey = false
     private var previouslyAnnouncedTriforceAndGo = 0
     private var previousCompletedDungeonCount = 0
+    private var previouslyAnnouncedDoorRepairCount = 0
 
     public init() {}
 
@@ -120,7 +125,9 @@ public final class ReminderEngine {
         blockers: DungeonBlockersContainer,
         progress: PlayerProgressAndTakeAnyHearts,
         startingItems: StartingItemsAndExtras,
-        tagSummary: TriforceAndGoSummary
+        tagSummary: TriforceAndGoSummary,
+        doorRepairFound: Int = 0,
+        doorRepairMax: Int = 0
     ) -> [ReminderAnnouncement] {
         var out: [ReminderAnnouncement] = []
 
@@ -265,6 +272,14 @@ public final class ReminderEngine {
         if !remindedAnyKey && playerState.haveAnyKey {
             out.append(.remindShortly(itemId: ITEMS.anyKey))
             remindedAnyKey = true
+        }
+
+        // door-repair count (`Z1R_WPF/Reminders.fs:244-250`): each time a new
+        // door-repair charge is marked on the overworld, announce the running
+        // count. Not reset on groundhog — door-repair marks are permanent.
+        if doorRepairFound > previouslyAnnouncedDoorRepairCount {
+            out.append(.doorRepairCount(found: doorRepairFound, max: doorRepairMax))
+            previouslyAnnouncedDoorRepairCount = doorRepairFound
         }
 
         return out

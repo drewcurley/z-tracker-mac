@@ -45,6 +45,15 @@ struct ReminderAnnouncementDisplayTests {
         #expect(tag(50).displayText == "You need something to be triforce and go")
     }
 
+    @Test("door-repair count text: N of N, and 'all' at the max")
+    func doorRepairText() {
+        #expect(ReminderAnnouncement.doorRepairCount(found: 1, max: 9).displayText
+                == "You found 1 of 9 door repairs")
+        #expect(ReminderAnnouncement.doorRepairCount(found: 9, max: 9).displayText
+                == "You found all 9 of 9 door repairs")
+        #expect(ReminderAnnouncement.doorRepairCount(found: 3, max: 9).category == .doorRepair)
+    }
+
     @Test("unblock text lists the dungeon numbers and the need")
     func unblockText() {
         let one = ReminderAnnouncement.remindUnblock(blocker: .ladder, dungeons: [1], combatDetails: [])
