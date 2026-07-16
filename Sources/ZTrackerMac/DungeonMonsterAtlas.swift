@@ -15,6 +15,12 @@ enum DungeonMonsterAtlas {
         return sheet.cropping(to: CGRect(x: idx * tile, y: 0, width: tile, height: tile))
     }
 
+    /// The "old man" NPC sprite (sheet index 11) — not a `MonsterDetail`, but the
+    /// reference uses it for the old-man-count icon (`Graphics.old_man_bmp`).
+    static var oldMan: CGImage? {
+        sheet?.cropping(to: CGRect(x: 11 * tile, y: 0, width: tile, height: tile))
+    }
+
     private static func tileIndex(_ md: MonsterDetail) -> Int? {
         switch md {
         case .unmarked: nil

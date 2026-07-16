@@ -28,6 +28,7 @@
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
 | [T-072.1](./T-072.1.md) | Fix ⌥-drag circling the first room (defer modified-left to release) | frontend-engineer | T-072 | fix/drag-paint-option-defer | — | docs/reviews/fix-drag-paint-option-defer/final.md |
+| [T-080](./T-080.md) | Old-man counter — single line with icon, below the row-locator | frontend-engineer | T-074 | feat/dungeon-oldmen-layout | — | docs/reviews/feat-dungeon-oldmen-layout/final.md |
 | [T-079](./T-079.md) | Dungeon minimap hover-reveal (faux in-game HUD map) | frontend-engineer | T-019 | feat/dungeon-minimap-hover | — | docs/reviews/feat-dungeon-minimap-hover/final.md |
 | [T-078.1](./T-078.1.md) | Row-locator — rebuild as an always-on info-strip widget (design correction) | frontend-engineer | T-078 | fix/row-locator-widget | — | docs/reviews/fix-row-locator-widget/final.md |
 | [T-078](./T-078.md) | Dungeon rupee/key/bomb row-locator (hover reveal) | frontend-engineer | T-019 | feat/dungeon-row-location | — | docs/reviews/feat-dungeon-row-location/final.md |

@@ -138,17 +138,18 @@ struct DungeonMapView: View {
     private var dungeonInfoStrip: some View {
         VStack(alignment: .leading, spacing: 8) {
             // Row-locator (T-078): always-visible rupee/key/bomb HUD-row icons; a
-            // highlight reveals the hovered room's in-game-map row beside them.
-            HStack(alignment: .top, spacing: 6) {
-                RowLocatorWidget(hoveredRow: hoveredRow)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("OLD MEN").font(.system(size: 8, weight: .semibold)).foregroundStyle(.secondary)
-                    Text(oldManText)
-                        .font(.system(size: 18, weight: .heavy, design: .rounded))
-                        .foregroundStyle(.orange)
-                        .help("Marked old-man rooms (NPC hint / bomb-upgrade / hungry-goriya / life-or-money) vs. the number expected in this dungeon")
+            // highlight reveals the hovered room's in-game-map row on hover.
+            RowLocatorWidget(hoveredRow: hoveredRow)
+            // Old-man count on its own single line (icon + X/Y), like the reference.
+            HStack(spacing: 5) {
+                if let image = Image(atlasIcon: DungeonMonsterAtlas.oldMan) {
+                    image.interpolation(.none).resizable().frame(width: 20, height: 20)
                 }
+                Text(oldManText)
+                    .font(.system(size: 17, weight: .heavy, design: .rounded))
+                    .foregroundStyle(.orange)
             }
+            .help("Old-man rooms (NPC hint / bomb-upgrade / hungry-goriya / life-or-money) marked vs. the number expected in this dungeon")
             Divider()
             Text("ITEMS").font(.system(size: 8, weight: .semibold)).foregroundStyle(.secondary)
             DungeonCardView(
