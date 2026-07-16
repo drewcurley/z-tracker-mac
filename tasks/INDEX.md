@@ -26,6 +26,7 @@
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
 | [T-072.1](./T-072.1.md) | Fix ⌥-drag circling the first room (defer modified-left to release) | frontend-engineer | T-072 | fix/drag-paint-option-defer | — | docs/reviews/fix-drag-paint-option-defer/final.md |
+| [T-090](./T-090.md) | Blockers — drop the redundant label column, add Level 9 | frontend-engineer | T-082 | feat/blockers-layout-d9 | — | docs/reviews/feat-blockers-layout-d9/final.md |
 | [T-088](./T-088.md) | Door-repair count voice reminder ("You found N of X door repairs") | frontend-engineer | T-018 | feat/door-repair-reminder | — | docs/reviews/feat-door-repair-reminder/final.md |
 | [T-087](./T-087.md) | Wider dungeon tabs to better fit the "needs" markers | frontend-engineer | T-084 | feat/wider-dungeon-tabs | — | docs/reviews/feat-wider-dungeon-tabs/final.md |
 | [T-086](./T-086.md) | Reminder pronunciation ("triforce" → "try force") for the voice engine | frontend-engineer | T-018 | feat/live-tts-reminders | — | docs/reviews/feat-live-tts-reminders/final.md |

@@ -130,6 +130,15 @@ struct ReminderEngineTests {
         #expect(out.contains(.remindShortly(itemId: ITEMS.ladder)))
     }
 
+    @Test("a Level 9 blocker also produces an unblock reminder (T-090)")
+    func level9BlockerReminds() {
+        let blockers = DungeonBlockersContainer()
+        blockers.setDungeonBlocker(.bomb, dungeon: 8, slot: 0) // L9 is bomb-blocked
+        let progress = PlayerProgressAndTakeAnyHearts(); progress.hasBombs = true
+        let out = poll(ReminderEngine(), blockers: blockers, progress: progress)
+        #expect(out.contains(.remindUnblock(blocker: .bomb, dungeons: [8], combatDetails: [])))
+    }
+
     @Test("maybe-blockers match via hardCanonical")
     func maybeBlockerMatches() {
         let blockers = DungeonBlockersContainer()

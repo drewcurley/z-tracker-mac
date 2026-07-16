@@ -188,7 +188,8 @@ public final class ReminderEngine {
         // combat blockers (`:1668-1701`)
         func calcFromDungeon(_ item: Int) -> Int {
             var fromDungeon = -1
-            for i in 0...7 where dungeonTracker.dungeon(i).boxes.contains(where: { $0.cellCurrent == item }) {
+            // 0…8 (incl. L9): a blocked item can have come from any dungeon (T-090).
+            for i in 0...8 where dungeonTracker.dungeon(i).boxes.contains(where: { $0.cellCurrent == item }) {
                 fromDungeon = i
             }
             return fromDungeon
@@ -213,7 +214,7 @@ public final class ReminderEngine {
         }
         if !combatUnblockers.isEmpty {
             var dungeonIdxs: [Int] = []
-            for i in 0...7 {
+            for i in 0...8 {   // incl. L9 (T-090)
                 if combatUnblockerOrigins.count == 1 && combatUnblockerOrigins[0] == i {
                     continue // already in the dungeon we'd remind them to go to
                 }
@@ -234,7 +235,7 @@ public final class ReminderEngine {
         // generic blockers (`:1702-1735`)
         func blockerLogic(_ db: DungeonBlocker, fromDungeon: Int) {
             var dungeonIdxs: [Int] = []
-            for i in 0...7 where i != fromDungeon {
+            for i in 0...8 where i != fromDungeon {   // incl. L9 (T-090)
                 let anyMatching = (0..<DungeonBlockersContainer.maxBlockersPerDungeon)
                     .contains { blockers.dungeonBlocker(dungeon: i, slot: $0).hardCanonical == db.hardCanonical }
                 if anyMatching && !dungeonTracker.dungeon(i).isComplete {
