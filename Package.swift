@@ -28,6 +28,8 @@ let package = Package(
                 .copy("Resources/all-items-hud-pixels1.png"),
                 .copy("Resources/all-items-hud-pixels1-worse.png"),
                 .copy("Resources/icons8x8.png"),
+                .copy("Resources/new_icons13x9.png"),
+                .copy("Resources/zelda_bosses16x16.png"),
                 .copy("Resources/audio")
             ]
         ),
