@@ -275,9 +275,12 @@ private struct RoomCellView: View {
             switch gesture {
             case .left: map.leftClick(col: col, row: row)
             case .right: showingPicker = true
-            case .shiftLeft: showingMonster = true
-            case .shiftRight: showingFloorDrop = true
-            case .middle: map.middleClick(col: col, row: row)
+            // Scroll (Windows wheel) and Shift+click both open the detail pickers:
+            // up/Shift-left = monster, down/Shift-right = floor drop.
+            case .shiftLeft, .scrollUp: showingMonster = true
+            case .shiftRight, .scrollDown: showingFloorDrop = true
+            // ⌥-click stands in for the reference middle-click (no middle button).
+            case .middle, .optionLeft: map.middleClick(col: col, row: row)
             }
         })
         .popover(isPresented: $showingPicker, arrowEdge: .bottom) {
