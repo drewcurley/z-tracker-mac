@@ -49,7 +49,7 @@ struct DungeonTrackerView: View {
 
 /// One dungeon: located numeral + triforce pip + its item boxes, highlighted
 /// when complete.
-private struct DungeonCardView: View {
+struct DungeonCardView: View {
     @Bindable var dungeon: Dungeon
     var instance: DungeonTrackerInstance
     var isLocated: Bool
@@ -57,6 +57,10 @@ private struct DungeonCardView: View {
     /// Hidden Dungeon Numbers (T-049): label the slot A–H instead of 1–8, and
     /// hide the location hint (replaced by the number chooser — a later task).
     var hideDungeonNumbers: Bool = false
+    /// The overworld-location header (hint menu / HDN chooser). Shown atop the
+    /// top-row cards; the dungeon-map item inset (T-019.10) drops it — the room
+    /// map is about interior contents, not where the dungeon sits on the map.
+    var showLocationHeader: Bool = true
     @Binding var hint: HintZone
 
     /// The slot label: A–H under HDN (1–8), else the number; Level 9 stays "9".
@@ -69,14 +73,16 @@ private struct DungeonCardView: View {
             // Above the slot: the location hint (T-039) in default mode; in HDN
             // (T-050) the dungeon-number chooser instead — except Level 9
             // (id 8), which is always known.
-            if hideDungeonNumbers {
-                if dungeon.id != 8 {
-                    DungeonNumberLabel(dungeon: dungeon, slotLabel: slotLabel)
+            if showLocationHeader {
+                if hideDungeonNumbers {
+                    if dungeon.id != 8 {
+                        DungeonNumberLabel(dungeon: dungeon, slotLabel: slotLabel)
+                    } else {
+                        Color.clear.frame(height: 16)
+                    }
                 } else {
-                    Color.clear.frame(height: 16)
+                    HintLabel(hint: $hint, title: "Dungeon \(dungeon.id + 1)")
                 }
-            } else {
-                HintLabel(hint: $hint, title: "Dungeon \(dungeon.id + 1)")
             }
             HStack(spacing: 3) {
                 Text(slotLabel)
