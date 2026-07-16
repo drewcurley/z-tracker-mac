@@ -493,11 +493,25 @@ struct MapInfoView: View {
         VStack(alignment: .leading, spacing: 8) {
             spotSummaryButton
             hintDecoderButton
+            settingsButton
             overlayToggles
             // Recorder destination (T-081): moved here from the full-width bar
             // that used to sit between the overworld and dungeon maps.
             RecorderInfoWidget(model: model, playerState: playerState, mapState: mapState)
         }
+    }
+
+    /// Opens the mid-game Settings window (T-091) — same panel as the startup
+    /// screen, also reachable via ⌘,.
+    private var settingsButton: some View {
+        Button {
+            openWindow(id: SettingsWindowID)
+        } label: {
+            Label("Settings…", systemImage: "gearshape")
+        }
+        .font(.system(size: 10))
+        .controlSize(.small)
+        .help("Open Settings (also ⌘,) — draw routes, magnifier, animation, and other preferences, live")
     }
 
     /// "Hint Decoder" (T-039.1): the consolidated per-target location-hint
