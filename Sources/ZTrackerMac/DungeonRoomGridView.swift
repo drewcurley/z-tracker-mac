@@ -162,10 +162,9 @@ struct DungeonMapView: View {
             )
             .frame(maxWidth: .infinity)
             // Minimap preview (T-079): hover to see the faux in-game HUD map.
-            HStack {
-                DungeonMinimapHoverIcon(map: model.dungeonRoomMaps[selected], headerText: headerText)
-                Spacer(minLength: 0)
-            }
+            DungeonMinimapHoverIcon(map: model.dungeonRoomMaps[selected], headerText: headerText)
+                .frame(maxWidth: .infinity)   // centered in the sidebar
+                .padding(.top, 4)
             Spacer(minLength: 0)
         }
         .frame(width: Self.infoStripWidth)
