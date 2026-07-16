@@ -17,6 +17,7 @@ extension ReminderAnnouncement {
         case .getCoastItem: .coastItem
         case .considerBoomstickBook: .recorderPBSpotsAndBoomstickBook
         case .remindVisitHints: .haveKeyLadder
+        case .overworldOverwrite: .overworldOverwrites
         }
     }
 
@@ -70,6 +71,8 @@ extension ReminderAnnouncement {
             return "Consider buying the boomstick book"
         case .remindVisitHints:
             return "You have the book — visit the hint NPCs"
+        case .overworldOverwrite(let coordLabel, let from, let to):
+            return "You changed \(coordLabel) from \(from) to \(to)"
         }
     }
 }

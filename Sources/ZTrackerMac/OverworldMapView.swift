@@ -79,6 +79,9 @@ struct OverworldMapView: View {
     /// Free a take-any tile's linked slot when the tile is changed to another
     /// mark or cleared (T-066). `(column, row)`.
     var onReleaseTakeAny: (Int, Int) -> Void = { _, _ in }
+    /// Notifies of a mark change (old, new, column, row) for the overworld-overwrite
+    /// reminder (T-096).
+    var onOverwrite: (OverworldTileMark, OverworldTileMark, Int, Int) -> Void = { _, _, _, _ in }
 
     /// A dungeon marker was placed (T-039.1) — the parent auto-sets that
     /// dungeon's location hint to the screen's region. `(number, column, row)`.
@@ -392,12 +395,16 @@ struct OverworldMapView: View {
     /// armos / letter / hint shop) defaults to **used** — you usually mark one
     /// right after collecting it; a left-click flips it back to unused (T-056).
     private func applyMark(_ mark: OverworldTileMark, column: Int, row: Int) {
+        let oldMark = grid.mark(column: column, row: row)
         // If this tile was a take-any, changing it to anything else frees its
         // linked Items-group heart slot back to empty (T-066).
-        if grid.mark(column: column, row: row) == .takeAny {
+        if oldMark == .takeAny {
             onReleaseTakeAny(column, row)
         }
         grid.setMark(mark, column: column, row: row)
+        // Overworld-overwrite reminder (T-096): warn on a destructive change of a
+        // real mark, in case it was accidental.
+        onOverwrite(oldMark, mark, column, row)
         if mark.isUsedToggleable {
             grid.setUsed(true, column: column, row: row)
         }
