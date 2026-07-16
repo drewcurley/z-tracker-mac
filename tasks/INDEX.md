@@ -28,6 +28,7 @@
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
 | [T-072.1](./T-072.1.md) | Fix ⌥-drag circling the first room (defer modified-left to release) | frontend-engineer | T-072 | fix/drag-paint-option-defer | — | docs/reviews/fix-drag-paint-option-defer/final.md |
+| [T-078](./T-078.md) | Dungeon rupee/key/bomb row-locator (hover reveal) | frontend-engineer | T-019 | feat/dungeon-row-location | — | docs/reviews/feat-dungeon-row-location/final.md |
 | [T-077](./T-077.md) | Door-repair tiles dim permanently when marked (survives groundhog) | frontend-engineer | T-054 | fix/door-repair-dim | — | docs/reviews/fix-door-repair-dim/final.md |
 | [T-076](./T-076.md) | Spot Summary — add the Non-Unique Locations counts | frontend-engineer | T-053 | feat/spot-summary-nonunique | — | docs/reviews/feat-spot-summary-nonunique/final.md |
 | [T-075](./T-075.md) | Reference feature-coverage audit (canonical parity checklist) | analyst | — | chore/reference-coverage-audit | — | docs/reviews/chore-reference-coverage-audit/final.md |
