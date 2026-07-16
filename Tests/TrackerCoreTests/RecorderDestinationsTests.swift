@@ -62,4 +62,47 @@ struct RecorderDestinationsTests {
         #expect(coords.contains(OverworldScreenCoordinate(x: 7, y: 3)))   // D1 vanilla
         #expect(coords.contains(OverworldScreenCoordinate(x: 11, y: 0)))  // D5 vanilla
     }
+
+    // MARK: - Info-area widget (T-081)
+
+    @Test("infoEntries: obtained-triforce dungeons listed even when NOT located")
+    func infoEntriesUnlocated() {
+        let dt = DungeonTrackerInstance()
+        dt.dungeon(0).toggleTriforce() // level 1 — located below
+        dt.dungeon(2).toggleTriforce() // level 3 — NOT located
+        let e = RecorderDestinations.infoEntries(
+            dungeonTracker: dt, hideDungeonNumbers: false,
+            dungeonLocations: locs([(0, (7, 3))]),
+            toNewDungeons: true, toUnbeatenDungeons: false)
+        // Both triforce dungeons appear (unlike compute, which drops unlocated).
+        #expect(e.map(\.dungeonNumber) == [1, 3])
+        #expect(e[0].coordinate == OverworldScreenCoordinate(x: 7, y: 3))
+        #expect(e[1].coordinate == nil) // level 3 not placed → nil, still listed
+    }
+
+    @Test("selectedEntry: nil → lowest; manual index wraps")
+    func selection() {
+        let dt = DungeonTrackerInstance()
+        dt.dungeon(1).toggleTriforce() // level 2
+        dt.dungeon(4).toggleTriforce() // level 5
+        let e = RecorderDestinations.infoEntries(
+            dungeonTracker: dt, hideDungeonNumbers: false,
+            dungeonLocations: locs([]), toNewDungeons: false, toUnbeatenDungeons: false)
+        #expect(e.map(\.dungeonNumber) == [2, 5])
+        // Auto (nil) → lowest.
+        #expect(RecorderDestinations.selectedEntry(entries: e, manualIndex: nil)?.dungeonNumber == 2)
+        // Manual index steps and wraps.
+        #expect(RecorderDestinations.selectedEntry(entries: e, manualIndex: 1)?.dungeonNumber == 5)
+        #expect(RecorderDestinations.selectedEntry(entries: e, manualIndex: 2)?.dungeonNumber == 2)
+        #expect(RecorderDestinations.selectedEntry(entries: e, manualIndex: -1)?.dungeonNumber == 5)
+    }
+
+    @Test("selectedEntry: no triforce → nil (widget shows no destination, not a default)")
+    func selectionEmpty() {
+        let e = RecorderDestinations.infoEntries(
+            dungeonTracker: DungeonTrackerInstance(), hideDungeonNumbers: false,
+            dungeonLocations: locs([]), toNewDungeons: true, toUnbeatenDungeons: false)
+        #expect(e.isEmpty)
+        #expect(RecorderDestinations.selectedEntry(entries: e, manualIndex: nil) == nil)
+    }
 }

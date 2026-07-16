@@ -494,6 +494,9 @@ struct MapInfoView: View {
             spotSummaryButton
             hintDecoderButton
             overlayToggles
+            // Recorder destination (T-081): moved here from the full-width bar
+            // that used to sit between the overworld and dungeon maps.
+            RecorderInfoWidget(model: model, playerState: playerState, mapState: mapState)
         }
     }
 

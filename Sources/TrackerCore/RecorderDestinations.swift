@@ -48,6 +48,66 @@ public enum RecorderDestinations {
         return result
     }
 
+    // MARK: - Info-area widget (T-081)
+
+    /// One entry for the Info-area recorder widget: the dungeon **number** to warp
+    /// to and its overworld coordinate *if* it has been located. Unlike `compute`
+    /// (which drives the map highlight and — faithful to the reference — only emits
+    /// *located* dungeons), the widget always lists an obtained-triforce dungeon;
+    /// its `coordinate` is simply `nil` until you mark that dungeon on the map. This
+    /// is the user's deliberate change (2026-07-16): the recorder destination is a
+    /// function of which triforces you hold, not of whether you've placed the
+    /// dungeon on the overworld yet.
+    public struct WidgetEntry: Hashable, Sendable {
+        /// The in-game dungeon numeral (1…8), or its HDN label numeral.
+        public let dungeonNumber: Int
+        /// The located overworld screen, or `nil` if not yet placed on the map.
+        public let coordinate: OverworldScreenCoordinate?
+        public init(dungeonNumber: Int, coordinate: OverworldScreenCoordinate?) {
+            self.dungeonNumber = dungeonNumber
+            self.coordinate = coordinate
+        }
+    }
+
+    /// The obtained-triforce dungeons that the recorder can warp to, ascending by
+    /// level. Same triforce filter as `compute` (`hasTri != toUnbeatenDungeons`),
+    /// but the dungeon is included whether or not it's located — an unplaced
+    /// dungeon yields a `nil` coordinate rather than being dropped.
+    public static func infoEntries(
+        dungeonTracker: DungeonTrackerInstance,
+        hideDungeonNumbers: Bool,
+        dungeonLocations: [OverworldScreenCoordinate?],
+        toNewDungeons: Bool,
+        toUnbeatenDungeons: Bool
+    ) -> [WidgetEntry] {
+        var result: [WidgetEntry] = []
+        for tri in 0..<8 {
+            let (hasTri, idx) = triforceAndDungeonIndex(
+                level: tri, dungeonTracker: dungeonTracker, hideDungeonNumbers: hideDungeonNumbers)
+            guard hasTri != toUnbeatenDungeons else { continue }
+            let coord: OverworldScreenCoordinate?
+            if toNewDungeons {
+                coord = (idx != -1 && idx < dungeonLocations.count) ? dungeonLocations[idx] : nil
+            } else {
+                let v = OverworldVanillaDungeons.firstQuest[tri]
+                coord = OverworldScreenCoordinate(x: v.column, y: v.row)
+            }
+            result.append(WidgetEntry(dungeonNumber: tri + 1, coordinate: coord))
+        }
+        return result
+    }
+
+    /// The entry the widget currently points at. When the user hasn't touched the
+    /// arrows (`manualIndex == nil`) it's the lowest obtained-triforce dungeon
+    /// (`entries.first`); otherwise it's `entries[manualIndex]`, wrapped. `nil`
+    /// when there are no obtained-triforce dungeons.
+    public static func selectedEntry(entries: [WidgetEntry], manualIndex: Int?) -> WidgetEntry? {
+        guard !entries.isEmpty else { return nil }
+        guard let manualIndex else { return entries.first }
+        let i = ((manualIndex % entries.count) + entries.count) % entries.count
+        return entries[i]
+    }
+
     /// Whether the player holds level `level+1`'s triforce and which dungeon
     /// slot carries it. Ported from `doesPlayerHaveTriforceAndWhichDungeonIndexIsIt`
     /// (`TrackerModel.fs:1553-1567`): in HDN the level numeral is matched against
