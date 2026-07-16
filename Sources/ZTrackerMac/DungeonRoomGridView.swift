@@ -176,12 +176,18 @@ struct DungeonRoomGridView: View {
     private static let cellW: CGFloat = 52
     private static let cellH: CGFloat = 36
     private static let gap: CGFloat = 16
+    /// Width reserved right of the grid for the hover row-locator strip (T-078).
+    private static let stripW: CGFloat = 26
+
+    /// Which grid row the pointer is over (nil = not hovering) — drives the
+    /// row-locator reveal.
+    @State private var hoveredRow: Int?
 
     /// The grid's natural width: 8 cells + the inter-cell door gaps + the 4pt
-    /// padding on each side. The map card uses this to cap its total width so a
-    /// wide window grows Blockers/Notes rather than the (fixed-size) grid.
+    /// padding on each side + the row-locator strip. The map card uses this to cap
+    /// its total width so a wide window grows Blockers/Notes not the (fixed) grid.
     static let contentWidth: CGFloat = cellW * CGFloat(DungeonRoomMap.cols)
-        + gap * CGFloat(DungeonRoomMap.cols - 1) + 8
+        + gap * CGFloat(DungeonRoomMap.cols - 1) + 8 + stripW
 
     /// Column pitch / row pitch (cell + one gap).
     private static var pitchX: CGFloat { cellW + gap }
@@ -207,7 +213,11 @@ struct DungeonRoomGridView: View {
                 ForEach(0..<DungeonRoomMap.cols, id: \.self) { col in
                     RoomCellView(map: map, col: col, row: row,
                                  width: Self.cellW, height: Self.cellH,
-                                 pitchX: Self.pitchX, pitchY: Self.pitchY, inferDoors: inferDoors)
+                                 pitchX: Self.pitchX, pitchY: Self.pitchY, inferDoors: inferDoors,
+                                 onHover: { hovering in
+                                     if hovering { hoveredRow = row }
+                                     else if hoveredRow == row { hoveredRow = nil }
+                                 })
                         .offset(x: CGFloat(col) * Self.pitchX, y: CGFloat(row) * Self.pitchY)
                 }
             }
@@ -234,8 +244,37 @@ struct DungeonRoomGridView: View {
                 VanillaOutlineOverlay(quest: outlineQuest, dungeon: dungeonNumber - 1,
                                       cellW: Self.cellW, cellH: Self.cellH, gap: Self.gap)
             }
+            rowLocator
         }
-        .frame(width: Self.roomsW, height: Self.roomsH, alignment: .topLeading)
+        .frame(width: Self.roomsW + Self.stripW, height: Self.roomsH, alignment: .topLeading)
+    }
+
+    /// The rupee/blank/key/bomb row-locator (T-078): a strip right of the grid
+    /// keyed to the in-game HUD map's row bands (rows 0–1 = rupee, 2–3 = blank,
+    /// 4–5 = key, 6–7 = bomb). Revealed on hover — a gray bar marks the hovered
+    /// room's row so you can read off where it sits on the in-game HUD.
+    @ViewBuilder private var rowLocator: some View {
+        if let hoveredRow {
+            // Row highlight across the grid + strip.
+            Rectangle().fill(.gray.opacity(0.22))
+                .frame(width: Self.roomsW + Self.stripW, height: Self.cellH)
+                .offset(y: CGFloat(hoveredRow) * Self.pitchY)
+                .allowsHitTesting(false)
+            // The three band icons, centered on their row pairs.
+            rowBandIcon(.fiveRupee, rows: (0, 1))
+            rowBandIcon(.key, rows: (4, 5))
+            rowBandIcon(.bombPack, rows: (6, 7))
+        }
+    }
+
+    @ViewBuilder private func rowBandIcon(_ drop: FloorDropDetail, rows: (Int, Int)) -> some View {
+        if let image = Image(atlasIcon: DungeonFloorDropAtlas.sprite(drop)) {
+            let centerY = (CGFloat(rows.0) * Self.pitchY + CGFloat(rows.1) * Self.pitchY + Self.cellH) / 2
+            image.interpolation(.none).resizable()
+                .frame(width: 18, height: 18)
+                .offset(x: Self.roomsW + (Self.stripW - 18) / 2, y: centerY - 9)
+                .allowsHitTesting(false)
+        }
     }
 
     /// The header letters spread one-per-column (`LEVEL-1` over columns 0…6), so
@@ -271,6 +310,8 @@ private struct RoomCellView: View {
     /// Door inference (T-019.12): auto-open the inferred entry door when this room
     /// is newly marked. Gated by the `doDoorInference` option upstream.
     var inferDoors: Bool = false
+    /// Reports hover enter/leave for the row-locator (T-078).
+    var onHover: (Bool) -> Void = { _ in }
     @State private var showingPicker = false
     @State private var showingMonster = false
     @State private var showingFloorDrop = false
@@ -313,6 +354,7 @@ private struct RoomCellView: View {
             }
         }
         .frame(width: width, height: height)
+        .onHover { onHover($0) }   // row-locator reveal (T-078)
         .overlay(RoundedRectangle(cornerRadius: 3).strokeBorder(Color(white: 0.2), lineWidth: 0.5))
         // The "circled" ring — a yellow dashed ellipse overhanging the cell
         // (reference `Brushes.Yellow`, dashed, slightly larger than the room).
