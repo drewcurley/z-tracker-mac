@@ -175,8 +175,10 @@ struct DungeonRoomGridView: View {
     }
 }
 
-/// One room cell: the room-type sprite on a completion-tinted background; click
-/// opens the room-type picker (D2 will add monsters/floor-drops/doors).
+/// One room cell: the room-type sprite on a completion-tinted background, with
+/// the monster (top-left) and floor-drop (bottom-right) detail overlays and the
+/// "circled" ring. Left = accelerator/cycle/toggle, right = room-type picker,
+/// Shift+left = monster, Shift+right = floor drop, middle = circle / brightness.
 private struct RoomCellView: View {
     @Bindable var map: DungeonRoomMap
     let col: Int
@@ -184,6 +186,13 @@ private struct RoomCellView: View {
     let width: CGFloat
     let height: CGFloat
     @State private var showingPicker = false
+    @State private var showingMonster = false
+    @State private var showingFloorDrop = false
+
+    /// Dim factor for a "handled" detail (completed monster / collected drop) —
+    /// the reference's `DARKEN = 0.5` black overlay, as an opacity here.
+    private static let dim: Double = 0.4
+    private static let detailIcon: CGFloat = 20
 
     private var room: DungeonRoom { map.room(col: col, row: row) }
 
@@ -197,18 +206,49 @@ private struct RoomCellView: View {
                 image.interpolation(.none).resizable()
                     .frame(width: width - 4, height: height - 4)
             }
+            // Monster (top-leading), dimmed on a completed room unless it's a
+            // persistent hazard (bubbles / traps / "other").
+            if let image = Image(atlasIcon: DungeonMonsterAtlas.sprite(room.monsterDetail)) {
+                image.interpolation(.none).resizable()
+                    .frame(width: Self.detailIcon, height: Self.detailIcon)
+                    .opacity(room.isCompleted && room.monsterDetail.darkensWhenCompleted ? Self.dim : 1)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                    .offset(x: -2, y: -2)
+                    .allowsHitTesting(false)
+            }
+            // Floor drop (bottom-trailing), dimmed when marked "already collected".
+            if let image = Image(atlasIcon: DungeonFloorDropAtlas.sprite(room.floorDropDetail)) {
+                image.interpolation(.none).resizable()
+                    .frame(width: Self.detailIcon, height: Self.detailIcon)
+                    .opacity(room.floorDropAppearsBright ? 1 : Self.dim)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+                    .offset(x: 2, y: 2)
+                    .allowsHitTesting(false)
+            }
         }
         .frame(width: width, height: height)
         .overlay(RoundedRectangle(cornerRadius: 3).strokeBorder(Color(white: 0.2), lineWidth: 0.5))
+        // The "circled" ring — a yellow dashed ellipse overhanging the cell
+        // (reference `Brushes.Yellow`, dashed, slightly larger than the room).
+        .overlay {
+            if map.isCircled(col: col, row: row) {
+                Ellipse()
+                    .stroke(Color.yellow, style: StrokeStyle(lineWidth: 2, dash: [1.5, 4]))
+                    .padding(-3)
+                    .allowsHitTesting(false)
+            }
+        }
         .contentShape(Rectangle())
-        // Precise mouse handling (D2a): left = the reference accelerator / cycle /
-        // completion toggle; right = the room-type picker. Shift+click details
-        // land in D2b.
+        // Precise mouse handling: left = accelerator / cycle / completion toggle;
+        // right = room-type picker; Shift+left = monster; Shift+right = floor
+        // drop; middle = circle (no drop) / floor-drop brightness.
         .overlay(RoomMouseCatcher { gesture in
             switch gesture {
-            case .left: applyLeftClick()
+            case .left: map.leftClick(col: col, row: row)
             case .right: showingPicker = true
-            case .shiftLeft, .shiftRight, .middle: break   // D2b
+            case .shiftLeft: showingMonster = true
+            case .shiftRight: showingFloorDrop = true
+            case .middle: map.middleClick(col: col, row: row)
             }
         })
         .popover(isPresented: $showingPicker, arrowEdge: .bottom) {
@@ -220,24 +260,42 @@ private struct RoomCellView: View {
                 showingPicker = false
             }
         }
+        .popover(isPresented: $showingMonster, arrowEdge: .bottom) {
+            MonsterPicker(current: room.monsterDetail) { md in
+                var r = room; r.monsterDetail = md
+                map.setRoom(r, col: col, row: row)
+                showingMonster = false
+            }
+        }
+        .popover(isPresented: $showingFloorDrop, arrowEdge: .bottom) {
+            FloorDropPicker(current: room.floorDropDetail) { fd in
+                var r = room; r.floorDropDetail = fd
+                map.setRoom(r, col: col, row: row)
+                showingFloorDrop = false
+            }
+        }
         // VoiceOver (docs/ux.md § Accessibility). Default action = the primary
-        // left-click; a named action opens the room-type picker.
+        // left-click; named actions open each detail picker.
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Room column \(col + 1), row \(row + 1)")
         .accessibilityValue(accessibilityValue)
         .accessibilityAddTraits(.isButton)
-        .accessibilityAction { applyLeftClick() }
+        .accessibilityAction { map.leftClick(col: col, row: row) }
         .accessibilityAction(named: "Set room type") { showingPicker = true }
-    }
-
-    /// Apply the reference's plain left-click behavior at this cell.
-    private func applyLeftClick() {
-        map.leftClick(col: col, row: row)
+        .accessibilityAction(named: "Set monster") { showingMonster = true }
+        .accessibilityAction(named: "Set floor drop") { showingFloorDrop = true }
+        .accessibilityAction(named: "Toggle circle or drop brightness") { map.middleClick(col: col, row: row) }
     }
 
     private var accessibilityValue: String {
-        let type = room.roomType.isNotMarked ? "Unmarked" : room.roomType.displayDescription
-        return room.isCompleted ? "\(type), completed" : type
+        var parts: [String] = [room.roomType.isNotMarked ? "Unmarked" : room.roomType.displayDescription]
+        if room.isCompleted { parts.append("completed") }
+        if !room.monsterDetail.isNotMarked { parts.append("monster \(room.monsterDetail.displayName)") }
+        if !room.floorDropDetail.isNotMarked {
+            parts.append("drop \(room.floorDropDetail.displayName)\(room.floorDropAppearsBright ? "" : ", collected")")
+        }
+        if map.isCircled(col: col, row: row) { parts.append("circled") }
+        return parts.joined(separator: ", ")
     }
 }
 
@@ -287,5 +345,77 @@ private struct RoomTypePicker: View {
         }
         .padding(10)
         .frame(width: 360)
+    }
+}
+
+/// The monster-detail picker (Shift+left-click) — the reference's 8×4 grid order
+/// (`MonsterDetail.All()`, `DungeonRoomState.fs:164-167`); `unmarked` (clear) is
+/// the last cell.
+private struct MonsterPicker: View {
+    let current: MonsterDetail
+    let onPick: (MonsterDetail) -> Void
+    private let columns = Array(repeating: GridItem(.fixed(30), spacing: 4), count: 8)
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Select a monster").font(.caption).foregroundStyle(.secondary)
+            LazyVGrid(columns: columns, spacing: 4) {
+                ForEach(Array(MonsterDetail.allInPickerOrder.enumerated()), id: \.offset) { _, md in
+                    Button { onPick(md) } label: {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 4)
+                                .fill(current == md ? Color.accentColor.opacity(0.5) : Color(white: 0.14))
+                            if md == .unmarked {
+                                Image(systemName: "xmark").font(.system(size: 11)).foregroundStyle(.secondary)
+                            } else if let image = Image(atlasIcon: DungeonMonsterAtlas.sprite(md)) {
+                                image.interpolation(.none).resizable().frame(width: 22, height: 22)
+                            }
+                        }
+                        .frame(width: 30, height: 30)
+                    }
+                    .buttonStyle(.plain)
+                    .help(md == .unmarked ? "None (clear)" : md.displayName)
+                    .accessibilityLabel(md == .unmarked ? "None" : md.displayName)
+                }
+            }
+        }
+        .padding(10)
+        .frame(width: 300)
+    }
+}
+
+/// The floor-drop picker (Shift+right-click) — the reference's 3×3 grid order
+/// (`FloorDropDetail.All()`, `DungeonRoomState.fs:221-222`); `unmarked` (clear)
+/// is the last cell.
+private struct FloorDropPicker: View {
+    let current: FloorDropDetail
+    let onPick: (FloorDropDetail) -> Void
+    private let columns = Array(repeating: GridItem(.fixed(34), spacing: 6), count: 3)
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Select a floor drop").font(.caption).foregroundStyle(.secondary)
+            LazyVGrid(columns: columns, spacing: 6) {
+                ForEach(Array(FloorDropDetail.allInPickerOrder.enumerated()), id: \.offset) { _, fd in
+                    Button { onPick(fd) } label: {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 4)
+                                .fill(current == fd ? Color.accentColor.opacity(0.5) : Color(white: 0.14))
+                            if fd == .unmarked {
+                                Image(systemName: "xmark").font(.system(size: 12)).foregroundStyle(.secondary)
+                            } else if let image = Image(atlasIcon: DungeonFloorDropAtlas.sprite(fd)) {
+                                image.interpolation(.none).resizable().frame(width: 24, height: 24)
+                            }
+                        }
+                        .frame(width: 34, height: 34)
+                    }
+                    .buttonStyle(.plain)
+                    .help(fd == .unmarked ? "None (clear)" : fd.displayName)
+                    .accessibilityLabel(fd == .unmarked ? "None" : fd.displayName)
+                }
+            }
+        }
+        .padding(10)
+        .frame(width: 150)
     }
 }

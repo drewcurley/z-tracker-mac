@@ -92,6 +92,19 @@ public final class DungeonRoomMap {
     public func isCircled(col: Int, row: Int) -> Bool { circled[Self.roomIndex(col, row)] }
     public func toggleCircle(col: Int, row: Int) { circled[Self.roomIndex(col, row)].toggle() }
 
+    /// Middle-click (D2b): with no floor drop, toggle the room's circle; with a
+    /// floor drop, toggle its brightness ("already collected"). Ported from the
+    /// reference (`DungeonUI.fs:1466-1471`).
+    public func middleClick(col: Int, row: Int) {
+        if room(col: col, row: row).floorDropDetail.isNotMarked {
+            toggleCircle(col: col, row: row)
+        } else {
+            var r = room(col: col, row: row)
+            r.floorDropAppearsBright.toggle()
+            setRoom(r, col: col, row: row)
+        }
+    }
+
     // MARK: Doors
 
     /// The vertical wall between rooms `(col,row)` and `(col+1,row)` — `col` in
