@@ -28,6 +28,7 @@
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
 | [T-072.1](./T-072.1.md) | Fix ⌥-drag circling the first room (defer modified-left to release) | frontend-engineer | T-072 | fix/drag-paint-option-defer | — | docs/reviews/fix-drag-paint-option-defer/final.md |
+| [T-085](./T-085.md) | Door scroll quick-set — unknown door jumps to gold/purple | frontend-engineer | T-019.8 | feat/door-scroll-quickset | — | docs/reviews/feat-door-scroll-quickset/final.md |
 | [T-084](./T-084.md) | Dungeon-tab "needs" markers (Hungry-Goriya / Bomb-Upgrade / NPC-hint) | frontend-engineer | T-019.5 | feat/dungeon-tab-needs | — | docs/reviews/feat-dungeon-tab-needs/final.md |
 | [T-083](./T-083.md) | Dungeon room-map GRAB tool (cut-and-paste a room segment) | frontend-engineer | T-073 | feat/dungeon-grab | — | docs/reviews/feat-dungeon-grab/final.md |
 | [T-082](./T-082.md) | Blockers — need/might-need kinds + "applies to" panel & chips | frontend-engineer | T-019.2 | feat/blocker-applies-to | — | docs/reviews/feat-blocker-applies-to/final.md |

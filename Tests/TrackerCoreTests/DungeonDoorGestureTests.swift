@@ -32,6 +32,19 @@ struct DungeonDoorGestureTests {
         }
     }
 
+    @Test("scroll quick-set: unknown jumps to gold/purple, placed doors cycle (T-085)")
+    func scrollQuickSet() {
+        // An unset door: scroll-down → gold, scroll-up → purple, so all four
+        // states (with left=green / right=red) are one gesture away.
+        #expect(DoorState.unknown.scrollDown == .yellow)
+        #expect(DoorState.unknown.scrollUp == .purple)
+        // A placed door cycles normally (same as next/prev).
+        for s in DoorState.allCases where s != .unknown {
+            #expect(s.scrollDown == s.next)
+            #expect(s.scrollUp == s.prev)
+        }
+    }
+
     @Test("unified door accessor round-trips on both axes independently")
     func mapDoorAccessor() {
         let map = DungeonRoomMap()
