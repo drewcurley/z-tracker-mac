@@ -33,6 +33,15 @@ public enum DoorState: Int, CaseIterable, Sendable, Codable {
         }
     }
 
+    /// Scroll-down quick-set (T-085): an as-yet **unknown** door jumps straight to
+    /// gold, since green/red are already the left/right clicks — so all four states
+    /// are one gesture from an unset door. A placed door cycles forward as usual.
+    public var scrollDown: DoorState { self == .unknown ? .yellow : next }
+
+    /// Scroll-up quick-set (T-085): an unknown door goes to purple (which is also
+    /// where `prev` already lands), a placed door cycles back.
+    public var scrollUp: DoorState { self == .unknown ? .purple : prev }
+
     /// Whether Link can pass through — `yes`, `yellow`, or `purple`
     /// (`Door.IsTraversible`). `unknown`/`no` block.
     public var isTraversible: Bool {

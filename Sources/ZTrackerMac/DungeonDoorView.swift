@@ -6,6 +6,11 @@ import TrackerCore
 /// reference gestures (`DungeonUI.fs:717-748`): left = toggle YES, right = toggle
 /// NO, middle = toggle YELLOW, Shift+left = prev, Shift+right = next.
 ///
+/// Quick-set (T-085): on an as-yet **unknown** door the four states are each one
+/// gesture away — left = green, right = red, scroll-up = purple, scroll-down =
+/// gold — so the common marks are a single flick. Once a door is placed, scroll
+/// cycles normally (green → red → gold → purple).
+///
 /// An `unknown` door renders as a faint stub, or nothing when either adjacent
 /// room is off-map (the reference blacks it out so off-map borders read as gone).
 struct DungeonDoorView: View {
@@ -43,9 +48,11 @@ struct DungeonDoorView: View {
             switch gesture {
             case .left: set(s.toggled(to: .yes))
             case .right: set(s.toggled(to: .no))
-            // Scroll (Windows wheel) and Shift+click both cycle the door.
-            case .shiftLeft, .scrollUp: set(s.prev)
-            case .shiftRight, .scrollDown: set(s.next)
+            // Scroll (Windows wheel) and Shift+click cycle the door — except on an
+            // unknown door, where scroll-down jumps straight to gold (green/red are
+            // already the left/right clicks), so all four states are one flick away.
+            case .shiftLeft, .scrollUp: set(s.scrollUp)                   // unknown → purple
+            case .shiftRight, .scrollDown: set(s.scrollDown)             // unknown → gold
             // ⌥-click stands in for the reference middle-click (no middle button).
             case .middle, .optionLeft: set(s.toggled(to: .yellow))
             }
