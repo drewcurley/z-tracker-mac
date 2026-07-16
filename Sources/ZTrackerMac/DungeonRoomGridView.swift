@@ -87,8 +87,10 @@ struct DungeonMapView: View {
         .accessibilityAddTraits(selected == i ? [.isButton, .isSelected] : .isButton)
     }
 
-    /// Quick per-dungeon reference beside the grid: the old-man count (real) and
-    /// reserved room for the local triforce/item inset (its own slice).
+    /// Quick per-dungeon reference beside the grid: the old-man count and the
+    /// local triforce/item inset — the selected dungeon's card (triforce + item
+    /// boxes), mirroring the top row so items can be marked without scrolling up
+    /// (the reference's local dungeon-tracker panel).
     private var dungeonInfoStrip: some View {
         VStack(alignment: .leading, spacing: 8) {
             VStack(alignment: .leading, spacing: 2) {
@@ -98,15 +100,17 @@ struct DungeonMapView: View {
                     .foregroundStyle(.orange)
             }
             Divider()
-            // Reserved for the local triforce + item boxes (mirrors the top card).
-            VStack(spacing: 4) {
-                Text("Dungeon\nitems").font(.system(size: 9)).multilineTextAlignment(.center)
-                    .foregroundStyle(.secondary)
-                Text("(soon)").font(.system(size: 8)).foregroundStyle(.secondary)
-            }
-            .frame(maxWidth: .infinity, minHeight: 90)
-            .background(RoundedRectangle(cornerRadius: 5).fill(Color(white: 0.08)))
-            .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(Color(white: 0.18), style: StrokeStyle(lineWidth: 1, dash: [3, 2])))
+            Text("ITEMS").font(.system(size: 8, weight: .semibold)).foregroundStyle(.secondary)
+            DungeonCardView(
+                dungeon: model.dungeonTracker.dungeon(selected),
+                instance: model.dungeonTracker,
+                isLocated: DungeonTrackerView.locatedDungeonIndices(in: model.overworldGrid).contains(selected),
+                iconOptions: model.iconOptions,
+                hideDungeonNumbers: model.hideDungeonNumbers,
+                showLocationHeader: false,
+                hint: $model.levelHints[HintTarget.dungeon(selected + 1)]
+            )
+            .frame(maxWidth: .infinity)
             Spacer(minLength: 0)
         }
         .frame(width: Self.infoStripWidth)

@@ -27,6 +27,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-019.10](./T-019.10.md) | Dungeon map — local triforce/item inset (selected dungeon's card) | frontend-engineer | T-019 | feat/dungeon-item-inset | — | docs/reviews/feat-dungeon-item-inset/final.md |
 | [T-019.9](./T-019.9.md) | Dungeon Summary tab — all-9 overview with click-to-select | frontend-engineer | T-019 | feat/dungeon-summary | — | docs/reviews/feat-dungeon-summary/final.md |
 | [T-019.8](./T-019.8.md) | Dungeon doors (D3) — render + interact with the wall segments between rooms | frontend-engineer | T-019 | feat/dungeon-doors | — | docs/reviews/feat-dungeon-doors/final.md |
 | [T-019.7](./T-019.7.md) | Dungeon room details (D2b) — monster + floor-drop pickers, overlays, circle/brightness | frontend-engineer | T-019 | feat/dungeon-room-details | — | docs/reviews/feat-dungeon-room-details/final.md |
