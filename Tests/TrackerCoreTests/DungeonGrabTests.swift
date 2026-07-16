@@ -91,4 +91,29 @@ struct DungeonGrabTests {
         #expect(map.dropWouldOverwrite(region, byColumns: 3, rows: 0))   // lands on (3,0)
         #expect(!map.dropWouldOverwrite(region, byColumns: 0, rows: 4))  // clear
     }
+
+    @Test("snapshot/restore round-trips rooms, circles, and doors (GRAB undo)")
+    func snapshotRestore() {
+        let map = DungeonRoomMap()
+        map.setRoom(DungeonRoom(roomType: .doubleMoat), col: 1, row: 1)
+        map.setRoom(DungeonRoom(roomType: .transport1), col: 2, row: 1)
+        map.toggleCircle(col: 1, row: 1)
+        map.setDoor(.yes, axis: .horizontal, col: 1, row: 1)
+        let snap = map.snapshot()
+
+        // Mutate everything.
+        let region = map.contiguousRegion(col: 1, row: 1)
+        map.moveRegion(region, byColumns: 2, rows: 2)
+        #expect(map.room(col: 1, row: 1).isEmpty)               // moved away
+        #expect(map.room(col: 3, row: 3).roomType == .doubleMoat)
+
+        // Undo.
+        map.restore(snap)
+        #expect(map.room(col: 1, row: 1).roomType == .doubleMoat)
+        #expect(map.room(col: 2, row: 1).roomType == .transport1)
+        #expect(map.isCircled(col: 1, row: 1))
+        #expect(map.door(.horizontal, col: 1, row: 1) == .yes)
+        #expect(map.transportCount(1) == 1)
+        #expect(map.room(col: 3, row: 3).isEmpty)
+    }
 }

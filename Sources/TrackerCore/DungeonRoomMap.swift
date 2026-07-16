@@ -298,6 +298,30 @@ public final class DungeonRoomMap {
         firstInteractionDone = true
     }
 
+    /// An opaque copy of all the mutable grid state (rooms, circles, doors), for
+    /// the GRAB tool's "keep changes / undo" prompt (T-083): snapshot before a
+    /// `moveRegion`, `restore` if the user chooses Undo.
+    public struct Snapshot: Sendable {
+        fileprivate let rooms: [DungeonRoom]
+        fileprivate let horizontalDoors: [DoorState]
+        fileprivate let verticalDoors: [DoorState]
+        fileprivate let circled: [Bool]
+        fileprivate let transportCounts: [Int]
+    }
+
+    public func snapshot() -> Snapshot {
+        Snapshot(rooms: rooms, horizontalDoors: horizontalDoors,
+                 verticalDoors: verticalDoors, circled: circled, transportCounts: transportCounts)
+    }
+
+    public func restore(_ s: Snapshot) {
+        rooms = s.rooms
+        horizontalDoors = s.horizontalDoors
+        verticalDoors = s.verticalDoors
+        circled = s.circled
+        transportCounts = s.transportCounts
+    }
+
     /// Whether a drop at `(dx, dy)` would overwrite existing rooms — the reference's
     /// "warn" state driving the keep/undo prompt (`GrabHelper.PreviewDrop`,
     /// `:102-117`). Region cells landing on a non-empty, non-region cell warn.

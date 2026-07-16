@@ -28,6 +28,7 @@
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
 | [T-072.1](./T-072.1.md) | Fix ⌥-drag circling the first room (defer modified-left to release) | frontend-engineer | T-072 | fix/drag-paint-option-defer | — | docs/reviews/fix-drag-paint-option-defer/final.md |
+| [T-083](./T-083.md) | Dungeon room-map GRAB tool (cut-and-paste a room segment) | frontend-engineer | T-073 | feat/dungeon-grab | — | docs/reviews/feat-dungeon-grab/final.md |
 | [T-082](./T-082.md) | Blockers — need/might-need kinds + "applies to" panel & chips | frontend-engineer | T-019.2 | feat/blocker-applies-to | — | docs/reviews/feat-blocker-applies-to/final.md |
 | [T-081](./T-081.md) | Recorder destination → Info area (triforce-based, darkened until recorder) | frontend-engineer | T-035.7 | feat/recorder-info-widget | — | docs/reviews/feat-recorder-info-widget/final.md |
 | [T-080](./T-080.md) | Old-man counter — single line with icon, below the row-locator | frontend-engineer | T-074 | feat/dungeon-oldmen-layout | — | docs/reviews/feat-dungeon-oldmen-layout/final.md |

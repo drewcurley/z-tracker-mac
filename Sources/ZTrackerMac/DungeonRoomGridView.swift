@@ -16,6 +16,8 @@ struct DungeonMapView: View {
     /// The grid row the pointer is over (T-078) — set by the grid's room cells,
     /// read by the info strip's row-locator widget.
     @State private var hoveredRow: Int?
+    /// The GRAB cut-and-paste tool's transient state (T-083).
+    @State private var grab = DungeonGrabController()
     /// The info strip's fixed width (old-men count + reserved dungeon-items box).
     private static let infoStripWidth: CGFloat = 72
 
@@ -63,13 +65,15 @@ struct DungeonMapView: View {
             if isSummary {
                 DungeonSummaryView(model: model, options: options) { selected = $0 }
             } else {
+                if grab.isGrabMode { grabBanner }
                 HStack(alignment: .top, spacing: 8) {
                     DungeonRoomGridView(map: model.dungeonRoomMaps[selected],
                                         dungeonNumber: selected + 1,
                                         headerText: headerText,
                                         inferDoors: options.doDoorInference,
                                         outlineQuest: outlineMode,
-                                        hoveredRow: $hoveredRow)
+                                        hoveredRow: $hoveredRow,
+                                        grab: grab)
                     dungeonInfoStrip
                 }
             }
@@ -77,6 +81,26 @@ struct DungeonMapView: View {
         // Cap the whole card at its natural content width; a wider window flows
         // the extra space to Blockers/Notes, not here.
         .frame(width: Self.contentWidth, alignment: .leading)
+        // Leaving a dungeon tab cancels any in-progress grab (reference behavior).
+        .onChange(of: selected) { _, _ in grab.abort() }
+        // Keep / undo prompt after a drop (reference's "Verify changes" dialog).
+        .confirmationDialog("You moved a dungeon segment. Keep this change?",
+                            isPresented: $grab.pendingConfirm, titleVisibility: .visible) {
+            Button("Keep changes") { grab.keepChanges() }
+            Button("Undo", role: .cancel) { grab.undoChanges(map: model.dungeonRoomMaps[selected]) }
+        }
+    }
+
+    /// The grab-mode instruction banner (reference `grabModeTextBlock`).
+    private var grabBanner: some View {
+        Text(grab.hasGrab
+             ? "GRAB: click a destination to drop the segment (yellow = would overwrite). Click GRAB again to cancel."
+             : "GRAB: click a marked room to pick up its connected segment. Click GRAB again to cancel.")
+            .font(.system(size: 10, weight: .medium))
+            .foregroundStyle(.white)
+            .padding(.horizontal, 8).padding(.vertical, 4)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(RoundedRectangle(cornerRadius: 5).fill(Color.red.opacity(0.55)))
     }
 
 
@@ -92,11 +116,30 @@ struct DungeonMapView: View {
             }
             // FQ / SQ — toggle the vanilla footprint overlay for this dungeon.
             HStack(spacing: 4) {
+                grabButton
                 outlineButton("FQ", quest: .first)
                 outlineButton("SQ", quest: .second)
             }
         }
         .frame(width: Self.contentWidth)
+    }
+
+    /// The GRAB toggle (reference's per-tab GRAB button): red when armed. Moves a
+    /// connected segment of rooms + doors as a cut-and-paste.
+    private var grabButton: some View {
+        Button { grab.toggle() } label: {
+            Text("GRAB")
+                .font(.system(size: 11, weight: .heavy))
+                .foregroundStyle(grab.isGrabMode ? .white : .secondary)
+                .frame(width: 40, height: 20)
+                .background(RoundedRectangle(cornerRadius: 4)
+                    .fill(grab.isGrabMode ? Color.red.opacity(0.85) : Color(white: 0.16)))
+        }
+        .buttonStyle(.plain)
+        .disabled(isSummary)
+        .help("Grab mode: move a connected segment of dungeon rooms and doors at once (cut & paste, with keep/undo).")
+        .accessibilityLabel("Grab mode")
+        .accessibilityValue(grab.isGrabMode ? "On" : "Off")
     }
 
     private func outlineButton(_ label: String, quest: VanillaQuest) -> some View {
@@ -197,6 +240,9 @@ struct DungeonRoomGridView: View {
     /// row-locator widget in the info strip (T-078). Owned by `DungeonMapView`
     /// so the grid (hover source) and the info-strip widget share it.
     @Binding var hoveredRow: Int?
+    /// The GRAB tool state (T-083) — when armed, cells route clicks/hover to it
+    /// and paint the pick-up / drop preview.
+    var grab: DungeonGrabController
 
     /// The grid's natural width: 8 cells + the inter-cell door gaps + the 4pt
     /// padding on each side. The map card uses this to cap its total width so a
@@ -229,9 +275,15 @@ struct DungeonRoomGridView: View {
                     RoomCellView(map: map, col: col, row: row,
                                  width: Self.cellW, height: Self.cellH,
                                  pitchX: Self.pitchX, pitchY: Self.pitchY, inferDoors: inferDoors,
+                                 grab: grab,
                                  onHover: { hovering in
-                                     if hovering { hoveredRow = row }
-                                     else if hoveredRow == row { hoveredRow = nil }
+                                     if hovering {
+                                         hoveredRow = row
+                                         if grab.isGrabMode { grab.hoverCell = .init(col: col, row: row) }
+                                     } else {
+                                         if hoveredRow == row { hoveredRow = nil }
+                                         if grab.hoverCell == .init(col: col, row: row) { grab.hoverCell = nil }
+                                     }
                                  })
                         .offset(x: CGFloat(col) * Self.pitchX, y: CGFloat(row) * Self.pitchY)
                 }
@@ -241,6 +293,7 @@ struct DungeonRoomGridView: View {
                 ForEach(0..<DungeonRoomMap.rows, id: \.self) { j in
                     DungeonDoorView(map: map, axis: .horizontal, col: i, row: j,
                                     frameW: Self.gap, frameH: 22)
+                        .allowsHitTesting(!grab.isGrabMode)
                         .offset(x: CGFloat(i) * Self.pitchX + Self.cellW,
                                 y: CGFloat(j) * Self.pitchY + (Self.cellH - 22) / 2)
                 }
@@ -250,6 +303,7 @@ struct DungeonRoomGridView: View {
                 ForEach(0..<(DungeonRoomMap.rows - 1), id: \.self) { j in
                     DungeonDoorView(map: map, axis: .vertical, col: i, row: j,
                                     frameW: 28, frameH: Self.gap)
+                        .allowsHitTesting(!grab.isGrabMode)
                         .offset(x: CGFloat(i) * Self.pitchX + (Self.cellW - 28) / 2,
                                 y: CGFloat(j) * Self.pitchY + Self.cellH)
                 }
@@ -296,6 +350,8 @@ private struct RoomCellView: View {
     /// Door inference (T-019.12): auto-open the inferred entry door when this room
     /// is newly marked. Gated by the `doDoorInference` option upstream.
     var inferDoors: Bool = false
+    /// The GRAB tool state (T-083) — routes clicks and paints the preview.
+    var grab: DungeonGrabController
     /// Reports hover enter/leave for the row-locator (T-078).
     var onHover: (Bool) -> Void = { _ in }
     @State private var showingPicker = false
@@ -308,6 +364,17 @@ private struct RoomCellView: View {
     private static let detailIcon: CGFloat = 20
 
     private var room: DungeonRoom { map.room(col: col, row: row) }
+
+    /// The GRAB preview tint for this cell (nil = none).
+    private var grabHighlightColor: Color? {
+        switch grab.highlight(col: col, row: row, map: map) {
+        case .none: nil
+        case .source: Color(red: 1, green: 0.4, blue: 0.7)   // pink source segment
+        case .preview: .green                                 // pick-up preview
+        case .ok: .green                                      // valid drop
+        case .warn: .yellow                                   // would overwrite
+        }
+    }
 
     var body: some View {
         ZStack {
@@ -342,6 +409,15 @@ private struct RoomCellView: View {
         .frame(width: width, height: height)
         .onHover { onHover($0) }   // row-locator reveal (T-078)
         .overlay(RoundedRectangle(cornerRadius: 3).strokeBorder(Color(white: 0.2), lineWidth: 0.5))
+        // GRAB preview tint (T-083): pink source, lime pick-up preview / valid
+        // drop, yellow "would overwrite".
+        .overlay {
+            if let color = grabHighlightColor {
+                RoundedRectangle(cornerRadius: 3).fill(color.opacity(0.4))
+                    .overlay(RoundedRectangle(cornerRadius: 3).strokeBorder(color, lineWidth: 2))
+                    .allowsHitTesting(false)
+            }
+        }
         // The "circled" ring — a yellow dashed ellipse overhanging the cell
         // (reference `Brushes.Yellow`, dashed, slightly larger than the room).
         .overlay {
@@ -358,6 +434,12 @@ private struct RoomCellView: View {
         // drop; middle = circle (no drop) / floor-drop brightness.
         .overlay(RoomMouseCatcher(
             onGesture: { gesture in
+                // In grab mode every gesture is a grab pick-up / drop; the normal
+                // room-editing gestures are suppressed (reference behavior).
+                if grab.isGrabMode {
+                    if case .left = gesture { grab.handleClick(col: col, row: row, map: map) }
+                    return
+                }
                 switch gesture {
                 case .left: markWithInference()
                 case .right: showingPicker = true
@@ -371,8 +453,9 @@ private struct RoomCellView: View {
             },
             // Drag-paint (T-072): left over off-map → unmarked, right over unmarked
             // → off-map, ⌥/middle over unmarked → default. Clicks fire on release.
+            // Disabled in grab mode (a drag there would fight the grab click).
             dragContext: .init(col: col, row: row, pitchX: pitchX, pitchY: pitchY),
-            onDragPaint: { button, c, r in map.dragPaint(button, col: c, row: r) }
+            onDragPaint: { button, c, r in if !grab.isGrabMode { map.dragPaint(button, col: c, row: r) } }
         ))
         .popover(isPresented: $showingPicker, arrowEdge: .bottom) {
             RoomTypePicker(current: room.roomType) { newType in
