@@ -27,6 +27,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-072.1](./T-072.1.md) | Fix ⌥-drag circling the first room (defer modified-left to release) | frontend-engineer | T-072 | fix/drag-paint-option-defer | — | docs/reviews/fix-drag-paint-option-defer/final.md |
 | [T-073](./T-073.md) | Dungeon GRAB — cut/paste model foundation | data-engineer | T-019 | feat/dungeon-grab-model | — | docs/reviews/feat-dungeon-grab-model/final.md |
 | [T-072](./T-072.md) | Dungeon drag-paint (power tool) | frontend-engineer | T-019 | feat/dungeon-drag-paint | — | docs/reviews/feat-dungeon-drag-paint/final.md |
 | [T-071](./T-071.md) | FQ/SQ vanilla dungeon-outline overlays | frontend-engineer | T-019 | feat/dungeon-vanilla-outlines | — | docs/reviews/feat-dungeon-vanilla-outlines/final.md |
