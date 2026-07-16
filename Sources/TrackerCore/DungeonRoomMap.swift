@@ -61,6 +61,40 @@ public final class DungeonRoomMap {
         return true
     }
 
+    /// Which button is painting during a drag.
+    public enum DragPaintButton: Sendable { case left, right, middle }
+
+    /// Drag-paint a single room (T-072, reference `dragBehavior`
+    /// `DungeonUI.fs:1357-1382`): while a button is held and dragged over rooms,
+    /// each one is painted if it matches —
+    /// - **left** over an off-the-map room → unmarked (paint the map back on)
+    /// - **right** over an unmarked room → off-the-map (paint it off)
+    /// - **middle** over an unmarked room → the default room, completed
+    ///
+    /// Any other combination is a no-op (so a drag only affects matching rooms).
+    /// Returns whether it painted, and clears the first-interaction flag when it
+    /// does (the reference cancels the entrance accelerator on paint).
+    @discardableResult
+    public func dragPaint(_ button: DragPaintButton, col: Int, row: Int) -> Bool {
+        var r = room(col: col, row: row)
+        switch button {
+        case .left where r.roomType.isOffMap:
+            r.roomType = .unmarked
+            r.isCompleted = false
+        case .right where r.roomType.isNotMarked:
+            r.roomType = .offTheMap
+            r.isCompleted = false
+        case .middle where r.roomType.isNotMarked:
+            r.roomType = DungeonRoomGesture.defaultRoom
+            r.isCompleted = true
+        default:
+            return false
+        }
+        setRoom(r, col: col, row: row)
+        firstInteractionDone = true
+        return true
+    }
+
     /// Conservative door inference (T-019.12, reference `DungeonUI.fs:1148-1167`):
     /// after a room is newly marked, if it has exactly one plausible entry — one
     /// adjacent non-empty room whose connecting door isn't already `no` — set that

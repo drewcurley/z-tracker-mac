@@ -185,7 +185,8 @@ struct DungeonRoomGridView: View {
             ForEach(0..<DungeonRoomMap.rows, id: \.self) { row in
                 ForEach(0..<DungeonRoomMap.cols, id: \.self) { col in
                     RoomCellView(map: map, col: col, row: row,
-                                 width: Self.cellW, height: Self.cellH, inferDoors: inferDoors)
+                                 width: Self.cellW, height: Self.cellH,
+                                 pitchX: Self.pitchX, pitchY: Self.pitchY, inferDoors: inferDoors)
                         .offset(x: CGFloat(col) * Self.pitchX, y: CGFloat(row) * Self.pitchY)
                 }
             }
@@ -243,6 +244,9 @@ private struct RoomCellView: View {
     let row: Int
     let width: CGFloat
     let height: CGFloat
+    /// Column/row pitch (cell + gap) — lets a drag map the cursor to a room.
+    let pitchX: CGFloat
+    let pitchY: CGFloat
     /// Door inference (T-019.12): auto-open the inferred entry door when this room
     /// is newly marked. Gated by the `doDoorInference` option upstream.
     var inferDoors: Bool = false
@@ -303,18 +307,24 @@ private struct RoomCellView: View {
         // Precise mouse handling: left = accelerator / cycle / completion toggle;
         // right = room-type picker; Shift+left = monster; Shift+right = floor
         // drop; middle = circle (no drop) / floor-drop brightness.
-        .overlay(RoomMouseCatcher { gesture in
-            switch gesture {
-            case .left: markWithInference()
-            case .right: showingPicker = true
-            // Scroll (Windows wheel) and Shift+click both open the detail pickers:
-            // up/Shift-left = monster, down/Shift-right = floor drop.
-            case .shiftLeft, .scrollUp: showingMonster = true
-            case .shiftRight, .scrollDown: showingFloorDrop = true
-            // ⌥-click stands in for the reference middle-click (no middle button).
-            case .middle, .optionLeft: map.middleClick(col: col, row: row)
-            }
-        })
+        .overlay(RoomMouseCatcher(
+            onGesture: { gesture in
+                switch gesture {
+                case .left: markWithInference()
+                case .right: showingPicker = true
+                // Scroll (Windows wheel) and Shift+click both open the detail pickers:
+                // up/Shift-left = monster, down/Shift-right = floor drop.
+                case .shiftLeft, .scrollUp: showingMonster = true
+                case .shiftRight, .scrollDown: showingFloorDrop = true
+                // ⌥-click stands in for the reference middle-click (no middle button).
+                case .middle, .optionLeft: map.middleClick(col: col, row: row)
+                }
+            },
+            // Drag-paint (T-072): left over off-map → unmarked, right over unmarked
+            // → off-map, ⌥/middle over unmarked → default. Clicks fire on release.
+            dragContext: .init(col: col, row: row, pitchX: pitchX, pitchY: pitchY),
+            onDragPaint: { button, c, r in map.dragPaint(button, col: c, row: r) }
+        ))
         .popover(isPresented: $showingPicker, arrowEdge: .bottom) {
             RoomTypePicker(current: room.roomType) { newType in
                 let wasUnmarked = room.roomType.isNotMarked
