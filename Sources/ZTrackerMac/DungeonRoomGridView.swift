@@ -79,6 +79,7 @@ struct DungeonMapView: View {
         .frame(width: Self.contentWidth, alignment: .leading)
     }
 
+
     /// Level tabs 1–9 + Summary evenly spread across the map width, with the
     /// FQ/SQ vanilla-outline buttons pinned to the right edge.
     private var tabBar: some View {
@@ -160,6 +161,11 @@ struct DungeonMapView: View {
                 hint: $model.levelHints[HintTarget.dungeon(selected + 1)]
             )
             .frame(maxWidth: .infinity)
+            // Minimap preview (T-079): hover to see the faux in-game HUD map.
+            HStack {
+                DungeonMinimapHoverIcon(map: model.dungeonRoomMaps[selected], headerText: headerText)
+                Spacer(minLength: 0)
+            }
             Spacer(minLength: 0)
         }
         .frame(width: Self.infoStripWidth)
