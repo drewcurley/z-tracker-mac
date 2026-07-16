@@ -39,6 +39,13 @@ public enum DoorState: Int, CaseIterable, Sendable, Codable {
         self == .yes || self == .yellow || self == .purple
     }
 
+    /// The reference click-toggle: set to `target`, or back to `unknown` if it's
+    /// already `target` (`DungeonUI.fs:726-742` — left = yes, right = no,
+    /// middle = yellow).
+    public func toggled(to target: DoorState) -> DoorState {
+        self == target ? .unknown : target
+    }
+
     /// The reference door color as `0xRRGGBB` (`Dungeon.fs:13-17`), for rendering.
     public var rgb: Int {
         switch self {
