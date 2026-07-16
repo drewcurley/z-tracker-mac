@@ -21,6 +21,22 @@ public struct SpotSummary: Equatable, Sendable {
         public var done: Bool { mark.isUsedToggleable ? used : placed }
     }
 
+    /// A non-unique overworld location type that has a known per-quest total —
+    /// door repair, money-making game, hint shop, take-any, potion shop (the
+    /// reference's "Non-Unique Locations" section, indices 28/29/32/33/34). Shops
+    /// (bomb/candle/ring/meat/…) are deliberately absent: the reference tracks
+    /// them as unbounded (max 999), so a "remaining" count isn't defined.
+    public struct NonUniqueCount: Equatable, Sendable {
+        public let mark: OverworldTileMark
+        /// How many are marked on the overworld.
+        public let marked: Int
+        /// The quest's total number of this type.
+        public let total: Int
+        /// How many are still to find (clamped ≥ 0).
+        public var remaining: Int { max(0, total - marked) }
+        public var displayName: String { mark.displayName }
+    }
+
     /// Counts of the money-secret sizes.
     public struct SecretCounts: Equatable, Sendable {
         public let large: Int
@@ -36,6 +52,9 @@ public struct SpotSummary: Equatable, Sendable {
     /// The 18 unique spots, in display order: dungeons 1–9, any-roads 1–4,
     /// sword caves 1–3, the letter, the armos item.
     public let uniques: [UniqueSpot]
+    /// The non-unique location types with per-quest totals (door repair, MMG,
+    /// hint, take-any, potion), in the reference's display order.
+    public let nonUniques: [NonUniqueCount]
     /// The quest's total money secrets by size.
     public let secretsTotal: SecretCounts
     /// How many of each size are currently marked on the overworld.
@@ -89,7 +108,21 @@ public struct SpotSummary: Equatable, Sendable {
             ? SecretCounts(large: 3, medium: 7, small: 4)
             : SecretCounts(large: 1, medium: 7, small: 6)
 
-        return SpotSummary(uniques: uniques, secretsTotal: total,
+        // Non-unique location totals (reference `TrackerModel.fs:290-298` maxUses),
+        // 1Q vs 2Q overworld.
+        let firstOW = quest.isFirstQuestOverworld
+        func nonUnique(_ m: OverworldTileMark, _ total1Q: Int, _ total2Q: Int) -> NonUniqueCount {
+            NonUniqueCount(mark: m, marked: counts[m] ?? 0, total: firstOW ? total1Q : total2Q)
+        }
+        let nonUniques = [
+            nonUnique(.doorRepair, 9, 10),
+            nonUnique(.moneyMakingGame, 5, 6),
+            nonUnique(.hintShop, 4, 4),
+            nonUnique(.takeAny, 4, 4),
+            nonUnique(.potionShop, 7, 9),
+        ]
+
+        return SpotSummary(uniques: uniques, nonUniques: nonUniques, secretsTotal: total,
                            secretsPlaced: secrets(counts), secretsUsed: secrets(used))
     }
 }

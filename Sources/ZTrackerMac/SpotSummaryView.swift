@@ -120,9 +120,37 @@ struct SpotSummaryView: View {
                         .font(.caption2).foregroundStyle(.orange)
                 }
             }
+
+            Divider()
+
+            VStack(alignment: .leading, spacing: 5) {
+                Text("Non-unique locations").font(.caption).bold().foregroundStyle(.secondary)
+                Text("Number = still to find · bright icons = remaining")
+                    .font(.caption2).foregroundStyle(.secondary)
+                ForEach(Array(summary.nonUniques.enumerated()), id: \.offset) { _, nu in
+                    nonUniqueRow(nu)
+                }
+            }
         }
         .padding(14)
-        .frame(width: 300)
+        .frame(width: 340)
+    }
+
+    private func nonUniqueRow(_ nu: SpotSummary.NonUniqueCount) -> some View {
+        HStack(spacing: 6) {
+            Text("\(nu.remaining)")
+                .font(.system(size: 13, weight: .bold, design: .rounded))
+                .foregroundStyle(nu.remaining == 0 ? .secondary : .primary)
+                .frame(width: 16, alignment: .trailing)
+            Text(nu.displayName).font(.caption).foregroundStyle(.secondary)
+                .frame(width: 100, alignment: .leading)
+            HStack(spacing: 2) {
+                ForEach(0..<max(nu.total, 0), id: \.self) { i in
+                    OverworldMarkIcon(mark: nu.mark, size: 15).opacity(i < nu.remaining ? 1 : 0.28)
+                }
+            }
+        }
+        .help("\(nu.displayName): \(nu.marked) of \(nu.total) found, \(nu.remaining) left")
     }
 
     /// Bright when still to find; faded once found (placed); fully dim once

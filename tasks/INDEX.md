@@ -28,6 +28,7 @@
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
 | [T-072.1](./T-072.1.md) | Fix ⌥-drag circling the first room (defer modified-left to release) | frontend-engineer | T-072 | fix/drag-paint-option-defer | — | docs/reviews/fix-drag-paint-option-defer/final.md |
+| [T-076](./T-076.md) | Spot Summary — add the Non-Unique Locations counts | frontend-engineer | T-053 | feat/spot-summary-nonunique | — | docs/reviews/feat-spot-summary-nonunique/final.md |
 | [T-075](./T-075.md) | Reference feature-coverage audit (canonical parity checklist) | analyst | — | chore/reference-coverage-audit | — | docs/reviews/chore-reference-coverage-audit/final.md |
 | [T-074](./T-074.md) | Old-man count shows X/Y (marked / expected) | frontend-engineer | T-019 | fix/old-men-count-total | — | docs/reviews/fix-old-men-count-total/final.md |
 | [T-073](./T-073.md) | Dungeon GRAB — cut/paste model foundation | data-engineer | T-019 | feat/dungeon-grab-model | — | docs/reviews/feat-dungeon-grab-model/final.md |

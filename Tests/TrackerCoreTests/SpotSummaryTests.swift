@@ -20,6 +20,37 @@ struct SpotSummaryTests {
                 == .init(large: 3, medium: 7, small: 4))
     }
 
+    @Test("non-unique location totals per quest, remaining = total − marked (T-076)")
+    func nonUniqueCounts() {
+        // Empty 1Q: reference maxUses (door 9, MMG 5, hint 4, take-any 4, potion 7).
+        let s1 = SpotSummary.compute(grid: OverworldGrid(), quest: .first)
+        func total(_ m: OverworldTileMark) -> Int { s1.nonUniques.first { $0.mark == m }!.total }
+        #expect(total(.doorRepair) == 9)
+        #expect(total(.moneyMakingGame) == 5)
+        #expect(total(.hintShop) == 4)
+        #expect(total(.takeAny) == 4)
+        #expect(total(.potionShop) == 7)
+        #expect(s1.nonUniques.allSatisfy { $0.marked == 0 && $0.remaining == $0.total })
+
+        // 2Q totals differ (door 10, MMG 6, potion 9).
+        let s2 = SpotSummary.compute(grid: OverworldGrid(), quest: .second)
+        func total2(_ m: OverworldTileMark) -> Int { s2.nonUniques.first { $0.mark == m }!.total }
+        #expect(total2(.doorRepair) == 10)
+        #expect(total2(.moneyMakingGame) == 6)
+        #expect(total2(.potionShop) == 9)
+
+        // Marking some reduces remaining.
+        let grid = OverworldGrid()
+        grid.setMark(.doorRepair, column: 0, row: 0)
+        grid.setMark(.doorRepair, column: 1, row: 0)
+        grid.setMark(.takeAny, column: 2, row: 0)
+        let s = SpotSummary.compute(grid: grid, quest: .first)
+        let door = s.nonUniques.first { $0.mark == .doorRepair }!
+        #expect(door.marked == 2 && door.remaining == 7)
+        let takeAny = s.nonUniques.first { $0.mark == .takeAny }!
+        #expect(takeAny.marked == 1 && takeAny.remaining == 3)
+    }
+
     @Test("placing a unique flags it placed; placing a secret alone doesn't reduce remaining")
     func placement() {
         let grid = OverworldGrid()
