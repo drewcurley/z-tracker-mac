@@ -41,7 +41,8 @@ struct DungeonMapView: View {
                 HStack(alignment: .top, spacing: 8) {
                     DungeonRoomGridView(map: model.dungeonRoomMaps[selected],
                                         dungeonNumber: selected + 1,
-                                        headerText: headerText)
+                                        headerText: headerText,
+                                        inferDoors: options.doDoorInference)
                     dungeonInfoStrip
                 }
             }
@@ -124,6 +125,8 @@ struct DungeonRoomGridView: View {
     var dungeonNumber: Int
     /// The "LEVEL-N" / "BOARD-N" header, one character centered per column.
     var headerText: String = ""
+    /// Forwarded to each room cell — auto-open an inferred entry door on marking.
+    var inferDoors: Bool = false
 
     /// Cell size — the 13×9 sprite scaled 4× (nearest-neighbor). The `gap` is the
     /// door channel between rooms (the reference's 12px gap at 3×, so 16 at 4×);
@@ -161,7 +164,7 @@ struct DungeonRoomGridView: View {
             ForEach(0..<DungeonRoomMap.rows, id: \.self) { row in
                 ForEach(0..<DungeonRoomMap.cols, id: \.self) { col in
                     RoomCellView(map: map, col: col, row: row,
-                                 width: Self.cellW, height: Self.cellH)
+                                 width: Self.cellW, height: Self.cellH, inferDoors: inferDoors)
                         .offset(x: CGFloat(col) * Self.pitchX, y: CGFloat(row) * Self.pitchY)
                 }
             }
@@ -214,6 +217,9 @@ private struct RoomCellView: View {
     let row: Int
     let width: CGFloat
     let height: CGFloat
+    /// Door inference (T-019.12): auto-open the inferred entry door when this room
+    /// is newly marked. Gated by the `doDoorInference` option upstream.
+    var inferDoors: Bool = false
     @State private var showingPicker = false
     @State private var showingMonster = false
     @State private var showingFloorDrop = false
@@ -273,7 +279,7 @@ private struct RoomCellView: View {
         // drop; middle = circle (no drop) / floor-drop brightness.
         .overlay(RoomMouseCatcher { gesture in
             switch gesture {
-            case .left: map.leftClick(col: col, row: row)
+            case .left: markWithInference()
             case .right: showingPicker = true
             // Scroll (Windows wheel) and Shift+click both open the detail pickers:
             // up/Shift-left = monster, down/Shift-right = floor drop.
@@ -285,10 +291,12 @@ private struct RoomCellView: View {
         })
         .popover(isPresented: $showingPicker, arrowEdge: .bottom) {
             RoomTypePicker(current: room.roomType) { newType in
+                let wasUnmarked = room.roomType.isNotMarked
                 var r = room
                 r.roomType = newType
                 map.setRoom(r, col: col, row: row)
                 map.firstInteractionDone = true
+                if inferDoors, wasUnmarked { map.inferEntryDoor(col: col, row: row) }
                 showingPicker = false
             }
         }
@@ -312,11 +320,19 @@ private struct RoomCellView: View {
         .accessibilityLabel("Room column \(col + 1), row \(row + 1)")
         .accessibilityValue(accessibilityValue)
         .accessibilityAddTraits(.isButton)
-        .accessibilityAction { map.leftClick(col: col, row: row) }
+        .accessibilityAction { markWithInference() }
         .accessibilityAction(named: "Set room type") { showingPicker = true }
         .accessibilityAction(named: "Set monster") { showingMonster = true }
         .accessibilityAction(named: "Set floor drop") { showingFloorDrop = true }
         .accessibilityAction(named: "Toggle circle or drop brightness") { map.middleClick(col: col, row: row) }
+    }
+
+    /// Primary left-click: mark the room, then (if enabled) infer its entry door.
+    /// Shared by the mouse gesture and the VoiceOver default action.
+    private func markWithInference() {
+        let wasUnmarked = room.roomType.isNotMarked
+        map.leftClick(col: col, row: row)
+        if inferDoors, wasUnmarked { map.inferEntryDoor(col: col, row: row) }
     }
 
     private var accessibilityValue: String {

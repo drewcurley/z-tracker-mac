@@ -61,6 +61,43 @@ public final class DungeonRoomMap {
         return true
     }
 
+    /// Conservative door inference (T-019.12, reference `DungeonUI.fs:1148-1167`):
+    /// after a room is newly marked, if it has exactly one plausible entry — one
+    /// adjacent non-empty room whose connecting door isn't already `no` — set that
+    /// door to `yes` ("you must have walked in from there"). No-op with zero or
+    /// several candidates, or if the single candidate door isn't `unknown`.
+    ///
+    /// The caller gates on the unmarked→marked transition and the
+    /// `doDoorInference` option; this self-skips a Gannon/Zelda room and the
+    /// second copy of a transport pair (you teleport in, not walk).
+    /// Returns whether a door was set.
+    @discardableResult
+    public func inferEntryDoor(col: Int, row: Int) -> Bool {
+        let here = room(col: col, row: row)
+        guard !here.isEmpty, !here.isGannonOrZelda else { return false }
+        if let n = here.roomType.transportNumber, transportCounts[n] == 2 { return false }
+
+        // Adjacent non-empty rooms whose connecting door isn't `no` are candidates.
+        var candidates: [(DoorAxis, Int, Int)] = []
+        if col > 0, !room(col: col - 1, row: row).isEmpty, horizontalDoor(col: col - 1, row: row) != .no {
+            candidates.append((.horizontal, col - 1, row))
+        }
+        if col < Self.cols - 1, !room(col: col + 1, row: row).isEmpty, horizontalDoor(col: col, row: row) != .no {
+            candidates.append((.horizontal, col, row))
+        }
+        if row > 0, !room(col: col, row: row - 1).isEmpty, verticalDoor(col: col, row: row - 1) != .no {
+            candidates.append((.vertical, col, row - 1))
+        }
+        if row < Self.rows - 1, !room(col: col, row: row + 1).isEmpty, verticalDoor(col: col, row: row) != .no {
+            candidates.append((.vertical, col, row))
+        }
+        guard candidates.count == 1 else { return false }
+        let (axis, dc, dr) = candidates[0]
+        guard door(axis, col: dc, row: dr) == .unknown else { return false }
+        setDoor(.yes, axis: axis, col: dc, row: dr)
+        return true
+    }
+
     /// Apply a plain **left-click** at `(col,row)` (D2a): run the gesture
     /// resolver, commit via `setRoom` (so transport limits still hold), and clear
     /// the first-interaction flag as the reference does on any interaction.
