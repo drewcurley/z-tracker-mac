@@ -1,3 +1,4 @@
+import Foundation
 import Testing
 @testable import TrackerCore
 
@@ -17,7 +18,13 @@ struct ReminderEngineTests {
         progress: PlayerProgressAndTakeAnyHearts = PlayerProgressAndTakeAnyHearts(),
         startingItems: StartingItemsAndExtras = StartingItemsAndExtras(),
         doorRepairFound: Int = 0,
-        doorRepairMax: Int = 9
+        doorRepairMax: Int = 9,
+        now: Date = Date(timeIntervalSince1970: 0),
+        coastItemValue: Int = -1,
+        isCurrentlyBook: Bool = true,
+        whistleSpotsRemain: Int = 0,
+        powerBraceletSpotsRemain: Int = 0,
+        bookShopMarked: Bool = false
     ) -> [ReminderAnnouncement] {
         let mapState = MapStateSummary.compute(
             grid: grid, instance: instance, dungeonTracker: dungeonTracker,
@@ -29,7 +36,10 @@ struct ReminderEngineTests {
         return engine.poll(
             playerState: playerState, mapState: mapState, dungeonTracker: dungeonTracker,
             blockers: blockers, progress: progress, startingItems: startingItems, tagSummary: tag,
-            doorRepairFound: doorRepairFound, doorRepairMax: doorRepairMax)
+            doorRepairFound: doorRepairFound, doorRepairMax: doorRepairMax,
+            now: now, coastItemValue: coastItemValue, isCurrentlyBook: isCurrentlyBook,
+            whistleSpotsRemain: whistleSpotsRemain, powerBraceletSpotsRemain: powerBraceletSpotsRemain,
+            bookShopMarked: bookShopMarked)
     }
 
     @Test("door-repair count announces on each increase, then goes quiet")
@@ -49,6 +59,68 @@ struct ReminderEngineTests {
     @Test("a fresh poll with nothing set emits nothing")
     func freshEmpty() {
         #expect(poll(ReminderEngine()).isEmpty)
+    }
+
+    // MARK: Periodic reminders (T-089)
+
+    private func hasCoast(_ out: [ReminderAnnouncement]) -> Bool {
+        out.contains { if case .getCoastItem = $0 { return true }; return false }
+    }
+
+    @Test("coast item: fires while ladder-but-no-coast, respects the 3-min cooldown")
+    func coastItem() {
+        let engine = ReminderEngine()
+        let player = PlayerComputedStateSummary(haveLadder: true, haveCoastItem: false)
+        let t0 = Date(timeIntervalSince1970: 0)
+        // Unknown coast item → generic text; fires on the first poll.
+        #expect(poll(engine, playerState: player, now: t0, coastItemValue: -1)
+                .contains(.getCoastItem(itemName: nil)))
+        // Same tick → cooldown blocks a repeat.
+        #expect(!hasCoast(poll(engine, playerState: player, now: t0, coastItemValue: -1)))
+        // 3+ minutes later, with a known item → names it.
+        let t3 = Date(timeIntervalSince1970: 200)
+        #expect(poll(engine, playerState: player, now: t3, coastItemValue: ITEMS.whiteSword)
+                .contains(.getCoastItem(itemName: "white sword")))
+    }
+
+    @Test("coast item: white-sword nag suppressed once you have the magical sword")
+    func coastItemWhiteSwordSuppressed() {
+        let engine = ReminderEngine()
+        let player = PlayerComputedStateSummary(haveLadder: true, haveCoastItem: false)
+        let progress = PlayerProgressAndTakeAnyHearts(); progress.hasMagicalSword = true
+        #expect(!hasCoast(poll(engine, playerState: player, progress: progress,
+                               now: Date(timeIntervalSince1970: 0), coastItemValue: ITEMS.whiteSword)))
+    }
+
+    @Test("recorder spots: announces the count, stays quiet as the count shrinks")
+    func recorderSpots() {
+        let engine = ReminderEngine()
+        let player = PlayerComputedStateSummary(haveRecorder: true)
+        #expect(poll(engine, playerState: player, now: Date(timeIntervalSince1970: 0), whistleSpotsRemain: 3)
+                .contains(.recorderSpots(3)))
+        // 5+ min later with fewer spots (progress) → no nag.
+        let out = poll(engine, playerState: player, now: Date(timeIntervalSince1970: 400), whistleSpotsRemain: 2)
+        #expect(!out.contains { if case .recorderSpots = $0 { return true }; return false })
+    }
+
+    @Test("power-bracelet spots announce the count")
+    func powerBraceletSpots() {
+        let engine = ReminderEngine()
+        let player = PlayerComputedStateSummary(havePowerBracelet: true)
+        #expect(poll(engine, playerState: player, now: Date(timeIntervalSince1970: 0), powerBraceletSpotsRemain: 1)
+                .contains(.powerBraceletSpots(1)))
+    }
+
+    @Test("boomstick book: fires with wand + no book + a marked book shop")
+    func boomstickBook() {
+        let engine = ReminderEngine()
+        let player = PlayerComputedStateSummary(haveWand: true)
+        #expect(poll(engine, playerState: player, now: Date(timeIntervalSince1970: 0), bookShopMarked: true)
+                .contains(.considerBoomstickBook))
+        // No book shop marked → nothing.
+        #expect(!poll(ReminderEngine(), playerState: player,
+                      now: Date(timeIntervalSince1970: 0), bookShopMarked: false)
+                .contains(.considerBoomstickBook))
     }
 
     @Test("consider-sword2 fires once when hearts hit 4-6 with a known white-sword cave")

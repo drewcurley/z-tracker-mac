@@ -54,6 +54,21 @@ struct ReminderAnnouncementDisplayTests {
         #expect(ReminderAnnouncement.doorRepairCount(found: 3, max: 9).category == .doorRepair)
     }
 
+    @Test("periodic reminder text + categories (T-089)")
+    func periodicText() {
+        #expect(ReminderAnnouncement.getCoastItem(itemName: nil).displayText
+                == "Get the coast item with the ladder")
+        #expect(ReminderAnnouncement.getCoastItem(itemName: "white sword").displayText
+                == "Get the white sword off the coast")
+        #expect(ReminderAnnouncement.getCoastItem(itemName: nil).category == .coastItem)
+        #expect(ReminderAnnouncement.recorderSpots(1).displayText == "There is one recorder spot")
+        #expect(ReminderAnnouncement.recorderSpots(4).displayText == "There are 4 recorder spots")
+        #expect(ReminderAnnouncement.powerBraceletSpots(1).displayText == "There is one power bracelet spot")
+        #expect(ReminderAnnouncement.powerBraceletSpots(3).displayText == "There are 3 power bracelet spots")
+        #expect(ReminderAnnouncement.considerBoomstickBook.displayText == "Consider buying the boomstick book")
+        #expect(ReminderAnnouncement.recorderSpots(2).category == .recorderPBSpotsAndBoomstickBook)
+    }
+
     @Test("unblock text lists the dungeon numbers and the need")
     func unblockText() {
         let one = ReminderAnnouncement.remindUnblock(blocker: .ladder, dungeons: [1], combatDetails: [])

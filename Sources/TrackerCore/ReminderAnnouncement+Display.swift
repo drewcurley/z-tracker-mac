@@ -14,6 +14,8 @@ extension ReminderAnnouncement {
         case .remindUnblock: .blockers
         case .remindShortly: .haveKeyLadder
         case .doorRepairCount: .doorRepair
+        case .getCoastItem: .coastItem
+        case .recorderSpots, .powerBraceletSpots, .considerBoomstickBook: .recorderPBSpotsAndBoomstickBook
         }
     }
 
@@ -58,6 +60,15 @@ extension ReminderAnnouncement {
         case .doorRepairCount(let found, let max):
             // "You found all N of N door repairs" once complete, else "N of N".
             return "You found \(found == max ? "all " : "")\(found) of \(max) door repairs"
+        case .getCoastItem(let itemName):
+            return itemName.map { "Get the \($0) off the coast" }
+                ?? "Get the coast item with the ladder"
+        case .recorderSpots(let n):
+            return n == 1 ? "There is one recorder spot" : "There are \(n) recorder spots"
+        case .powerBraceletSpots(let n):
+            return n == 1 ? "There is one power bracelet spot" : "There are \(n) power bracelet spots"
+        case .considerBoomstickBook:
+            return "Consider buying the boomstick book"
         }
     }
 }
