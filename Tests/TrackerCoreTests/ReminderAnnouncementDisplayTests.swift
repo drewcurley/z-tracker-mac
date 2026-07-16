@@ -67,6 +67,8 @@ struct ReminderAnnouncementDisplayTests {
         #expect(ReminderAnnouncement.powerBraceletSpots(3).displayText == "There are 3 power bracelet spots")
         #expect(ReminderAnnouncement.considerBoomstickBook.displayText == "Consider buying the boomstick book")
         #expect(ReminderAnnouncement.recorderSpots(2).category == .recorderPBSpotsAndBoomstickBook)
+        #expect(ReminderAnnouncement.remindVisitHints.displayText == "You have the book — visit the hint NPCs")
+        #expect(ReminderAnnouncement.remindVisitHints.category == .haveKeyLadder)
     }
 
     @Test("unblock text lists the dungeon numbers and the need")

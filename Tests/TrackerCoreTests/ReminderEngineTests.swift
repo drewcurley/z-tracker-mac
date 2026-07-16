@@ -24,7 +24,8 @@ struct ReminderEngineTests {
         isCurrentlyBook: Bool = true,
         whistleSpotsRemain: Int = 0,
         powerBraceletSpotsRemain: Int = 0,
-        bookShopMarked: Bool = false
+        bookShopMarked: Bool = false,
+        bookForHelpfulHints: Bool = false
     ) -> [ReminderAnnouncement] {
         let mapState = MapStateSummary.compute(
             grid: grid, instance: instance, dungeonTracker: dungeonTracker,
@@ -39,7 +40,24 @@ struct ReminderEngineTests {
             doorRepairFound: doorRepairFound, doorRepairMax: doorRepairMax,
             now: now, coastItemValue: coastItemValue, isCurrentlyBook: isCurrentlyBook,
             whistleSpotsRemain: whistleSpotsRemain, powerBraceletSpotsRemain: powerBraceletSpotsRemain,
-            bookShopMarked: bookShopMarked)
+            bookShopMarked: bookShopMarked, bookForHelpfulHints: bookForHelpfulHints)
+    }
+
+    @Test("book → visit-hints fires once, only when the hints flag is on (T-092)")
+    func visitHints() {
+        let withBook = PlayerComputedStateSummary(haveBookOrShield: true)
+        // Flag off → no nudge even with the book.
+        #expect(!poll(ReminderEngine(), playerState: withBook, isCurrentlyBook: true,
+                      bookForHelpfulHints: false).contains(.remindVisitHints))
+        // Flag on + have the book → fires once, then goes quiet.
+        let engine = ReminderEngine()
+        #expect(poll(engine, playerState: withBook, isCurrentlyBook: true,
+                     bookForHelpfulHints: true).contains(.remindVisitHints))
+        #expect(!poll(engine, playerState: withBook, isCurrentlyBook: true,
+                      bookForHelpfulHints: true).contains(.remindVisitHints))
+        // Shield seed (item 0 is the shield, not the book) → no hints nudge.
+        #expect(!poll(ReminderEngine(), playerState: withBook, isCurrentlyBook: false,
+                      bookForHelpfulHints: true).contains(.remindVisitHints))
     }
 
     @Test("door-repair count announces on each increase, then goes quiet")

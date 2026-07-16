@@ -350,6 +350,9 @@ struct ObtainableItemsView: View {
 /// yet, so it's intentionally still absent (no dead toggle / invented flag).
 struct SeedFlagsView: View {
     @Bindable var model: TrackerModel
+    /// Seed-flag options that live in the Flags section (T-092: Book for Helpful
+    /// Hints), toggled here rather than in the preferences panel.
+    @Bindable var options: TrackerOptions
     /// The run timer — Heart Shuffle / Hidden Dungeon Numbers rebuild dungeon
     /// state, so once the run has started (even if paused) they confirm first
     /// (T-051/T-052).
@@ -370,7 +373,7 @@ struct SeedFlagsView: View {
                 GridRow {
                     bookShieldTile
                     mirrorTile
-                    Color.clear.frame(width: itemGridCellSize, height: itemGridCellSize)
+                    bookHintsTile
                 }
             }
             // Auto-map dungeons is game config, so it lives with the Flags
@@ -438,6 +441,17 @@ struct SeedFlagsView: View {
         flagTile(on: model.mirrorOverworld, systemImage: "arrow.left.arrow.right",
                  help: "Mirror the overworld map East↔West (mirrored seeds)") {
             model.mirrorOverworld.toggle()
+        }
+    }
+
+    /// Book for Helpful Hints (T-092) — moved here from the preferences panel as a
+    /// seed flag. The icon is a book with a character glyph ("translate the old
+    /// man's gibberish"). When on, NPC-hint rooms are flagged and you're reminded
+    /// to visit the hints once you have the Book.
+    private var bookHintsTile: some View {
+        flagTile(on: options.bookForHelpfulHints, systemImage: "character.book.closed.fill", tint: .yellow,
+                 help: "Book for Helpful Hints: this seed's Book grants hints — mark NPC-hint rooms, and remind you to visit them once you have the Book") {
+            options.bookForHelpfulHints.toggle()
         }
     }
 
