@@ -113,7 +113,10 @@ public enum OverworldTileMark: Hashable, Codable, Sendable {
     public var placesUsedWhenMarked: Bool {
         switch self {
         case .secret(.unknown): false
-        case .secret, .theLetter, .hintShop: true
+        case .secret, .hintShop: true
+        // The letter is NOT force-used on placement (T-118): placing it means you
+        // *have* the potion letter (`extraData == 0`, so `havePotionLetter` is true),
+        // and its dim is inverted from secrets — see `OverworldMapView.tileIsCollected`.
         default: false
         }
     }

@@ -243,6 +243,10 @@ struct MainTrackerPlaceholderView: View {
                         guard (1...9).contains(number) else { return }
                         model.levelHints[HintTarget.dungeon(number)] =
                             HintZone.forZoneChar(OverworldZones.zone(column: c, row: r))
+                    },
+                    onWoodSwordCaveUsedChanged: { used in
+                        // Collecting the wood sword at its cave grants the sword (T-118).
+                        model.playerProgress.hasWoodSword = used
                     }
                 )
                 .frame(maxWidth: .infinity)
@@ -275,9 +279,9 @@ struct MainTrackerPlaceholderView: View {
             if rescued {
                 timer.pause()
                 // Post the finish time to Notes, like the Windows app (T-107).
-                let s = Int(timer.mainElapsed(asOf: Date()))
-                let line = String(format: "Finished in %d:%02d:%02d", s / 3600, (s % 3600) / 60, s % 60)
-                if !model.notes.contains(line) {
+                // Includes milliseconds so close race ties are visible (T-118).
+                let line = "Finished in " + TimerFormatting.hmsMillis(timer.mainElapsed(asOf: Date()))
+                if !model.notes.contains("Finished in ") {
                     model.notes += (model.notes.isEmpty ? "" : "\n") + line
                 }
             } else {

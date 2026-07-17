@@ -102,3 +102,32 @@ struct OverworldClaimCorrectnessTests {
         #expect(model.overworldGrid.mark(column: 3, row: 3) == .secret(.large)) // mark kept
     }
 }
+
+@Suite("Letter + wood-sword-cave semantics (T-118)")
+struct LetterAndWoodSwordCaveTests {
+    @Test("the letter is not force-used on placement (you hold the potion letter)")
+    func letterPlacesUnused() {
+        #expect(!OverworldTileMark.theLetter.placesUsedWhenMarked)
+        // Secrets/hint shop still place used (dark).
+        #expect(OverworldTileMark.secret(.large).placesUsedWhenMarked)
+        #expect(OverworldTileMark.hintShop.placesUsedWhenMarked)
+
+        // Placing the letter leaves it un-used → havePotionLetter true in map state.
+        let model = TrackerModel(quest: .first)
+        model.selectQuest(.first)
+        model.overworldGrid.setMark(.theLetter, column: 4, row: 4)
+        #expect(!model.overworldGrid.isUsed(column: 4, row: 4))
+        // Toggling marks it delivered/used.
+        model.overworldGrid.toggleUsed(column: 4, row: 4)
+        #expect(model.overworldGrid.isUsed(column: 4, row: 4))
+    }
+
+    @Test("wood-sword cave used state round-trips through the grid toggle")
+    func woodSwordCaveToggles() {
+        let g = OverworldGrid()
+        g.setMark(.swordCave(1), column: 0, row: 0)
+        #expect(!g.isUsed(column: 0, row: 0))       // places bright (not collected)
+        g.toggleUsed(column: 0, row: 0)
+        #expect(g.isUsed(column: 0, row: 0))        // collected → grants wood sword (view wires this)
+    }
+}

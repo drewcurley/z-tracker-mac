@@ -116,7 +116,10 @@ public struct SpotSummary: Equatable, Sendable {
         uniques.append(UniqueSpot(mark: .swordCave(1), placed: has(.swordCave(1)), used: usedAny(.swordCave(1))))
         uniques.append(UniqueSpot(mark: .swordCave(2), placed: has(.swordCave(2)), used: whiteSwordItemDone))
         uniques.append(UniqueSpot(mark: .swordCave(3), placed: has(.swordCave(3)), used: hasMagicalSword))
-        uniques.append(UniqueSpot(mark: .theLetter, placed: has(.theLetter), used: usedAny(.theLetter)))
+        // The letter is "taken" once found on the map (T-118): its map toggle is a
+        // *delivered* flag, not a separate summary state, so `done`/dim key off
+        // placement — mark it collected as soon as it's placed.
+        uniques.append(UniqueSpot(mark: .theLetter, placed: has(.theLetter), used: has(.theLetter)))
         uniques.append(UniqueSpot(mark: .armos, placed: has(.armos), used: armosDone))
 
         func secrets(_ source: [OverworldTileMark: Int]) -> SecretCounts {

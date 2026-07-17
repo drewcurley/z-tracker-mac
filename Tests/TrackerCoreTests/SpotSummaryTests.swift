@@ -88,10 +88,12 @@ struct SpotSummaryTests {
         // One large collected → 2 large remaining; medium untouched.
         #expect(s.secretsUsed == .init(large: 1, medium: 0, small: 0))
         #expect(s.secretsRemaining == .init(large: 2, medium: 7, small: 4))
-        // Armos collected (used, from the model); the letter placed but not collected.
+        // Armos collected (used, from the model). The letter is "taken" as soon as
+        // it's placed (its map toggle is a delivered flag, not a summary state, T-118).
         #expect(s.uniques.first { $0.mark == .armos }?.used == true)
-        #expect(s.uniques.first { $0.mark == .theLetter }?.used == false)
+        #expect(s.uniques.first { $0.mark == .theLetter }?.used == true)
         #expect(s.uniques.first { $0.mark == .theLetter }?.placed == true)
+        #expect(s.uniques.first { $0.mark == .theLetter }?.done == true)
 
         // Toggling used off restores it.
         grid.toggleUsed(column: 1, row: 1)

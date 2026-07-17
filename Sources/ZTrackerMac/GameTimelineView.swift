@@ -53,13 +53,17 @@ struct GameTimelineView: View {
                 ForEach(Array(placed.enumerated()), id: \.offset) { _, p in
                     icon(for: p.event)
                         .frame(width: iconSize, height: iconSize)
-                        .position(x: x(forSeconds: p.seconds),
-                                  y: topPad + CGFloat(p.row) * rowHeight + iconSize / 2)
+                        .contentShape(Rectangle())
                         // Hover: split time first, then the item, then where it was
                         // found if known — e.g. "31:03  Silver Arrow — LEVEL-3 Box 1"
-                        // (T-114).
+                        // (T-114). The `.help` must wrap the *sized* icon, before
+                        // `.position` (which expands the frame to fill the ZStack —
+                        // applying `.help` after made every tooltip cover the whole
+                        // timeline, so none tracked its icon, T-118).
                         .help("\(split(p.seconds))  \(p.event.displayName)"
                               + (timeline.acquiredLocation[p.event].map { " — \($0)" } ?? ""))
+                        .position(x: x(forSeconds: p.seconds),
+                                  y: topPad + CGFloat(p.row) * rowHeight + iconSize / 2)
                 }
                 finishMarker
             }
