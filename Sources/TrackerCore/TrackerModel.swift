@@ -173,7 +173,8 @@ public final class TrackerModel {
             drawRoutes: false, routesCanScreenScroll: false, mirrorOverworld: false)
         let acquired = TimelineEvents.current(
             playerState: playerComputedStateSummary, progress: playerProgress,
-            dungeonTracker: dungeonTracker, isCurrentlyBook: isCurrentlyBook)
+            startingItems: startingItemsAndExtras, dungeonTracker: dungeonTracker,
+            isWSMSReplacedByBU: isWSMSReplacedByBU, isCurrentlyBook: isCurrentlyBook)
         timeline.record(elapsedSeconds: elapsedSeconds, acquired: acquired,
                         owRemaining: mapState.owSpotsRemain, finished: playerProgress.hasRescuedZelda)
     }

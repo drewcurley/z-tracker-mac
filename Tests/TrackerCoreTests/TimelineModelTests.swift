@@ -10,16 +10,20 @@ struct TimelineModelTests {
         dt.dungeon(4).toggleTriforce()          // triforce 5
         let progress = PlayerProgressAndTakeAnyHearts()
         progress.hasDefeatedGanon = true
+        progress.hasWoodSword = true            // actual wood-sword pickup
         progress.takeAnyHearts[1] = .takenHeart // heart 2
-        let player = PlayerComputedStateSummary(haveRecorder: true, haveLadder: true, swordLevel: 2)
+        let starting = StartingItemsAndExtras()
+        starting.hasWhiteSword = true           // actual white-sword pickup
+        let player = PlayerComputedStateSummary(haveRecorder: true, haveLadder: true)
 
         let s = TimelineEvents.current(playerState: player, progress: progress,
-                                       dungeonTracker: dt, isCurrentlyBook: true)
+                                       startingItems: starting, dungeonTracker: dt,
+                                       isWSMSReplacedByBU: false, isCurrentlyBook: true)
         #expect(s.contains(.recorder))
         #expect(s.contains(.ladder))
-        #expect(s.contains(.woodSword))      // swordLevel 2 → wood + white
+        #expect(s.contains(.woodSword))
         #expect(s.contains(.whiteSword))
-        #expect(!s.contains(.magicalSword))  // not level 3
+        #expect(!s.contains(.magicalSword))
         #expect(s.contains(.triforce(1)))
         #expect(s.contains(.triforce(5)))
         #expect(!s.contains(.triforce(2)))
@@ -27,6 +31,44 @@ struct TimelineModelTests {
         #expect(!s.contains(.takeAnyHeart(1)))
         #expect(s.contains(.defeatedGanon))
         #expect(!s.contains(.rescuedZelda))
+    }
+
+    @Test("tiered items reflect actual pickups, not a derived lower tier (T-113)")
+    func actualPickupsNoPhantomTier() {
+        let dt = DungeonTrackerInstance()
+        let progress = PlayerProgressAndTakeAnyHearts()
+        let starting = StartingItemsAndExtras()
+        // Got the SILVER arrow directly (no wood arrow ever picked up).
+        starting.hasSilverArrow = true
+        // Got the RED candle directly (no blue candle).
+        starting.hasRedCandle = true
+        let player = PlayerComputedStateSummary()
+
+        let s = TimelineEvents.current(playerState: player, progress: progress,
+                                       startingItems: starting, dungeonTracker: dt,
+                                       isWSMSReplacedByBU: false, isCurrentlyBook: false)
+        #expect(s.contains(.silverArrow))
+        #expect(!s.contains(.woodArrow))     // no phantom wood arrow
+        #expect(s.contains(.redCandle))
+        #expect(!s.contains(.blueCandle))    // no phantom blue candle
+    }
+
+    @Test("bait + dungeon/coast heart containers appear on the timeline (T-113)")
+    func heartsAndBait() {
+        let dt = DungeonTrackerInstance()
+        // A dungeon-1 box holds a collected heart container.
+        dt.dungeon(0).boxes[0].set(cellCurrent: ITEMS.heartContainer, playerHas: .yes)
+        // The coast item is a heart container.
+        dt.ladderBox.set(cellCurrent: ITEMS.heartContainer, playerHas: .yes)
+        let progress = PlayerProgressAndTakeAnyHearts()
+        progress.hasMeat = true
+        let s = TimelineEvents.current(playerState: PlayerComputedStateSummary(), progress: progress,
+                                       startingItems: StartingItemsAndExtras(), dungeonTracker: dt,
+                                       isWSMSReplacedByBU: false, isCurrentlyBook: false)
+        #expect(s.contains(.dungeonHeart(1)))
+        #expect(!s.contains(.dungeonHeart(2)))
+        #expect(s.contains(.coastHeart))
+        #expect(s.contains(.bait))
     }
 
     @Test("record stamps first acquisition, ignores later ticks, drops un-marked")

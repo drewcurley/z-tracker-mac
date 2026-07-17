@@ -173,7 +173,8 @@ struct GameTimelineView: View {
         case .ladder: .ladder
         case .defeatedGanon: .ganon
         case .rescuedZelda: .zelda
-        case .takeAnyHeart: .heartContainer
+        case .takeAnyHeart, .dungeonHeart, .coastHeart: .heartContainer
+        case .bait: .bait
         case .triforce: nil
         }
     }

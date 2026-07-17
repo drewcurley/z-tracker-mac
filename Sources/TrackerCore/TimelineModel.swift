@@ -12,11 +12,17 @@ public enum TimelineEvent: Hashable, Sendable {
     case blueRing, redRing
     case book, boomstickBook
     case bow, wand, powerBracelet, raft, recorder, anyKey, ladder
+    /// Bait (a.k.a. meat) — beyond the reference timeline list, user request (T-113).
+    case bait
     case defeatedGanon, rescuedZelda
     /// Dungeon triforce 1…8.
     case triforce(Int)
     /// Take-any heart 1…4.
     case takeAnyHeart(Int)
+    /// A heart container collected from dungeon slot 1…9's boxes (T-113).
+    case dungeonHeart(Int)
+    /// A heart container that was the coast item (T-113).
+    case coastHeart
 
     /// The order events sort in when they share a minute (roughly acquisition
     /// significance), and the human-readable name shown on hover.
@@ -42,10 +48,13 @@ public enum TimelineEvent: Hashable, Sendable {
         case .recorder: "Recorder"
         case .anyKey: "Any Key"
         case .ladder: "Ladder"
+        case .bait: "Bait"
         case .defeatedGanon: "Ganon"
         case .rescuedZelda: "Zelda"
         case .triforce(let n): "Triforce \(n)"
         case .takeAnyHeart(let n): "Take-Any Heart \(n)"
+        case .dungeonHeart(let n): "Dungeon \(n) Heart"
+        case .coastHeart: "Coast Heart"
         }
     }
 }
@@ -57,24 +66,36 @@ public enum TimelineEvents {
     public static func current(
         playerState: PlayerComputedStateSummary,
         progress: PlayerProgressAndTakeAnyHearts,
+        startingItems: StartingItemsAndExtras,
         dungeonTracker: DungeonTrackerInstance,
+        isWSMSReplacedByBU: Bool,
         isCurrentlyBook: Bool
     ) -> Set<TimelineEvent> {
         var s: Set<TimelineEvent> = []
-        // Sword / candle / ring / arrow / boomerang progressions (each threshold
-        // crossing is its own event).
-        if playerState.swordLevel >= 1 { s.insert(.woodSword) }
-        if playerState.swordLevel >= 2 { s.insert(.whiteSword) }
-        if playerState.swordLevel >= 3 { s.insert(.magicalSword) }
-        if playerState.candleLevel >= 1 { s.insert(.blueCandle) }
-        if playerState.candleLevel >= 2 { s.insert(.redCandle) }
-        if playerState.ringLevel >= 1 { s.insert(.blueRing) }
-        if playerState.ringLevel >= 2 { s.insert(.redRing) }
-        if playerState.arrowLevel >= 1 { s.insert(.woodArrow) }
-        if playerState.arrowLevel >= 2 { s.insert(.silverArrow) }
-        if playerState.boomerangLevel >= 1 { s.insert(.boomerang) }
-        if playerState.boomerangLevel >= 2 { s.insert(.magicBoomerang) }
-        // Singleton items.
+        let boxes = dungeonTracker.allBoxes()
+        /// Whether some collected box actually holds `item` (an "actual pickup").
+        func boxHas(_ item: Int) -> Bool {
+            boxes.contains { $0.playerHas == .yes && $0.cellCurrent == item }
+        }
+
+        // Tiered items (sword / candle / ring / arrow / boomerang): each specific
+        // tier is its own event, driven by whether you actually hold *that* item
+        // — NOT by a cumulative level (T-113). Deriving from a level made, e.g.,
+        // "wood arrow" light up the moment you got the silver arrow, even though
+        // you never picked up wood arrows. Sources mirror `PlayerComputedState`.
+        if progress.hasWoodSword { s.insert(.woodSword) }
+        if startingItems.hasWhiteSword || (boxHas(ITEMS.whiteSword) && !isWSMSReplacedByBU) { s.insert(.whiteSword) }
+        if (progress.hasMagicalSword || startingItems.hasMagicalSword) && !isWSMSReplacedByBU { s.insert(.magicalSword) }
+        if progress.hasBlueCandle { s.insert(.blueCandle) }
+        if startingItems.hasRedCandle || boxHas(ITEMS.redCandle) { s.insert(.redCandle) }
+        if progress.hasBlueRing { s.insert(.blueRing) }
+        if startingItems.hasRedRing || boxHas(ITEMS.redRing) { s.insert(.redRing) }
+        if progress.hasWoodArrow { s.insert(.woodArrow) }
+        if startingItems.hasSilverArrow || boxHas(ITEMS.silverArrow) { s.insert(.silverArrow) }
+        if startingItems.hasBoomerang || boxHas(ITEMS.boomerang) { s.insert(.boomerang) }
+        if startingItems.hasMagicBoomerang || boxHas(ITEMS.magicBoomerang) { s.insert(.magicBoomerang) }
+
+        // Singleton items (already presence-based, no tier conflation).
         if playerState.haveBookOrShield, isCurrentlyBook { s.insert(.book) }
         if progress.hasBoomBook { s.insert(.boomstickBook) }
         if playerState.haveBow { s.insert(.bow) }
@@ -84,12 +105,24 @@ public enum TimelineEvents {
         if playerState.haveRecorder { s.insert(.recorder) }
         if playerState.haveAnyKey { s.insert(.anyKey) }
         if playerState.haveLadder { s.insert(.ladder) }
+        if progress.hasMeat { s.insert(.bait) }
         if progress.hasDefeatedGanon { s.insert(.defeatedGanon) }
         if progress.hasRescuedZelda { s.insert(.rescuedZelda) }
+
         // Triforces 1…8.
         for n in 1...8 where dungeonTracker.dungeon(n - 1).playerHasTriforce { s.insert(.triforce(n)) }
         // Take-any hearts (only the "took a heart" state counts).
         for n in 1...4 where progress.takeAnyHearts[n - 1] == .takenHeart { s.insert(.takeAnyHeart(n)) }
+        // Heart containers collected from dungeon boxes and the coast (T-113):
+        // previously only take-any hearts showed on the timeline.
+        for n in 1...9 {
+            let held = dungeonTracker.dungeon(n - 1).boxes.contains {
+                $0.playerHas == .yes && $0.cellCurrent == ITEMS.heartContainer
+            }
+            if held { s.insert(.dungeonHeart(n)) }
+        }
+        let coast = dungeonTracker.ladderBox
+        if coast.playerHas == .yes, coast.cellCurrent == ITEMS.heartContainer { s.insert(.coastHeart) }
         return s
     }
 }
