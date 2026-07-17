@@ -26,6 +26,7 @@
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
 | [T-072.1](./T-072.1.md) | Fix ⌥-drag circling the first room (defer modified-left to release) | frontend-engineer | T-072 | fix/drag-paint-option-defer | — | docs/reviews/fix-drag-paint-option-defer/final.md |
+| [T-126](./T-126.md) | Reclaim vertical space — compact corner pop-out (no header rows) | frontend-engineer | T-124 | fix/compact-breakout-headers | — | docs/reviews/fix-compact-breakout-headers/final.md |
 | [T-125](./T-125.md) | Log — inline icons, dungeon-number tile, and font zoom | frontend-engineer | T-122 | fix/log-inline-icons-zoom | — | docs/reviews/fix-log-inline-icons-zoom/final.md |
 | [T-124](./T-124.md) | Break-out window for the overworld map | frontend-engineer | T-123 | feat/overworld-window | — | docs/reviews/feat-overworld-window/final.md |
 | [T-123](./T-123.md) | Break-out window for the dungeon band (map + blockers + notes) | frontend-engineer | T-100 | feat/dungeon-band-window | — | docs/reviews/feat-dungeon-band-window/final.md |
