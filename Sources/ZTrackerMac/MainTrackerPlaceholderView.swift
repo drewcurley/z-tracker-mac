@@ -216,6 +216,8 @@ struct MainTrackerPlaceholderView: View {
                     mapState: mapState,
                     overlays: overlays,
                     armosClaimed: model.dungeonTracker.armosBox.isDone,
+                    dungeonTracker: model.dungeonTracker,
+                    iconOptions: model.iconOptions,
                     mirrored: model.mirrorOverworld,
                     hideDungeonNumbers: model.hideDungeonNumbers,
                     hasRescuedZelda: model.playerProgress.hasRescuedZelda,
