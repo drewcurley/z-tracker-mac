@@ -33,10 +33,14 @@ struct DungeonMapView: View {
         DungeonLabeling.slotLabel(selected + 1, hideDungeonNumbers: model.hideDungeonNumbers)
     }
 
-    /// The in-game HUD header ("LEVEL-4" / "BOARD-4" per the flag), spread one
-    /// character per grid column so it lines up with the game's on-screen text.
+    /// The in-game HUD header ("LEVEL-4" / "BOARD-4" per the flag, "LEVEL-A" under
+    /// HDN), spread one character per grid column so it lines up with the game's
+    /// on-screen text. Shares `DungeonLabeling.columnName` with the overworld
+    /// picker so all dungeon naming agrees (T-112).
     private var headerText: String {
-        "\(options.boardInsteadOfLevel ? "BOARD" : "LEVEL")-\(slotLabel)"
+        DungeonLabeling.columnName(slot: selected + 1,
+                                   boardInsteadOfLevel: options.boardInsteadOfLevel,
+                                   hideDungeonNumbers: model.hideDungeonNumbers)
     }
 
     /// The old-man readout (T-074): "X/Y" (marked / expected), or just "X" in HDN

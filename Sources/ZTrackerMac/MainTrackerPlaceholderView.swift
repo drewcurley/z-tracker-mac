@@ -292,7 +292,13 @@ struct MainTrackerPlaceholderView: View {
         // and speak/show the returned announcements.
         .task {
             while !Task.isCancelled {
-                reminders.handle(model.pollReminders(bookForHelpfulHints: options.bookForHelpfulHints), options: options)
+                reminders.handle(
+                    model.pollReminders(bookForHelpfulHints: options.bookForHelpfulHints),
+                    options: options,
+                    hideDungeonNumbers: model.hideDungeonNumbers,
+                    // Slot-indexed assigned label chars, for HDN completed-dungeon
+                    // text ("Dungeon A is complete"), T-112.
+                    assignedLabels: model.dungeonTracker.dungeons.prefix(8).map(\.labelChar))
                 // Feed the Timeline (T-098) with the current run time, once the
                 // run has started (before "Go", elapsed is 0 and nothing's timed).
                 if timer.hasStarted {

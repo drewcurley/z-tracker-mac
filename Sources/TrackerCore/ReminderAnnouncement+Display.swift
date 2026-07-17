@@ -22,18 +22,35 @@ extension ReminderAnnouncement {
         }
     }
 
-    /// The human-readable reminder text. Ported from the reference's
-    /// `SendReminder` strings. (The Hidden-Dungeon-Numbers lettered variant
-    /// of "Dungeon N is complete" is a later refinement — this uses the
-    /// dungeon number, correct in the common non-HDN case.)
-    public var displayText: String {
+    /// The human-readable reminder text (non-HDN naming). See
+    /// `displayText(hideDungeonNumbers:assignedLabels:)` for the Hidden-Dungeon-
+    /// Numbers variant.
+    public var displayText: String { displayText(hideDungeonNumbers: false, assignedLabels: []) }
+
+    /// The human-readable reminder text. Ported from the reference's `SendReminder`
+    /// strings. Under Hidden Dungeon Numbers, dungeon references use letters
+    /// (T-112, matching the reference): a **completed** dungeon uses its *assigned*
+    /// label (`GetDungeon(i).LabelChar`, or "This dungeon" when still unknown,
+    /// `UI.fs:1442-1449`), while a **revisit** reminder uses the slot letter
+    /// `'A'+d` (`UI.fs:1508-1512`).
+    /// - Parameters:
+    ///   - hideDungeonNumbers: HDN mode is on.
+    ///   - assignedLabels: each slot's assigned label char (`'?'` if unknown),
+    ///     slot-indexed 0–7. Only consulted under HDN for completed-dungeon text.
+    public func displayText(hideDungeonNumbers: Bool, assignedLabels: [Character]) -> String {
+        /// Revisit naming: HDN slot letter `'A'+d`, else the 1-based number.
+        func revisitName(_ d: Int) -> String {
+            hideDungeonNumbers ? String(UnicodeScalar(UInt8(65 + d))) : String(d + 1)
+        }
         switch self {
         case .considerSword2:
             return "Consider getting the white sword item"
         case .considerSword3:
             return "Consider the magical sword"
         case .completedDungeon(let i):
-            return "Dungeon \(i + 1) is complete"
+            guard hideDungeonNumbers else { return "Dungeon \(i + 1) is complete" }
+            let label = i < assignedLabels.count ? assignedLabels[i] : "?"
+            return label == "?" ? "This dungeon is complete" : "Dungeon \(label) is complete"
         case .foundDungeonCount(let n):
             switch n {
             case 1: return "You have located one dungeon"
@@ -50,7 +67,7 @@ extension ReminderAnnouncement {
             default: return "You need something to be triforce and go"
             }
         case .remindUnblock(let blocker, let dungeons, _):
-            let nums = dungeons.map { String($0 + 1) }.joined(separator: ", ")
+            let nums = dungeons.map(revisitName).joined(separator: ", ")
             let need = blocker.displayDescription.replacingOccurrences(of: "\n", with: " ")
             let plural = dungeons.count == 1 ? "dungeon" : "dungeons"
             return "You can revisit \(plural) \(nums) — \(need)"
