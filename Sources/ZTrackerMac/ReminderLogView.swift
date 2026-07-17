@@ -8,15 +8,33 @@ import TrackerCore
 struct ReminderLogView: View {
     @Bindable var log: ReminderLog
 
+    /// Log zoom (T-125): scales every row's text + icons; ⌘+ / ⌘- / ⌘0.
+    @State private var fontScale: CGFloat = 1.0
+    private static let minScale: CGFloat = 0.7
+    private static let maxScale: CGFloat = 2.6
+    private func zoom(_ by: CGFloat) {
+        fontScale = min(Self.maxScale, max(Self.minScale, fontScale + by))
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text("Reminder log").font(.headline)
                 Spacer()
+                // Zoom controls (⌘- / ⌘0 / ⌘+).
+                Button("A−") { zoom(-0.15) }
+                    .keyboardShortcut("-", modifiers: .command)
+                    .disabled(fontScale <= Self.minScale)
+                Button("A") { fontScale = 1.0 }
+                    .keyboardShortcut("0", modifiers: .command)
+                Button("A+") { zoom(0.15) }
+                    .keyboardShortcut("+", modifiers: .command)
+                    .disabled(fontScale >= Self.maxScale)
+                Divider().frame(height: 14)
                 Button("Clear") { log.clear() }
-                    .font(.caption).controlSize(.small)
                     .disabled(log.entries.isEmpty)
             }
+            .font(.caption).controlSize(.small)
             if log.entries.isEmpty {
                 Text("No reminders yet.")
                     .font(.callout).foregroundStyle(.secondary)
@@ -37,27 +55,22 @@ struct ReminderLogView: View {
     }
 
     private func entryRow(_ entry: ReminderLog.Entry) -> some View {
-        HStack(alignment: .top, spacing: 8) {
-            // Timestamp (run-time split).
+        // Timestamp, then the icons and text all on one line (T-125), the text
+        // wrapping to the right of the icons; everything scales with `fontScale`.
+        HStack(alignment: .top, spacing: 6 * fontScale) {
             Text(split(entry.elapsedSeconds))
-                .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                .font(.system(size: 11 * fontScale, weight: .semibold, design: .monospaced))
                 .foregroundStyle(.secondary)
-                .frame(width: 44, alignment: .leading)
-            VStack(alignment: .leading, spacing: 2) {
-                if !entry.icons.isEmpty {
-                    HStack(spacing: 3) {
-                        ForEach(Array(entry.icons.enumerated()), id: \.offset) { _, icon in
-                            ReminderIconView(icon: icon)
-                        }
-                    }
-                }
-                Text(entry.text)
-                    .font(.system(size: 12))
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .fixedSize(horizontal: false, vertical: true)
+                .frame(width: 44 * fontScale, alignment: .leading)
+            ForEach(Array(entry.icons.enumerated()), id: \.offset) { _, icon in
+                ReminderIconView(icon: icon, size: 16 * fontScale)
             }
+            Text(entry.text)
+                .font(.system(size: 12 * fontScale))
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 4 * fontScale)
     }
 
     private func split(_ seconds: Int) -> String {
@@ -87,7 +100,14 @@ struct ReminderIconView: View {
             Image(systemName: "wrench.and.screwdriver.fill").font(.system(size: size * 0.65))
                 .foregroundStyle(.orange).frame(width: size, height: size)
         case .dungeon(let n):
-            OverworldMarkIcon(mark: .dungeon(n), size: size)
+            // The dungeon *number* tile (T-125), matching how the player reads
+            // "consider dungeon 3".
+            Text("\(n)")
+                .font(.system(size: size * 0.72, weight: .heavy, design: .rounded))
+                .foregroundStyle(.white)
+                .frame(width: size, height: size)
+                .background(RoundedRectangle(cornerRadius: size * 0.18).fill(Color(white: 0.22)))
+                .overlay(RoundedRectangle(cornerRadius: size * 0.18).strokeBorder(Color(white: 0.45)))
         case .secret(let s):
             OverworldMarkIcon(mark: .secret(s), size: size)
         default:
