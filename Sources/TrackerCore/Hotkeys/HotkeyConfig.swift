@@ -30,6 +30,17 @@ public final class HotkeyConfig {
 
     public func chord(for selectorID: String) -> HotkeyChord? { bindings[selectorID] }
 
+    /// The selector ids bound to `chord` (usually 0 or 1; the same chord may be bound
+    /// in several non-conflicting contexts). Used by runtime dispatch (Part B).
+    public func selectorIDs(boundTo chord: HotkeyChord) -> [String] {
+        bindings.compactMap { $0.value == chord ? $0.key : nil }
+    }
+
+    /// The selector bound to `chord` within `context`, if any.
+    public func selectorID(boundTo chord: HotkeyChord, in context: HotkeyContext) -> String? {
+        selectorIDs(boundTo: chord).first { HotkeyCatalog.selector(id: $0)?.context == context }
+    }
+
     /// Bind (or, with `nil`, clear) a selector. Does **not** check conflicts — the
     /// caller decides whether to proceed after `conflicts(for:chord:)`.
     public func setChord(_ chord: HotkeyChord?, for selectorID: String) {
