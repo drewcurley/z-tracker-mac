@@ -94,7 +94,8 @@ struct OverworldMapView: View {
     /// Whether any active top-section overlay highlights this tile (T-035.2).
     private func overlayHighlights(column: Int, row: Int, mark: OverworldTileMark) -> Bool {
         guard let overlays else { return false }
-        if overlays.isActive(.money), OverworldOverlays.isMoneyTile(mark, secretValue: 0) {
+        if overlays.isActive(.money),
+           OverworldOverlays.isMoneyTile(mark, secretCollected: grid.isUsed(column: column, row: row)) {
             return true
         }
         if overlays.isActive(.openCaves) {
