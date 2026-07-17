@@ -26,6 +26,7 @@
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
 | [T-072.1](./T-072.1.md) | Fix ⌥-drag circling the first room (defer modified-left to release) | frontend-engineer | T-072 | fix/drag-paint-option-defer | — | docs/reviews/fix-drag-paint-option-defer/final.md |
+| [T-116](./T-116.md) | Dungeon rooms support up to two monsters (stacked) | frontend-engineer | T-019.7 | feat/dungeon-two-monsters | — | docs/reviews/feat-dungeon-two-monsters/final.md |
 | [T-115](./T-115.md) | Timer pop-out readout scales with the window | frontend-engineer | T-101 | feat/timer-window-scaling | — | docs/reviews/feat-timer-window-scaling/final.md |
 | [T-114](./T-114.md) | Timeline hover shows split time + source location | frontend-engineer | T-098 | feat/timeline-hover-location | — | docs/reviews/feat-timeline-hover-location/final.md |
 | [T-113](./T-113.md) | Timeline reflects actual pickups + dungeon/coast hearts + bait | data-engineer | T-098 | fix/timeline-actual-pickups | — | docs/reviews/fix-timeline-actual-pickups/final.md |
