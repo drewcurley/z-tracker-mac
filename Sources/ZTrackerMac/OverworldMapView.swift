@@ -92,6 +92,8 @@ struct OverworldMapView: View {
     var onPlaceDungeon: (Int, Int, Int) -> Void = { _, _, _ in }
     /// The wood-sword cave was toggled used/unused (T-118): grant/ungrant the sword.
     var onWoodSwordCaveUsedChanged: (Bool) -> Void = { _ in }
+    /// The magical-sword cave was clicked (T-119): take/untake the magical sword.
+    var onMagicalSwordCaveUsedChanged: (Bool) -> Void = { _ in }
 
     /// Whether any active top-section overlay highlights this tile (T-035.2).
     private func overlayHighlights(column: Int, row: Int, mark: OverworldTileMark) -> Bool {
@@ -427,6 +429,12 @@ struct OverworldMapView: View {
             // A take-any tile cycles its claimed version (untaken → heart →
             // potion → candle), kept in sync with its Items-group slot (T-066).
             onCycleTakeAny(column, row)
+        } else if case .swordCave(3) = mark {
+            // The Magical-Sword cave isn't a manual `used` toggle — its dim derives
+            // from whether the player has the magical sword. Clicking it "takes" the
+            // magical sword (or un-takes it), which in turn dims/brightens the tile
+            // (T-119, user request).
+            onMagicalSwordCaveUsedChanged(playerState.swordLevel < 3)
         } else if mark.isUsedToggleable {
             // A claimable tile (secret / letter / hint shop / wood-sword cave):
             // left-click toggles it used ⇄ unused (T-054).

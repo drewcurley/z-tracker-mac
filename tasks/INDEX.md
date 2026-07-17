@@ -26,6 +26,7 @@
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
 | [T-072.1](./T-072.1.md) | Fix ⌥-drag circling the first room (defer modified-left to release) | frontend-engineer | T-072 | fix/drag-paint-option-defer | — | docs/reviews/fix-drag-paint-option-defer/final.md |
+| [T-119](./T-119.md) | Timeline hover label (visible) + magical-sword cave grants the sword | frontend-engineer | T-118 | fix/timeline-hover-and-magical-sword | — | docs/reviews/fix-timeline-hover-and-magical-sword/final.md |
 | [T-118](./T-118.md) | QA round-2 fixes (letter summary, finish ms, wood-sword grant, timeline hover, enemy layout) | frontend-engineer | T-098 | fix/qa-round-2 | — | docs/reviews/fix-qa-round-2/final.md |
 | [T-117](./T-117.md) | Overworld tiles support enemy annotations (reduced set) | frontend-engineer | T-116 | feat/overworld-tile-enemies | — | docs/reviews/feat-overworld-tile-enemies/final.md |
 | [T-116](./T-116.md) | Dungeon rooms support up to two monsters (stacked) | frontend-engineer | T-019.7 | feat/dungeon-two-monsters | — | docs/reviews/feat-dungeon-two-monsters/final.md |

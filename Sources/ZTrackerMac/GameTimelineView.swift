@@ -15,6 +15,9 @@ struct GameTimelineView: View {
     private let axisHeight: CGFloat = 16
     private let topPad: CGFloat = 4
 
+    /// The index (into `placed`) of the icon under the cursor, for the hover label.
+    @State private var hovered: Int?
+
     /// Events sorted by time, each with a stacking row within its minute bucket.
     private var placed: [(event: TimelineEvent, seconds: Int, row: Int)] {
         let sorted = timeline.acquiredAt.sorted {
@@ -50,21 +53,21 @@ struct GameTimelineView: View {
             ZStack(alignment: .topLeading) {
                 minuteGrid
                 owProgressGraph
-                ForEach(Array(placed.enumerated()), id: \.offset) { _, p in
+                ForEach(Array(placed.enumerated()), id: \.offset) { index, p in
                     icon(for: p.event)
                         .frame(width: iconSize, height: iconSize)
                         .contentShape(Rectangle())
-                        // Hover: split time first, then the item, then where it was
-                        // found if known — e.g. "31:03  Silver Arrow — LEVEL-3 Box 1"
-                        // (T-114). The `.help` must wrap the *sized* icon, before
-                        // `.position` (which expands the frame to fill the ZStack —
-                        // applying `.help` after made every tooltip cover the whole
-                        // timeline, so none tracked its icon, T-118).
-                        .help("\(split(p.seconds))  \(p.event.displayName)"
-                              + (timeline.acquiredLocation[p.event].map { " — \($0)" } ?? ""))
+                        // A visible hover label (T-119) — macOS `.help` tooltips are
+                        // unreliable inside a ScrollView + `.position`, so we track the
+                        // hovered icon and draw the split label ourselves (below).
+                        .onHover { inside in
+                            if inside { hovered = index }
+                            else if hovered == index { hovered = nil }
+                        }
                         .position(x: x(forSeconds: p.seconds),
                                   y: topPad + CGFloat(p.row) * rowHeight + iconSize / 2)
                 }
+                hoverLabel
                 finishMarker
             }
             .frame(width: contentWidth, height: contentHeight, alignment: .topLeading)
@@ -120,6 +123,34 @@ struct GameTimelineView: View {
             }
             Text("OW").font(.system(size: 8)).foregroundStyle(Color(red: 0, green: 0.55, blue: 0.55))
                 .position(x: 10, y: topPad + 6)
+        }
+    }
+
+    /// The split label for the icon under the cursor — "31:03  Silver Arrow —
+    /// LEVEL-3 Box 1" — drawn just above the icon, clamped to the content width, and
+    /// non-interactive so it never eats the hover (T-119).
+    @ViewBuilder
+    private var hoverLabel: some View {
+        if let i = hovered, i < placed.count {
+            let p = placed[i]
+            let text = "\(split(p.seconds))  \(p.event.displayName)"
+                + (timeline.acquiredLocation[p.event].map { " — \($0)" } ?? "")
+            let iconX = x(forSeconds: p.seconds)
+            let iconY = topPad + CGFloat(p.row) * rowHeight + iconSize / 2
+            // Estimate the label width (monospaced ~6pt/char + padding) to keep it
+            // clamped on screen and centered above the icon.
+            let estWidth = CGFloat(text.count) * 6 + 12
+            let labelX = min(max(iconX, estWidth / 2 + 2), contentWidth - estWidth / 2 - 2)
+            Text(text)
+                .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                .foregroundStyle(.white)
+                .fixedSize()
+                .padding(.horizontal, 6)
+                .padding(.vertical, 3)
+                .background(RoundedRectangle(cornerRadius: 4).fill(.black.opacity(0.9)))
+                .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(.white.opacity(0.25)))
+                .position(x: labelX, y: max(iconY - rowHeight, 8))
+                .allowsHitTesting(false)
         }
     }
 
