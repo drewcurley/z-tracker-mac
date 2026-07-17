@@ -80,6 +80,24 @@ struct ReminderAnnouncementDisplayTests {
         let many = ReminderAnnouncement.remindUnblock(blocker: .bomb, dungeons: [1, 4], combatDetails: [])
         #expect(many.displayText == "You can revisit dungeons 2, 5 — Need bombs")
     }
+
+    @Test("HDN: completed uses the assigned label, revisit uses the slot letter (T-112)")
+    func hdnDungeonNaming() {
+        // completedDungeon uses the *assigned* label char; '?' → "This dungeon…".
+        let labels: [Character] = ["3", "?", "A", "B", "C", "D", "E", "F"]
+        #expect(ReminderAnnouncement.completedDungeon(0)
+            .displayText(hideDungeonNumbers: true, assignedLabels: labels) == "Dungeon 3 is complete")
+        #expect(ReminderAnnouncement.completedDungeon(1)
+            .displayText(hideDungeonNumbers: true, assignedLabels: labels) == "This dungeon is complete")
+        // Non-HDN keeps the slot number.
+        #expect(ReminderAnnouncement.completedDungeon(0)
+            .displayText(hideDungeonNumbers: false, assignedLabels: labels) == "Dungeon 1 is complete")
+
+        // remindUnblock uses the *slot* letter 'A'+d under HDN.
+        let many = ReminderAnnouncement.remindUnblock(blocker: .bomb, dungeons: [1, 4], combatDetails: [])
+        #expect(many.displayText(hideDungeonNumbers: true, assignedLabels: labels)
+            == "You can revisit dungeons B, E — Need bombs")
+    }
 }
 
 @Suite("TrackerModel.pollReminders integration")

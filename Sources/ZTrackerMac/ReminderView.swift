@@ -31,9 +31,11 @@ final class ReminderController {
 
     /// Speak/show each announcement whose category is enabled, and log it. Voice
     /// reminders go to the shared `SpeechEngine`, which serializes them (no overlap).
-    func handle(_ announcements: [ReminderAnnouncement], options: TrackerOptions) {
+    func handle(_ announcements: [ReminderAnnouncement], options: TrackerOptions,
+                hideDungeonNumbers: Bool = false, assignedLabels: [Character] = []) {
         for announcement in announcements {
-            let text = announcement.displayText
+            let text = announcement.displayText(hideDungeonNumbers: hideDungeonNumbers,
+                                                assignedLabels: assignedLabels)
             let visual = options.visualReminders[announcement.category] == true
             let voice = options.voiceReminders[announcement.category] == true
             if visual { show(text) }

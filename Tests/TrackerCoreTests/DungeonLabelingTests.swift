@@ -16,6 +16,18 @@ struct DungeonLabelingTests {
         #expect(DungeonLabeling.slotLabel(9, hideDungeonNumbers: true) == "9")
     }
 
+    @Test("columnName joins the LEVEL/BOARD word to the slot label (T-112)")
+    func columnNames() {
+        #expect(DungeonLabeling.columnWord(boardInsteadOfLevel: false) == "LEVEL")
+        #expect(DungeonLabeling.columnWord(boardInsteadOfLevel: true) == "BOARD")
+        #expect(DungeonLabeling.columnName(slot: 1, boardInsteadOfLevel: false, hideDungeonNumbers: false) == "LEVEL-1")
+        #expect(DungeonLabeling.columnName(slot: 9, boardInsteadOfLevel: false, hideDungeonNumbers: false) == "LEVEL-9")
+        #expect(DungeonLabeling.columnName(slot: 3, boardInsteadOfLevel: true, hideDungeonNumbers: false) == "BOARD-3")
+        // HDN: 1–8 → letters, 9 stays 9.
+        #expect(DungeonLabeling.columnName(slot: 1, boardInsteadOfLevel: false, hideDungeonNumbers: true) == "LEVEL-A")
+        #expect(DungeonLabeling.columnName(slot: 9, boardInsteadOfLevel: true, hideDungeonNumbers: true) == "BOARD-9")
+    }
+
     @Test("setHideDungeonNumbers rebuilds the tracker (3 boxes) and back")
     func hdnRebuildsTracker() {
         let model = TrackerModel(quest: .first)

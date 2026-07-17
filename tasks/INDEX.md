@@ -26,6 +26,7 @@
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
 | [T-072.1](./T-072.1.md) | Fix ⌥-drag circling the first room (defer modified-left to release) | frontend-engineer | T-072 | fix/drag-paint-option-defer | — | docs/reviews/fix-drag-paint-option-defer/final.md |
+| [T-112](./T-112.md) | Dungeon naming (LEVEL/BOARD/HDN) in picker menu, voice/toast, and map title | frontend-engineer | T-049 | feat/dungeon-naming-consistency | — | docs/reviews/feat-dungeon-naming-consistency/final.md |
 | [T-111](./T-111.md) | Money highlighter highlights marked-but-uncollected money secrets | frontend-engineer | T-035.2 | fix/money-highlight-marked-secrets | — | docs/reviews/fix-money-highlight-marked-secrets/final.md |
 | [T-110](./T-110.md) | Item caves dim from collection, not placement | frontend-engineer | T-065 | fix/item-cave-dim-from-collection | — | docs/reviews/fix-item-cave-dim-from-collection/final.md |
 | [T-109](./T-109.md) | Warn before quitting while the run timer is running | frontend-engineer | T-101 | feat/warn-close-timer-running | — | docs/reviews/feat-warn-close-timer-running/final.md |
