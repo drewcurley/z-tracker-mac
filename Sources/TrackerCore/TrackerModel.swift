@@ -124,6 +124,10 @@ public final class TrackerModel {
     /// poll loop via `pollReminders()` (T-018.3).
     public let reminderEngine: ReminderEngine
 
+    /// The Timeline's data (T-098): item-acquisition splits + finish snapshot.
+    /// Fed once a second from the app's poll loop (`recordTimeline`).
+    public let timeline = TimelineModel()
+
     public init(
         quest: OverworldQuest? = nil,
         heartShuffle: Bool = false,
@@ -158,6 +162,22 @@ public final class TrackerModel {
     /// returning the announcements to fire this tick (T-018.3). The app calls
     /// this on a ~1 Hz timer. The map-state's routing flags don't affect any
     /// reminder input, so they're passed as `false`.
+    /// Fold the current state into the Timeline (T-098) at `elapsedSeconds` of run
+    /// time — stamps newly-acquired items, drops un-marked ones, and captures the
+    /// finish snapshot when Zelda is rescued. Called once a second by the poll loop.
+    public func recordTimeline(elapsedSeconds: Int) {
+        let instance = OverworldInstance(quest: quest ?? .first)
+        let mapState = MapStateSummary.compute(
+            grid: overworldGrid, instance: instance, dungeonTracker: dungeonTracker,
+            playerState: playerComputedStateSummary, progress: playerProgress,
+            drawRoutes: false, routesCanScreenScroll: false, mirrorOverworld: false)
+        let acquired = TimelineEvents.current(
+            playerState: playerComputedStateSummary, progress: playerProgress,
+            dungeonTracker: dungeonTracker, isCurrentlyBook: isCurrentlyBook)
+        timeline.record(elapsedSeconds: elapsedSeconds, acquired: acquired,
+                        owRemaining: mapState.owSpotsRemain, finished: playerProgress.hasRescuedZelda)
+    }
+
     public func pollReminders(bookForHelpfulHints: Bool = false) -> [ReminderAnnouncement] {
         let instance = OverworldInstance(quest: quest ?? .first)
         let mapState = MapStateSummary.compute(

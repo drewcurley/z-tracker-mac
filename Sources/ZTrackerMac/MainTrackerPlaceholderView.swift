@@ -24,6 +24,8 @@ struct MainTrackerPlaceholderView: View {
     /// The run timer (T-035.4): main stopwatch + a lap that resets on each
     /// groundhog reset. Owned here so it survives view redraws.
     @State private var timer = TrackerTimer()
+    /// Timeline section collapsed state (T-098) — shown by default.
+    @State private var timelineCollapsed = false
 
     /// The live overworld map-state summary (T-015.3) feeding the map's true
     /// GYR highlight. Recomputed here from the observable model each time the
@@ -61,6 +63,35 @@ struct MainTrackerPlaceholderView: View {
     /// The dungeon band (T-019.5): the room-map grid + the blockers/notes column.
     /// Side-by-side (map left) when there's room; the column wraps below the map
     /// when the window narrows (`ViewThatFits`, per the responsive-layout ADR).
+    /// The Timeline section (T-098): a collapsible header + the item strip.
+    private var timelineSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.15)) { timelineCollapsed.toggle() }
+                } label: {
+                    Image(systemName: timelineCollapsed ? "chevron.right" : "chevron.down")
+                        .font(.system(size: 11, weight: .semibold))
+                    Text("TIMELINE").font(.system(size: 11, weight: .semibold))
+                }
+                .buttonStyle(.plain)
+                .help(timelineCollapsed ? "Show the timeline" : "Collapse the timeline")
+                Spacer()
+                if let f = model.timeline.finishSeconds {
+                    Text(String(format: "Finish %d:%02d", f / 60, f % 60))
+                        .font(.system(size: 10, weight: .bold)).foregroundStyle(.green)
+                }
+            }
+            .foregroundStyle(.secondary)
+            if !timelineCollapsed {
+                GameTimelineView(timeline: model.timeline)
+                    .padding(6)
+                    .background(RoundedRectangle(cornerRadius: 6).fill(.black.opacity(0.25)))
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
     private var dungeonBand: some View {
         ViewThatFits(in: .horizontal) {
             HStack(alignment: .top, spacing: 12) {
@@ -185,6 +216,11 @@ struct MainTrackerPlaceholderView: View {
                 // left; the map is tall, so the short blockers grid + notes stack
                 // beside it add no height.
                 dungeonBand
+
+                // Timeline (T-098): an item-acquisition retrospective, inline and
+                // collapsible (on by default). Pop-out into its own window is a
+                // follow-up.
+                timelineSection
             }
             .padding(24)
             .frame(maxWidth: .infinity)
@@ -205,6 +241,11 @@ struct MainTrackerPlaceholderView: View {
         .task {
             while !Task.isCancelled {
                 reminders.handle(model.pollReminders(bookForHelpfulHints: options.bookForHelpfulHints), options: options)
+                // Feed the Timeline (T-098) with the current run time, once the
+                // run has started (before "Go", elapsed is 0 and nothing's timed).
+                if timer.hasStarted {
+                    model.recordTimeline(elapsedSeconds: Int(timer.mainElapsed(asOf: Date())))
+                }
                 try? await Task.sleep(for: .seconds(1))
             }
         }
