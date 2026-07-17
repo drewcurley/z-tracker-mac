@@ -85,6 +85,14 @@ struct MainTrackerPlaceholderView: View {
                 .buttonStyle(.plain)
                 .disabled(breakout.timelinePoppedOut)
                 .help(timelineCollapsed ? "Show the timeline" : "Collapse the timeline")
+                // Pop-out lives next to the label (T-121) so it reads as applying to
+                // the whole timeline, not just the log beside it.
+                Button { openWindow(id: TimelineWindowID) } label: {
+                    Image(systemName: "rectangle.portrait.and.arrow.right").font(.system(size: 11))
+                }
+                .buttonStyle(.plain)
+                .disabled(breakout.timelinePoppedOut)
+                .help("Open the timeline in its own window")
                 Spacer()
                 if let f = model.timeline.finishSeconds {
                     Text(String(format: "Finish %d:%02d", f / 60, f % 60))
@@ -99,13 +107,6 @@ struct MainTrackerPlaceholderView: View {
                 .popover(isPresented: $showingReminderLog, arrowEdge: .bottom) {
                     ReminderLogView(log: reminders.log)
                 }
-                // Pop-out into its own window (T-100).
-                Button { openWindow(id: TimelineWindowID) } label: {
-                    Image(systemName: "rectangle.portrait.and.arrow.right").font(.system(size: 11))
-                }
-                .buttonStyle(.plain)
-                .disabled(breakout.timelinePoppedOut)
-                .help("Open the timeline in its own window")
             }
             .foregroundStyle(.secondary)
             if breakout.timelinePoppedOut {
