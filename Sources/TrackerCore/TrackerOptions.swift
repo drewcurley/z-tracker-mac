@@ -196,6 +196,9 @@ public final class TrackerOptions {
     /// `HideTimer`, default `false`. Labeled "Hide timer" on-screen
     /// (`OptionsMenu.fs:460-466`).
     public var hideTimer: Bool
+    /// Warn before quitting while the run timer is still running (T-109, beyond
+    /// the reference). Default **true**.
+    public var warnOnCloseWhileTimerRunning: Bool
 
     public init(
         drawRoutes: Bool = true,
@@ -228,7 +231,8 @@ public final class TrackerOptions {
         broadcastWindowSize: BroadcastWindowSize = .full,
         broadcastWindowIncludesOverworldMagnifier: Bool = false,
         showMouseMagnifierWindow: Bool = false,
-        hideTimer: Bool = false
+        hideTimer: Bool = false,
+        warnOnCloseWhileTimerRunning: Bool = true
     ) {
         self.drawRoutes = drawRoutes
         self.showScreenScrolls = showScreenScrolls
@@ -261,6 +265,7 @@ public final class TrackerOptions {
         self.broadcastWindowIncludesOverworldMagnifier = broadcastWindowIncludesOverworldMagnifier
         self.showMouseMagnifierWindow = showMouseMagnifierWindow
         self.hideTimer = hideTimer
+        self.warnOnCloseWhileTimerRunning = warnOnCloseWhileTimerRunning
     }
 
     /// Every category defaults to `true` except `.recorderPBSpotsAndBoomstickBook`
@@ -415,6 +420,7 @@ public final class TrackerOptions {
         "broadcastWindowIncludesOverworldMagnifier": \.broadcastWindowIncludesOverworldMagnifier,
         "showMouseMagnifierWindow": \.showMouseMagnifierWindow,
         "hideTimer": \.hideTimer,
+        "warnOnCloseWhileTimerRunning": \.warnOnCloseWhileTimerRunning,
     ]
 
     /// Turn on startup-settings persistence and apply whatever a previous launch

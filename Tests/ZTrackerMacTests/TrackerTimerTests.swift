@@ -101,4 +101,16 @@ struct TrackerTimerTests {
         #expect(timer.mainElapsed(asOf: at(50)) == 0)
         #expect(timer.mainElapsed(asOf: at(60)) == 10) // still running from reset
     }
+
+    @Test("hardReset returns to the pristine pre-Go state (T-109)")
+    func hardResetClears() {
+        let timer = startedTimer()
+        timer.startLap(asOf: at(30))
+        #expect(timer.hasStarted && timer.isRunning)
+        timer.hardReset()
+        #expect(!timer.hasStarted)
+        #expect(!timer.isRunning)
+        #expect(!timer.hasLap)
+        #expect(timer.mainElapsed(asOf: at(100)) == 0) // frozen at zero, not running
+    }
 }

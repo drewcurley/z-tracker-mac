@@ -33,6 +33,12 @@ struct ContentView: View {
         // (coreaudiod) now, on the startup screen, so the first real spoken
         // reminder mid-game is instant. The synth speaks async — no UI hang.
         .task { SpeechEngine.warmUp(preferredVoiceIdentifier: options.preferredVoiceIdentifier) }
+        // Gate app termination on the run-timer warning (T-109). Captures the
+        // hoisted timer + options; `Reset App` resets the timer in place so this
+        // closure stays valid across a reset.
+        .onAppear {
+            AppDelegate.confirmQuit = { confirmQuitWhileTimerRunning(timer: timer, options: options) }
+        }
         // Remember where the user puts the window, and restore it next launch
         // (T-046.1) — so it reopens on the same display/spot every time.
         .persistWindowFrame("ZTrackerMainWindow")

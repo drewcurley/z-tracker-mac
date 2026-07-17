@@ -135,6 +135,7 @@ struct SettingsPanelView: View {
 
             Toggle("Mouse magnifier window", isOn: Bindable(options).showMouseMagnifierWindow)
             Toggle("Hide timer", isOn: Bindable(options).hideTimer)
+            Toggle("Warn when quitting while the timer is running", isOn: Bindable(options).warnOnCloseWhileTimerRunning)
         }
         .toggleStyle(.checkbox)
     }
