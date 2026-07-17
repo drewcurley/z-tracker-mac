@@ -353,6 +353,10 @@ struct SeedFlagsView: View {
     /// Seed-flag options that live in the Flags section (T-092: Book for Helpful
     /// Hints), toggled here rather than in the preferences panel.
     @Bindable var options: TrackerOptions
+    /// For the recorder widget (T-104), which moved here from the Info group — its
+    /// "record to new/unbeaten" settings are seed flags, so it belongs with Flags.
+    var playerState: PlayerComputedStateSummary
+    var mapState: MapStateSummary
     /// The run timer — Heart Shuffle / Hidden Dungeon Numbers rebuild dungeon
     /// state, so once the run has started (even if paused) they confirm first
     /// (T-051/T-052).
@@ -379,6 +383,9 @@ struct SeedFlagsView: View {
             // Auto-map dungeons is game config, so it lives with the Flags
             // (T-035.11); "Hide tile icons" moved to the Info overlay-icon row.
             AutoMapDungeonsMenu(model: model)
+            // Recorder destination (T-104): moved here from the Info group to save
+            // vertical space; its new/unbeaten settings are seed flags anyway.
+            RecorderInfoWidget(model: model, playerState: playerState, mapState: mapState)
         }
         .destructiveActionConfirmation($pending)
     }
@@ -509,9 +516,7 @@ struct MapInfoView: View {
             hintDecoderButton
             settingsButton
             overlayToggles
-            // Recorder destination (T-081): moved here from the full-width bar
-            // that used to sit between the overworld and dungeon maps.
-            RecorderInfoWidget(model: model, playerState: playerState, mapState: mapState)
+            // (Recorder widget moved to the Flags group, T-104.)
         }
     }
 
