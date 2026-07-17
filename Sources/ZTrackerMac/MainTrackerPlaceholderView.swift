@@ -12,6 +12,9 @@ struct MainTrackerPlaceholderView: View {
     var options: TrackerOptions
     /// Which major areas are broken out into their own windows (T-100).
     var breakout: BreakoutWindows
+    /// The run timer (T-035.4), owned at app level (T-101) so it can also show in a
+    /// duplicate window.
+    var timer: TrackerTimer
     /// "Reset App" — discard the run and return to the startup screen (T-046),
     /// offered from the Info group's reset buttons (T-048).
     var onResetApp: () -> Void = {}
@@ -26,9 +29,6 @@ struct MainTrackerPlaceholderView: View {
     /// grid icons (hover/click) and the overworld map (rendering).
     @State private var overlays = OverworldOverlayState()
 
-    /// The run timer (T-035.4): main stopwatch + a lap that resets on each
-    /// groundhog reset. Owned here so it survives view redraws.
-    @State private var timer = TrackerTimer()
     /// Timeline section collapsed state (T-098) — shown by default.
     @State private var timelineCollapsed = false
 
@@ -164,6 +164,13 @@ struct MainTrackerPlaceholderView: View {
                     StatusReadoutView(mapState: mapState)
                     Spacer()
                     TimerView(timer: timer)
+                    // Duplicate the timer into its own window (T-101), e.g. for a
+                    // stream overlay; the inline timer stays.
+                    Button { openWindow(id: TimerWindowID) } label: {
+                        Image(systemName: "rectangle.portrait.and.arrow.right").font(.system(size: 12))
+                    }
+                    .buttonStyle(.plain)
+                    .help("Show the timer in its own window")
                     ResetButtonsView(model: model, timer: timer, onResetApp: onResetApp)
                 }
 
@@ -275,5 +282,5 @@ struct MainTrackerPlaceholderView: View {
 }
 
 #Preview {
-    MainTrackerPlaceholderView(model: TrackerModel(quest: .first, heartShuffle: true), options: TrackerOptions(), breakout: BreakoutWindows())
+    MainTrackerPlaceholderView(model: TrackerModel(quest: .first, heartShuffle: true), options: TrackerOptions(), breakout: BreakoutWindows(), timer: TrackerTimer())
 }

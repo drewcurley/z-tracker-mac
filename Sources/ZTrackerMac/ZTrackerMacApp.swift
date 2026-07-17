@@ -11,6 +11,9 @@ let ProgressHUDWindowID = "z-progress-hud"
 /// The id of the broken-out Timeline window (T-100).
 let TimelineWindowID = "z-timeline"
 
+/// The id of the duplicate Timer window (T-101).
+let TimerWindowID = "z-timer"
+
 /// The id of the mid-game Settings window (T-091) — the same preference panel as
 /// the startup screen, reachable during play via a gear button or ⌘,.
 let SettingsWindowID = "z-settings"
@@ -47,6 +50,9 @@ struct ZTrackerMacApp: App {
     @State private var options = TrackerOptions.withPersistence()
     /// Which major areas are broken out into their own windows (T-100).
     @State private var breakout = BreakoutWindows()
+    /// The run timer (T-035.4), hoisted to app level (T-101) so it can also be
+    /// shown in a duplicate window; reset with the app.
+    @State private var timer = TrackerTimer()
 
     var body: some Scene {
         // A single-instance `Window` (not `WindowGroup`) — the tracker is one
@@ -54,7 +60,7 @@ struct ZTrackerMacApp: App {
         // trackers as tabs / new windows (⌘N), which only share the game state and
         // drift on view-local state; that was an unintended default, not a feature.
         Window("Z-Tracker", id: MainWindowID) {
-            ContentView(model: model, options: options, breakout: breakout, onResetApp: resetApp)
+            ContentView(model: model, options: options, breakout: breakout, timer: timer, onResetApp: resetApp)
         }
         .commands {
             // ⌘, opens the mid-game Settings window (T-091) instead of a native
@@ -82,6 +88,14 @@ struct ZTrackerMacApp: App {
         }
         .defaultSize(width: 720, height: 200)
 
+        // The duplicate Timer window (T-101) — a big stopwatch readout (e.g. for a
+        // stream overlay); the main tracker keeps its own timer too.
+        Window("Timer", id: TimerWindowID) {
+            TimerWindowView(timer: timer)
+                .frame(minWidth: 220, minHeight: 90)
+        }
+        .defaultSize(width: 340, height: 130)
+
         // The break-out Progress HUD (T-035.10) — opened on demand by the
         // "Progress" toggle (a secondary WindowGroup doesn't open at launch).
         // Freely resizable; the HUD image stretches to fill (nearest-neighbor).
@@ -101,5 +115,6 @@ struct ZTrackerMacApp: App {
     /// like reopening the app on the same machine.
     private func resetApp() {
         model = TrackerModel()
+        timer = TrackerTimer()   // hoisted (T-101): reset with the app
     }
 }
