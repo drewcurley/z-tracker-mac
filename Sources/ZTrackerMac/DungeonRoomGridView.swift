@@ -18,6 +18,14 @@ struct DungeonMapView: View {
     @State private var hoveredRow: Int?
     /// The GRAB cut-and-paste tool's transient state (T-083).
     @State private var grab = DungeonGrabController()
+    /// Room-grid zoom (T-127) — shrinks the map to reclaim vertical space; the tab
+    /// bar and controls stay full size. Session-only.
+    @State private var mapScale: CGFloat = 1.0
+    private static let minScale: CGFloat = 0.6
+    private static let maxScale: CGFloat = 1.4
+    private func zoomMap(_ by: CGFloat) {
+        mapScale = min(Self.maxScale, max(Self.minScale, (mapScale + by * 10).rounded() / 10))
+    }
     /// The info strip's fixed width (old-men count + reserved dungeon-items box).
     private static let infoStripWidth: CGFloat = 72
 
@@ -85,6 +93,12 @@ struct DungeonMapView: View {
         // Cap the whole card at its natural content width; a wider window flows
         // the extra space to Blockers/Notes, not here.
         .frame(width: Self.contentWidth, alignment: .leading)
+        // Zoom the whole card to reclaim vertical space (T-127) — the Summary tab is
+        // not scaled. Passing the known natural width keeps the dungeon band's
+        // side-by-side reflow deterministic while zoomed. The zoom control overlays
+        // at full size (bottom-trailing, where the card has empty space).
+        .scaledFootprint(isSummary ? 1 : mapScale, naturalWidth: Self.contentWidth)
+        .overlay(alignment: .bottomTrailing) { if !isSummary { zoomControl } }
         // Leaving a dungeon tab cancels any in-progress grab (reference behavior).
         .onChange(of: selected) { _, _ in grab.abort() }
         // Keep / undo prompt after a drop (reference's "Verify changes" dialog).
@@ -93,6 +107,27 @@ struct DungeonMapView: View {
             Button("Keep changes") { grab.keepChanges() }
             Button("Undo", role: .cancel) { grab.undoChanges(map: model.dungeonRoomMaps[selected]) }
         }
+    }
+
+    /// A compact map-zoom control (T-127) — shrink/grow the dungeon map to trade
+    /// vertical space; overlaid in the card's top-trailing corner at full size.
+    private var zoomControl: some View {
+        HStack(spacing: 2) {
+            Button { zoomMap(-0.1) } label: { Image(systemName: "minus.magnifyingglass") }
+                .disabled(mapScale <= Self.minScale)
+            if mapScale != 1 {
+                Button { mapScale = 1 } label: { Text("\(Int(mapScale * 100))%").font(.system(size: 9, design: .monospaced)) }
+            }
+            Button { zoomMap(0.1) } label: { Image(systemName: "plus.magnifyingglass") }
+                .disabled(mapScale >= Self.maxScale)
+        }
+        .font(.system(size: 10))
+        .buttonStyle(.plain)
+        .foregroundStyle(.secondary)
+        .padding(3)
+        .background(.black.opacity(0.5), in: RoundedRectangle(cornerRadius: 4))
+        .padding(2)
+        .help("Zoom the dungeon map")
     }
 
     /// The grab-mode instruction banner (reference `grabModeTextBlock`).
@@ -282,12 +317,18 @@ struct DungeonRoomGridView: View {
     /// When set, overlays this vanilla quest's footprint for this dungeon (FQ/SQ).
     var outlineQuest: VanillaQuest? = nil
 
-    /// Cell size — the 13×9 sprite scaled 4× (nearest-neighbor). The `gap` is the
-    /// door channel between rooms (the reference's 12px gap at 3×, so 16 at 4×);
-    /// doors render there in D3.
-    private static let cellW: CGFloat = 52
-    private static let cellH: CGFloat = 36
-    private static let gap: CGFloat = 16
+    /// Cell size (T-127 — trimmed ~12% from the original 52×36×16 so the dungeon
+    /// map + blockers + notes fit side-by-side at a narrower window; the map's zoom
+    /// control grows it back for detail). The `gap` is the door channel between
+    /// rooms; doors render there in D3.
+    private static let cellW: CGFloat = 46
+    private static let cellH: CGFloat = 32
+    private static let gap: CGFloat = 14
+    /// Door segment lengths across a cell edge (derived from the cell so they track
+    /// the trimmed size): horizontal-axis door along the cell height, vertical-axis
+    /// door along the cell width.
+    private static let hDoorLen: CGFloat = 20
+    private static let vDoorLen: CGFloat = 25
 
     /// Which grid row the pointer is over (nil = not hovering) — drives the
     /// row-locator widget in the info strip (T-078). Owned by `DungeonMapView`
@@ -345,19 +386,19 @@ struct DungeonRoomGridView: View {
             ForEach(0..<(DungeonRoomMap.cols - 1), id: \.self) { i in
                 ForEach(0..<DungeonRoomMap.rows, id: \.self) { j in
                     DungeonDoorView(map: map, axis: .horizontal, col: i, row: j,
-                                    frameW: Self.gap, frameH: 22)
+                                    frameW: Self.gap, frameH: Self.hDoorLen)
                         .allowsHitTesting(!grab.isGrabMode)
                         .offset(x: CGFloat(i) * Self.pitchX + Self.cellW,
-                                y: CGFloat(j) * Self.pitchY + (Self.cellH - 22) / 2)
+                                y: CGFloat(j) * Self.pitchY + (Self.cellH - Self.hDoorLen) / 2)
                 }
             }
             // Vertical-axis doors (horizontal walls) — between rows j and j+1.
             ForEach(0..<DungeonRoomMap.cols, id: \.self) { i in
                 ForEach(0..<(DungeonRoomMap.rows - 1), id: \.self) { j in
                     DungeonDoorView(map: map, axis: .vertical, col: i, row: j,
-                                    frameW: 28, frameH: Self.gap)
+                                    frameW: Self.vDoorLen, frameH: Self.gap)
                         .allowsHitTesting(!grab.isGrabMode)
-                        .offset(x: CGFloat(i) * Self.pitchX + (Self.cellW - 28) / 2,
+                        .offset(x: CGFloat(i) * Self.pitchX + (Self.cellW - Self.vDoorLen) / 2,
                                 y: CGFloat(j) * Self.pitchY + Self.cellH)
                 }
             }
