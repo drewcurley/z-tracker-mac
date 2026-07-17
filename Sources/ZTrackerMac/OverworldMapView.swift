@@ -90,6 +90,8 @@ struct OverworldMapView: View {
     /// A dungeon marker was placed (T-039.1) — the parent auto-sets that
     /// dungeon's location hint to the screen's region. `(number, column, row)`.
     var onPlaceDungeon: (Int, Int, Int) -> Void = { _, _, _ in }
+    /// The wood-sword cave was toggled used/unused (T-118): grant/ungrant the sword.
+    var onWoodSwordCaveUsedChanged: (Bool) -> Void = { _ in }
 
     /// Whether any active top-section overlay highlights this tile (T-035.2).
     private func overlayHighlights(column: Int, row: Int, mark: OverworldTileMark) -> Bool {
@@ -295,20 +297,21 @@ struct OverworldMapView: View {
                                     }
                                     .overlay {
                                         // Enemy annotations (T-117): up to two small
-                                        // sprites along the bottom-leading edge,
-                                        // counter-flipped so they read under a mirror.
+                                        // sprites **stacked vertically** along the left
+                                        // edge (T-118) so they don't cover the tile's
+                                        // own mark icon; counter-flipped under a mirror.
                                         let enemies = grid.enemies(column: column, row: row)
                                         if !enemies.isEmpty {
-                                            HStack(spacing: 1) {
+                                            VStack(spacing: 1) {
                                                 ForEach(Array(enemies.enumerated()), id: \.offset) { _, enemy in
                                                     if let img = Image(atlasIcon: DungeonMonsterAtlas.sprite(enemy)) {
                                                         img.interpolation(.none).resizable()
-                                                            .frame(width: tileHeight * 0.34, height: tileHeight * 0.34)
+                                                            .frame(width: tileHeight * 0.30, height: tileHeight * 0.30)
                                                     }
                                                 }
                                             }
                                             .padding(1)
-                                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+                                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
                                             .scaleEffect(x: mirrored ? -1 : 1, y: 1)
                                             .allowsHitTesting(false)
                                         }
@@ -425,9 +428,14 @@ struct OverworldMapView: View {
             // potion → candle), kept in sync with its Items-group slot (T-066).
             onCycleTakeAny(column, row)
         } else if mark.isUsedToggleable {
-            // A claimable tile (secret / armos / letter / hint shop / sword):
+            // A claimable tile (secret / letter / hint shop / wood-sword cave):
             // left-click toggles it used ⇄ unused (T-054).
             grid.toggleUsed(column: column, row: row)
+            // Marking the wood-sword cave "used" grants (or ungrants) the wood
+            // sword — the cave is where you collect it (T-118, user request).
+            if case .swordCave(1) = mark {
+                onWoodSwordCaveUsedChanged(grid.isUsed(column: column, row: row))
+            }
         }
     }
 
@@ -442,6 +450,10 @@ struct OverworldMapView: View {
         case .armos: return dungeonTracker.armosBox.isDone
         case .swordCave(2): return dungeonTracker.sword2Box.isDone
         case .swordCave(3): return playerState.swordLevel >= 3
+        // The letter's dim is inverted (T-118): it renders dark while you *hold* the
+        // potion letter (not yet used, `extraData == 0`) and brightens once you've
+        // used/delivered it — matching the reference letter tile.
+        case .theLetter: return !grid.isUsed(column: column, row: row)
         default:
             return grid.isUsed(column: column, row: row) || mark.dimsPermanentlyWhenMarked
         }
