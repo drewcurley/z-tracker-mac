@@ -26,6 +26,7 @@
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
 | [T-072.1](./T-072.1.md) | Fix ⌥-drag circling the first room (defer modified-left to release) | frontend-engineer | T-072 | fix/drag-paint-option-defer | — | docs/reviews/fix-drag-paint-option-defer/final.md |
+| [T-121](./T-121.md) | Move the timeline pop-out button next to the TIMELINE label | frontend-engineer | T-100 | fix/timeline-popout-button-placement | — | docs/reviews/fix-timeline-popout-button-placement/final.md |
 | [T-120](./T-120.md) | Enlarge the dungeon triforce click target | frontend-engineer | T-019.5 | fix/triforce-hitbox | — | docs/reviews/fix-triforce-hitbox/final.md |
 | [T-119](./T-119.md) | Timeline hover label (visible) + magical-sword cave grants the sword | frontend-engineer | T-118 | fix/timeline-hover-and-magical-sword | — | docs/reviews/fix-timeline-hover-and-magical-sword/final.md |
 | [T-118](./T-118.md) | QA round-2 fixes (letter summary, finish ms, wood-sword grant, timeline hover, enemy layout) | frontend-engineer | T-098 | fix/qa-round-2 | — | docs/reviews/fix-qa-round-2/final.md |
