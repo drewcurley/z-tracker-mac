@@ -74,6 +74,34 @@ struct DungeonCardView: View {
         DungeonLabeling.slotLabel(dungeon.id + 1, hideDungeonNumbers: hideDungeonNumbers)
     }
 
+    /// The label + triforce pip + "applies to" chips, laid out to fill the column
+    /// width so the enclosing tap target (T-120) is large. For Level 9 (id 8) this
+    /// is just the label — no pip, no chips.
+    private var triforceRegion: some View {
+        VStack(spacing: 4) {
+            HStack(spacing: 3) {
+                Text(slotLabel)
+                    .font(.system(size: 15, weight: .heavy, design: .rounded))
+                    .foregroundStyle(isLocated ? Color.white : Color(white: 0.42))
+                // Triforce pip (ignore for dungeon 9).
+                if dungeon.id != 8 {
+                    Image(systemName: "triangle.fill")
+                        .font(.system(size: 9))
+                        .foregroundStyle(dungeon.playerHasTriforce ? Color.yellow : Color(white: 0.3))
+                }
+            }
+            // Triforce "applies to" chips — only while the triforce is unobtained
+            // (once you have it, you're no longer blocked there — Views.fs:131).
+            if let blockers, let ps = chipPlayerState, dungeon.id != 8, !dungeon.playerHasTriforce {
+                BlockerChipRow(
+                    blockers: blockers.blockersApplyingTo(
+                        dungeon: dungeon.id, element: DungeonBlockerAppliesTo.Element.triforce.rawValue),
+                    playerState: ps)
+            }
+        }
+        .frame(maxWidth: .infinity)
+    }
+
     var body: some View {
         VStack(spacing: 4) {
             // Above the slot: the location hint (T-039) in default mode; in HDN
@@ -90,32 +118,22 @@ struct DungeonCardView: View {
                     HintLabel(hint: $hint, title: "Dungeon \(dungeon.id + 1)")
                 }
             }
-            HStack(spacing: 3) {
-                Text(slotLabel)
-                    .font(.system(size: 15, weight: .heavy, design: .rounded))
-                    .foregroundStyle(isLocated ? Color.white : Color(white: 0.42))
-                // Triforce pip (ignore for dungeon 9).
-                if dungeon.id != 8 {
-                    Button {
-                        dungeon.toggleTriforce()
-                    } label: {
-                        Image(systemName: "triangle.fill")
-                            .font(.system(size: 9))
-                            .foregroundStyle(dungeon.playerHasTriforce ? Color.yellow : Color(white: 0.3))
-                    }
-                    .buttonStyle(.plain)
+            // The triforce toggle (dungeons 1–8): its click target spans the whole
+            // area between the location header and the first item box — the slot
+            // label, the triforce pip, and the "applies to" chips — so it's easy to
+            // hit (T-120, user request; the bare 9pt triangle was far too small).
+            if dungeon.id != 8 {
+                triforceRegion
+                    .contentShape(Rectangle())
+                    .onTapGesture { dungeon.toggleTriforce() }
                     .help("Toggle triforce")
+                    .accessibilityElement(children: .ignore)
                     .accessibilityLabel("Dungeon triforce")
                     .accessibilityValue(dungeon.playerHasTriforce ? "Obtained" : "Not obtained")
-                }
-            }
-            // Triforce "applies to" chips — only while the triforce is unobtained
-            // (once you have it, you're no longer blocked there — Views.fs:131).
-            if let blockers, let ps = chipPlayerState, dungeon.id != 8, !dungeon.playerHasTriforce {
-                BlockerChipRow(
-                    blockers: blockers.blockersApplyingTo(
-                        dungeon: dungeon.id, element: DungeonBlockerAppliesTo.Element.triforce.rawValue),
-                    playerState: ps)
+                    .accessibilityAddTraits(.isButton)
+                    .accessibilityAction { dungeon.toggleTriforce() }
+            } else {
+                triforceRegion   // Level 9: just the label, no triforce.
             }
             ForEach(Array(dungeon.boxes.enumerated()), id: \.offset) { idx, box in
                 // In HDN, an identified two-boxer dungeon has no third item, so
