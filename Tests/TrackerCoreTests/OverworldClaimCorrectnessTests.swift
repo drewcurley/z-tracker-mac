@@ -122,6 +122,18 @@ struct LetterAndWoodSwordCaveTests {
         #expect(model.overworldGrid.isUsed(column: 4, row: 4))
     }
 
+    @Test("taking the magical sword drives swordLevel (dims the magical-sword cave)")
+    func magicalSwordCaveGrant() {
+        let model = TrackerModel(quest: .first)
+        model.selectQuest(.first)
+        #expect(model.playerComputedStateSummary.swordLevel < 3)   // cave bright
+        // Clicking the magical-sword cave grants the sword (view wires this).
+        model.playerProgress.hasMagicalSword = true
+        #expect(model.playerComputedStateSummary.swordLevel == 3)  // cave now dims
+        model.playerProgress.hasMagicalSword = false
+        #expect(model.playerComputedStateSummary.swordLevel < 3)
+    }
+
     @Test("wood-sword cave used state round-trips through the grid toggle")
     func woodSwordCaveToggles() {
         let g = OverworldGrid()

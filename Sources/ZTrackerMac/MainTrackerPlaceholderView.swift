@@ -247,6 +247,10 @@ struct MainTrackerPlaceholderView: View {
                     onWoodSwordCaveUsedChanged: { used in
                         // Collecting the wood sword at its cave grants the sword (T-118).
                         model.playerProgress.hasWoodSword = used
+                    },
+                    onMagicalSwordCaveUsedChanged: { taken in
+                        // "Taking" the magical sword at its cave grants it (T-119).
+                        model.playerProgress.hasMagicalSword = taken
                     }
                 )
                 .frame(maxWidth: .infinity)
