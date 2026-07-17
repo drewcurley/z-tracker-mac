@@ -8,6 +8,9 @@ import TrackerCore
 struct DungeonBandView: View {
     var model: TrackerModel
     var options: TrackerOptions
+    /// Shared focus state (T-133) — the selected dungeon tab, so it survives this
+    /// band's reflow and Global hotkeys can switch it.
+    var focus: TrackerFocusState
     /// The dungeon map's zoom, owned here (T-129) so it survives the band's reflow.
     /// `ViewThatFits` recreates whichever branch it shows, which would reset the
     /// map view's own `@State` zoom; holding it in this stable parent and passing a
@@ -34,7 +37,7 @@ struct DungeonBandView: View {
 
     private var dungeonMapGroup: some View {
         TopSectionGroup(title: "Dungeon Map") {
-            DungeonMapView(model: model, options: options, mapScale: $mapScale)
+            DungeonMapView(model: model, options: options, focus: focus, mapScale: $mapScale)
         }
     }
 

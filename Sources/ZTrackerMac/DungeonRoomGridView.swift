@@ -8,8 +8,14 @@ import TrackerCore
 struct DungeonMapView: View {
     @Bindable var model: TrackerModel
     var options: TrackerOptions
-    /// 0…8 = dungeons 1–9; 9 = the Summary tab.
-    @State private var selected = 0
+    /// The visible tab (0…8 = dungeons 1–9, 9 = Summary), owned by the shared focus
+    /// state (T-133) so Global `DungeonTab*` hotkeys can switch it and it survives
+    /// the band's reflow.
+    @Bindable var focus: TrackerFocusState
+    private var selected: Int {
+        get { focus.selectedDungeonTab }
+        nonmutating set { focus.selectedDungeonTab = newValue }
+    }
     /// The FQ/SQ vanilla-outline overlay mode (nil = off) — global across all
     /// dungeons: toggling it shows each dungeon's own vanilla footprint (T-071).
     @State private var outlineMode: VanillaQuest? = nil

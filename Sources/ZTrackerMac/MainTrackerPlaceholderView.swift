@@ -24,6 +24,8 @@ struct MainTrackerPlaceholderView: View {
     var overlays: OverworldOverlayState
     /// The hotkey bindings (T-131); Global keys fire at runtime via the dispatcher (T-132).
     var hotkeys: HotkeyConfig
+    /// Shared UI focus state (T-133) — selected dungeon tab (+ later, the cursor).
+    var focus: TrackerFocusState
     /// "Reset App" — discard the run and return to the startup screen (T-046),
     /// offered from the Info group's reset buttons (T-048).
     var onResetApp: () -> Void = {}
@@ -120,7 +122,7 @@ struct MainTrackerPlaceholderView: View {
             if breakout.dungeonBandPoppedOut {
                 slimBreakoutPlaceholder("Dungeon area", windowID: DungeonBandWindowID)
             } else {
-                DungeonBandView(model: model, options: options)
+                DungeonBandView(model: model, options: options, focus: focus)
                     .overlay(alignment: .topTrailing) { cornerPopOutButton(windowID: DungeonBandWindowID) }
             }
         }
@@ -272,7 +274,7 @@ struct MainTrackerPlaceholderView: View {
         }
         // Global hotkey dispatch (T-132): live while the tracker is on screen.
         .onAppear {
-            let dispatcher = GlobalHotkeyDispatcher(model: model, timer: timer, hotkeys: hotkeys)
+            let dispatcher = GlobalHotkeyDispatcher(model: model, timer: timer, hotkeys: hotkeys, focus: focus)
             dispatcher.install()
             globalHotkeys = dispatcher
         }
@@ -284,5 +286,5 @@ struct MainTrackerPlaceholderView: View {
 }
 
 #Preview {
-    MainTrackerPlaceholderView(model: TrackerModel(quest: .first, heartShuffle: true), options: TrackerOptions(), breakout: BreakoutWindows(), timer: TrackerTimer(), reminders: ReminderController(), overlays: OverworldOverlayState(), hotkeys: HotkeyConfig())
+    MainTrackerPlaceholderView(model: TrackerModel(quest: .first, heartShuffle: true), options: TrackerOptions(), breakout: BreakoutWindows(), timer: TrackerTimer(), reminders: ReminderController(), overlays: OverworldOverlayState(), hotkeys: HotkeyConfig(), focus: TrackerFocusState())
 }

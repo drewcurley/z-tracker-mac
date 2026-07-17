@@ -16,12 +16,14 @@ final class GlobalHotkeyDispatcher {
     private let model: TrackerModel
     private let timer: TrackerTimer
     private let hotkeys: HotkeyConfig
+    private let focus: TrackerFocusState
     private var monitor: Any?
 
-    init(model: TrackerModel, timer: TrackerTimer, hotkeys: HotkeyConfig) {
+    init(model: TrackerModel, timer: TrackerTimer, hotkeys: HotkeyConfig, focus: TrackerFocusState) {
         self.model = model
         self.timer = timer
         self.hotkeys = hotkeys
+        self.focus = focus
     }
 
     func install() {
@@ -66,9 +68,20 @@ final class GlobalHotkeyDispatcher {
             // reset the inventory *and* restart the lap timer (T-132.1).
             model.resetForGroundhogOrRouters()
             timer.startLap()
+        // Dungeon-tab switching (T-133): 1–9 → tabs 0–8, S → Summary (9).
+        case "Global_DungeonTab1": focus.selectedDungeonTab = 0
+        case "Global_DungeonTab2": focus.selectedDungeonTab = 1
+        case "Global_DungeonTab3": focus.selectedDungeonTab = 2
+        case "Global_DungeonTab4": focus.selectedDungeonTab = 3
+        case "Global_DungeonTab5": focus.selectedDungeonTab = 4
+        case "Global_DungeonTab6": focus.selectedDungeonTab = 5
+        case "Global_DungeonTab7": focus.selectedDungeonTab = 6
+        case "Global_DungeonTab8": focus.selectedDungeonTab = 7
+        case "Global_DungeonTab9": focus.selectedDungeonTab = 8
+        case "Global_DungeonTabS": focus.selectedDungeonTab = 9
         default:
-            // Cursor / dungeon-tab / click / scroll globals are later phases — a
-            // recognized-but-unimplemented Global key is left for the app (not consumed).
+            // Cursor / click / scroll globals are later phases — a recognized-but-
+            // unimplemented Global key is left for the app (not consumed).
             return false
         }
         return true
