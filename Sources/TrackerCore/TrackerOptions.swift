@@ -16,9 +16,12 @@ public enum ReminderCategory: String, Codable, CaseIterable, Sendable {
     case blockers
     case doorRepair
     case overworldOverwrites
+    /// Secret-count reminders (T-105, beyond the reference) — one-left / none-left
+    /// per money-secret size, so you don't over-mark.
+    case secrets
 
     /// Matches the reference app's own `DisplayName` exactly
-    /// (`TrackerModel.fs:16-26`).
+    /// (`TrackerModel.fs:16-26`); `secrets` is this project's addition.
     public var displayName: String {
         switch self {
         case .dungeonFeedback: "Dungeon feedback"
@@ -29,6 +32,7 @@ public enum ReminderCategory: String, Codable, CaseIterable, Sendable {
         case .blockers: "Blockers"
         case .doorRepair: "Door Repair Count"
         case .overworldOverwrites: "Overworld overwrites"
+        case .secrets: "Secret counts"
         }
     }
 }

@@ -187,18 +187,27 @@ public final class TrackerModel {
         let tag = TriforceAndGoSummary.compute(
             playerState: playerComputedStateSummary, dungeonTracker: dungeonTracker,
             mapState: mapState, progress: playerProgress, grid: overworldGrid, instance: instance)
-        // Door-repair charges + book-shop presence marked on the overworld.
+        // Door-repair charges + book-shop presence + sized-secret counts on the OW.
         let q = quest ?? .first
         var doorRepairFound = 0
         var bookShopMarked = false
+        var secretPlaced: [SecretSize: Int] = [.large: 0, .medium: 0, .small: 0]
         for c in 0..<OverworldGrid.columnCount {
             for r in 0..<OverworldGrid.rowCount {
                 switch overworldGrid.mark(column: c, row: r) {
                 case .doorRepair: doorRepairFound += 1
                 case .shop(.book): bookShopMarked = true
+                case .secret(let size) where size != .unknown: secretPlaced[size, default: 0] += 1
                 default: break
                 }
             }
+        }
+        // Remaining sized secrets = quest total − placed (T-105).
+        let secretTotal: [SecretSize: Int] = q.isFirstQuestOverworld
+            ? [.large: 3, .medium: 7, .small: 4] : [.large: 1, .medium: 7, .small: 6]
+        var secretRemaining: [SecretSize: Int] = [:]
+        for size in [SecretSize.large, .medium, .small] {
+            secretRemaining[size] = max(0, (secretTotal[size] ?? 0) - (secretPlaced[size] ?? 0))
         }
         return reminderEngine.poll(
             playerState: playerComputedStateSummary, mapState: mapState,
@@ -210,7 +219,8 @@ public final class TrackerModel {
             coastItemValue: dungeonTracker.ladderBox.cellCurrent,
             isCurrentlyBook: isCurrentlyBook,
             bookShopMarked: bookShopMarked,
-            bookForHelpfulHints: bookForHelpfulHints)
+            bookForHelpfulHints: bookForHelpfulHints,
+            secretRemaining: secretRemaining)
     }
 
     /// The derived player state (item possession, levels, hearts) read by
