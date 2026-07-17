@@ -20,8 +20,16 @@ public enum OverworldTileLimits {
         case .doorRepair: return fq ? 9 : 10
         case .moneyMakingGame: return fq ? 5 : 6
         case .potionShop: return fq ? 7 : 9
-        // Shops, secrets (incl. unknown), and don't-care/unmarked: unbounded.
-        case .shop, .secret, .dontCare, .unmarked: return unlimited
+        // Sized money secrets are capped at the quest's known totals (T-108, user
+        // request — the reference leaves these unlimited, but over-marking is easy
+        // to do by mistake). 1Q large 3 / medium 7 / small 4; 2Q large 1 / small 6.
+        case .secret(.large): return fq ? 3 : 1
+        case .secret(.medium): return 7
+        case .secret(.small): return fq ? 4 : 6
+        // An *unknown* (unsized) secret has no size cap yet.
+        case .secret(.unknown): return unlimited
+        // Shops and don't-care/unmarked: unbounded.
+        case .shop, .dontCare, .unmarked: return unlimited
         }
     }
 }
