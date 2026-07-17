@@ -21,6 +21,9 @@ let SettingsWindowID = "z-settings"
 /// The id of the broken-out reminder Log window (T-122).
 let LogWindowID = "z-log"
 
+/// The id of the hotkey editor window (T-131).
+let HotkeyWindowID = "z-hotkeys"
+
 /// The id of the broken-out dungeon band (map + blockers + notes) window (T-123).
 let DungeonBandWindowID = "z-dungeon-band"
 
@@ -90,6 +93,8 @@ struct ZTrackerMacApp: App {
     /// The map-overlay toggles (T-035.2), hoisted to app level (T-124) so the info
     /// icons, the inline overworld, and the broken-out overworld window all share one.
     @State private var overlays = OverworldOverlayState()
+    /// The hotkey bindings (T-131), persisted; edited in the hotkey editor window.
+    @State private var hotkeys = HotkeyConfig.withPersistence()
 
     var body: some Scene {
         // A single-instance `Window` (not `WindowGroup`) — the tracker is one
@@ -124,6 +129,12 @@ struct ZTrackerMacApp: App {
                 .onDisappear { breakout.timelinePoppedOut = false }
         }
         .defaultSize(width: 720, height: 200)
+
+        // The hotkey editor window (T-131) — opened from Settings' "Edit hotkeys…".
+        Window("Hotkeys", id: HotkeyWindowID) {
+            HotkeyEditorView(config: hotkeys)
+        }
+        .defaultSize(width: 480, height: 620)
 
         // The broken-out reminder Log window (T-122) — opened by the timeline
         // section's "Log" button; a scrollable list of fired reminders with their
