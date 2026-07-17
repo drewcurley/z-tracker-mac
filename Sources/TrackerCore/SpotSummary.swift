@@ -16,9 +16,18 @@ public struct SpotSummary: Equatable, Sendable {
         public let placed: Bool
         public let used: Bool
         public var displayName: String { mark.displayName }
-        /// Whether the location is fully accounted for: a claimable spot once
-        /// it's used, any other spot once it's placed.
-        public var done: Bool { mark.isUsedToggleable ? used : placed }
+        /// Whether the location is fully accounted for. Dungeons and any-roads are
+        /// done once **placed** (there's nothing to "collect"); the item-bearing
+        /// uniques — the three sword caves, the letter, and the armos — are done
+        /// once **used** (collected). `used` is populated correctly for the derived
+        /// caves (sword2/sword3/armos) in `compute`, so this no longer keys off
+        /// `isUsedToggleable` (T-110).
+        public var done: Bool {
+            switch mark {
+            case .dungeon, .anyRoad: return placed
+            default: return used
+            }
+        }
     }
 
     /// A non-unique overworld location type that has a known per-quest total —
@@ -74,7 +83,19 @@ public struct SpotSummary: Equatable, Sendable {
         )
     }
 
-    public static func compute(grid: OverworldGrid, quest: OverworldQuest) -> SpotSummary {
+    /// - Parameters:
+    ///   - armosDone: whether the armos item has been collected (`armosBox.isDone`).
+    ///   - whiteSwordItemDone: whether the White-Sword-Item cave's item has been
+    ///     collected (`sword2Box.isDone`).
+    ///   - hasMagicalSword: whether the player has the magical sword.
+    ///
+    /// These three drive the "done" state of the armos / sword2 / sword3 uniques
+    /// from model state rather than a map toggle (T-110), matching the reference
+    /// tile dimming (`OverworldMapTileCustomization.fs:221-260`).
+    public static func compute(grid: OverworldGrid, quest: OverworldQuest,
+                               armosDone: Bool = false,
+                               whiteSwordItemDone: Bool = false,
+                               hasMagicalSword: Bool = false) -> SpotSummary {
         var counts: [OverworldTileMark: Int] = [:]
         var used: [OverworldTileMark: Int] = [:]
         for c in 0..<OverworldGrid.columnCount {
@@ -90,9 +111,13 @@ public struct SpotSummary: Equatable, Sendable {
         var uniques: [UniqueSpot] = []
         for n in 1...9 { uniques.append(UniqueSpot(mark: .dungeon(n), placed: has(.dungeon(n)), used: false)) }
         for n in 1...4 { uniques.append(UniqueSpot(mark: .anyRoad(n), placed: has(.anyRoad(n)), used: false)) }
-        for n in 1...3 { uniques.append(UniqueSpot(mark: .swordCave(n), placed: has(.swordCave(n)), used: usedAny(.swordCave(n)))) }
+        // Sword-cave 1 (wood) is a manual toggle; caves 2 (white-sword item) and 3
+        // (magical sword) derive "done" from model state (T-110).
+        uniques.append(UniqueSpot(mark: .swordCave(1), placed: has(.swordCave(1)), used: usedAny(.swordCave(1))))
+        uniques.append(UniqueSpot(mark: .swordCave(2), placed: has(.swordCave(2)), used: whiteSwordItemDone))
+        uniques.append(UniqueSpot(mark: .swordCave(3), placed: has(.swordCave(3)), used: hasMagicalSword))
         uniques.append(UniqueSpot(mark: .theLetter, placed: has(.theLetter), used: usedAny(.theLetter)))
-        uniques.append(UniqueSpot(mark: .armos, placed: has(.armos), used: usedAny(.armos)))
+        uniques.append(UniqueSpot(mark: .armos, placed: has(.armos), used: armosDone))
 
         func secrets(_ source: [OverworldTileMark: Int]) -> SecretCounts {
             SecretCounts(

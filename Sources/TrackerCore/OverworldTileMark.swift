@@ -80,22 +80,40 @@ public enum OverworldTileMark: Hashable, Codable, Sendable {
     case takeAny
     case potionShop
 
-    /// Whether this tile holds a claimable-once thing that can be toggled
-    /// **used** (collected) vs unused via a left-click (T-054) — dimming it on
-    /// the map and updating the Spot Summary. The reference's `toggleables`
-    /// (`OverworldMapTileCustomization.fs:229`) are take-any, the wood-sword
-    /// cave, hint shop, and the three sized secrets; this set adds the armos
-    /// item and the letter, which are likewise claimed exactly once, and — now
-    /// that the sword caves render as prominent Items-area sword icons (T-063)
-    /// — makes **all three** sword caves claimable (T-065, user request), not
-    /// just the wood-sword cave. The map dim is a visual "collected" marker
-    /// independent of the Items-box sword tracking, which still stands.
+    /// Whether this tile holds a claimable-once thing whose "collected" dim is a
+    /// **manual** left-click toggle (T-054). This is exactly the reference's
+    /// `toggleables` set (`OverworldMapTileCustomization.fs:298-306`): take-any,
+    /// the **wood**-sword cave (SWORD1), hint shop, the three sized secrets, and
+    /// the letter.
+    ///
+    /// The armos item, the White-Sword-Item cave (SWORD2) and the Magical-Sword
+    /// cave (SWORD3) are deliberately **excluded** (T-110, correcting T-065):
+    /// their dim is *derived* from model state — `armosBox.IsDone()`,
+    /// `sword2Box.IsDone()`, and `PlayerHasMagicalSword` respectively (reference
+    /// lines 221-260) — not a manual toggle, so marking one on the map no longer
+    /// dims it until the item behind it is actually collected.
     public var isUsedToggleable: Bool {
         switch self {
         // An *unknown* secret has no known contents, so it's always unclaimed
         // (T-058) — you can't have collected something you haven't identified.
         case .secret(.unknown): false
-        case .secret, .takeAny, .armos, .theLetter, .hintShop, .swordCave: true
+        case .secret, .takeAny, .theLetter, .hintShop: true
+        // Only the wood-sword cave toggles manually; sword2/sword3 derive (below).
+        case .swordCave(let n): n == 1
+        default: false
+        }
+    }
+
+    /// Whether placing this mark should immediately mark it **used** (dim). The
+    /// reference defaults secrets, the letter, and the hint shop to *dark* on
+    /// placement (`OverworldMapTileCustomization.fs:197,242`), while take-any and
+    /// the wood-sword cave default to *bright* (line 230). Armos / sword2 / sword3
+    /// aren't toggleable at all — their dim derives from model state — so they're
+    /// excluded here too (T-110).
+    public var placesUsedWhenMarked: Bool {
+        switch self {
+        case .secret(.unknown): false
+        case .secret, .theLetter, .hintShop: true
         default: false
         }
     }

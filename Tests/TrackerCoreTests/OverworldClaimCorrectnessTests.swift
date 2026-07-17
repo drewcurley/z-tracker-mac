@@ -34,10 +34,13 @@ struct OverworldClaimCorrectnessTests {
     func unknownSecretUnclaimable() {
         #expect(!OverworldTileMark.secret(.unknown).isUsedToggleable)
         #expect(OverworldTileMark.secret(.large).isUsedToggleable)
-        // Sword caves are claimable now that they render as item icons (T-065).
+        // Only the wood-sword cave (SWORD1) is a manual toggle; the White-Sword-Item
+        // and Magical-Sword caves derive their dim from model state (T-110), as does
+        // the armos item — so they're not manually toggleable.
         #expect(OverworldTileMark.swordCave(1).isUsedToggleable)
-        #expect(OverworldTileMark.swordCave(2).isUsedToggleable)
-        #expect(OverworldTileMark.swordCave(3).isUsedToggleable)
+        #expect(!OverworldTileMark.swordCave(2).isUsedToggleable)
+        #expect(!OverworldTileMark.swordCave(3).isUsedToggleable)
+        #expect(!OverworldTileMark.armos.isUsedToggleable)
         // Setting used on an unknown secret is a no-op.
         let grid = OverworldGrid()
         grid.setMark(.secret(.unknown), column: 0, row: 0)
@@ -90,12 +93,12 @@ struct OverworldClaimCorrectnessTests {
     func groundhogClearsUsed() {
         let model = TrackerModel(quest: .first)
         model.selectQuest(.first)
-        model.overworldGrid.setMark(.armos, column: 3, row: 3)
+        model.overworldGrid.setMark(.secret(.large), column: 3, row: 3)
         model.overworldGrid.setUsed(true, column: 3, row: 3)
         #expect(model.overworldGrid.isUsed(column: 3, row: 3))
 
         model.resetForGroundhogOrRouters()
         #expect(!model.overworldGrid.isUsed(column: 3, row: 3))
-        #expect(model.overworldGrid.mark(column: 3, row: 3) == .armos) // mark kept
+        #expect(model.overworldGrid.mark(column: 3, row: 3) == .secret(.large)) // mark kept
     }
 }
