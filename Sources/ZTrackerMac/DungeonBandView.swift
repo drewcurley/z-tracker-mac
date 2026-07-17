@@ -44,8 +44,9 @@ struct DungeonBandView: View {
             }
             .frame(maxHeight: .infinity)
         }
-        // Was a fixed 390; now grows to absorb window width the (capped) map
-        // can't use, so a wide window gives Notes room instead of dead space.
-        .frame(minWidth: 390, maxWidth: .infinity)
+        // Grows to absorb window width the (capped) map can't use, so a wide window
+        // gives Notes room instead of dead space. Min trimmed to 360 (T-127) so all
+        // three columns fit side-by-side at a narrower window.
+        .frame(minWidth: 360, maxWidth: .infinity)
     }
 }

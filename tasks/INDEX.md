@@ -26,6 +26,7 @@
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
 | [T-072.1](./T-072.1.md) | Fix ⌥-drag circling the first room (defer modified-left to release) | frontend-engineer | T-072 | fix/drag-paint-option-defer | — | docs/reviews/fix-drag-paint-option-defer/final.md |
+| [T-127](./T-127.md) | Scalable dungeon map + trimmed base size so all 3 columns fit | frontend-engineer | T-019.5 | feat/scalable-dungeon-map | — | docs/reviews/feat-scalable-dungeon-map/final.md |
 | [T-126](./T-126.md) | Reclaim vertical space — compact corner pop-out (no header rows) | frontend-engineer | T-124 | fix/compact-breakout-headers | — | docs/reviews/fix-compact-breakout-headers/final.md |
 | [T-125](./T-125.md) | Log — inline icons, dungeon-number tile, and font zoom | frontend-engineer | T-122 | fix/log-inline-icons-zoom | — | docs/reviews/fix-log-inline-icons-zoom/final.md |
 | [T-124](./T-124.md) | Break-out window for the overworld map | frontend-engineer | T-123 | feat/overworld-window | — | docs/reviews/feat-overworld-window/final.md |
