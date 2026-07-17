@@ -18,6 +18,9 @@ let TimerWindowID = "z-timer"
 /// the startup screen, reachable during play via a gear button or ⌘,.
 let SettingsWindowID = "z-settings"
 
+/// The id of the broken-out reminder Log window (T-122).
+let LogWindowID = "z-log"
+
 /// The Settings menu command (⌘,), replacing the default app-settings item so it
 /// opens our resizable Settings window instead of a native Settings scene.
 private struct OpenSettingsButton: View {
@@ -75,6 +78,9 @@ struct ZTrackerMacApp: App {
     /// The run timer (T-035.4), hoisted to app level (T-101) so it can also be
     /// shown in a duplicate window; reset with the app.
     @State private var timer = TrackerTimer()
+    /// The reminder controller (toasts + log), hoisted to app level (T-122) so the
+    /// broken-out Log window can read the same log the poll loop writes.
+    @State private var reminders = ReminderController()
 
     var body: some Scene {
         // A single-instance `Window` (not `WindowGroup`) — the tracker is one
@@ -82,7 +88,7 @@ struct ZTrackerMacApp: App {
         // trackers as tabs / new windows (⌘N), which only share the game state and
         // drift on view-local state; that was an unintended default, not a feature.
         Window("Z-Tracker", id: MainWindowID) {
-            ContentView(model: model, options: options, breakout: breakout, timer: timer, onResetApp: resetApp)
+            ContentView(model: model, options: options, breakout: breakout, timer: timer, reminders: reminders, onResetApp: resetApp)
         }
         .commands {
             // ⌘, opens the mid-game Settings window (T-091) instead of a native
@@ -109,6 +115,15 @@ struct ZTrackerMacApp: App {
                 .onDisappear { breakout.timelinePoppedOut = false }
         }
         .defaultSize(width: 720, height: 200)
+
+        // The broken-out reminder Log window (T-122) — opened by the timeline
+        // section's "Log" button; a scrollable list of fired reminders with their
+        // run-time and descriptive icons.
+        Window("Reminder Log", id: LogWindowID) {
+            ReminderLogView(log: reminders.log)
+                .frame(minWidth: 320, minHeight: 200)
+        }
+        .defaultSize(width: 420, height: 460)
 
         // The duplicate Timer window (T-101) — a big stopwatch readout (e.g. for a
         // stream overlay); the main tracker keeps its own timer too.
@@ -141,5 +156,6 @@ struct ZTrackerMacApp: App {
         // instance, so the quit-warning closure captured in `ContentView` keeps
         // pointing at the live timer.
         timer.hardReset()
+        reminders.log.clear()   // a fresh run starts with an empty log (T-122)
     }
 }
