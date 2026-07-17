@@ -31,6 +31,8 @@ struct MainTrackerPlaceholderView: View {
 
     /// Timeline section collapsed state (T-098) — shown by default.
     @State private var timelineCollapsed = false
+    /// The reminder-log popover (T-102).
+    @State private var showingReminderLog = false
 
     /// The live overworld map-state summary (T-015.3) feeding the map's true
     /// GYR highlight. Recomputed here from the observable model each time the
@@ -87,6 +89,15 @@ struct MainTrackerPlaceholderView: View {
                 if let f = model.timeline.finishSeconds {
                     Text(String(format: "Finish %d:%02d", f / 60, f % 60))
                         .font(.system(size: 10, weight: .bold)).foregroundStyle(.green)
+                }
+                // Reminder log (T-102): past reminders / beep explanations.
+                Button { showingReminderLog = true } label: {
+                    Label("Log", systemImage: "list.bullet.rectangle").font(.system(size: 10))
+                }
+                .buttonStyle(.plain)
+                .help("Show the log of reminders that have fired")
+                .popover(isPresented: $showingReminderLog, arrowEdge: .bottom) {
+                    ReminderLogView(log: reminders.log)
                 }
                 // Pop-out into its own window (T-100).
                 Button { openWindow(id: TimelineWindowID) } label: {
