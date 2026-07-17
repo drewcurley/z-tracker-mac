@@ -146,7 +146,7 @@ struct HotkeyEditorView: View {
 
     private func handleCapture(_ event: NSEvent, for selectorID: String) {
         if event.keyCode == 53 { stopCapture(); return }   // Escape cancels
-        guard let chord = Self.chord(from: event) else { stopCapture(); return }
+        guard let chord = HotkeyChord(nsEvent: event) else { stopCapture(); return }
         let conflicts = config.conflicts(for: selectorID, chord: chord)
         stopCapture()
         if conflicts.isEmpty {
@@ -154,23 +154,6 @@ struct HotkeyEditorView: View {
         } else {
             pendingConflict = PendingConflict(selectorID: selectorID, chord: chord, conflicts: conflicts)
         }
-    }
-
-    /// Translate a key event to a chord: one of Shift/Control/Option (Command is not a
-    /// binding modifier here — it drives the app menus); letters/digits store the char,
-    /// anything else stores the raw Mac key code as `\nnn`.
-    static func chord(from event: NSEvent) -> HotkeyChord? {
-        let mods = event.modifierFlags
-        if mods.contains(.command) { return nil }
-        var modifier = HotkeyChord.Modifier.none
-        if mods.contains(.shift) { modifier = .shift }
-        else if mods.contains(.control) { modifier = .control }
-        else if mods.contains(.option) { modifier = .option }
-        let chars = event.charactersIgnoringModifiers?.lowercased() ?? ""
-        if chars.count == 1, let ch = chars.first, ch.isLetter || ch.isNumber {
-            return HotkeyChord(modifier: modifier, key: String(ch))
-        }
-        return HotkeyChord(modifier: modifier, key: "\\\(event.keyCode)")
     }
 
     // MARK: Import / Export

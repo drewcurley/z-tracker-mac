@@ -15,6 +15,8 @@ struct ContentView: View {
     var reminders: ReminderController
     /// The map-overlay toggles, hoisted to app level (T-124).
     var overlays: OverworldOverlayState
+    /// The hotkey bindings (T-131); Global keys are dispatched at runtime (T-132).
+    var hotkeys: HotkeyConfig
     /// "Reset App" — discard everything and return here to the startup screen
     /// (T-046). Owned by the app (it replaces the model instance).
     var onResetApp: () -> Void
@@ -29,7 +31,7 @@ struct ContentView: View {
                     model.selectQuest(quest)
                 })
             } else {
-                MainTrackerPlaceholderView(model: model, options: options, breakout: breakout, timer: timer, reminders: reminders, overlays: overlays, onResetApp: onResetApp)
+                MainTrackerPlaceholderView(model: model, options: options, breakout: breakout, timer: timer, reminders: reminders, overlays: overlays, hotkeys: hotkeys, onResetApp: onResetApp)
             }
         }
         // Prime live TTS at launch (T-069/T-045): speaking a silent space loads
@@ -50,5 +52,5 @@ struct ContentView: View {
 }
 
 #Preview {
-    ContentView(model: TrackerModel(), options: TrackerOptions(), breakout: BreakoutWindows(), timer: TrackerTimer(), reminders: ReminderController(), overlays: OverworldOverlayState(), onResetApp: {})
+    ContentView(model: TrackerModel(), options: TrackerOptions(), breakout: BreakoutWindows(), timer: TrackerTimer(), reminders: ReminderController(), overlays: OverworldOverlayState(), hotkeys: HotkeyConfig(), onResetApp: {})
 }

@@ -106,6 +106,19 @@ struct HotkeyConfigTests {
         #expect(c.reassign(HotkeyChord(key: "z"), to: "Overworld_Level1").isEmpty)
     }
 
+    @Test("reverse lookup: selectors bound to a chord, filtered by context (T-132)")
+    func reverseLookup() {
+        let c = HotkeyConfig()
+        c.setChord(HotkeyChord(key: "1"), for: "Overworld_Level1")
+        c.setChord(HotkeyChord(key: "1"), for: "Item_Boomerang")   // same key, different context
+        c.setChord(HotkeyChord(key: "t"), for: "Global_StartTimer")
+        #expect(Set(c.selectorIDs(boundTo: HotkeyChord(key: "1")))
+                == ["Overworld_Level1", "Item_Boomerang"])
+        #expect(c.selectorID(boundTo: HotkeyChord(key: "1"), in: .overworld) == "Overworld_Level1")
+        #expect(c.selectorID(boundTo: HotkeyChord(key: "t"), in: .global) == "Global_StartTimer")
+        #expect(c.selectorID(boundTo: HotkeyChord(key: "z"), in: .global) == nil)
+    }
+
     @Test("editor order lists Global first, Contextual last")
     func editorOrder() {
         #expect(HotkeyContext.editorOrder.first == .global)

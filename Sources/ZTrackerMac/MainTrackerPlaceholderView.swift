@@ -22,6 +22,8 @@ struct MainTrackerPlaceholderView: View {
     /// The map-overlay toggles (T-035.2), hoisted to app level (T-124) so the item-
     /// grid info icons, the inline overworld, and the overworld window share one.
     var overlays: OverworldOverlayState
+    /// The hotkey bindings (T-131); Global keys fire at runtime via the dispatcher (T-132).
+    var hotkeys: HotkeyConfig
     /// "Reset App" — discard the run and return to the startup screen (T-046),
     /// offered from the Info group's reset buttons (T-048).
     var onResetApp: () -> Void = {}
@@ -31,6 +33,8 @@ struct MainTrackerPlaceholderView: View {
 
     /// Timeline section collapsed state (T-098) — shown by default.
     @State private var timelineCollapsed = false
+    /// The runtime dispatcher for Global hotkeys (T-132), installed while on screen.
+    @State private var globalHotkeys: GlobalHotkeyDispatcher?
 
     /// The live overworld map-state summary (T-015.3) feeding the map's true
     /// GYR highlight. Recomputed here from the observable model each time the
@@ -266,9 +270,19 @@ struct MainTrackerPlaceholderView: View {
                 try? await Task.sleep(for: .seconds(1))
             }
         }
+        // Global hotkey dispatch (T-132): live while the tracker is on screen.
+        .onAppear {
+            let dispatcher = GlobalHotkeyDispatcher(model: model, timer: timer, hotkeys: hotkeys)
+            dispatcher.install()
+            globalHotkeys = dispatcher
+        }
+        .onDisappear {
+            globalHotkeys?.uninstall()
+            globalHotkeys = nil
+        }
     }
 }
 
 #Preview {
-    MainTrackerPlaceholderView(model: TrackerModel(quest: .first, heartShuffle: true), options: TrackerOptions(), breakout: BreakoutWindows(), timer: TrackerTimer(), reminders: ReminderController(), overlays: OverworldOverlayState())
+    MainTrackerPlaceholderView(model: TrackerModel(quest: .first, heartShuffle: true), options: TrackerOptions(), breakout: BreakoutWindows(), timer: TrackerTimer(), reminders: ReminderController(), overlays: OverworldOverlayState(), hotkeys: HotkeyConfig())
 }
