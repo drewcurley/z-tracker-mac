@@ -127,6 +127,29 @@ public enum MonsterDetail: CaseIterable, Sendable, Equatable {
         allCases.first { $0.hotKeyName == name } ?? .unmarked
     }
 
+    /// The reduced set of enemies offered for **overworld** tile annotation
+    /// (T-117, user request): wizrobes, darknuts, lynels, pols voice, goriyas,
+    /// gibdos, ropes, stalfos, tektites, moblins.
+    public static let overworldEnemies: [MonsterDetail] = [
+        .blueWizzrobe, .blueDarknut, .redLynel, .polsVoice, .redGoriya,
+        .gibdo, .rope, .stalfos, .redTektite, .blueMoblin,
+    ]
+
+    /// Toggle `m` into a normalized up-to-two monster pair (T-116/T-117), shared
+    /// by dungeon rooms and overworld tiles: `unmarked` clears both; a present
+    /// monster is removed (secondary promotes); a new monster fills the empty slot,
+    /// or replaces the secondary when both are full.
+    public static func togglingPair(_ m: MonsterDetail,
+                                    in pair: (MonsterDetail, MonsterDetail)) -> (MonsterDetail, MonsterDetail) {
+        let (a, b) = pair
+        if m.isNotMarked { return (.unmarked, .unmarked) }
+        if m == a { return (b, .unmarked) }
+        if m == b { return (a, .unmarked) }
+        if a.isNotMarked { return (m, .unmarked) }
+        if b.isNotMarked { return (a, m) }
+        return (a, m)
+    }
+
     public var displayName: String {
         switch self {
         case .unmarked: "(None)"

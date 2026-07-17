@@ -293,6 +293,26 @@ struct OverworldMapView: View {
                                                 .allowsHitTesting(false)
                                         }
                                     }
+                                    .overlay {
+                                        // Enemy annotations (T-117): up to two small
+                                        // sprites along the bottom-leading edge,
+                                        // counter-flipped so they read under a mirror.
+                                        let enemies = grid.enemies(column: column, row: row)
+                                        if !enemies.isEmpty {
+                                            HStack(spacing: 1) {
+                                                ForEach(Array(enemies.enumerated()), id: \.offset) { _, enemy in
+                                                    if let img = Image(atlasIcon: DungeonMonsterAtlas.sprite(enemy)) {
+                                                        img.interpolation(.none).resizable()
+                                                            .frame(width: tileHeight * 0.34, height: tileHeight * 0.34)
+                                                    }
+                                                }
+                                            }
+                                            .padding(1)
+                                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomLeading)
+                                            .scaleEffect(x: mirrored ? -1 : 1, y: 1)
+                                            .allowsHitTesting(false)
+                                        }
+                                    }
                                     .onTapGesture { handleLeftClick(column: column, row: row) }
                                     .contextMenu { markMenu(column: column, row: row) }
                                     // In-place item prompt for Armos / White-Sword cave (T-106).
@@ -603,6 +623,25 @@ struct OverworldMapView: View {
             .disabled(isExhausted(.hintShop, column: column, row: row, counts: counts))
         Button("Potion shop") { applyMark(.potionShop, column: column, row: row) }
             .disabled(isExhausted(.potionShop, column: column, row: row, counts: counts))
+        Divider()
+        // Enemies (T-117): an up-to-two enemy annotation from the reduced overworld
+        // set, independent of the tile's mark. Each pick toggles; reopen to add a
+        // second (context menus dismiss on selection).
+        Menu("Enemies") {
+            let current = grid.enemies(column: column, row: row)
+            ForEach(Array(MonsterDetail.overworldEnemies.enumerated()), id: \.offset) { _, enemy in
+                Button {
+                    grid.toggleEnemy(enemy, column: column, row: row)
+                } label: {
+                    if current.contains(enemy) { Label(enemy.displayName, systemImage: "checkmark") }
+                    else { Text(enemy.displayName) }
+                }
+            }
+            if !current.isEmpty {
+                Divider()
+                Button("Clear enemies") { grid.toggleEnemy(.unmarked, column: column, row: row) }
+            }
+        }
         Divider()
         // Start spot (T-035.8): a placeable spawn-screen marker, independent of
         // the tile's mark.
