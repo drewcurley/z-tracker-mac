@@ -23,6 +23,10 @@ struct ScaledFootprint: ViewModifier {
             let w: CGFloat? = naturalWidth.map { $0 * scale }
                 ?? (natural == .zero ? nil : natural.width * scale)
             content
+                // Pin to intrinsic height so the outer `.frame(height:)` below can't
+                // propose a taller height back into the content and grow it each
+                // measure — a runaway loop when scale > 1 (T-128).
+                .fixedSize(horizontal: false, vertical: true)
                 .background(
                     GeometryReader { g in
                         Color.clear
