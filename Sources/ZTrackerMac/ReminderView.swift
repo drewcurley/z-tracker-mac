@@ -22,24 +22,28 @@ final class ReminderController {
 
     /// Currently-shown visual reminders (each auto-dismisses).
     private(set) var visible: [Item] = []
+    /// A running log of the reminders that fired (T-102), for the Log popover.
+    let log = ReminderLog()
 
     /// How long a visual reminder stays on screen.
     private let visibleDuration: Duration = .seconds(6)
     private let maxVisible = 5
 
-    /// Speak/show each announcement whose category is enabled. Voice reminders go
-    /// to the shared `SpeechEngine`, which serializes them (no overlap).
+    /// Speak/show each announcement whose category is enabled, and log it. Voice
+    /// reminders go to the shared `SpeechEngine`, which serializes them (no overlap).
     func handle(_ announcements: [ReminderAnnouncement], options: TrackerOptions) {
         for announcement in announcements {
             let text = announcement.displayText
-            if options.visualReminders[announcement.category] == true {
-                show(text)
-            }
-            if options.voiceReminders[announcement.category] == true {
+            let visual = options.visualReminders[announcement.category] == true
+            let voice = options.voiceReminders[announcement.category] == true
+            if visual { show(text) }
+            if voice {
                 SpeechEngine.speak(text,
                                    volume: Float(options.reminderVolume) / 100,
                                    preferredVoiceIdentifier: options.preferredVoiceIdentifier)
             }
+            // Log any reminder the player was actually surfaced (shown or spoken).
+            if visual || voice { log.append(text) }
         }
     }
 
