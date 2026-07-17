@@ -18,6 +18,7 @@ extension ReminderAnnouncement {
         case .considerBoomstickBook: .recorderPBSpotsAndBoomstickBook
         case .remindVisitHints: .haveKeyLadder
         case .overworldOverwrite: .overworldOverwrites
+        case .secretsRemaining: .secrets
         }
     }
 
@@ -73,6 +74,9 @@ extension ReminderAnnouncement {
             return "You have the book — visit the hint NPCs"
         case .overworldOverwrite(let coordLabel, let from, let to):
             return "You changed \(coordLabel) from \(from) to \(to)"
+        case .secretsRemaining(let size, let remaining):
+            let name = "\(size.rawValue) secret"
+            return remaining == 0 ? "No more \(name)s to find" : "One \(name) left"
         }
     }
 }

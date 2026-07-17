@@ -46,6 +46,9 @@ public enum ReminderAnnouncement: Equatable, Sendable {
     /// money making game" (T-096) — a safety net in case it was accidental.
     /// Ported from the reference's `RemindOverworldOverwrites` (`Reminders.fs:130`).
     case overworldOverwrite(coordLabel: String, from: String, to: String)
+    /// The number of a money-secret size still to find crossed 1 (one left) or 0
+    /// (none left) — T-105 (beyond the reference), so you don't over-mark.
+    case secretsRemaining(size: SecretSize, remaining: Int)
 }
 
 /// Builds the overworld-overwrite reminder (T-096) for a destructive change of an
@@ -129,6 +132,10 @@ public final class ReminderEngine {
     private var previouslyAnnouncedTriforceAndGo = 0
     private var previousCompletedDungeonCount = 0
     private var previouslyAnnouncedDoorRepairCount = 0
+    /// Last-seen remaining count per money-secret size (T-105), so a crossing to
+    /// 1 (one left) or 0 (none left) fires once. Not reset on groundhog — secret
+    /// marks are permanent overworld knowledge.
+    private var lastSecretRemaining: [SecretSize: Int] = [:]
     // Periodic-reminder cooldowns (T-089): last time each fired, `nil` = never
     // (so the first eligible poll fires it). The recorder/power-bracelet *spot
     // count* reminders were removed (T-095): they nagged every 5 min and the count
@@ -199,7 +206,8 @@ public final class ReminderEngine {
         coastItemValue: Int = -1,
         isCurrentlyBook: Bool = true,
         bookShopMarked: Bool = false,
-        bookForHelpfulHints: Bool = false
+        bookForHelpfulHints: Bool = false,
+        secretRemaining: [SecretSize: Int] = [:]
     ) -> [ReminderAnnouncement] {
         var out: [ReminderAnnouncement] = []
 
@@ -383,6 +391,17 @@ public final class ReminderEngine {
         if doorRepairFound > previouslyAnnouncedDoorRepairCount {
             out.append(.doorRepairCount(found: doorRepairFound, max: doorRepairMax))
             previouslyAnnouncedDoorRepairCount = doorRepairFound
+        }
+
+        // secret counts (T-105, beyond the reference): when a size's remaining
+        // crosses to 1 (one left) or 0 (none left), announce once — so you don't
+        // over-mark. Fixed size order for deterministic output.
+        for size in [SecretSize.large, .medium, .small] {
+            guard let remaining = secretRemaining[size] else { continue }
+            if lastSecretRemaining[size] != remaining, remaining == 0 || remaining == 1 {
+                out.append(.secretsRemaining(size: size, remaining: remaining))
+            }
+            lastSecretRemaining[size] = remaining
         }
 
         // Periodic reminders (`Z1R_WPF/Reminders.fs:193-243`), gated by wall-clock

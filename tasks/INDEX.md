@@ -26,6 +26,7 @@
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
 | [T-072.1](./T-072.1.md) | Fix ⌥-drag circling the first room (defer modified-left to release) | frontend-engineer | T-072 | fix/drag-paint-option-defer | — | docs/reviews/fix-drag-paint-option-defer/final.md |
+| [T-105](./T-105.md) | Secret-count reminders (one-left / none-left per size) | backend-engineer | T-018 | feat/secret-count-reminders | — | docs/reviews/feat-secret-count-reminders/final.md |
 | [T-104](./T-104.md) | Move the recorder widget under Flags (Auto-map dungeons) to save vertical space | frontend-engineer | T-081 | feat/recorder-under-flags | — | docs/reviews/feat-recorder-under-flags/final.md |
 | [T-103](./T-103.md) | Take-any candle activates blue candle + notes placeholder hides on focus | frontend-engineer | T-066 | fix/takeany-candle-and-notes | — | docs/reviews/fix-takeany-candle-and-notes/final.md |
 | [T-102](./T-102.md) | Reminder log (past reminders, in the timeline header) | frontend-engineer | T-018 | feat/reminder-log | — | docs/reviews/feat-reminder-log/final.md |

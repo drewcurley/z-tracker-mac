@@ -68,6 +68,9 @@ struct ReminderAnnouncementDisplayTests {
         #expect(ReminderAnnouncement.remindShortly(itemId: ITEMS.powerBracelet).displayText == "Don't forget that you have the power bracelet")
         #expect(ReminderAnnouncement.remindVisitHints.displayText == "You have the book — visit the hint NPCs")
         #expect(ReminderAnnouncement.remindVisitHints.category == .haveKeyLadder)
+        #expect(ReminderAnnouncement.secretsRemaining(size: .large, remaining: 1).displayText == "One large secret left")
+        #expect(ReminderAnnouncement.secretsRemaining(size: .small, remaining: 0).displayText == "No more small secrets to find")
+        #expect(ReminderAnnouncement.secretsRemaining(size: .medium, remaining: 1).category == .secrets)
     }
 
     @Test("unblock text lists the dungeon numbers and the need")

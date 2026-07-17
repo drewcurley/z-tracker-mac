@@ -23,7 +23,8 @@ struct ReminderEngineTests {
         coastItemValue: Int = -1,
         isCurrentlyBook: Bool = true,
         bookShopMarked: Bool = false,
-        bookForHelpfulHints: Bool = false
+        bookForHelpfulHints: Bool = false,
+        secretRemaining: [SecretSize: Int] = [:]
     ) -> [ReminderAnnouncement] {
         let mapState = MapStateSummary.compute(
             grid: grid, instance: instance, dungeonTracker: dungeonTracker,
@@ -37,7 +38,23 @@ struct ReminderEngineTests {
             blockers: blockers, progress: progress, startingItems: startingItems, tagSummary: tag,
             doorRepairFound: doorRepairFound, doorRepairMax: doorRepairMax,
             now: now, coastItemValue: coastItemValue, isCurrentlyBook: isCurrentlyBook,
-            bookShopMarked: bookShopMarked, bookForHelpfulHints: bookForHelpfulHints)
+            bookShopMarked: bookShopMarked, bookForHelpfulHints: bookForHelpfulHints,
+            secretRemaining: secretRemaining)
+    }
+
+    @Test("secret reminder fires once at one-left and none-left, re-fires on unmark (T-105)")
+    func secretReminders() {
+        let e = ReminderEngine()
+        // remaining 2 → nothing.
+        #expect(!poll(e, secretRemaining: [.large: 2]).contains { if case .secretsRemaining = $0 { return true }; return false })
+        // → 1: "one left".
+        #expect(poll(e, secretRemaining: [.large: 1]).contains(.secretsRemaining(size: .large, remaining: 1)))
+        // steady 1 → quiet.
+        #expect(!poll(e, secretRemaining: [.large: 1]).contains(.secretsRemaining(size: .large, remaining: 1)))
+        // → 0: "none left".
+        #expect(poll(e, secretRemaining: [.large: 0]).contains(.secretsRemaining(size: .large, remaining: 0)))
+        // un-mark back to 1 → re-fires "one left".
+        #expect(poll(e, secretRemaining: [.large: 1]).contains(.secretsRemaining(size: .large, remaining: 1)))
     }
 
     @Test("book → visit-hints fires once, only when the hints flag is on (T-092)")
