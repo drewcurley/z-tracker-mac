@@ -9,6 +9,8 @@ struct ContentView: View {
     var options: TrackerOptions
     /// Which major areas are broken out into their own windows (T-100).
     var breakout: BreakoutWindows
+    /// The run timer, hoisted to app level (T-101) so it can also show in a window.
+    var timer: TrackerTimer
     /// "Reset App" — discard everything and return here to the startup screen
     /// (T-046). Owned by the app (it replaces the model instance).
     var onResetApp: () -> Void
@@ -23,7 +25,7 @@ struct ContentView: View {
                     model.selectQuest(quest)
                 })
             } else {
-                MainTrackerPlaceholderView(model: model, options: options, breakout: breakout, onResetApp: onResetApp)
+                MainTrackerPlaceholderView(model: model, options: options, breakout: breakout, timer: timer, onResetApp: onResetApp)
             }
         }
         // Prime live TTS at launch (T-069/T-045): speaking a silent space loads
@@ -38,5 +40,5 @@ struct ContentView: View {
 }
 
 #Preview {
-    ContentView(model: TrackerModel(), options: TrackerOptions(), breakout: BreakoutWindows(), onResetApp: {})
+    ContentView(model: TrackerModel(), options: TrackerOptions(), breakout: BreakoutWindows(), timer: TrackerTimer(), onResetApp: {})
 }
