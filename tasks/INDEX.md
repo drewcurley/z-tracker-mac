@@ -26,6 +26,7 @@
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
 | [T-072.1](./T-072.1.md) | Fix ⌥-drag circling the first room (defer modified-left to release) | frontend-engineer | T-072 | fix/drag-paint-option-defer | — | docs/reviews/fix-drag-paint-option-defer/final.md |
+| [T-100](./T-100.md) | Break-out windows — Timeline pop-out (reusable pattern) | frontend-engineer | T-098 | feat/timeline-popout | — | docs/reviews/feat-timeline-popout/final.md |
 | [T-099](./T-099.md) | Timeline — phase 2 (overworld-progress line graph) | frontend-engineer | T-098 | feat/timeline-graph | — | docs/reviews/feat-timeline-graph/final.md |
 | [T-098](./T-098.md) | Timeline — phase 1 (item-acquisition strip + splits + finish) | frontend-engineer | T-018 | feat/timeline-phase1 | — | docs/reviews/feat-timeline-phase1/final.md |
 | [T-097](./T-097.md) | Single-instance main window (no multiple full trackers / tab bar) | frontend-engineer | T-019.1 | fix/single-window | — | docs/reviews/fix-single-window/final.md |
