@@ -26,6 +26,7 @@
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
 | [T-072.1](./T-072.1.md) | Fix ⌥-drag circling the first room (defer modified-left to release) | frontend-engineer | T-072 | fix/drag-paint-option-defer | — | docs/reviews/fix-drag-paint-option-defer/final.md |
+| [T-115](./T-115.md) | Timer pop-out readout scales with the window | frontend-engineer | T-101 | feat/timer-window-scaling | — | docs/reviews/feat-timer-window-scaling/final.md |
 | [T-114](./T-114.md) | Timeline hover shows split time + source location | frontend-engineer | T-098 | feat/timeline-hover-location | — | docs/reviews/feat-timeline-hover-location/final.md |
 | [T-113](./T-113.md) | Timeline reflects actual pickups + dungeon/coast hearts + bait | data-engineer | T-098 | fix/timeline-actual-pickups | — | docs/reviews/fix-timeline-actual-pickups/final.md |
 | [T-112](./T-112.md) | Dungeon naming (LEVEL/BOARD/HDN) in picker menu, voice/toast, and map title | frontend-engineer | T-049 | feat/dungeon-naming-consistency | — | docs/reviews/feat-dungeon-naming-consistency/final.md |
