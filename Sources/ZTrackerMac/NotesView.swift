@@ -11,6 +11,7 @@ import TrackerCore
 /// blockers UI land in later slices above/beside this.
 struct NotesView: View {
     @Bindable var model: TrackerModel
+    @FocusState private var focused: Bool
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -19,8 +20,10 @@ struct NotesView: View {
                 .foregroundStyle(Color.green)
                 .scrollContentBackground(.hidden)
                 .padding(6)
-            // TextEditor has no native placeholder.
-            if model.notes.isEmpty {
+                .focused($focused)
+            // TextEditor has no native placeholder — hide ours as soon as the
+            // field is focused (clicked into), not only once typing starts (T-103).
+            if model.notes.isEmpty && !focused {
                 Text("Notes…")
                     .font(.system(size: 13, design: .monospaced))
                     .foregroundStyle(.secondary)
