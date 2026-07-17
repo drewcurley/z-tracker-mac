@@ -19,9 +19,11 @@ struct DungeonMapView: View {
     /// The GRAB cut-and-paste tool's transient state (T-083).
     @State private var grab = DungeonGrabController()
     /// Room-grid zoom (T-127) — shrinks the map to reclaim vertical space; the tab
-    /// bar and controls stay full size. Session-only. Discrete levels 60/80/100/120%.
-    @State private var mapScale: CGFloat = 1.0
-    private static let zoomLevels: [CGFloat] = [0.6, 0.8, 1.0, 1.2]
+    /// bar and controls stay full size. Owned by `DungeonBandView` (T-129) so it
+    /// survives the band's reflow (a `ViewThatFits`/layout swap would otherwise
+    /// recreate this view and reset the zoom). Discrete levels 60/80/100/120%.
+    @Binding var mapScale: CGFloat
+    static let zoomLevels: [CGFloat] = [0.6, 0.8, 1.0, 1.2]
     /// Step to the adjacent zoom level (dir −1/+1), clamped to the ends.
     private func stepZoom(_ dir: Int) {
         let i = Self.zoomLevels.firstIndex(of: mapScale) ?? Self.zoomLevels.firstIndex(of: 1.0)!
@@ -110,23 +112,32 @@ struct DungeonMapView: View {
         }
     }
 
-    /// A compact map-zoom control (T-127) — shrink/grow the dungeon map to trade
-    /// vertical space; overlaid in the card's top-trailing corner at full size.
+    /// The map-zoom control (T-127/T-129) — two larger −/+ buttons spanning the
+    /// info-strip width, with the current % (tap to reset to 100). Overlaid in the
+    /// card's bottom-trailing corner (the info strip's empty space) at full size.
     private var zoomControl: some View {
-        HStack(spacing: 2) {
-            Button { stepZoom(-1) } label: { Image(systemName: "minus.magnifyingglass") }
-                .disabled(mapScale <= Self.zoomLevels.first!)
-            if mapScale != 1 {
-                Button { mapScale = 1 } label: { Text("\(Int(mapScale * 100))%").font(.system(size: 9, design: .monospaced)) }
+        VStack(spacing: 1) {
+            Button { mapScale = 1 } label: {
+                Text("\(Int(mapScale * 100))%").font(.system(size: 9, weight: .semibold, design: .monospaced))
             }
-            Button { stepZoom(1) } label: { Image(systemName: "plus.magnifyingglass") }
+            .help("Reset zoom to 100%")
+            HStack(spacing: 3) {
+                Button { stepZoom(-1) } label: {
+                    Image(systemName: "minus.magnifyingglass").frame(maxWidth: .infinity)
+                }
+                .disabled(mapScale <= Self.zoomLevels.first!)
+                Button { stepZoom(1) } label: {
+                    Image(systemName: "plus.magnifyingglass").frame(maxWidth: .infinity)
+                }
                 .disabled(mapScale >= Self.zoomLevels.last!)
+            }
+            .font(.system(size: 15))
         }
-        .font(.system(size: 10))
         .buttonStyle(.plain)
         .foregroundStyle(.secondary)
-        .padding(3)
-        .background(.black.opacity(0.5), in: RoundedRectangle(cornerRadius: 4))
+        .frame(width: Self.infoStripWidth)
+        .padding(.vertical, 3)
+        .background(.black.opacity(0.5), in: RoundedRectangle(cornerRadius: 5))
         .padding(2)
         .help("Zoom the dungeon map")
     }

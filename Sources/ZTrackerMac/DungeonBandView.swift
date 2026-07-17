@@ -8,6 +8,13 @@ import TrackerCore
 struct DungeonBandView: View {
     var model: TrackerModel
     var options: TrackerOptions
+    /// The dungeon map's zoom, owned here (T-129) so it survives the band's reflow.
+    /// `ViewThatFits` recreates whichever branch it shows, which would reset the
+    /// map view's own `@State` zoom; holding it in this stable parent and passing a
+    /// binding keeps it across the row↔column swap. (`ViewThatFits` itself picks the
+    /// layout that fits — the scaled map reports a deterministic width, so the reflow
+    /// tracks the current zoom.)
+    @State private var mapScale: CGFloat = 1.0
 
     var body: some View {
         ViewThatFits(in: .horizontal) {
@@ -27,7 +34,7 @@ struct DungeonBandView: View {
 
     private var dungeonMapGroup: some View {
         TopSectionGroup(title: "Dungeon Map") {
-            DungeonMapView(model: model, options: options)
+            DungeonMapView(model: model, options: options, mapScale: $mapScale)
         }
     }
 
