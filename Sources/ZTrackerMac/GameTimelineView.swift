@@ -55,7 +55,11 @@ struct GameTimelineView: View {
                         .frame(width: iconSize, height: iconSize)
                         .position(x: x(forSeconds: p.seconds),
                                   y: topPad + CGFloat(p.row) * rowHeight + iconSize / 2)
-                        .help("\(p.event.displayName) — \(split(p.seconds))")
+                        // Hover: split time first, then the item, then where it was
+                        // found if known — e.g. "31:03  Silver Arrow — LEVEL-3 Box 1"
+                        // (T-114).
+                        .help("\(split(p.seconds))  \(p.event.displayName)"
+                              + (timeline.acquiredLocation[p.event].map { " — \($0)" } ?? ""))
                 }
                 finishMarker
             }

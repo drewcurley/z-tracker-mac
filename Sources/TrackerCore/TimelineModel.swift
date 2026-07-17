@@ -125,6 +125,56 @@ public enum TimelineEvents {
         if coast.playerHas == .yes, coast.cellCurrent == ITEMS.heartContainer { s.insert(.coastHeart) }
         return s
     }
+
+    /// The TimelineEvent a collected dungeon-box item corresponds to, for hover
+    /// location attribution (T-114). `dungeonSlot` is 1…9 (the box's dungeon), used
+    /// to key heart containers; `nil` means a non-dungeon box (e.g. the coast).
+    static func boxItemEvent(cellCurrent item: Int, dungeonSlot: Int?) -> TimelineEvent? {
+        switch item {
+        case ITEMS.heartContainer: return dungeonSlot.map { .dungeonHeart($0) } ?? .coastHeart
+        case ITEMS.recorder: return .recorder
+        case ITEMS.ladder: return .ladder
+        case ITEMS.anyKey: return .anyKey
+        case ITEMS.powerBracelet: return .powerBracelet
+        case ITEMS.raft: return .raft
+        case ITEMS.redCandle: return .redCandle
+        case ITEMS.bookOrShield: return .book
+        case ITEMS.boomerang: return .boomerang
+        case ITEMS.bow: return .bow
+        case ITEMS.magicBoomerang: return .magicBoomerang
+        case ITEMS.redRing: return .redRing
+        case ITEMS.silverArrow: return .silverArrow
+        case ITEMS.wand: return .wand
+        case ITEMS.whiteSword: return .whiteSword
+        default: return nil
+        }
+    }
+
+    /// Where each collected box item was found — event → label like "LEVEL-1 Box 1"
+    /// or "Coast" (T-114). Feeds the timeline hover tooltip's location suffix.
+    public static func locations(
+        dungeonTracker: DungeonTrackerInstance,
+        boardInsteadOfLevel: Bool,
+        hideDungeonNumbers: Bool
+    ) -> [TimelineEvent: String] {
+        var out: [TimelineEvent: String] = [:]
+        for n in 1...9 {
+            let name = DungeonLabeling.columnName(slot: n, boardInsteadOfLevel: boardInsteadOfLevel,
+                                                  hideDungeonNumbers: hideDungeonNumbers)
+            for (j, box) in dungeonTracker.dungeon(n - 1).boxes.enumerated()
+            where box.playerHas == .yes && box.cellCurrent != -1 {
+                if let ev = boxItemEvent(cellCurrent: box.cellCurrent, dungeonSlot: n) {
+                    out[ev] = "\(name) Box \(j + 1)"
+                }
+            }
+        }
+        let coast = dungeonTracker.ladderBox
+        if coast.playerHas == .yes, coast.cellCurrent != -1,
+           let ev = boxItemEvent(cellCurrent: coast.cellCurrent, dungeonSlot: nil) {
+            out[ev] = "Coast"
+        }
+        return out
+    }
 }
 
 /// The Timeline's data (T-098): when each event was first acquired (elapsed run
@@ -136,6 +186,10 @@ public enum TimelineEvents {
 public final class TimelineModel {
     /// Event → elapsed run seconds at first acquisition.
     public private(set) var acquiredAt: [TimelineEvent: Int] = [:]
+    /// Event → where it was found (e.g. "LEVEL-1 Box 1", "Coast"), for the hover
+    /// tooltip (T-114). Only set for events with a known source; dropped when the
+    /// event is un-acquired.
+    public private(set) var acquiredLocation: [TimelineEvent: String] = [:]
     /// The elapsed seconds when Zelda was rescued (the run finished), or `nil`.
     public private(set) var finishSeconds: Int?
     /// Overworld spots still unmarked at the finish, or `nil`.
@@ -159,7 +213,8 @@ public final class TimelineModel {
     /// `elapsedSeconds`, drop events that were un-marked (so re-acquiring re-stamps
     /// — matching the reminder engine's re-fire behavior), and capture/clear the
     /// finish snapshot.
-    public func record(elapsedSeconds: Int, acquired: Set<TimelineEvent>, owRemaining: Int, finished: Bool) {
+    public func record(elapsedSeconds: Int, acquired: Set<TimelineEvent>, owRemaining: Int,
+                       finished: Bool, locations: [TimelineEvent: String] = [:]) {
         latestSeconds = elapsedSeconds
         for e in acquired where acquiredAt[e] == nil {
             acquiredAt[e] = elapsedSeconds
@@ -167,6 +222,9 @@ public final class TimelineModel {
         for e in acquiredAt.keys where !acquired.contains(e) {
             acquiredAt.removeValue(forKey: e)
         }
+        // Source locations for the currently-acquired events (a live view — items
+        // don't move once collected); prune any that are no longer acquired.
+        acquiredLocation = locations.filter { acquired.contains($0.key) }
         // Overworld-progress series (T-099): sample only on a change (or first),
         // so the graph line has one point per real transition.
         if owRemainingSamples.last?.remaining != owRemaining {
@@ -183,6 +241,7 @@ public final class TimelineModel {
     /// Clear everything (a full app reset).
     public func reset() {
         acquiredAt = [:]
+        acquiredLocation = [:]
         finishSeconds = nil
         finishOwRemaining = nil
         owRemainingSamples = []

@@ -71,6 +71,41 @@ struct TimelineModelTests {
         #expect(s.contains(.bait))
     }
 
+    @Test("locations map box items to LEVEL/BOARD box labels and coast (T-114)")
+    func boxLocations() {
+        let dt = DungeonTrackerInstance()
+        // Dungeon 3, box 1 holds a collected silver arrow.
+        dt.dungeon(2).boxes[0].set(cellCurrent: ITEMS.silverArrow, playerHas: .yes)
+        // Dungeon 1, box 2 holds a collected heart container.
+        dt.dungeon(0).boxes[1].set(cellCurrent: ITEMS.heartContainer, playerHas: .yes)
+        // The coast item is the ladder.
+        dt.ladderBox.set(cellCurrent: ITEMS.ladder, playerHas: .yes)
+
+        let loc = TimelineEvents.locations(dungeonTracker: dt, boardInsteadOfLevel: false,
+                                           hideDungeonNumbers: false)
+        #expect(loc[.silverArrow] == "LEVEL-3 Box 1")
+        #expect(loc[.dungeonHeart(1)] == "LEVEL-1 Box 2")
+        #expect(loc[.ladder] == "Coast")
+
+        // BOARD naming + HDN letters flow through.
+        let board = TimelineEvents.locations(dungeonTracker: dt, boardInsteadOfLevel: true,
+                                             hideDungeonNumbers: true)
+        #expect(board[.silverArrow] == "BOARD-C Box 1")
+    }
+
+    @Test("record stores locations for acquired events and prunes the rest (T-114)")
+    func recordLocations() {
+        let m = TimelineModel()
+        m.record(elapsedSeconds: 100, acquired: [.silverArrow], owRemaining: 50, finished: false,
+                 locations: [.silverArrow: "LEVEL-3 Box 1", .ladder: "Coast"])
+        // Only the acquired event's location is kept.
+        #expect(m.acquiredLocation[.silverArrow] == "LEVEL-3 Box 1")
+        #expect(m.acquiredLocation[.ladder] == nil)
+        // Dropping the event drops its location.
+        m.record(elapsedSeconds: 160, acquired: [], owRemaining: 50, finished: false)
+        #expect(m.acquiredLocation[.silverArrow] == nil)
+    }
+
     @Test("record stamps first acquisition, ignores later ticks, drops un-marked")
     func recordStampsAndDrops() {
         let m = TimelineModel()
