@@ -40,15 +40,7 @@ public struct DungeonRoom: Sendable, Equatable {
     /// tapping a present monster removes it (promoting the secondary); tapping a new
     /// monster fills the empty slot, or replaces the secondary when both are full.
     public mutating func toggleMonster(_ m: MonsterDetail) {
-        let (a, b) = (monsterDetail, monsterDetail2)
-        let pair: (MonsterDetail, MonsterDetail)
-        if m.isNotMarked { pair = (.unmarked, .unmarked) }
-        else if m == a { pair = (b, .unmarked) }
-        else if m == b { pair = (a, .unmarked) }
-        else if a.isNotMarked { pair = (m, .unmarked) }
-        else if b.isNotMarked { pair = (a, m) }
-        else { pair = (a, m) }
-        (monsterDetail, monsterDetail2) = pair
+        (monsterDetail, monsterDetail2) = MonsterDetail.togglingPair(m, in: (monsterDetail, monsterDetail2))
     }
 
     /// `IsEmpty` — unmarked or off-the-map. Drives room contiguity / door logic.

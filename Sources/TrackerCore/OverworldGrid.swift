@@ -35,10 +35,17 @@ public final class OverworldGrid {
     /// project-specific convenience with no reference analogue.
     private var takeAnySlotLinks: [Int]
 
+    /// Per-tile enemy annotations (T-117, beyond the reference — user request):
+    /// up to two `MonsterDetail`s per tile from the reduced overworld set, stored
+    /// as 2 flat slots per tile (both `.unmarked` by default). This is map
+    /// knowledge, so it survives a groundhog/routers reset.
+    private var enemyPairs: [MonsterDetail]
+
     public init() {
         tiles = Array(repeating: .unmarked, count: Self.columnCount * Self.rowCount)
         extraData = Array(repeating: 0, count: Self.columnCount * Self.rowCount * Self.extraDataKeyCount)
         takeAnySlotLinks = Array(repeating: -1, count: Self.columnCount * Self.rowCount)
+        enemyPairs = Array(repeating: .unmarked, count: Self.columnCount * Self.rowCount * 2)
     }
 
     public func mark(column: Int, row: Int) -> OverworldTileMark {
@@ -171,6 +178,30 @@ public final class OverworldGrid {
         tiles = Array(repeating: .unmarked, count: Self.columnCount * Self.rowCount)
         extraData = Array(repeating: 0, count: Self.columnCount * Self.rowCount * Self.extraDataKeyCount)
         takeAnySlotLinks = Array(repeating: -1, count: Self.columnCount * Self.rowCount)
+        enemyPairs = Array(repeating: .unmarked, count: Self.columnCount * Self.rowCount * 2)
+    }
+
+    // MARK: Enemy annotations (T-117)
+
+    /// A tile's up-to-two enemies (both slots, including `.unmarked` placeholders).
+    public func enemyPair(column: Int, row: Int) -> (MonsterDetail, MonsterDetail) {
+        let base = Self.index(column: column, row: row) * 2
+        return (enemyPairs[base], enemyPairs[base + 1])
+    }
+
+    /// A tile's enemies in display order, without the `.unmarked` placeholders.
+    public func enemies(column: Int, row: Int) -> [MonsterDetail] {
+        let (a, b) = enemyPair(column: column, row: row)
+        return [a, b].filter { !$0.isNotMarked }
+    }
+
+    /// Toggle an enemy into the tile's up-to-two set (shared normalization with
+    /// dungeon rooms). `.unmarked` clears both.
+    public func toggleEnemy(_ m: MonsterDetail, column: Int, row: Int) {
+        let base = Self.index(column: column, row: row) * 2
+        let (a, b) = MonsterDetail.togglingPair(m, in: (enemyPairs[base], enemyPairs[base + 1]))
+        enemyPairs[base] = a
+        enemyPairs[base + 1] = b
     }
 
     private static func index(column: Int, row: Int) -> Int {
