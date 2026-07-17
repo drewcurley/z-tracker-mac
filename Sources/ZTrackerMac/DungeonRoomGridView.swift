@@ -439,16 +439,21 @@ private struct RoomCellView: View {
                 image.interpolation(.none).resizable()
                     .frame(width: width - 4, height: height - 4)
             }
-            // Monster (top-leading), dimmed on a completed room unless it's a
-            // persistent hazard (bubbles / traps / "other").
-            if let image = Image(atlasIcon: DungeonMonsterAtlas.sprite(room.monsterDetail)) {
-                image.interpolation(.none).resizable()
-                    .frame(width: Self.detailIcon, height: Self.detailIcon)
-                    .opacity(room.isCompleted && room.monsterDetail.darkensWhenCompleted ? Self.dim : 1)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                    .offset(x: -2, y: -2)
-                    .allowsHitTesting(false)
+            // Monster(s) (top-leading), dimmed on a completed room unless it's a
+            // persistent hazard (bubbles / traps / "other"). Up to two stack
+            // vertically (T-116).
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(Array(room.monsters.enumerated()), id: \.offset) { _, monster in
+                    if let image = Image(atlasIcon: DungeonMonsterAtlas.sprite(monster)) {
+                        image.interpolation(.none).resizable()
+                            .frame(width: Self.detailIcon, height: Self.detailIcon)
+                            .opacity(room.isCompleted && monster.darkensWhenCompleted ? Self.dim : 1)
+                    }
+                }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+            .offset(x: -2, y: -2)
+            .allowsHitTesting(false)
             // Floor drop (bottom-trailing), dimmed when marked "already collected".
             if let image = Image(atlasIcon: DungeonFloorDropAtlas.sprite(room.floorDropDetail)) {
                 image.interpolation(.none).resizable()
@@ -522,11 +527,15 @@ private struct RoomCellView: View {
             }
         }
         .popover(isPresented: $showingMonster, arrowEdge: .bottom) {
-            MonsterPicker(current: room.monsterDetail) { md in
-                var r = room; r.monsterDetail = md
-                map.setRoom(r, col: col, row: row)
-                showingMonster = false
-            }
+            MonsterPicker(primary: room.monsterDetail, secondary: room.monsterDetail2,
+                          onToggle: { md in
+                              var r = room; r.toggleMonster(md)
+                              map.setRoom(r, col: col, row: row)
+                              // Clearing dismisses; otherwise stay open so a second
+                              // monster can be added (T-116).
+                              if md.isNotMarked { showingMonster = false }
+                          },
+                          onDone: { showingMonster = false })
         }
         .popover(isPresented: $showingFloorDrop, arrowEdge: .bottom) {
             FloorDropPicker(current: room.floorDropDetail) { fd in
@@ -559,7 +568,8 @@ private struct RoomCellView: View {
     private var accessibilityValue: String {
         var parts: [String] = [room.roomType.isNotMarked ? "Unmarked" : room.roomType.displayDescription]
         if room.isCompleted { parts.append("completed") }
-        if !room.monsterDetail.isNotMarked { parts.append("monster \(room.monsterDetail.displayName)") }
+        let monsters = room.monsters.map(\.displayName)
+        if !monsters.isEmpty { parts.append("monster\(monsters.count > 1 ? "s" : "") \(monsters.joined(separator: " and "))") }
         if !room.floorDropDetail.isNotMarked {
             parts.append("drop \(room.floorDropDetail.displayName)\(room.floorDropAppearsBright ? "" : ", collected")")
         }
@@ -619,21 +629,33 @@ private struct RoomTypePicker: View {
 
 /// The monster-detail picker (Shift+left-click) — the reference's 8×4 grid order
 /// (`MonsterDetail.All()`, `DungeonRoomState.fs:164-167`); `unmarked` (clear) is
-/// the last cell.
+/// the last cell. Supports **up to two** monsters (T-116): tapping toggles a
+/// monster into the room's pair; the popover stays open so a second can be added,
+/// with a Done button to close.
 private struct MonsterPicker: View {
-    let current: MonsterDetail
-    let onPick: (MonsterDetail) -> Void
+    let primary: MonsterDetail
+    let secondary: MonsterDetail
+    let onToggle: (MonsterDetail) -> Void
+    let onDone: () -> Void
     private let columns = Array(repeating: GridItem(.fixed(30), spacing: 4), count: 8)
+
+    private func isSelected(_ md: MonsterDetail) -> Bool {
+        !md.isNotMarked && (md == primary || md == secondary)
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Select a monster").font(.caption).foregroundStyle(.secondary)
+            HStack {
+                Text("Select up to two monsters").font(.caption).foregroundStyle(.secondary)
+                Spacer()
+                Button("Done") { onDone() }.font(.caption)
+            }
             LazyVGrid(columns: columns, spacing: 4) {
                 ForEach(Array(MonsterDetail.allInPickerOrder.enumerated()), id: \.offset) { _, md in
-                    Button { onPick(md) } label: {
+                    Button { onToggle(md) } label: {
                         ZStack {
                             RoundedRectangle(cornerRadius: 4)
-                                .fill(current == md ? Color.accentColor.opacity(0.5) : Color(white: 0.14))
+                                .fill(isSelected(md) ? Color.accentColor.opacity(0.5) : Color(white: 0.14))
                             if md == .unmarked {
                                 Image(systemName: "xmark").font(.system(size: 11)).foregroundStyle(.secondary)
                             } else if let image = Image(atlasIcon: DungeonMonsterAtlas.sprite(md)) {
@@ -641,15 +663,32 @@ private struct MonsterPicker: View {
                             }
                         }
                         .frame(width: 30, height: 30)
+                        // Badge the selection order (1 = primary, 2 = secondary).
+                        .overlay(alignment: .topTrailing) {
+                            if md == primary && !md.isNotMarked {
+                                selectionBadge("1")
+                            } else if md == secondary && !md.isNotMarked {
+                                selectionBadge("2")
+                            }
+                        }
                     }
                     .buttonStyle(.plain)
-                    .help(md == .unmarked ? "None (clear)" : md.displayName)
+                    .help(md == .unmarked ? "None (clear both)" : md.displayName)
                     .accessibilityLabel(md == .unmarked ? "None" : md.displayName)
                 }
             }
         }
         .padding(10)
         .frame(width: 300)
+    }
+
+    private func selectionBadge(_ text: String) -> some View {
+        Text(text)
+            .font(.system(size: 8, weight: .bold))
+            .foregroundStyle(.white)
+            .padding(2)
+            .background(Circle().fill(Color.accentColor))
+            .offset(x: 3, y: -3)
     }
 }
 
