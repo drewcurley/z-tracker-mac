@@ -95,6 +95,9 @@ struct ZTrackerMacApp: App {
     @State private var overlays = OverworldOverlayState()
     /// The hotkey bindings (T-131), persisted; edited in the hotkey editor window.
     @State private var hotkeys = HotkeyConfig.withPersistence()
+    /// Shared UI focus state (T-133) — the selected dungeon tab (and, later, the
+    /// keyboard cursor), so Global hotkeys can drive them.
+    @State private var focus = TrackerFocusState()
 
     var body: some Scene {
         // A single-instance `Window` (not `WindowGroup`) — the tracker is one
@@ -102,7 +105,7 @@ struct ZTrackerMacApp: App {
         // trackers as tabs / new windows (⌘N), which only share the game state and
         // drift on view-local state; that was an unintended default, not a feature.
         Window("Z-Tracker", id: MainWindowID) {
-            ContentView(model: model, options: options, breakout: breakout, timer: timer, reminders: reminders, overlays: overlays, hotkeys: hotkeys, onResetApp: resetApp)
+            ContentView(model: model, options: options, breakout: breakout, timer: timer, reminders: reminders, overlays: overlays, hotkeys: hotkeys, focus: focus, onResetApp: resetApp)
         }
         .commands {
             // ⌘, opens the mid-game Settings window (T-091) instead of a native
@@ -150,7 +153,7 @@ struct ZTrackerMacApp: App {
         // placeholder.
         Window("Dungeon", id: DungeonBandWindowID) {
             ScrollView {
-                DungeonBandView(model: model, options: options).padding(12)
+                DungeonBandView(model: model, options: options, focus: focus).padding(12)
             }
             .frame(minWidth: 700, minHeight: 400)
             .onAppear { breakout.dungeonBandPoppedOut = true }

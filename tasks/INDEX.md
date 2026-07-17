@@ -25,6 +25,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-133](./T-133.md) | Part B — dungeon-tab Global hotkeys (+ shared focus state) | frontend-engineer | T-132 | feat/dungeon-tab-hotkeys | — | docs/reviews/feat-dungeon-tab-hotkeys/final.md |
 | [T-132.1](./T-132.1.md) | Groundhog-reset hotkey — also restart the lap (match the button) | frontend-engineer | T-132 | fix/groundhog-hotkey-startlap | — | docs/reviews/fix-groundhog-hotkey-startlap/final.md |
 | [T-132](./T-132.md) | Part B phase 1 — Global hotkey runtime dispatch | frontend-engineer | T-131 | feat/global-hotkey-dispatch | — | docs/reviews/feat-global-hotkey-dispatch/final.md |
 | [T-131](./T-131.md) | In-app hotkey editor (Part A) — capture, conflict-as-move, import/export | frontend-engineer | T-130 | feat/hotkey-editor | — | docs/reviews/feat-hotkey-editor/final.md |
