@@ -216,8 +216,11 @@ struct OverworldMapView: View {
                                 // mark (door repair — one-shot, never revisited).
                                 // The latter derives from the mark, so a groundhog
                                 // reset (clears only `used`) keeps it dimmed.
-                                let used = grid.isUsed(column: column, row: row)
-                                    || mark.dimsPermanentlyWhenMarked
+                                // Armos / White-Sword-Item cave / Magical-Sword cave
+                                // instead derive their dim from model state — the
+                                // item behind them being collected — not a map
+                                // toggle (T-110, matching the reference tile dim).
+                                let used = tileIsCollected(mark: mark, column: column, row: row)
                                 let shopSecondItem = grid.shopSecondItem(column: column, row: row)
                                 let dungeonDone: Bool = { if case .dungeon(let n) = mark { return dungeonComplete(n) } else { return false } }()
                                 let kindHidden = OverworldTileHiding.isKindHidden(mark: mark, options: options, hasRescuedZelda: hasRescuedZelda)
@@ -407,6 +410,22 @@ struct OverworldMapView: View {
         }
     }
 
+    /// Whether a tile should render dimmed ("collected"). Most marks use the map's
+    /// own manual `used` toggle (plus the permanently-dim door-repair). The three
+    /// item-bearing caves derive it from model state instead (T-110), matching the
+    /// reference: armos → `armosBox.isDone`, White-Sword-Item cave (SWORD2) →
+    /// `sword2Box.isDone`, Magical-Sword cave (SWORD3) → player has the magical
+    /// sword (`swordLevel == 3`).
+    private func tileIsCollected(mark: OverworldTileMark, column: Int, row: Int) -> Bool {
+        switch mark {
+        case .armos: return dungeonTracker.armosBox.isDone
+        case .swordCave(2): return dungeonTracker.sword2Box.isDone
+        case .swordCave(3): return playerState.swordLevel >= 3
+        default:
+            return grid.isUsed(column: column, row: row) || mark.dimsPermanentlyWhenMarked
+        }
+    }
+
     /// Per-cell binding for the in-place item prompt popover (T-106).
     private func itemPromptBinding(column: Int, row: Int) -> Binding<Bool> {
         Binding(
@@ -439,7 +458,10 @@ struct OverworldMapView: View {
         if let promptTarget {
             DispatchQueue.main.async { itemPrompt = promptTarget }
         }
-        if mark.isUsedToggleable {
+        // Secrets / letter / hint shop default to dark on placement; take-any and
+        // the wood-sword cave stay bright; armos/sword2/sword3 derive their dim
+        // from model state, so none of them get a placement `used` flag (T-110).
+        if mark.placesUsedWhenMarked {
             grid.setUsed(true, column: column, row: row)
         }
         // A shop can't hold the same item twice (T-060): if the new primary

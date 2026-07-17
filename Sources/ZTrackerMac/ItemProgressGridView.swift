@@ -554,7 +554,11 @@ struct MapInfoView: View {
             .help("What overworld locations and secrets you still have left to find")
             .popover(isPresented: $showingSpotSummary, arrowEdge: .bottom) {
                 SpotSummaryView(
-                    summary: SpotSummary.compute(grid: model.overworldGrid, quest: model.quest ?? .first),
+                    summary: SpotSummary.compute(
+                        grid: model.overworldGrid, quest: model.quest ?? .first,
+                        armosDone: model.dungeonTracker.armosBox.isDone,
+                        whiteSwordItemDone: model.dungeonTracker.sword2Box.isDone,
+                        hasMagicalSword: model.playerComputedStateSummary.swordLevel >= 3),
                     hideDungeonNumbers: model.hideDungeonNumbers
                 )
             }

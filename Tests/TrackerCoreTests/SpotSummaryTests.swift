@@ -79,17 +79,16 @@ struct SpotSummaryTests {
         grid.setMark(.armos, column: 5, row: 5)
         grid.setMark(.theLetter, column: 6, row: 5)
 
-        // Collect the large secret and the armos.
+        // Collect the large secret (map toggle). The armos derives its collected
+        // state from the model (armosBox.isDone), passed to `compute` (T-110).
         grid.toggleUsed(column: 1, row: 1)
-        grid.toggleUsed(column: 5, row: 5)
         #expect(grid.isUsed(column: 1, row: 1))
-        #expect(grid.isUsed(column: 5, row: 5))
 
-        let s = SpotSummary.compute(grid: grid, quest: .first)
+        let s = SpotSummary.compute(grid: grid, quest: .first, armosDone: true)
         // One large collected → 2 large remaining; medium untouched.
         #expect(s.secretsUsed == .init(large: 1, medium: 0, small: 0))
         #expect(s.secretsRemaining == .init(large: 2, medium: 7, small: 4))
-        // Armos collected (used); the letter placed but not collected.
+        // Armos collected (used, from the model); the letter placed but not collected.
         #expect(s.uniques.first { $0.mark == .armos }?.used == true)
         #expect(s.uniques.first { $0.mark == .theLetter }?.used == false)
         #expect(s.uniques.first { $0.mark == .theLetter }?.placed == true)
@@ -123,6 +122,27 @@ struct SpotSummaryTests {
         #expect(done.uniques.first { $0.mark == .swordCave(2) }?.done == false)
     }
 
+    @Test("sword2/sword3/armos derive done from model state, not a map toggle (T-110)")
+    func derivedCavesDone() {
+        let grid = OverworldGrid()
+        grid.setMark(.swordCave(2), column: 1, row: 0)
+        grid.setMark(.swordCave(3), column: 2, row: 0)
+        grid.setMark(.armos, column: 3, row: 0)
+
+        // Placed on the map but nothing collected → all bright (not done).
+        let none = SpotSummary.compute(grid: grid, quest: .first)
+        #expect(none.uniques.first { $0.mark == .swordCave(2) }?.done == false)
+        #expect(none.uniques.first { $0.mark == .swordCave(3) }?.done == false)
+        #expect(none.uniques.first { $0.mark == .armos }?.done == false)
+
+        // Model state drives collected/done, independent of any map `used` flag.
+        let got = SpotSummary.compute(grid: grid, quest: .first,
+                                      armosDone: true, whiteSwordItemDone: true, hasMagicalSword: true)
+        #expect(got.uniques.first { $0.mark == .swordCave(2) }?.done == true)
+        #expect(got.uniques.first { $0.mark == .swordCave(3) }?.done == true)
+        #expect(got.uniques.first { $0.mark == .armos }?.done == true)
+    }
+
     @Test("setUsed sets/clears used on a claimable mark; no-op otherwise (T-056)")
     func setUsed() {
         let grid = OverworldGrid()
@@ -145,6 +165,7 @@ struct SpotSummaryTests {
         #expect(!grid.isUsed(column: 0, row: 0))
         #expect(!OverworldTileMark.dungeon(1).isUsedToggleable)
         #expect(OverworldTileMark.secret(.large).isUsedToggleable)
-        #expect(OverworldTileMark.armos.isUsedToggleable)
+        // Armos is no longer a manual toggle — its dim derives from the model (T-110).
+        #expect(!OverworldTileMark.armos.isUsedToggleable)
     }
 }
