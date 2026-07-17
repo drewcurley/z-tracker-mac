@@ -26,7 +26,7 @@
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
 | [T-072.1](./T-072.1.md) | Fix ⌥-drag circling the first room (defer modified-left to release) | frontend-engineer | T-072 | fix/drag-paint-option-defer | — | docs/reviews/fix-drag-paint-option-defer/final.md |
-| [T-129](./T-129.md) | Zoom fixes — persist across reflow, fix >100% runaway, larger buttons | frontend-engineer | T-127 | fix/zoom-persist-and-runaway | — | docs/reviews/fix-zoom-persist-and-runaway/final.md |
+| | [T-129](./T-129.md) | Zoom fixes — persist across reflow, fix >100% runaway, larger buttons | frontend-engineer | T-127 | fix/zoom-persist-and-runaway | — | docs/reviews/fix-zoom-persist-and-runaway/final.md |
 | [T-128](./T-128.md) | Dungeon map zoom — discrete 60/80/100/120% levels (+ fix stepping bug) | frontend-engineer | T-127 | fix/dungeon-map-zoom-levels | — | docs/reviews/fix-dungeon-map-zoom-levels/final.md |
 | [T-127](./T-127.md) | Scalable dungeon map + trimmed base size so all 3 columns fit | frontend-engineer | T-019.5 | feat/scalable-dungeon-map | — | docs/reviews/feat-scalable-dungeon-map/final.md |
 | [T-126](./T-126.md) | Reclaim vertical space — compact corner pop-out (no header rows) | frontend-engineer | T-124 | fix/compact-breakout-headers | — | docs/reviews/fix-compact-breakout-headers/final.md |

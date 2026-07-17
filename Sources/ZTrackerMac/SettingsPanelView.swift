@@ -11,6 +11,7 @@ import TrackerCore
 struct SettingsPanelView: View {
     var options: TrackerOptions
 
+    @Environment(\.openWindow) private var openWindow
     @State private var showMoreSettings = false
     @State private var showVoicePicker = false
 
@@ -28,6 +29,14 @@ struct SettingsPanelView: View {
                 overworldAndDungeonColumn
                 remindersColumn
                 otherColumn
+            }
+
+            Divider()
+            HStack(spacing: 8) {
+                settingsHeader("Hotkeys")
+                Button("Edit hotkeys…") { openWindow(id: HotkeyWindowID) }
+                Text("Bind keys per context; import/export the Windows HotKeys.txt.")
+                    .font(.caption).foregroundStyle(.secondary)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
