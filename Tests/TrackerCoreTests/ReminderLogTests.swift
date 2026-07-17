@@ -28,4 +28,18 @@ struct ReminderLogTests {
         log.clear()
         #expect(log.entries.isEmpty)
     }
+
+    @Test("stores the fire-time and icons (T-122)")
+    func timestampAndIcons() {
+        let log = ReminderLog()
+        log.append("You can revisit dungeon 3", elapsedSeconds: 1863,
+                   icons: [.sword(level: 3), .rightArrow, .dungeon(3)])
+        let e = log.entries.first
+        #expect(e?.elapsedSeconds == 1863)
+        #expect(e?.icons == [.sword(level: 3), .rightArrow, .dungeon(3)])
+        // Defaults keep older call sites working.
+        log.append("plain")
+        #expect(log.entries.first?.elapsedSeconds == 0)
+        #expect(log.entries.first?.icons.isEmpty == true)
+    }
 }

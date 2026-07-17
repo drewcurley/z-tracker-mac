@@ -15,6 +15,10 @@ struct MainTrackerPlaceholderView: View {
     /// The run timer (T-035.4), owned at app level (T-101) so it can also show in a
     /// duplicate window.
     var timer: TrackerTimer
+    /// The reminder controller (toasts + log), hoisted to app level (T-122) so the
+    /// broken-out Log window shares it. Declared before `onResetApp` to keep the
+    /// memberwise-init argument order matching the call site.
+    var reminders: ReminderController
     /// "Reset App" — discard the run and return to the startup screen (T-046),
     /// offered from the Info group's reset buttons (T-048).
     var onResetApp: () -> Void = {}
@@ -22,17 +26,12 @@ struct MainTrackerPlaceholderView: View {
     @Environment(\.openWindow) private var openWindow
     @Environment(\.dismissWindow) private var dismissWindow
 
-    /// Drives + presents the reminder engine's announcements (T-018.3).
-    @State private var reminders = ReminderController()
-
     /// The top-section map-overlay toggles (T-035.2), shared between the item-
     /// grid icons (hover/click) and the overworld map (rendering).
     @State private var overlays = OverworldOverlayState()
 
     /// Timeline section collapsed state (T-098) — shown by default.
     @State private var timelineCollapsed = false
-    /// The reminder-log popover (T-102).
-    @State private var showingReminderLog = false
 
     /// The live overworld map-state summary (T-015.3) feeding the map's true
     /// GYR highlight. Recomputed here from the observable model each time the
@@ -98,15 +97,13 @@ struct MainTrackerPlaceholderView: View {
                     Text(String(format: "Finish %d:%02d", f / 60, f % 60))
                         .font(.system(size: 10, weight: .bold)).foregroundStyle(.green)
                 }
-                // Reminder log (T-102): past reminders / beep explanations.
-                Button { showingReminderLog = true } label: {
+                // Reminder log (T-102) — opens in its own window (T-122) rather than
+                // a popover, so it can stay open beside the tracker.
+                Button { openWindow(id: LogWindowID) } label: {
                     Label("Log", systemImage: "list.bullet.rectangle").font(.system(size: 10))
                 }
                 .buttonStyle(.plain)
-                .help("Show the log of reminders that have fired")
-                .popover(isPresented: $showingReminderLog, arrowEdge: .bottom) {
-                    ReminderLogView(log: reminders.log)
-                }
+                .help("Open the reminder log in its own window")
             }
             .foregroundStyle(.secondary)
             if breakout.timelinePoppedOut {
@@ -237,7 +234,8 @@ struct MainTrackerPlaceholderView: View {
                         // destructive mark change, in case it was accidental.
                         if let a = OverworldOverwriteReminder.announcement(
                             old: old, new: new, coordLabel: OverworldCoords.label(column: c, row: r)) {
-                            reminders.handle([a], options: options)
+                            reminders.handle([a], options: options,
+                                             elapsedSeconds: timer.hasStarted ? Int(timer.mainElapsed(asOf: Date())) : 0)
                         }
                     },
                     onPlaceDungeon: { number, c, r in
@@ -307,7 +305,12 @@ struct MainTrackerPlaceholderView: View {
                     hideDungeonNumbers: model.hideDungeonNumbers,
                     // Slot-indexed assigned label chars, for HDN completed-dungeon
                     // text ("Dungeon A is complete"), T-112.
-                    assignedLabels: model.dungeonTracker.dungeons.prefix(8).map(\.labelChar))
+                    assignedLabels: model.dungeonTracker.dungeons.prefix(8).map(\.labelChar),
+                    // Fire-time context for the log's timestamp + icons (T-122).
+                    elapsedSeconds: timer.hasStarted ? Int(timer.mainElapsed(asOf: Date())) : 0,
+                    swordLevel: model.playerComputedStateSummary.swordLevel,
+                    ringLevel: model.playerComputedStateSummary.ringLevel,
+                    coastItemId: model.dungeonTracker.ladderBox.cellCurrent)
                 // Feed the Timeline (T-098) with the current run time, once the
                 // run has started (before "Go", elapsed is 0 and nothing's timed).
                 if timer.hasStarted {
@@ -321,5 +324,5 @@ struct MainTrackerPlaceholderView: View {
 }
 
 #Preview {
-    MainTrackerPlaceholderView(model: TrackerModel(quest: .first, heartShuffle: true), options: TrackerOptions(), breakout: BreakoutWindows(), timer: TrackerTimer())
+    MainTrackerPlaceholderView(model: TrackerModel(quest: .first, heartShuffle: true), options: TrackerOptions(), breakout: BreakoutWindows(), timer: TrackerTimer(), reminders: ReminderController())
 }

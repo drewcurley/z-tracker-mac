@@ -32,7 +32,9 @@ final class ReminderController {
     /// Speak/show each announcement whose category is enabled, and log it. Voice
     /// reminders go to the shared `SpeechEngine`, which serializes them (no overlap).
     func handle(_ announcements: [ReminderAnnouncement], options: TrackerOptions,
-                hideDungeonNumbers: Bool = false, assignedLabels: [Character] = []) {
+                hideDungeonNumbers: Bool = false, assignedLabels: [Character] = [],
+                elapsedSeconds: Int = 0, swordLevel: Int = 0, ringLevel: Int = 0,
+                coastItemId: Int? = nil) {
         for announcement in announcements {
             let text = announcement.displayText(hideDungeonNumbers: hideDungeonNumbers,
                                                 assignedLabels: assignedLabels)
@@ -44,8 +46,13 @@ final class ReminderController {
                                    volume: Float(options.reminderVolume) / 100,
                                    preferredVoiceIdentifier: options.preferredVoiceIdentifier)
             }
-            // Log any reminder the player was actually surfaced (shown or spoken).
-            if visual || voice { log.append(text) }
+            // Log any reminder the player was actually surfaced (shown or spoken),
+            // with its fire-time and descriptive icons (T-122).
+            if visual || voice {
+                let icons = ReminderIcons.icons(for: announcement, swordLevel: swordLevel,
+                                                ringLevel: ringLevel, coastItemId: coastItemId)
+                log.append(text, elapsedSeconds: elapsedSeconds, icons: icons)
+            }
         }
     }
 
