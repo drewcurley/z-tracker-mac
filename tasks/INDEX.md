@@ -26,6 +26,7 @@
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
 | [T-072.1](./T-072.1.md) | Fix ⌥-drag circling the first room (defer modified-left to release) | frontend-engineer | T-072 | fix/drag-paint-option-defer | — | docs/reviews/fix-drag-paint-option-defer/final.md |
+| [T-128](./T-128.md) | Dungeon map zoom — discrete 60/80/100/120% levels (+ fix stepping bug) | frontend-engineer | T-127 | fix/dungeon-map-zoom-levels | — | docs/reviews/fix-dungeon-map-zoom-levels/final.md |
 | [T-127](./T-127.md) | Scalable dungeon map + trimmed base size so all 3 columns fit | frontend-engineer | T-019.5 | feat/scalable-dungeon-map | — | docs/reviews/feat-scalable-dungeon-map/final.md |
 | [T-126](./T-126.md) | Reclaim vertical space — compact corner pop-out (no header rows) | frontend-engineer | T-124 | fix/compact-breakout-headers | — | docs/reviews/fix-compact-breakout-headers/final.md |
 | [T-125](./T-125.md) | Log — inline icons, dungeon-number tile, and font zoom | frontend-engineer | T-122 | fix/log-inline-icons-zoom | — | docs/reviews/fix-log-inline-icons-zoom/final.md |
