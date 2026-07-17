@@ -8,6 +8,9 @@ let MainWindowID = "z-main"
 /// The id of the detachable "Progress" HUD window (T-035.10).
 let ProgressHUDWindowID = "z-progress-hud"
 
+/// The id of the broken-out Timeline window (T-100).
+let TimelineWindowID = "z-timeline"
+
 /// The id of the mid-game Settings window (T-091) — the same preference panel as
 /// the startup screen, reachable during play via a gear button or ⌘,.
 let SettingsWindowID = "z-settings"
@@ -42,6 +45,8 @@ struct ZTrackerMacApp: App {
     // Reminder settings (volume, per-category voice/visual, preferred voice)
     // persist across launches (T-004.1); other options are session-only for now.
     @State private var options = TrackerOptions.withPersistence()
+    /// Which major areas are broken out into their own windows (T-100).
+    @State private var breakout = BreakoutWindows()
 
     var body: some Scene {
         // A single-instance `Window` (not `WindowGroup`) — the tracker is one
@@ -49,7 +54,7 @@ struct ZTrackerMacApp: App {
         // trackers as tabs / new windows (⌘N), which only share the game state and
         // drift on view-local state; that was an unintended default, not a feature.
         Window("Z-Tracker", id: MainWindowID) {
-            ContentView(model: model, options: options, onResetApp: resetApp)
+            ContentView(model: model, options: options, breakout: breakout, onResetApp: resetApp)
         }
         .commands {
             // ⌘, opens the mid-game Settings window (T-091) instead of a native
@@ -65,6 +70,17 @@ struct ZTrackerMacApp: App {
             SettingsWindowView(options: options)
         }
         .defaultSize(width: 460, height: 660)
+
+        // The broken-out Timeline window (T-100) — opened by the timeline section's
+        // pop-out button; its appear/disappear drives the inline placeholder.
+        Window("Timeline", id: TimelineWindowID) {
+            GameTimelineView(timeline: model.timeline)
+                .padding(10)
+                .frame(minWidth: 360, minHeight: 140)
+                .onAppear { breakout.timelinePoppedOut = true }
+                .onDisappear { breakout.timelinePoppedOut = false }
+        }
+        .defaultSize(width: 720, height: 200)
 
         // The break-out Progress HUD (T-035.10) — opened on demand by the
         // "Progress" toggle (a secondary WindowGroup doesn't open at launch).

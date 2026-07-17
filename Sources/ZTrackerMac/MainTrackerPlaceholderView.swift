@@ -10,9 +10,14 @@ import TrackerCore
 struct MainTrackerPlaceholderView: View {
     var model: TrackerModel
     var options: TrackerOptions
+    /// Which major areas are broken out into their own windows (T-100).
+    var breakout: BreakoutWindows
     /// "Reset App" — discard the run and return to the startup screen (T-046),
     /// offered from the Info group's reset buttons (T-048).
     var onResetApp: () -> Void = {}
+
+    @Environment(\.openWindow) private var openWindow
+    @Environment(\.dismissWindow) private var dismissWindow
 
     /// Drives + presents the reminder engine's announcements (T-018.3).
     @State private var reminders = ReminderController()
@@ -63,7 +68,8 @@ struct MainTrackerPlaceholderView: View {
     /// The dungeon band (T-019.5): the room-map grid + the blockers/notes column.
     /// Side-by-side (map left) when there's room; the column wraps below the map
     /// when the window narrows (`ViewThatFits`, per the responsive-layout ADR).
-    /// The Timeline section (T-098): a collapsible header + the item strip.
+    /// The Timeline section (T-098): a collapsible header + the item strip, with a
+    /// pop-out-into-a-window button (T-100).
     private var timelineSection: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 6) {
@@ -75,15 +81,31 @@ struct MainTrackerPlaceholderView: View {
                     Text("TIMELINE").font(.system(size: 11, weight: .semibold))
                 }
                 .buttonStyle(.plain)
+                .disabled(breakout.timelinePoppedOut)
                 .help(timelineCollapsed ? "Show the timeline" : "Collapse the timeline")
                 Spacer()
                 if let f = model.timeline.finishSeconds {
                     Text(String(format: "Finish %d:%02d", f / 60, f % 60))
                         .font(.system(size: 10, weight: .bold)).foregroundStyle(.green)
                 }
+                // Pop-out into its own window (T-100).
+                Button { openWindow(id: TimelineWindowID) } label: {
+                    Image(systemName: "rectangle.portrait.and.arrow.right").font(.system(size: 11))
+                }
+                .buttonStyle(.plain)
+                .disabled(breakout.timelinePoppedOut)
+                .help("Open the timeline in its own window")
             }
             .foregroundStyle(.secondary)
-            if !timelineCollapsed {
+            if breakout.timelinePoppedOut {
+                HStack(spacing: 8) {
+                    Text("Timeline is in a separate window.")
+                        .font(.system(size: 11)).foregroundStyle(.secondary)
+                    Button("Bring back") { dismissWindow(id: TimelineWindowID) }
+                        .font(.system(size: 11)).controlSize(.small)
+                }
+                .padding(.vertical, 8)
+            } else if !timelineCollapsed {
                 GameTimelineView(timeline: model.timeline)
                     .padding(6)
                     .background(RoundedRectangle(cornerRadius: 6).fill(.black.opacity(0.25)))
@@ -253,5 +275,5 @@ struct MainTrackerPlaceholderView: View {
 }
 
 #Preview {
-    MainTrackerPlaceholderView(model: TrackerModel(quest: .first, heartShuffle: true), options: TrackerOptions())
+    MainTrackerPlaceholderView(model: TrackerModel(quest: .first, heartShuffle: true), options: TrackerOptions(), breakout: BreakoutWindows())
 }
