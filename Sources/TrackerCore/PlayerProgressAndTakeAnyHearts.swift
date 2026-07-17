@@ -34,7 +34,13 @@ public enum TakeAnyHeartState: Int, Sendable, CaseIterable {
 /// (`SaveAndLoad.fs:56-92`).
 @Observable
 public final class PlayerProgressAndTakeAnyHearts {
-    public var takeAnyHearts: [TakeAnyHeartState]
+    /// Taking the candle from a take-any cave means you now hold the blue candle,
+    /// so auto-activate it in the items area (T-103). Covers every write path
+    /// (overworld tile, Items-group heart box) since they all mutate this array.
+    /// Only turns it on — a candle held from elsewhere isn't cleared.
+    public var takeAnyHearts: [TakeAnyHeartState] {
+        didSet { if takeAnyHearts.contains(.takenCandle) { hasBlueCandle = true } }
+    }
 
     public var hasBoomBook: Bool
     public var hasWoodSword: Bool
