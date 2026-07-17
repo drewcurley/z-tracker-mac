@@ -108,42 +108,47 @@ struct MainTrackerPlaceholderView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// The dungeon band (map + blockers + notes), with a pop-out-into-its-own-window
-    /// control (T-123); shows a placeholder while it's in that window.
+    /// The dungeon band (map + blockers + notes) with a compact corner pop-out
+    /// button (T-126 — the old header row was pure vertical cost); a slim placeholder
+    /// while it's in its own window.
     private var dungeonBandSection: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            breakoutHeader(
-                "DUNGEON / BLOCKERS / NOTES", poppedOut: breakout.dungeonBandPoppedOut,
-                windowID: DungeonBandWindowID, area: "Dungeon area")
-            if !breakout.dungeonBandPoppedOut {
+        Group {
+            if breakout.dungeonBandPoppedOut {
+                slimBreakoutPlaceholder("Dungeon area", windowID: DungeonBandWindowID)
+            } else {
                 DungeonBandView(model: model, options: options)
+                    .overlay(alignment: .topTrailing) { cornerPopOutButton(windowID: DungeonBandWindowID) }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// A small header row shared by the break-out sections (T-123): a label + a
-    /// pop-out button, replaced by an "in a separate window / Bring back" line while
-    /// popped out.
-    @ViewBuilder
-    private func breakoutHeader(_ title: String, poppedOut: Bool, windowID: String, area: String) -> some View {
-        HStack(spacing: 6) {
-            Text(title).font(.system(size: 11, weight: .semibold))
-            Button { openWindow(id: windowID) } label: {
-                Image(systemName: "rectangle.portrait.and.arrow.right").font(.system(size: 11))
-            }
-            .buttonStyle(.plain)
-            .disabled(poppedOut)
-            .help("Open in its own window")
-            Spacer()
-            if poppedOut {
-                Text("\(area) is in a separate window.")
-                    .font(.system(size: 11))
-                Button("Bring back") { dismissWindow(id: windowID) }
-                    .font(.system(size: 11)).controlSize(.small)
-            }
+    /// A small pop-out button tucked into a section's top-trailing corner (T-126),
+    /// so a break-out area costs no dedicated header row.
+    private func cornerPopOutButton(windowID: String) -> some View {
+        Button { openWindow(id: windowID) } label: {
+            Image(systemName: "rectangle.portrait.and.arrow.right")
+                .font(.system(size: 10))
+                .padding(3)
+                .background(.black.opacity(0.55), in: RoundedRectangle(cornerRadius: 4))
         }
+        .buttonStyle(.plain)
         .foregroundStyle(.secondary)
+        .help("Open in its own window")
+        .padding(2)
+    }
+
+    /// The one-line "… is in a separate window / Bring back" shown in place of a
+    /// popped-out section (T-126).
+    private func slimBreakoutPlaceholder(_ area: String, windowID: String) -> some View {
+        HStack(spacing: 8) {
+            Text("\(area) is in a separate window.")
+                .font(.system(size: 11)).foregroundStyle(.secondary)
+            Button("Bring back") { dismissWindow(id: windowID) }
+                .font(.system(size: 11)).controlSize(.small)
+            Spacer()
+        }
+        .padding(.vertical, 4)
     }
 
     var body: some View {
@@ -185,16 +190,16 @@ struct MainTrackerPlaceholderView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-                // The overworld map (T-006), with a pop-out-into-its-own-window
-                // control (T-124). ContentView only shows this view once
-                // model.quest is set. The map stretches to the full window width.
-                VStack(alignment: .leading, spacing: 6) {
-                    breakoutHeader(
-                        "OVERWORLD", poppedOut: breakout.overworldPoppedOut,
-                        windowID: OverworldWindowID, area: "Overworld")
-                    if !breakout.overworldPoppedOut {
+                // The overworld map (T-006), with a compact corner pop-out (T-126).
+                // ContentView only shows this view once model.quest is set. The map
+                // stretches to the full window width.
+                Group {
+                    if breakout.overworldPoppedOut {
+                        slimBreakoutPlaceholder("Overworld", windowID: OverworldWindowID)
+                    } else {
                         OverworldSectionView(model: model, options: options, overlays: overlays,
                                              timer: timer, reminders: reminders)
+                            .overlay(alignment: .topTrailing) { cornerPopOutButton(windowID: OverworldWindowID) }
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
