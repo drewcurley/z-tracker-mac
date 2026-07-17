@@ -302,7 +302,8 @@ struct MainTrackerPlaceholderView: View {
                 // Feed the Timeline (T-098) with the current run time, once the
                 // run has started (before "Go", elapsed is 0 and nothing's timed).
                 if timer.hasStarted {
-                    model.recordTimeline(elapsedSeconds: Int(timer.mainElapsed(asOf: Date())))
+                    model.recordTimeline(elapsedSeconds: Int(timer.mainElapsed(asOf: Date())),
+                                         boardInsteadOfLevel: options.boardInsteadOfLevel)
                 }
                 try? await Task.sleep(for: .seconds(1))
             }

@@ -165,7 +165,7 @@ public final class TrackerModel {
     /// Fold the current state into the Timeline (T-098) at `elapsedSeconds` of run
     /// time — stamps newly-acquired items, drops un-marked ones, and captures the
     /// finish snapshot when Zelda is rescued. Called once a second by the poll loop.
-    public func recordTimeline(elapsedSeconds: Int) {
+    public func recordTimeline(elapsedSeconds: Int, boardInsteadOfLevel: Bool = false) {
         let instance = OverworldInstance(quest: quest ?? .first)
         let mapState = MapStateSummary.compute(
             grid: overworldGrid, instance: instance, dungeonTracker: dungeonTracker,
@@ -175,8 +175,12 @@ public final class TrackerModel {
             playerState: playerComputedStateSummary, progress: playerProgress,
             startingItems: startingItemsAndExtras, dungeonTracker: dungeonTracker,
             isWSMSReplacedByBU: isWSMSReplacedByBU, isCurrentlyBook: isCurrentlyBook)
+        let locations = TimelineEvents.locations(
+            dungeonTracker: dungeonTracker, boardInsteadOfLevel: boardInsteadOfLevel,
+            hideDungeonNumbers: hideDungeonNumbers)
         timeline.record(elapsedSeconds: elapsedSeconds, acquired: acquired,
-                        owRemaining: mapState.owSpotsRemain, finished: playerProgress.hasRescuedZelda)
+                        owRemaining: mapState.owSpotsRemain, finished: playerProgress.hasRescuedZelda,
+                        locations: locations)
     }
 
     public func pollReminders(bookForHelpfulHints: Bool = false) -> [ReminderAnnouncement] {
