@@ -19,9 +19,15 @@ struct OverworldClaimCorrectnessTests {
         #expect(OverworldTileLimits.maxUses(.potionShop, quest: .second) == 9)
         #expect(OverworldTileLimits.maxUses(.moneyMakingGame, quest: .first) == 5)
         #expect(OverworldTileLimits.maxUses(.doorRepair, quest: .second) == 10)
-        // Unbounded.
+        // Sized secrets are capped at the quest totals (T-108): 1Q 3/7/4, 2Q 1/7/6.
+        #expect(OverworldTileLimits.maxUses(.secret(.large), quest: .first) == 3)
+        #expect(OverworldTileLimits.maxUses(.secret(.small), quest: .first) == 4)
+        #expect(OverworldTileLimits.maxUses(.secret(.medium), quest: .first) == 7)
+        #expect(OverworldTileLimits.maxUses(.secret(.large), quest: .second) == 1)
+        #expect(OverworldTileLimits.maxUses(.secret(.small), quest: .second) == 6)
+        // Unbounded: shops, unsized (unknown) secret.
         #expect(OverworldTileLimits.maxUses(.shop(.bomb), quest: .first) == OverworldTileLimits.unlimited)
-        #expect(OverworldTileLimits.maxUses(.secret(.large), quest: .first) == OverworldTileLimits.unlimited)
+        #expect(OverworldTileLimits.maxUses(.secret(.unknown), quest: .first) == OverworldTileLimits.unlimited)
     }
 
     @Test("unknown secret is never claimable (always unclaimed)")

@@ -551,6 +551,7 @@ struct OverworldMapView: View {
         Menu("Secret") {
             ForEach(SecretSize.allCases, id: \.self) { size in
                 Button(size.displayName) { applyMark(.secret(size), column: column, row: row) }
+                    .disabled(isExhausted(.secret(size), column: column, row: row, counts: counts))
             }
         }
         // Take-any is a submenu (Unclaimed / Potion / Blue candle / Heart since
