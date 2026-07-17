@@ -36,6 +36,10 @@ struct OverworldMapView: View {
     /// Whether the Armos item has been recorded (gates the late-game open-caves
     /// overlay); supplied by the parent from `dungeonTracker.armosBox`.
     var armosClaimed: Bool = false
+    /// The dungeon tracker + icon options (T-106): for the in-place item prompt
+    /// that pops up when you mark an Armos or the White-Sword-Item cave.
+    var dungeonTracker: DungeonTrackerInstance
+    var iconOptions: ItemIconOptions = ItemIconOptions()
 
     /// Whether the overworld is mirrored East↔West (T-047). Flips the whole map
     /// horizontally (`scaleEffect(x: -1)`), so a tap on the visually-left screen
@@ -130,6 +134,10 @@ struct OverworldMapView: View {
 
     @State private var hoveredVertex: OverworldVertex?
     @State private var routeHighlight: OverworldRouteHighlight?
+    /// The tile awaiting an in-place item pick (Armos / White-Sword cave), T-106.
+    @State private var itemPrompt: ItemPromptTarget?
+
+    struct ItemPromptTarget: Equatable { let column: Int; let row: Int; let isArmos: Bool }
 
     /// Ladder and raft are live (`playerState.haveLadder`/`.haveRaft`, T-014)
     /// and any-roads are live (T-015.5). The mirror-overworld toggle
@@ -283,6 +291,14 @@ struct OverworldMapView: View {
                                     }
                                     .onTapGesture { handleLeftClick(column: column, row: row) }
                                     .contextMenu { markMenu(column: column, row: row) }
+                                    // In-place item prompt for Armos / White-Sword cave (T-106).
+                                    .popover(isPresented: itemPromptBinding(column: column, row: row), arrowEdge: .trailing) {
+                                        if let p = itemPrompt {
+                                            BoxItemPicker(box: p.isArmos ? dungeonTracker.armosBox : dungeonTracker.sword2Box,
+                                                          instance: dungeonTracker, iconOptions: iconOptions) { itemPrompt = nil }
+                                                .padding(4)
+                                        }
+                                    }
                                     .onContinuousHover { phase in
                                         handleHover(column: column, row: row, phase: phase, tileWidth: tileWidth, tileHeight: tileHeight)
                                     }
@@ -391,6 +407,14 @@ struct OverworldMapView: View {
         }
     }
 
+    /// Per-cell binding for the in-place item prompt popover (T-106).
+    private func itemPromptBinding(column: Int, row: Int) -> Binding<Bool> {
+        Binding(
+            get: { itemPrompt?.column == column && itemPrompt?.row == row },
+            set: { if !$0 { itemPrompt = nil } }
+        )
+    }
+
     /// Set a tile's mark from the picker. A claimable mark (secret / take-any /
     /// armos / letter / hint shop) defaults to **used** — you usually mark one
     /// right after collecting it; a left-click flips it back to unused (T-056).
@@ -405,6 +429,16 @@ struct OverworldMapView: View {
         // Overworld-overwrite reminder (T-096): warn on a destructive change of a
         // real mark, in case it was accidental.
         onOverwrite(oldMark, mark, column, row)
+        // In-place item prompt (T-106): marking an Armos or the White-Sword-Item
+        // cave immediately asks what item was there (reference behavior). A slight
+        // delay lets the context menu finish dismissing before the popover opens.
+        let promptTarget: ItemPromptTarget?
+        if mark == .armos { promptTarget = .init(column: column, row: row, isArmos: true) }
+        else if case .swordCave(2) = mark { promptTarget = .init(column: column, row: row, isArmos: false) }
+        else { promptTarget = nil }
+        if let promptTarget {
+            DispatchQueue.main.async { itemPrompt = promptTarget }
+        }
         if mark.isUsedToggleable {
             grid.setUsed(true, column: column, row: row)
         }
@@ -1044,7 +1078,8 @@ private enum OverworldRouteGeometry {
             drawRoutes: true,
             routesCanScreenScroll: false,
             mirrorOverworld: false
-        )
+        ),
+        dungeonTracker: DungeonTrackerInstance()
     )
     .frame(width: 800)
     .padding()
