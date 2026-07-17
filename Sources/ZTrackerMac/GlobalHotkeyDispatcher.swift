@@ -61,7 +61,11 @@ final class GlobalHotkeyDispatcher {
         case "Global_ToggleGannon":       progress.hasDefeatedGanon.toggle()
         case "Global_ToggleZelda":        progress.hasRescuedZelda.toggle()
         case "Global_StartTimer":         timer.start()
-        case "Global_GroundhogReset":     model.resetForGroundhogOrRouters()
+        case "Global_GroundhogReset":
+            // Match the "Reset (keep maps)" button exactly, minus its confirm dialog:
+            // reset the inventory *and* restart the lap timer (T-132.1).
+            model.resetForGroundhogOrRouters()
+            timer.startLap()
         default:
             // Cursor / dungeon-tab / click / scroll globals are later phases — a
             // recognized-but-unimplemented Global key is left for the app (not consumed).
