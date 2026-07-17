@@ -44,6 +44,22 @@ struct TimelineModelTests {
         #expect(m.acquiredAt[.recorder] == 260)
     }
 
+    @Test("OW-remaining series samples only on change; extends latestSeconds (T-099)")
+    func owSeries() {
+        let m = TimelineModel()
+        m.record(elapsedSeconds: 0, acquired: [], owRemaining: 100, finished: false)
+        m.record(elapsedSeconds: 30, acquired: [], owRemaining: 100, finished: false)  // no change
+        m.record(elapsedSeconds: 60, acquired: [], owRemaining: 98, finished: false)   // change
+        m.record(elapsedSeconds: 90, acquired: [], owRemaining: 98, finished: false)   // no change
+        m.record(elapsedSeconds: 120, acquired: [], owRemaining: 95, finished: false)  // change
+        #expect(m.owRemainingSamples == [
+            .init(seconds: 0, remaining: 100),
+            .init(seconds: 60, remaining: 98),
+            .init(seconds: 120, remaining: 95),
+        ])
+        #expect(m.latestSeconds == 120)
+    }
+
     @Test("finish snapshot captured on finished, cleared when un-finished")
     func finishSnapshot() {
         let m = TimelineModel()
