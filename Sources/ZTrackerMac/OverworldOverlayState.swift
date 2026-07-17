@@ -42,14 +42,18 @@ final class OverworldOverlayState {
 /// Pure per-tile predicates for the map overlays — separated from the views so
 /// the highlight logic is unit-testable.
 enum OverworldOverlays {
-    /// A money spot (`showLocatorRupees`, `WPFUI.fs:1467-1483`): the Money
-    /// Making Game, an Unknown Secret, or a large/medium/small secret with a
-    /// recorded rupee value (`extraData != 0`). (Priced secrets can't be set in
-    /// the UI yet, so today this resolves to MMG + Unknown Secret.)
-    static func isMoneyTile(_ mark: OverworldTileMark, secretValue: Int) -> Bool {
+    /// A money spot the locator should highlight (`showLocatorRupees`,
+    /// `WPFUI.fs:1467-1483`): the Money Making Game and an Unknown Secret always,
+    /// plus a large/medium/small secret. The reference highlights sized secrets
+    /// that carry a recorded rupee value; this port has no per-secret pricing, so
+    /// it instead highlights any sized money secret you've **marked but not yet
+    /// collected** (`!secretCollected`) — the ones still worth walking to for
+    /// money (T-111, user request). A collected (used) secret is spent, so it's
+    /// dropped from the highlight.
+    static func isMoneyTile(_ mark: OverworldTileMark, secretCollected: Bool) -> Bool {
         switch mark {
         case .moneyMakingGame, .secret(.unknown): return true
-        case .secret(.large), .secret(.medium), .secret(.small): return secretValue != 0
+        case .secret(.large), .secret(.medium), .secret(.small): return !secretCollected
         default: return false
         }
     }

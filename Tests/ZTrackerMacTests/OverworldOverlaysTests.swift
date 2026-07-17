@@ -44,16 +44,20 @@ struct OverworldOverlaysTests {
         #expect(!s.isActive(.hideMarks))
     }
 
-    @Test("money tile: MMG + Unknown Secret always; sized secrets only when priced")
+    @Test("money tile: MMG + Unknown Secret always; sized secrets while not collected (T-111)")
     func moneyTile() {
-        #expect(OverworldOverlays.isMoneyTile(.moneyMakingGame, secretValue: 0))
-        #expect(OverworldOverlays.isMoneyTile(.secret(.unknown), secretValue: 0))
-        // A sized secret is money only once it has a recorded value.
-        #expect(!OverworldOverlays.isMoneyTile(.secret(.large), secretValue: 0))
-        #expect(OverworldOverlays.isMoneyTile(.secret(.large), secretValue: 5))
+        #expect(OverworldOverlays.isMoneyTile(.moneyMakingGame, secretCollected: false))
+        #expect(OverworldOverlays.isMoneyTile(.moneyMakingGame, secretCollected: true))
+        #expect(OverworldOverlays.isMoneyTile(.secret(.unknown), secretCollected: false))
+        // A marked sized secret is money while it hasn't been collected...
+        #expect(OverworldOverlays.isMoneyTile(.secret(.large), secretCollected: false))
+        #expect(OverworldOverlays.isMoneyTile(.secret(.medium), secretCollected: false))
+        #expect(OverworldOverlays.isMoneyTile(.secret(.small), secretCollected: false))
+        // ...and drops out once collected (spent).
+        #expect(!OverworldOverlays.isMoneyTile(.secret(.large), secretCollected: true))
         // Non-money marks never highlight.
-        #expect(!OverworldOverlays.isMoneyTile(.dungeon(3), secretValue: 9))
-        #expect(!OverworldOverlays.isMoneyTile(.unmarked, secretValue: 9))
+        #expect(!OverworldOverlays.isMoneyTile(.dungeon(3), secretCollected: false))
+        #expect(!OverworldOverlays.isMoneyTile(.unmarked, secretCollected: false))
     }
 
     @Test("open-cave early game: unmarked nothingable screens")
