@@ -19,12 +19,13 @@ struct DungeonMapView: View {
     /// The GRAB cut-and-paste tool's transient state (T-083).
     @State private var grab = DungeonGrabController()
     /// Room-grid zoom (T-127) — shrinks the map to reclaim vertical space; the tab
-    /// bar and controls stay full size. Session-only.
+    /// bar and controls stay full size. Session-only. Discrete levels 60/80/100/120%.
     @State private var mapScale: CGFloat = 1.0
-    private static let minScale: CGFloat = 0.6
-    private static let maxScale: CGFloat = 1.4
-    private func zoomMap(_ by: CGFloat) {
-        mapScale = min(Self.maxScale, max(Self.minScale, (mapScale + by * 10).rounded() / 10))
+    private static let zoomLevels: [CGFloat] = [0.6, 0.8, 1.0, 1.2]
+    /// Step to the adjacent zoom level (dir −1/+1), clamped to the ends.
+    private func stepZoom(_ dir: Int) {
+        let i = Self.zoomLevels.firstIndex(of: mapScale) ?? Self.zoomLevels.firstIndex(of: 1.0)!
+        mapScale = Self.zoomLevels[min(Self.zoomLevels.count - 1, max(0, i + dir))]
     }
     /// The info strip's fixed width (old-men count + reserved dungeon-items box).
     private static let infoStripWidth: CGFloat = 72
@@ -113,13 +114,13 @@ struct DungeonMapView: View {
     /// vertical space; overlaid in the card's top-trailing corner at full size.
     private var zoomControl: some View {
         HStack(spacing: 2) {
-            Button { zoomMap(-0.1) } label: { Image(systemName: "minus.magnifyingglass") }
-                .disabled(mapScale <= Self.minScale)
+            Button { stepZoom(-1) } label: { Image(systemName: "minus.magnifyingglass") }
+                .disabled(mapScale <= Self.zoomLevels.first!)
             if mapScale != 1 {
                 Button { mapScale = 1 } label: { Text("\(Int(mapScale * 100))%").font(.system(size: 9, design: .monospaced)) }
             }
-            Button { zoomMap(0.1) } label: { Image(systemName: "plus.magnifyingglass") }
-                .disabled(mapScale >= Self.maxScale)
+            Button { stepZoom(1) } label: { Image(systemName: "plus.magnifyingglass") }
+                .disabled(mapScale >= Self.zoomLevels.last!)
         }
         .font(.system(size: 10))
         .buttonStyle(.plain)
