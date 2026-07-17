@@ -26,6 +26,7 @@
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
 | [T-072.1](./T-072.1.md) | Fix ⌥-drag circling the first room (defer modified-left to release) | frontend-engineer | T-072 | fix/drag-paint-option-defer | — | docs/reviews/fix-drag-paint-option-defer/final.md |
+| [T-123](./T-123.md) | Break-out window for the dungeon band (map + blockers + notes) | frontend-engineer | T-100 | feat/dungeon-band-window | — | docs/reviews/feat-dungeon-band-window/final.md |
 | [T-122](./T-122.md) | Reminder log as a breakout window with timestamps + icons | frontend-engineer | T-102 | feat/reminder-log-window-icons | — | docs/reviews/feat-reminder-log-window-icons/final.md |
 | [T-121](./T-121.md) | Move the timeline pop-out button next to the TIMELINE label | frontend-engineer | T-100 | fix/timeline-popout-button-placement | — | docs/reviews/fix-timeline-popout-button-placement/final.md |
 | [T-120](./T-120.md) | Enlarge the dungeon triforce click target | frontend-engineer | T-019.5 | fix/triforce-hitbox | — | docs/reviews/fix-triforce-hitbox/final.md |

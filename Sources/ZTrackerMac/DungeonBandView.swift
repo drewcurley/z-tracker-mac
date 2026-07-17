@@ -1,0 +1,51 @@
+import SwiftUI
+import TrackerCore
+
+/// The dungeon band (T-019+): the per-dungeon room-map grid + the blockers/notes
+/// column. Extracted into its own view (T-123) so it can render both inline and in
+/// a break-out window. Side-by-side (map left) when there's room; the column wraps
+/// below the map when narrow (`ViewThatFits`, per the responsive-layout ADR).
+struct DungeonBandView: View {
+    var model: TrackerModel
+    var options: TrackerOptions
+
+    var body: some View {
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .top, spacing: 12) {
+                dungeonMapGroup
+                blockersNotesColumn
+                    .frame(maxHeight: .infinity)   // Notes fills the map's height
+            }
+            VStack(alignment: .leading, spacing: 12) {
+                dungeonMapGroup
+                blockersNotesColumn
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private var dungeonMapGroup: some View {
+        TopSectionGroup(title: "Dungeon Map") {
+            DungeonMapView(model: model, options: options)
+        }
+    }
+
+    /// Blockers over Notes; both fill the 390-wide column so their edges align.
+    private var blockersNotesColumn: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            TopSectionGroup(title: "Blockers") {
+                BlockersView(model: model)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            TopSectionGroup(title: "Notes") {
+                NotesView(model: model)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            }
+            .frame(maxHeight: .infinity)
+        }
+        // Was a fixed 390; now grows to absorb window width the (capped) map
+        // can't use, so a wide window gives Notes room instead of dead space.
+        .frame(minWidth: 390, maxWidth: .infinity)
+    }
+}

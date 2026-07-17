@@ -123,44 +123,42 @@ struct MainTrackerPlaceholderView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private var dungeonBand: some View {
-        ViewThatFits(in: .horizontal) {
-            HStack(alignment: .top, spacing: 12) {
-                dungeonMapGroup
-                blockersNotesColumn
-                    .frame(maxHeight: .infinity)   // Notes fills the map's height
-            }
-            VStack(alignment: .leading, spacing: 12) {
-                dungeonMapGroup
-                blockersNotesColumn
+    /// The dungeon band (map + blockers + notes), with a pop-out-into-its-own-window
+    /// control (T-123); shows a placeholder while it's in that window.
+    private var dungeonBandSection: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            breakoutHeader(
+                "DUNGEON / BLOCKERS / NOTES", poppedOut: breakout.dungeonBandPoppedOut,
+                windowID: DungeonBandWindowID, area: "Dungeon area")
+            if !breakout.dungeonBandPoppedOut {
+                DungeonBandView(model: model, options: options)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .fixedSize(horizontal: false, vertical: true)
     }
 
-    private var dungeonMapGroup: some View {
-        TopSectionGroup(title: "Dungeon Map") {
-            DungeonMapView(model: model, options: options)
-        }
-    }
-
-    /// Blockers over Notes; both fill the 390-wide column so their edges align.
-    private var blockersNotesColumn: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            TopSectionGroup(title: "Blockers") {
-                BlockersView(model: model)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+    /// A small header row shared by the break-out sections (T-123): a label + a
+    /// pop-out button, replaced by an "in a separate window / Bring back" line while
+    /// popped out.
+    @ViewBuilder
+    private func breakoutHeader(_ title: String, poppedOut: Bool, windowID: String, area: String) -> some View {
+        HStack(spacing: 6) {
+            Text(title).font(.system(size: 11, weight: .semibold))
+            Button { openWindow(id: windowID) } label: {
+                Image(systemName: "rectangle.portrait.and.arrow.right").font(.system(size: 11))
             }
-            TopSectionGroup(title: "Notes") {
-                NotesView(model: model)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .buttonStyle(.plain)
+            .disabled(poppedOut)
+            .help("Open in its own window")
+            Spacer()
+            if poppedOut {
+                Text("\(area) is in a separate window.")
+                    .font(.system(size: 11))
+                Button("Bring back") { dismissWindow(id: windowID) }
+                    .font(.system(size: 11)).controlSize(.small)
             }
-            .frame(maxHeight: .infinity)
         }
-        // Was a fixed 390; now grows to absorb window width the (capped) map
-        // can't use, so a wide window gives Notes room instead of dead space.
-        .frame(minWidth: 390, maxWidth: .infinity)
+        .foregroundStyle(.secondary)
     }
 
     var body: some View {
@@ -259,12 +257,8 @@ struct MainTrackerPlaceholderView: View {
                 // occupies a full-width bar between the maps.
 
                 // The dungeon band (T-019+): the reference's room-map grid +
-                // blockers + notes below the map. Blockers over Notes as a narrow
-                // right-column stack (matching the reference), so the per-dungeon
-                // room-map grid — coming next — gets the horizontal space to its
-                // left; the map is tall, so the short blockers grid + notes stack
-                // beside it add no height.
-                dungeonBand
+                // blockers + notes below the map — with a pop-out window (T-123).
+                dungeonBandSection
 
                 // Timeline (T-098): an item-acquisition retrospective, inline and
                 // collapsible (on by default). Pop-out into its own window is a
