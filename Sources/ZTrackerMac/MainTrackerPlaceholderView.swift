@@ -19,16 +19,15 @@ struct MainTrackerPlaceholderView: View {
     /// broken-out Log window shares it. Declared before `onResetApp` to keep the
     /// memberwise-init argument order matching the call site.
     var reminders: ReminderController
+    /// The map-overlay toggles (T-035.2), hoisted to app level (T-124) so the item-
+    /// grid info icons, the inline overworld, and the overworld window share one.
+    var overlays: OverworldOverlayState
     /// "Reset App" — discard the run and return to the startup screen (T-046),
     /// offered from the Info group's reset buttons (T-048).
     var onResetApp: () -> Void = {}
 
     @Environment(\.openWindow) private var openWindow
     @Environment(\.dismissWindow) private var dismissWindow
-
-    /// The top-section map-overlay toggles (T-035.2), shared between the item-
-    /// grid icons (hover/click) and the overworld map (rendering).
-    @State private var overlays = OverworldOverlayState()
 
     /// Timeline section collapsed state (T-098) — shown by default.
     @State private var timelineCollapsed = false
@@ -49,22 +48,8 @@ struct MainTrackerPlaceholderView: View {
         )
     }
 
-    /// The overworld screen the recorder currently points at, for the map's lone
-    /// diamond marker (T-081) — driven by the same Info-widget selection so the
-    /// marker and the widget always agree. `nil` when there's no destination or
-    /// the selected dungeon isn't located on the map yet.
-    private var recorderDestinationCoordinate: OverworldScreenCoordinate? {
-        guard model.playerComputedStateSummary.haveRecorder else { return nil }
-        let entries = RecorderDestinations.infoEntries(
-            dungeonTracker: model.dungeonTracker,
-            hideDungeonNumbers: model.hideDungeonNumbers,
-            dungeonLocations: mapState.dungeonLocations,
-            toNewDungeons: model.recorderToNewDungeons,
-            toUnbeatenDungeons: model.recorderToUnbeatenDungeons)
-        return RecorderDestinations.selectedEntry(
-            entries: entries,
-            manualIndex: model.recorderDestinationManual ? model.recorderDestinationIndex : nil)?.coordinate
-    }
+    // The overworld's recorder-destination marker now lives in `OverworldSectionView`
+    // (T-124), which computes it from the same model.
 
     /// The dungeon band (T-019.5): the room-map grid + the blockers/notes column.
     /// Side-by-side (map left) when there's room; the column wraps below the map
@@ -200,57 +185,19 @@ struct MainTrackerPlaceholderView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-                // ContentView only shows this view once model.quest is set
-                // (docs/domain.md § 4.1); the fallback here is defensive, not
-                // an expected path. The map stretches to the full window width
-                // (no upper bound, T-055).
-                OverworldMapView(
-                    grid: model.overworldGrid,
-                    quest: model.quest ?? .first,
-                    options: options,
-                    playerState: model.playerComputedStateSummary,
-                    mapState: mapState,
-                    overlays: overlays,
-                    armosClaimed: model.dungeonTracker.armosBox.isDone,
-                    dungeonTracker: model.dungeonTracker,
-                    iconOptions: model.iconOptions,
-                    mirrored: model.mirrorOverworld,
-                    hideDungeonNumbers: model.hideDungeonNumbers,
-                    hasRescuedZelda: model.playerProgress.hasRescuedZelda,
-                    dungeonComplete: { slot in
-                        (1...9).contains(slot) && model.dungeonTracker.dungeon(slot - 1).isComplete
-                    },
-                    recorderDestination: recorderDestinationCoordinate,
-                    startSpot: model.startSpot,
-                    onSetStartSpot: { c, r in model.startSpot = OverworldScreenCoordinate(x: c, y: r) },
-                    onClearStartSpot: { model.startSpot = nil },
-                    onSetTakeAny: { state, c, r in model.setOverworldTakeAny(state, column: c, row: r) },
-                    onCycleTakeAny: { c, r in model.cycleOverworldTakeAny(column: c, row: r) },
-                    onReleaseTakeAny: { c, r in model.releaseOverworldTakeAny(column: c, row: r) },
-                    onOverwrite: { old, new, c, r in
-                        // Overworld-overwrite reminder (T-096): fire immediately on a
-                        // destructive mark change, in case it was accidental.
-                        if let a = OverworldOverwriteReminder.announcement(
-                            old: old, new: new, coordLabel: OverworldCoords.label(column: c, row: r)) {
-                            reminders.handle([a], options: options,
-                                             elapsedSeconds: timer.hasStarted ? Int(timer.mainElapsed(asOf: Date())) : 0)
-                        }
-                    },
-                    onPlaceDungeon: { number, c, r in
-                        guard (1...9).contains(number) else { return }
-                        model.levelHints[HintTarget.dungeon(number)] =
-                            HintZone.forZoneChar(OverworldZones.zone(column: c, row: r))
-                    },
-                    onWoodSwordCaveUsedChanged: { used in
-                        // Collecting the wood sword at its cave grants the sword (T-118).
-                        model.playerProgress.hasWoodSword = used
-                    },
-                    onMagicalSwordCaveUsedChanged: { taken in
-                        // "Taking" the magical sword at its cave grants it (T-119).
-                        model.playerProgress.hasMagicalSword = taken
+                // The overworld map (T-006), with a pop-out-into-its-own-window
+                // control (T-124). ContentView only shows this view once
+                // model.quest is set. The map stretches to the full window width.
+                VStack(alignment: .leading, spacing: 6) {
+                    breakoutHeader(
+                        "OVERWORLD", poppedOut: breakout.overworldPoppedOut,
+                        windowID: OverworldWindowID, area: "Overworld")
+                    if !breakout.overworldPoppedOut {
+                        OverworldSectionView(model: model, options: options, overlays: overlays,
+                                             timer: timer, reminders: reminders)
                     }
-                )
-                .frame(maxWidth: .infinity)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
 
                 // (T-081) The recorder destination moved into the Info group
                 // (RecorderInfoWidget) below the six overlay toggles; it no longer
@@ -318,5 +265,5 @@ struct MainTrackerPlaceholderView: View {
 }
 
 #Preview {
-    MainTrackerPlaceholderView(model: TrackerModel(quest: .first, heartShuffle: true), options: TrackerOptions(), breakout: BreakoutWindows(), timer: TrackerTimer(), reminders: ReminderController())
+    MainTrackerPlaceholderView(model: TrackerModel(quest: .first, heartShuffle: true), options: TrackerOptions(), breakout: BreakoutWindows(), timer: TrackerTimer(), reminders: ReminderController(), overlays: OverworldOverlayState())
 }

@@ -87,6 +87,9 @@ struct ZTrackerMacApp: App {
     /// The reminder controller (toasts + log), hoisted to app level (T-122) so the
     /// broken-out Log window can read the same log the poll loop writes.
     @State private var reminders = ReminderController()
+    /// The map-overlay toggles (T-035.2), hoisted to app level (T-124) so the info
+    /// icons, the inline overworld, and the broken-out overworld window all share one.
+    @State private var overlays = OverworldOverlayState()
 
     var body: some Scene {
         // A single-instance `Window` (not `WindowGroup`) — the tracker is one
@@ -94,7 +97,7 @@ struct ZTrackerMacApp: App {
         // trackers as tabs / new windows (⌘N), which only share the game state and
         // drift on view-local state; that was an unintended default, not a feature.
         Window("Z-Tracker", id: MainWindowID) {
-            ContentView(model: model, options: options, breakout: breakout, timer: timer, reminders: reminders, onResetApp: resetApp)
+            ContentView(model: model, options: options, breakout: breakout, timer: timer, reminders: reminders, overlays: overlays, onResetApp: resetApp)
         }
         .commands {
             // ⌘, opens the mid-game Settings window (T-091) instead of a native
@@ -143,6 +146,19 @@ struct ZTrackerMacApp: App {
             .onDisappear { breakout.dungeonBandPoppedOut = false }
         }
         .defaultSize(width: 1000, height: 700)
+
+        // The broken-out overworld map (T-124) — the full overworld in its own
+        // window, sharing the model + overlays so edits and highlights stay in sync.
+        Window("Overworld", id: OverworldWindowID) {
+            ScrollView {
+                OverworldSectionView(model: model, options: options, overlays: overlays,
+                                     timer: timer, reminders: reminders).padding(12)
+            }
+            .frame(minWidth: 640, minHeight: 360)
+            .onAppear { breakout.overworldPoppedOut = true }
+            .onDisappear { breakout.overworldPoppedOut = false }
+        }
+        .defaultSize(width: 1100, height: 620)
 
         // The duplicate Timer window (T-101) — a big stopwatch readout (e.g. for a
         // stream overlay); the main tracker keeps its own timer too.
