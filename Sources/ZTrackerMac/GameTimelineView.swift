@@ -41,7 +41,9 @@ struct GameTimelineView: View {
     }
 
     private var contentWidth: CGFloat { CGFloat(maxMinute + 1) * pxPerMinute + 60 }
-    private var contentHeight: CGFloat { topPad + CGFloat(maxRows) * rowHeight + axisHeight + 20 }
+    // +45 (was +20): the freed space from moving the recorder widget gives the
+    // timeline ~25px more height (T-107), mostly for the OW-progress graph.
+    private var contentHeight: CGFloat { topPad + CGFloat(maxRows) * rowHeight + axisHeight + 45 }
 
     var body: some View {
         ScrollView(.horizontal, showsIndicators: true) {

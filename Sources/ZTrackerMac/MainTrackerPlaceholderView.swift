@@ -272,7 +272,17 @@ struct MainTrackerPlaceholderView: View {
         // un-rescuing resumes it (the reference's PlayerHasRescuedZelda →
         // Pause/Resume, OverworldItemGridUI.fs:428-440).
         .onChange(of: model.playerProgress.hasRescuedZelda) { _, rescued in
-            if rescued { timer.pause() } else { timer.resume() }
+            if rescued {
+                timer.pause()
+                // Post the finish time to Notes, like the Windows app (T-107).
+                let s = Int(timer.mainElapsed(asOf: Date()))
+                let line = String(format: "Finished in %d:%02d:%02d", s / 3600, (s % 3600) / 60, s % 60)
+                if !model.notes.contains(line) {
+                    model.notes += (model.notes.isEmpty ? "" : "\n") + line
+                }
+            } else {
+                timer.resume()
+            }
         }
         .overlay(alignment: .top) {
             ReminderOverlayView(controller: reminders)
