@@ -35,10 +35,32 @@ private struct OpenSettingsButton: View {
 /// Setting `.regular` + activating fixes keyboard focus (needed for Notes now,
 /// and hotkeys later) regardless of how the binary is launched.
 final class AppDelegate: NSObject, NSApplicationDelegate {
+    /// Returns `true` if it's OK to quit; set by `ContentView` (T-109). The default
+    /// allows quitting until the app has wired in the timer/options.
+    @MainActor static var confirmQuit: () -> Bool = { true }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
     }
+
+    func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
+        AppDelegate.confirmQuit() ? .terminateNow : .terminateCancel
+    }
+}
+
+/// Shows the "quit while the timer is running?" confirmation (T-109), returning
+/// whether to proceed. No-op (proceeds) unless the setting is on and the timer is
+/// actually running.
+@MainActor
+func confirmQuitWhileTimerRunning(timer: TrackerTimer, options: TrackerOptions) -> Bool {
+    guard options.warnOnCloseWhileTimerRunning, timer.isRunning else { return true }
+    let alert = NSAlert()
+    alert.messageText = "The run timer is still running."
+    alert.informativeText = "Quit anyway? The timer will be lost."
+    alert.addButton(withTitle: "Quit")
+    alert.addButton(withTitle: "Cancel")
+    return alert.runModal() == .alertFirstButtonReturn
 }
 
 @main
@@ -115,6 +137,9 @@ struct ZTrackerMacApp: App {
     /// like reopening the app on the same machine.
     private func resetApp() {
         model = TrackerModel()
-        timer = TrackerTimer()   // hoisted (T-101): reset with the app
+        // Reset the hoisted timer in place (T-101/T-109) rather than replacing the
+        // instance, so the quit-warning closure captured in `ContentView` keeps
+        // pointing at the live timer.
+        timer.hardReset()
     }
 }

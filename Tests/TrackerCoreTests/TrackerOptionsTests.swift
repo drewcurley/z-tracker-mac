@@ -44,6 +44,8 @@ struct TrackerOptionsTests {
         #expect(options.broadcastWindowIncludesOverworldMagnifier == false)
         #expect(options.showMouseMagnifierWindow == false)
         #expect(options.hideTimer == false)
+        // Beyond the reference (T-109): warn on quit while timer runs, default on.
+        #expect(options.warnOnCloseWhileTimerRunning == true)
     }
 
     @Test(

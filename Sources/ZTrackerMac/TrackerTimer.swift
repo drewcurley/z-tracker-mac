@@ -86,4 +86,15 @@ final class TrackerTimer {
         lapOrigin = 0
         hasLap = false
     }
+
+    /// Reset to the pristine pre-"Go" state (T-109) — used by Reset App, which
+    /// keeps the same timer instance (so the quit-warning check stays valid)
+    /// instead of replacing it.
+    func hardReset() {
+        accumulated = 0
+        segmentStart = nil
+        lapOrigin = 0
+        hasLap = false
+        hasStarted = false
+    }
 }

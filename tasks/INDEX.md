@@ -26,6 +26,7 @@
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
 | [T-072.1](./T-072.1.md) | Fix ⌥-drag circling the first room (defer modified-left to release) | frontend-engineer | T-072 | fix/drag-paint-option-defer | — | docs/reviews/fix-drag-paint-option-defer/final.md |
+| [T-109](./T-109.md) | Warn before quitting while the run timer is running | frontend-engineer | T-101 | feat/warn-close-timer-running | — | docs/reviews/feat-warn-close-timer-running/final.md |
 | [T-108](./T-108.md) | Cap sized secrets in the overworld picker | frontend-engineer | T-105 | fix/secret-picker-cap | — | docs/reviews/fix-secret-picker-cap/final.md |
 | [T-107](./T-107.md) | Timeline +25px taller; post finish time to Notes on Zelda | frontend-engineer | T-098 | feat/timeline-taller-zelda-notes | — | docs/reviews/feat-timeline-taller-zelda-notes/final.md |
 | [T-106](./T-106.md) | Armos / White-Sword-cave — in-place item prompt on marking | frontend-engineer | T-006 | feat/armos-sword-item-prompt | — | docs/reviews/feat-armos-sword-item-prompt/final.md |
