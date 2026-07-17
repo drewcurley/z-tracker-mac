@@ -33,7 +33,7 @@ struct GameTimelineView: View {
     private var maxMinute: Int {
         let lastEvent = timeline.acquiredAt.values.max() ?? 0
         let finish = timeline.finishSeconds ?? 0
-        return max(10, (max(lastEvent, finish)) / 60 + 1)
+        return max(10, (max(lastEvent, finish, timeline.latestSeconds)) / 60 + 1)
     }
 
     private var maxRows: Int {
@@ -47,6 +47,7 @@ struct GameTimelineView: View {
         ScrollView(.horizontal, showsIndicators: true) {
             ZStack(alignment: .topLeading) {
                 minuteGrid
+                owProgressGraph
                 ForEach(Array(placed.enumerated()), id: \.offset) { _, p in
                     icon(for: p.event)
                         .frame(width: iconSize, height: iconSize)
@@ -82,6 +83,33 @@ struct GameTimelineView: View {
                     .foregroundStyle(.secondary)
                     .position(x: CGFloat(m) * pxPerMinute + iconSize / 2, y: contentHeight - axisHeight)
             }
+        }
+    }
+
+    /// The overworld-progress line (T-099): remaining unmarked screens over time,
+    /// trending toward 0 at the top as you clear the map (reference DarkCyan line).
+    @ViewBuilder
+    private var owProgressGraph: some View {
+        let samples = timeline.owRemainingSamples
+        if samples.count >= 1 {
+            let maxRemain = max(samples.map(\.remaining).max() ?? 1, 1)
+            let graphTop = topPad
+            let graphBottom = contentHeight - axisHeight - 4
+            let graphH = graphBottom - graphTop
+            Canvas { ctx, _ in
+                func y(_ r: Int) -> CGFloat { graphTop + graphH * CGFloat(r) / CGFloat(maxRemain) }
+                var path = Path()
+                path.move(to: CGPoint(x: x(forSeconds: samples[0].seconds), y: y(samples[0].remaining)))
+                for s in samples.dropFirst() {
+                    path.addLine(to: CGPoint(x: x(forSeconds: s.seconds), y: y(s.remaining)))
+                }
+                // Hold the last value out to "now" (the graph's right edge).
+                let lastX = x(forSeconds: max(timeline.latestSeconds, samples.last!.seconds))
+                path.addLine(to: CGPoint(x: lastX, y: y(samples.last!.remaining)))
+                ctx.stroke(path, with: .color(Color(red: 0, green: 0.55, blue: 0.55)), lineWidth: 2)
+            }
+            Text("OW").font(.system(size: 8)).foregroundStyle(Color(red: 0, green: 0.55, blue: 0.55))
+                .position(x: 10, y: topPad + 6)
         }
     }
 

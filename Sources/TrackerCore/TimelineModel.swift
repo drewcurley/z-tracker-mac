@@ -108,6 +108,18 @@ public final class TimelineModel {
     /// Overworld spots still unmarked at the finish, or `nil`.
     public private(set) var finishOwRemaining: Int?
 
+    /// One (time, remaining) sample of the overworld-progress graph (T-099).
+    public struct OverworldRemainingSample: Sendable, Equatable {
+        public let seconds: Int
+        public let remaining: Int
+        public init(seconds: Int, remaining: Int) { self.seconds = seconds; self.remaining = remaining }
+    }
+    /// The overworld-spots-remaining series over run time — appended only when the
+    /// count changes, so it stays compact. Drives the phase-2 line graph.
+    public private(set) var owRemainingSamples: [OverworldRemainingSample] = []
+    /// The most recent elapsed run seconds seen (the graph's right edge / "now").
+    public private(set) var latestSeconds: Int = 0
+
     public init() {}
 
     /// Fold the current state into the timeline: stamp newly-acquired events with
@@ -115,11 +127,17 @@ public final class TimelineModel {
     /// — matching the reminder engine's re-fire behavior), and capture/clear the
     /// finish snapshot.
     public func record(elapsedSeconds: Int, acquired: Set<TimelineEvent>, owRemaining: Int, finished: Bool) {
+        latestSeconds = elapsedSeconds
         for e in acquired where acquiredAt[e] == nil {
             acquiredAt[e] = elapsedSeconds
         }
         for e in acquiredAt.keys where !acquired.contains(e) {
             acquiredAt.removeValue(forKey: e)
+        }
+        // Overworld-progress series (T-099): sample only on a change (or first),
+        // so the graph line has one point per real transition.
+        if owRemainingSamples.last?.remaining != owRemaining {
+            owRemainingSamples.append(.init(seconds: elapsedSeconds, remaining: owRemaining))
         }
         if finished {
             if finishSeconds == nil { finishSeconds = elapsedSeconds; finishOwRemaining = owRemaining }
@@ -134,5 +152,7 @@ public final class TimelineModel {
         acquiredAt = [:]
         finishSeconds = nil
         finishOwRemaining = nil
+        owRemainingSamples = []
+        latestSeconds = 0
     }
 }
