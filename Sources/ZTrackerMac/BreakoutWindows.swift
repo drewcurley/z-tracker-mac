@@ -11,4 +11,8 @@ final class BreakoutWindows {
     /// The Timeline is showing in its own window (so the inline section is a
     /// placeholder until the window closes).
     var timelinePoppedOut = false
+    /// The dungeon band (map + blockers + notes) is in its own window (T-123).
+    var dungeonBandPoppedOut = false
+    /// The overworld map is in its own window (T-124).
+    var overworldPoppedOut = false
 }

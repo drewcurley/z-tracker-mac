@@ -21,6 +21,12 @@ let SettingsWindowID = "z-settings"
 /// The id of the broken-out reminder Log window (T-122).
 let LogWindowID = "z-log"
 
+/// The id of the broken-out dungeon band (map + blockers + notes) window (T-123).
+let DungeonBandWindowID = "z-dungeon-band"
+
+/// The id of the broken-out overworld map window (T-124).
+let OverworldWindowID = "z-overworld"
+
 /// The Settings menu command (⌘,), replacing the default app-settings item so it
 /// opens our resizable Settings window instead of a native Settings scene.
 private struct OpenSettingsButton: View {
@@ -124,6 +130,19 @@ struct ZTrackerMacApp: App {
                 .frame(minWidth: 320, minHeight: 200)
         }
         .defaultSize(width: 420, height: 460)
+
+        // The broken-out dungeon band (T-123) — the room-map grid + blockers +
+        // notes in their own window; its appear/disappear drives the inline
+        // placeholder.
+        Window("Dungeon", id: DungeonBandWindowID) {
+            ScrollView {
+                DungeonBandView(model: model, options: options).padding(12)
+            }
+            .frame(minWidth: 700, minHeight: 400)
+            .onAppear { breakout.dungeonBandPoppedOut = true }
+            .onDisappear { breakout.dungeonBandPoppedOut = false }
+        }
+        .defaultSize(width: 1000, height: 700)
 
         // The duplicate Timer window (T-101) — a big stopwatch readout (e.g. for a
         // stream overlay); the main tracker keeps its own timer too.
