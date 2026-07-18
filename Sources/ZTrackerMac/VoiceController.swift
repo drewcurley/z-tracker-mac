@@ -317,6 +317,16 @@ final class VoiceController {
                 focus.cursorRegion = .overworld
                 focus.setCursor(col: s.x, row: s.y)
             }
+        case let .toggleProgression(id):
+            applyProgression(id)
+        }
+    }
+
+    /// Flag a player-progress item as acquired (T-142); region-scoping + mapping live in
+    /// the pure `ProgressionVoiceApply` helper so voice and tests share one path.
+    private func applyProgression(_ id: String) {
+        if !ProgressionVoiceApply.apply(id: id, region: focus.cursorRegion, progress: model.playerProgress) {
+            vlog("progression \(id) not applied (unknown, or overworld-scoped — say it while viewing the overworld)")
         }
     }
 
@@ -434,6 +444,7 @@ final class VoiceController {
         case let .dungeonTab(n): return "Level \(n)"
         case .exitToOverworld: return "overworld"
         case .gotoStart: return "→ start"
+        case let .toggleProgression(id): return ProgressionVoiceApply.toggle(forID: id)?.help ?? "item"
         }
     }
 }

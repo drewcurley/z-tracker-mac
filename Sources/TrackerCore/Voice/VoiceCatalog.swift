@@ -29,6 +29,7 @@ public struct VoiceAction: Identifiable, Equatable, Sendable {
 public enum VoiceCategory: String, CaseIterable, Sendable, Codable {
     case cursor, navigation, dungeon, overworldShops, overworldMarks, takeAny
     case dungeonRooms, monsters, floorDrops, doors, entrances
+    case progression
 
     public var title: String {
         switch self {
@@ -43,6 +44,7 @@ public enum VoiceCategory: String, CaseIterable, Sendable, Codable {
         case .floorDrops: "Dungeon — floor drops"
         case .doors: "Dungeon — doors"
         case .entrances: "Dungeon — entrances"
+        case .progression: "Items — acquired (say with \u{201C}took / got / bought\u{201D})"
         }
     }
 }
@@ -50,7 +52,7 @@ public enum VoiceCategory: String, CaseIterable, Sendable, Codable {
 public enum VoiceCatalog {
     public static let all: [VoiceAction] =
         cursor + navigation + dungeon + overworldShops + overworldMarks + takeAny
-        + dungeonRooms + monsters + floorDrops + doors + entrances
+        + dungeonRooms + monsters + floorDrops + doors + entrances + progression
 
     public static func action(id: String) -> VoiceAction? { all.first { $0.id == id } }
     public static func actions(in category: VoiceCategory) -> [VoiceAction] {
@@ -59,7 +61,8 @@ public enum VoiceCatalog {
     /// Categories in editor order.
     public static let categoryOrder: [VoiceCategory] =
         [.cursor, .navigation, .dungeon, .doors, .entrances,
-         .dungeonRooms, .monsters, .floorDrops, .overworldShops, .overworldMarks, .takeAny]
+         .dungeonRooms, .monsters, .floorDrops, .overworldShops, .overworldMarks, .takeAny,
+         .progression]
 
     // MARK: Actions
 
@@ -120,6 +123,23 @@ public enum VoiceCatalog {
         VoiceAction("TakeAny_Potion", "Take-any: potion", .takeAny, ["take any potion"]),
         VoiceAction("TakeAny_Candle", "Take-any: candle", .takeAny, ["take any candle"]),
         VoiceAction("TakeAny_Heart", "Take-any: heart", .takeAny, ["take any heart"]),
+    ]
+
+    /// Player-progress toggles (T-142) — the item-grid boxes marked "acquired". These
+    /// only fire when an **action word** ("took / got / bought / grabbed…") is present,
+    /// so a bare "meat" still marks the meat *shop* while "took meat" flags the item.
+    /// The phrases below are the item words; the action word is matched by the grammar.
+    private static let progression: [VoiceAction] = [
+        VoiceAction("Prog_WoodSword", "Wood sword", .progression, ["wood sword", "wooden sword", "brown sword"]),
+        VoiceAction("Prog_MagicalSword", "Magical sword", .progression, ["magical sword", "magic sword"]),
+        VoiceAction("Prog_BoomBook", "Boomstick book", .progression, ["book", "boom book", "boomstick", "boomstick book"]),
+        VoiceAction("Prog_BlueCandle", "Blue candle", .progression, ["blue candle", "candle"]),
+        VoiceAction("Prog_WoodArrow", "Wood arrow", .progression, ["wood arrow", "wooden arrow", "arrow", "arrows"]),
+        VoiceAction("Prog_BlueRing", "Blue ring", .progression, ["blue ring", "ring"]),
+        VoiceAction("Prog_Bomb", "Bombs", .progression, ["bomb", "bombs"]),
+        VoiceAction("Prog_Meat", "Meat / bait", .progression, ["meat", "bait", "food"]),
+        VoiceAction("Prog_Ganon", "Ganon (defeated)", .progression, ["ganon", "gannon"]),
+        VoiceAction("Prog_Zelda", "Zelda (rescued)", .progression, ["zelda", "princess"]),
     ]
 
     // MARK: Dungeon actions (apply to the cursor room when the cursor is in a dungeon)

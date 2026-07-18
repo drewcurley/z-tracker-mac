@@ -11,6 +11,7 @@ public enum VoiceCommand: Equatable, Sendable {
     case dungeonTab(Int)                                  // "enter level 5"
     case exitToOverworld                                  // "overworld" / "leave dungeon"
     case gotoStart                                        // "start" / "restart"
+    case toggleProgression(id: String)                    // "took wood sword" (item acquired)
 }
 
 /// A resolved overworld action — the app calls it once it knows the cursor is on the
@@ -33,6 +34,13 @@ public enum VoiceGrammar {
         let coord = coordinate(in: tokens)
         let words = coord?.rest ?? tokens
 
+        // Player-progress toggles (T-142) need an action word ("took / got / bought…"),
+        // so a bare "meat" still marks the meat shop while "took meat" flags the item.
+        // Checked before region/structural so the action word wins the disambiguation.
+        if let id = progressionToggle(words, config: config) {
+            return .toggleProgression(id: id)
+        }
+
         // Region actions win over structural, so a door command like "open left" isn't
         // swallowed by "left" (a cursor move). Execution resolves the words per-region
         // ("set level" beats "level" inside `match` via longest-phrase-wins).
@@ -51,6 +59,33 @@ public enum VoiceGrammar {
             return .cursorTo(column: coord.coord.column, row: coord.coord.row)
         }
         return nil
+    }
+
+    // MARK: Progression toggles (T-142)
+
+    /// Words that signal "I acquired this" — the disambiguator that turns a bare
+    /// shop/cave word into a progression toggle. Grammar constants (like the NATO
+    /// letters and number words), not user-editable phrases.
+    static let actionWords: Set<String> = [
+        "took", "take", "taking", "got", "get", "getting", "have", "has", "had",
+        "grab", "grabbed", "grabbing", "bought", "buy", "buying", "purchase", "purchased",
+        "acquired", "acquire", "obtained", "obtain", "found", "toggle",
+        // Ganon / Zelda verbs.
+        "killed", "kill", "defeated", "defeat", "beat", "rescued", "rescue", "saved", "save",
+    ]
+
+    /// The progression toggles the player can flag from **anywhere** (not scoped to the
+    /// overworld): bombs (a near-gimme, droppable in dungeons) and the end-game
+    /// Ganon/Zelda states. The rest are overworld-acquired, so execution scopes them.
+    public static let globalProgressionIDs: Set<String> = ["Prog_Bomb", "Prog_Ganon", "Prog_Zelda"]
+    public static func isGlobalProgression(_ id: String) -> Bool { globalProgressionIDs.contains(id) }
+
+    /// The progression-item action id for spoken words, but **only** when an action word
+    /// is present ("took wood sword"); returns nil otherwise so a bare "wood sword"
+    /// stays a cave mark.
+    static func progressionToggle(_ words: [String], config: VoiceConfig) -> String? {
+        guard words.contains(where: { actionWords.contains($0) }) else { return nil }
+        return config.match(words, scope: .progression)?.actionID
     }
 
     // MARK: Dungeon region resolution
@@ -119,7 +154,7 @@ public enum VoiceGrammar {
 
     /// All phrases + the structural vocabulary, to bias the recognizer.
     public static func contextualVocabulary(_ config: VoiceConfig) -> [String] {
-        config.allPhrases + [
+        config.allPhrases + Array(actionWords) + [
             "ten", "eleven", "twelve", "thirteen", "fourteen", "fifteen", "sixteen",
             "alpha", "bravo", "charlie", "delta", "echo", "foxtrot", "golf", "hotel",
         ]
