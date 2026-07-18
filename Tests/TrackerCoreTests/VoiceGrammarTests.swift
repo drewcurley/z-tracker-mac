@@ -110,6 +110,38 @@ struct VoiceGrammarTests {
         #expect(VoiceGrammar.dungeonActions(["entrance", "down"], config: config) == [.entrance(.south)])
     }
 
+    // MARK: Progression toggles (T-142)
+
+    @Test func actionWordTriggersProgressionToggle() {
+        #expect(VoiceGrammar.parse("took wood sword", config: config) == .toggleProgression(id: "Prog_WoodSword"))
+        #expect(VoiceGrammar.parse("got magical sword", config: config) == .toggleProgression(id: "Prog_MagicalSword"))
+        #expect(VoiceGrammar.parse("bought bombs", config: config) == .toggleProgression(id: "Prog_Bomb"))
+        #expect(VoiceGrammar.parse("grabbed the meat", config: config) == .toggleProgression(id: "Prog_Meat"))
+        #expect(VoiceGrammar.parse("have blue ring", config: config) == .toggleProgression(id: "Prog_BlueRing"))
+        #expect(VoiceGrammar.parse("killed ganon", config: config) == .toggleProgression(id: "Prog_Ganon"))
+        #expect(VoiceGrammar.parse("rescued zelda", config: config) == .toggleProgression(id: "Prog_Zelda"))
+    }
+
+    @Test func bareItemWordStaysACaveOrShopMark() {
+        // No action word → the overworld cave / shop mark, not a progression toggle.
+        #expect(VoiceGrammar.parse("wood sword", config: config) == .actionAtCursor(words: ["wood", "sword"]))
+        #expect(VoiceGrammar.parse("meat", config: config) == .actionAtCursor(words: ["meat"]))
+        #expect(VoiceGrammar.parse("bomb shop", config: config) == .actionAtCursor(words: ["bomb", "shop"]))
+    }
+
+    @Test func takeAnyNotSwallowedByProgression() {
+        // "take" is an action word, but nothing after it names a progression item.
+        #expect(VoiceGrammar.parse("take any potion", config: config) == .actionAtCursor(words: ["take", "any", "potion"]))
+    }
+
+    @Test func globalVsOverworldProgressionScope() {
+        #expect(VoiceGrammar.isGlobalProgression("Prog_Bomb"))
+        #expect(VoiceGrammar.isGlobalProgression("Prog_Ganon"))
+        #expect(VoiceGrammar.isGlobalProgression("Prog_Zelda"))
+        #expect(VoiceGrammar.isGlobalProgression("Prog_WoodSword") == false)
+        #expect(VoiceGrammar.isGlobalProgression("Prog_Meat") == false)
+    }
+
     @Test func doorCommandNotEatenByCursorMove() {
         // "open left" is a door command at the cursor, not a cursor move left.
         #expect(VoiceGrammar.parse("open left", config: config) == .actionAtCursor(words: ["open", "left"]))
