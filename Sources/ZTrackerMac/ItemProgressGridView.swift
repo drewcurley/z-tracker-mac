@@ -266,6 +266,8 @@ struct ObtainableItemsView: View {
     @Bindable var model: TrackerModel
     var playerState: PlayerComputedStateSummary
     var mapState: MapStateSummary
+    /// Shared keyboard-cursor state (T-135) — this is the "items" cursor region.
+    var focus: TrackerFocusState
 
     var body: some View {
         VStack(alignment: .leading, spacing: 3) {
@@ -278,10 +280,25 @@ struct ObtainableItemsView: View {
                     GridRow {
                         ForEach(0..<ItemProgressGrid.columns, id: \.self) { col in
                             cellView(ItemProgressGrid.layout[row][col])
+                                .overlay { cursorRing(col: col, row: row) }
+                                .onHover { if $0 { focus.hoverItems(col: col, row: row) } }
                         }
                     }
                 }
             }
+        }
+    }
+
+    /// The keyboard cursor's cyan ring on its cell while the cursor is in the items
+    /// region (T-135).
+    @ViewBuilder
+    private func cursorRing(col: Int, row: Int) -> some View {
+        if focus.cursorShown, focus.cursorRegion == .items,
+           focus.itemsCursor == .init(col: col, row: row) {
+            RoundedRectangle(cornerRadius: 4)
+                .strokeBorder(Color.cyan, lineWidth: 2)
+                .shadow(color: .cyan, radius: 2)
+                .allowsHitTesting(false)
         }
     }
 

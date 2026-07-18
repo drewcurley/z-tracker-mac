@@ -63,6 +63,9 @@ public final class HotkeyConfig {
     /// Clear every binding.
     public func clearAll() { bindings.removeAll(); persist() }
 
+    /// Replace all bindings with the built-in right-half default scheme (T-135).
+    public func loadDefaults() { bindings = HotkeyDefaults.bindings(); persist() }
+
     // MARK: Conflicts ---------------------------------------------------------------
 
     /// The conflict "scopes" a selector's key occupies. Two selectors clash on the
@@ -117,7 +120,10 @@ public final class HotkeyConfig {
                 warnings.append("Line \(i + 1): expected 'Name = key'")
                 continue
             }
-            let name = String(line[line.startIndex..<eq]).trimmingCharacters(in: .whitespaces)
+            var name = String(line[line.startIndex..<eq]).trimmingCharacters(in: .whitespaces)
+            // Back-compat alias (T-135): the reference's 2-way toggle id maps onto the
+            // forward region cycle so old HotKeys.txt files still import.
+            if name == "Global_ToggleCursorOverworldOrDungeon" { name = "Global_CycleRegionForward" }
             let value = String(line[line.index(after: eq)...]).trimmingCharacters(in: .whitespaces)
             guard HotkeyCatalog.selector(id: name) != nil else {
                 warnings.append("Line \(i + 1): unknown selector '\(name)'")

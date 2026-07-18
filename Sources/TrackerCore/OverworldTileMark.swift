@@ -129,6 +129,54 @@ public enum OverworldTileMark: Hashable, Codable, Sendable {
     /// state — keeps it dimmed.
     public var dimsPermanentlyWhenMarked: Bool { self == .doorRepair }
 
+    /// The mark a hotkey selector suffix names — the part after `Overworld_` in an
+    /// `Overworld_*` selector id (T-134). Mirrors the reference
+    /// `MapSquareChoiceDomainHelper.AsHotKeyName` mapping so `HotKeys.txt` bindings
+    /// fire the same mark by keyboard as a mouse click on the picker. `nil` for an
+    /// unrecognized suffix.
+    public static func fromHotkeySuffix(_ suffix: String) -> OverworldTileMark? {
+        switch suffix {
+        case "Level1": return .dungeon(1)
+        case "Level2": return .dungeon(2)
+        case "Level3": return .dungeon(3)
+        case "Level4": return .dungeon(4)
+        case "Level5": return .dungeon(5)
+        case "Level6": return .dungeon(6)
+        case "Level7": return .dungeon(7)
+        case "Level8": return .dungeon(8)
+        case "Level9": return .dungeon(9)
+        case "AnyRoad1": return .anyRoad(1)
+        case "AnyRoad2": return .anyRoad(2)
+        case "AnyRoad3": return .anyRoad(3)
+        case "AnyRoad4": return .anyRoad(4)
+        case "Sword1": return .swordCave(1)
+        case "Sword2": return .swordCave(2)
+        case "Sword3": return .swordCave(3)
+        case "ArrowShop": return .shop(.arrow)
+        case "BombShop": return .shop(.bomb)
+        case "BookShop": return .shop(.book)
+        case "CandleShop": return .shop(.candle)
+        case "BlueRingShop": return .shop(.blueRing)
+        case "MeatShop": return .shop(.meat)
+        case "KeyShop": return .shop(.key)
+        case "ShieldShop": return .shop(.shield)
+        case "UnknownSecret": return .secret(.unknown)
+        case "LargeSecret": return .secret(.large)
+        case "MediumSecret": return .secret(.medium)
+        case "SmallSecret": return .secret(.small)
+        case "DoorRepairCharge": return .doorRepair
+        case "MoneyMakingGame": return .moneyMakingGame
+        case "Letter": return .theLetter
+        case "Armos": return .armos
+        case "HintShop": return .hintShop
+        case "TakeAny": return .takeAny
+        case "PotionShop": return .potionShop
+        case "DarkX": return .dontCare
+        case "Nothing": return .unmarked
+        default: return nil
+        }
+    }
+
     public var displayName: String {
         switch self {
         case .unmarked: "Unmarked"

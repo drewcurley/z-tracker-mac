@@ -185,7 +185,7 @@ struct MainTrackerPlaceholderView: View {
                         DungeonTrackerView(model: model)
                     }
                     TopSectionGroup(title: "Items") {
-                        ObtainableItemsView(model: model, playerState: model.playerComputedStateSummary, mapState: mapState)
+                        ObtainableItemsView(model: model, playerState: model.playerComputedStateSummary, mapState: mapState, focus: focus)
                     }
                     TopSectionGroup(title: "Flags") {
                         SeedFlagsView(model: model, options: options, playerState: model.playerComputedStateSummary, mapState: mapState, timer: timer)
@@ -204,7 +204,7 @@ struct MainTrackerPlaceholderView: View {
                         slimBreakoutPlaceholder("Overworld", windowID: OverworldWindowID)
                     } else {
                         OverworldSectionView(model: model, options: options, overlays: overlays,
-                                             timer: timer, reminders: reminders)
+                                             timer: timer, reminders: reminders, focus: focus)
                             .overlay(alignment: .topTrailing) { cornerPopOutButton(windowID: OverworldWindowID) }
                     }
                 }
@@ -274,7 +274,7 @@ struct MainTrackerPlaceholderView: View {
         }
         // Global hotkey dispatch (T-132): live while the tracker is on screen.
         .onAppear {
-            let dispatcher = GlobalHotkeyDispatcher(model: model, timer: timer, hotkeys: hotkeys, focus: focus)
+            let dispatcher = GlobalHotkeyDispatcher(model: model, options: options, timer: timer, hotkeys: hotkeys, focus: focus)
             dispatcher.install()
             globalHotkeys = dispatcher
         }

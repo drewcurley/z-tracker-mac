@@ -20,6 +20,9 @@ struct OverworldMapView: View {
     var grid: OverworldGrid
     var quest: OverworldQuest
     var options: TrackerOptions
+    /// Shared focus state (T-134) — the keyboard cursor follows hover here and is
+    /// drawn on the cursor tile when the cursor is on the overworld.
+    @Bindable var focus: TrackerFocusState
 
     /// Live derived player state (T-014). Supplies real ladder/raft
     /// possession to the routing graph below, replacing T-011's documented
@@ -318,6 +321,17 @@ struct OverworldMapView: View {
                                             .allowsHitTesting(false)
                                         }
                                     }
+                                    .overlay {
+                                        // Keyboard cursor (T-134): a bright ring on the
+                                        // cursor tile while the cursor is on the overworld.
+                                        if focus.cursorShown, focus.cursorRegion == .overworld,
+                                           focus.overworldCursor == .init(col: column, row: row) {
+                                            RoundedRectangle(cornerRadius: 2)
+                                                .strokeBorder(Color.cyan, lineWidth: 2)
+                                                .shadow(color: .cyan, radius: 2)
+                                                .allowsHitTesting(false)
+                                        }
+                                    }
                                     .onTapGesture { handleLeftClick(column: column, row: row) }
                                     .contextMenu { markMenu(column: column, row: row) }
                                     // In-place item prompt for Armos / White-Sword cave (T-106).
@@ -372,6 +386,11 @@ struct OverworldMapView: View {
     /// as the reference recomputes on every mouse move, since the graph is
     /// small enough (~140 vertices) for this to be cheap.
     private func handleHover(column: Int, row: Int, phase: HoverPhase, tileWidth: CGFloat, tileHeight: CGFloat) {
+        // The keyboard cursor follows the mouse (T-134) — track the hovered tile
+        // regardless of the routing/highlight options below.
+        if case .active = phase, !overworldInstance.alwaysEmpty(x: column, y: row) {
+            focus.hoverOverworld(col: column, row: row)
+        }
         guard options.drawRoutes || options.highlightNearby else {
             hoveredVertex = nil
             routeHighlight = nil
@@ -479,41 +498,19 @@ struct OverworldMapView: View {
     /// armos / letter / hint shop) defaults to **used** — you usually mark one
     /// right after collecting it; a left-click flips it back to unused (T-056).
     private func applyMark(_ mark: OverworldTileMark, column: Int, row: Int) {
-        let oldMark = grid.mark(column: column, row: row)
-        // If this tile was a take-any, changing it to anything else frees its
-        // linked Items-group heart slot back to empty (T-066).
-        if oldMark == .takeAny {
-            onReleaseTakeAny(column, row)
-        }
-        grid.setMark(mark, column: column, row: row)
+        // Grid mechanics live in the shared apply (T-134) so a keyboard hotkey on
+        // the cursor cell does identically the same thing as this click path.
+        let result = OverworldMark.apply(mark, column: column, row: row, grid: grid,
+                                         releaseTakeAny: onReleaseTakeAny,
+                                         placeDungeon: onPlaceDungeon)
         // Overworld-overwrite reminder (T-096): warn on a destructive change of a
         // real mark, in case it was accidental.
-        onOverwrite(oldMark, mark, column, row)
+        onOverwrite(result.oldMark, mark, column, row)
         // In-place item prompt (T-106): marking an Armos or the White-Sword-Item
-        // cave immediately asks what item was there (reference behavior). A slight
-        // delay lets the context menu finish dismissing before the popover opens.
-        let promptTarget: ItemPromptTarget?
-        if mark == .armos { promptTarget = .init(column: column, row: row, isArmos: true) }
-        else if case .swordCave(2) = mark { promptTarget = .init(column: column, row: row, isArmos: false) }
-        else { promptTarget = nil }
-        if let promptTarget {
-            DispatchQueue.main.async { itemPrompt = promptTarget }
-        }
-        // Secrets / letter / hint shop default to dark on placement; take-any and
-        // the wood-sword cave stay bright; armos/sword2/sword3 derive their dim
-        // from model state, so none of them get a placement `used` flag (T-110).
-        if mark.placesUsedWhenMarked {
-            grid.setUsed(true, column: column, row: row)
-        }
-        // A shop can't hold the same item twice (T-060): if the new primary
-        // matches the recorded second item, clear the second.
-        if case .shop(let item1) = mark, grid.shopSecondItem(column: column, row: row) == item1 {
-            grid.setShopSecondItem(nil, column: column, row: row)
-        }
-        // Placing a dungeon auto-sets its location hint to this screen's region
-        // (T-039.1).
-        if case .dungeon(let number) = mark {
-            onPlaceDungeon(number, column, row)
+        // cave immediately asks what item was there. A slight delay lets the context
+        // menu finish dismissing before the popover opens.
+        if let isArmos = result.itemPromptIsArmos {
+            DispatchQueue.main.async { itemPrompt = .init(column: column, row: row, isArmos: isArmos) }
         }
     }
 
@@ -1154,6 +1151,7 @@ private enum OverworldRouteGeometry {
         grid: grid,
         quest: .first,
         options: TrackerOptions(),
+        focus: TrackerFocusState(),
         playerState: playerState,
         mapState: MapStateSummary.compute(
             grid: grid,
