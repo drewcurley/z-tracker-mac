@@ -24,6 +24,9 @@ let LogWindowID = "z-log"
 /// The id of the hotkey editor window (T-131).
 let HotkeyWindowID = "z-hotkeys"
 
+/// The id of the voice-command editor window (T-139).
+let VoiceWindowID = "z-voice"
+
 /// The id of the broken-out dungeon band (map + blockers + notes) window (T-123).
 let DungeonBandWindowID = "z-dungeon-band"
 
@@ -95,6 +98,8 @@ struct ZTrackerMacApp: App {
     @State private var overlays = OverworldOverlayState()
     /// The hotkey bindings (T-131), persisted; edited in the hotkey editor window.
     @State private var hotkeys = HotkeyConfig.withPersistence()
+    /// The voice-command phrases (T-139), persisted; edited in the voice editor window.
+    @State private var voiceConfig = VoiceConfig.withPersistence()
     /// Shared UI focus state (T-133) — the selected dungeon tab (and, later, the
     /// keyboard cursor), so Global hotkeys can drive them.
     @State private var focus = TrackerFocusState()
@@ -105,7 +110,7 @@ struct ZTrackerMacApp: App {
         // trackers as tabs / new windows (⌘N), which only share the game state and
         // drift on view-local state; that was an unintended default, not a feature.
         Window("Z-Tracker", id: MainWindowID) {
-            ContentView(model: model, options: options, breakout: breakout, timer: timer, reminders: reminders, overlays: overlays, hotkeys: hotkeys, focus: focus, onResetApp: resetApp)
+            ContentView(model: model, options: options, breakout: breakout, timer: timer, reminders: reminders, overlays: overlays, hotkeys: hotkeys, voiceConfig: voiceConfig, focus: focus, onResetApp: resetApp)
         }
         .commands {
             // ⌘, opens the mid-game Settings window (T-091) instead of a native
@@ -136,6 +141,12 @@ struct ZTrackerMacApp: App {
         // The hotkey editor window (T-131) — opened from Settings' "Edit hotkeys…".
         Window("Hotkeys", id: HotkeyWindowID) {
             HotkeyEditorView(config: hotkeys)
+        }
+        .defaultSize(width: 480, height: 620)
+
+        // The voice-command editor window (T-139) — opened from Settings.
+        Window("Voice Commands", id: VoiceWindowID) {
+            VoiceCommandEditorView(config: voiceConfig)
         }
         .defaultSize(width: 480, height: 620)
 

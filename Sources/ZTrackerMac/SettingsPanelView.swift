@@ -38,6 +38,12 @@ struct SettingsPanelView: View {
                 Text("Bind keys per context; import/export the Windows HotKeys.txt.")
                     .font(.caption).foregroundStyle(.secondary)
             }
+            HStack(spacing: 8) {
+                settingsHeader("Voice")
+                Button("Edit voice commands…") { openWindow(id: VoiceWindowID) }
+                Text("Customize the phrases that trigger each voice action.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
