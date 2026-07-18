@@ -70,6 +70,31 @@ struct OverworldMarkApplyTests {
         #expect(r3.itemPromptIsArmos == nil)
     }
 
+    @Test func voiceSecondShopWordSetsSecondItem() {
+        let model = TrackerModel(quest: .first)
+        model.overworldGrid.setMark(.shop(.bomb), column: 4, row: 4)
+        // Saying a second, distinct shop name adds it as the second item.
+        let handled = OverworldMark.applyVoiceSecondShopItem(.shop(.candle), column: 4, row: 4,
+                                                             grid: model.overworldGrid)
+        #expect(handled)
+        #expect(model.overworldGrid.mark(column: 4, row: 4) == .shop(.bomb))   // primary kept
+        #expect(model.overworldGrid.shopSecondItem(column: 4, row: 4) == .candle)
+    }
+
+    @Test func voiceSecondShopIgnoredWhenNotAShopOrSameKind() {
+        let model = TrackerModel(quest: .first)
+        // Empty tile → not handled (normal apply should place the primary).
+        #expect(OverworldMark.applyVoiceSecondShopItem(.shop(.bomb), column: 5, row: 5,
+                                                       grid: model.overworldGrid) == false)
+        // Same kind as primary → not handled (no self-duplicate second).
+        model.overworldGrid.setMark(.shop(.meat), column: 5, row: 5)
+        #expect(OverworldMark.applyVoiceSecondShopItem(.shop(.meat), column: 5, row: 5,
+                                                       grid: model.overworldGrid) == false)
+        // A non-shop mark → not handled.
+        #expect(OverworldMark.applyVoiceSecondShopItem(.armos, column: 5, row: 5,
+                                                       grid: model.overworldGrid) == false)
+    }
+
     @Test func reportsPriorMark() {
         let model = TrackerModel(quest: .first)
         model.overworldGrid.setMark(.armos, column: 3, row: 3)

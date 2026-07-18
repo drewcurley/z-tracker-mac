@@ -40,4 +40,19 @@ enum OverworldMark {
         else { isArmos = nil }
         return ApplyResult(oldMark: oldMark, itemPromptIsArmos: isArmos)
     }
+
+    /// Voice (T-141): a second, distinct shop word on a tile that's already a shop
+    /// sets the tile's **second** item (T-060) instead of overwriting the primary —
+    /// you can't say "2nd item" by voice, so the additive reading is what's meant.
+    /// Returns `true` if it handled the mark as a second item (caller then stops);
+    /// `false` means apply `mark` normally.
+    @MainActor @discardableResult
+    static func applyVoiceSecondShopItem(_ mark: OverworldTileMark, column: Int, row: Int,
+                                         grid: OverworldGrid) -> Bool {
+        guard case .shop(let newKind) = mark,
+              case .shop(let firstKind) = grid.mark(column: column, row: row),
+              newKind != firstKind else { return false }
+        grid.setShopSecondItem(newKind, column: column, row: row)
+        return true
+    }
 }
