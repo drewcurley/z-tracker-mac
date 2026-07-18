@@ -25,6 +25,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-138](./T-138.md) | Voice — cursor-driven & region-aware (coord moves cursor, action at cursor, NATO, contextual nav) | frontend-engineer | T-137 | feat/voice-cursor-driven | — | docs/reviews/feat-voice-cursor-driven/final.md |
 | [T-137](./T-137.md) | Voice control (structured grammar) — on-device speech → overworld/tab/cursor actions | frontend-engineer | T-136 | feat/voice-control | — | docs/reviews/feat-voice-control/final.md |
 | [T-136](./T-136.md) | App-bundle + permission scaffolding (prerequisite for voice) | devops | — | chore/app-bundle | — | docs/reviews/chore-app-bundle/final.md |
 | [T-135](./T-135.md) | Part B — region cursor cycle, per-region hotkey dispatch, right-half defaults | frontend-engineer | T-134 | feat/hotkey-region-cursor | — | docs/reviews/feat-hotkey-region-cursor/final.md |

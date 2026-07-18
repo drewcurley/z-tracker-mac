@@ -78,6 +78,21 @@ final class TrackerFocusState {
         }
     }
 
+    /// Jump the cursor to an absolute cell in the active region, clamped (T-138 —
+    /// voice "E7" moves the cursor there).
+    func setCursor(col: Int, row: Int) {
+        cursorShown = true
+        let d = Self.dims(cursorRegion)
+        let c = min(max(0, col), d.cols - 1), r = min(max(0, row), d.rows - 1)
+        let cell = GridCell(col: c, row: r)
+        switch cursorRegion {
+        case .items: itemsCursor = cell
+        case .dungeonMap: dungeonCursor = cell
+        case .blockers: blockersCursor = cell
+        default: overworldCursor = cell
+        }
+    }
+
     /// Step the cursor to the next / previous region in `cycleOrder` (T-135).
     func cycleRegion(forward: Bool) {
         cursorShown = true

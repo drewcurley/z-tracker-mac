@@ -1,30 +1,42 @@
 import Testing
 @testable import TrackerCore
 
-/// Structured voice-command grammar (T-137).
+/// Structured voice-command grammar (T-137/T-138) — cursor-driven, region-aware.
 struct VoiceGrammarTests {
-    @Test func overworldMarkWithGluedCoord() {
-        // "D5" = row D (3), column 5 (index 4).
-        #expect(VoiceGrammar.parse("D5 bomb shop") == .overworldMark(column: 4, row: 3, mark: .shop(.bomb)))
+    // MARK: parse → command shape
+
+    @Test func coordinateOnlyMovesCursor() {
+        // "E7" = row E (4), column 7 (index 6).
+        #expect(VoiceGrammar.parse("E7") == .cursorTo(column: 6, row: 4))
+        #expect(VoiceGrammar.parse("A1") == .cursorTo(column: 0, row: 0))
+        #expect(VoiceGrammar.parse("H16") == .cursorTo(column: 15, row: 7))
     }
 
-    @Test func overworldMarkWithSpacedCoordAndNumberWord() {
-        #expect(VoiceGrammar.parse("d five arrow shop") == .overworldMark(column: 4, row: 3, mark: .shop(.arrow)))
+    @Test func coordinatePlusActionMovesAndMarks() {
+        #expect(VoiceGrammar.parse("D5 bomb shop") == .actionAt(column: 4, row: 3, words: ["bomb", "shop"]))
     }
 
-    @Test func coordRowLetterMapsToRowNotColumn() {
-        // "A1" = row A (0), column 1 (index 0); "H16" = row H (7), column 16 (index 15).
-        #expect(VoiceGrammar.parse("A1 take any") == .overworldTakeAny(column: 0, row: 0, state: .untaken))
-        #expect(VoiceGrammar.parse("H16 armos") == .overworldMark(column: 15, row: 7, mark: .armos))
+    @Test func actionOnlyActsAtCursor() {
+        #expect(VoiceGrammar.parse("potion") == .actionAtCursor(words: ["potion"]))
+        #expect(VoiceGrammar.parse("meat shop") == .actionAtCursor(words: ["meat", "shop"]))
     }
 
-    @Test func variousMarks() {
-        #expect(VoiceGrammar.parse("C3 potion shop") == .overworldMark(column: 2, row: 2, mark: .potionShop))
-        #expect(VoiceGrammar.parse("C3 white sword") == .overworldMark(column: 2, row: 2, mark: .swordCave(2)))
-        #expect(VoiceGrammar.parse("C3 large secret") == .overworldMark(column: 2, row: 2, mark: .secret(.large)))
-        #expect(VoiceGrammar.parse("C3 letter") == .overworldMark(column: 2, row: 2, mark: .theLetter))
-        #expect(VoiceGrammar.parse("C3 level 5") == .overworldMark(column: 2, row: 2, mark: .dungeon(5)))
-        #expect(VoiceGrammar.parse("C3 nothing") == .overworldMark(column: 2, row: 2, mark: .unmarked))
+    @Test func directionsMoveCursor() {
+        #expect(VoiceGrammar.parse("up") == .moveCursor(dcol: 0, drow: -1))
+        #expect(VoiceGrammar.parse("go down") == .moveCursor(dcol: 0, drow: 1))
+        #expect(VoiceGrammar.parse("right") == .moveCursor(dcol: 1, drow: 0))
+        #expect(VoiceGrammar.parse("left") == .moveCursor(dcol: -1, drow: 0))
+        // Compass words dropped: "east" no longer moves the cursor.
+        #expect(VoiceGrammar.parse("east") == .actionAtCursor(words: ["east"]))
+    }
+
+    @Test func regionNavAndStart() {
+        #expect(VoiceGrammar.parse("overworld") == .exitToOverworld)
+        #expect(VoiceGrammar.parse("leave dungeon") == .exitToOverworld)
+        #expect(VoiceGrammar.parse("start") == .gotoStart)
+        #expect(VoiceGrammar.parse("go to start") == .gotoStart)
+        // "set start" still marks (not a goto).
+        #expect(VoiceGrammar.parse("set start") == .actionAtCursor(words: ["set", "start"]))
     }
 
     @Test func dungeonTabSwitch() {
@@ -33,55 +45,55 @@ struct VoiceGrammarTests {
         #expect(VoiceGrammar.parse("dungeon 3") == .dungeonTab(3))
     }
 
-    @Test func directions() {
-        #expect(VoiceGrammar.parse("north") == .moveCursor(dcol: 0, drow: -1))
-        #expect(VoiceGrammar.parse("go south") == .moveCursor(dcol: 0, drow: 1))
-        #expect(VoiceGrammar.parse("east") == .moveCursor(dcol: 1, drow: 0))
-        #expect(VoiceGrammar.parse("west") == .moveCursor(dcol: -1, drow: 0))
+    @Test func natoLettersAndNumberWords() {
+        // "echo seven" = E7; dodges the "E"/"east" homophone clash.
+        #expect(VoiceGrammar.parse("echo seven") == .cursorTo(column: 6, row: 4))
+        #expect(VoiceGrammar.parse("charlie three bomb shop") == .actionAt(column: 2, row: 2, words: ["bomb", "shop"]))
+        #expect(VoiceGrammar.parse("echo twelve") == .cursorTo(column: 11, row: 4))
     }
 
-    @Test func coordVsTabDisambiguation() {
-        // A coordinate present → cell mark, not a tab switch.
-        #expect(VoiceGrammar.parse("D5 level 5") == .overworldMark(column: 4, row: 3, mark: .dungeon(5)))
-        // No coordinate → tab switch.
-        #expect(VoiceGrammar.parse("level 5") == .dungeonTab(5))
-    }
-
-    @Test func gibberishReturnsNil() {
+    @Test func gibberishIsAnActionAtCursorButResolvesToNothing() {
         #expect(VoiceGrammar.parse("") == nil)
-        #expect(VoiceGrammar.parse("hello there") == nil)
-        #expect(VoiceGrammar.parse("D5") == nil)   // coord but no action
+        // Non-coordinate words become an action-at-cursor; overworldAction rejects them.
+        #expect(VoiceGrammar.overworldAction(["hello", "there"]) == nil)
+    }
+
+    // MARK: overworldAction resolution
+
+    @Test func overworldActionResolvesMarks() {
+        #expect(VoiceGrammar.overworldAction(["bomb", "shop"]) == .mark(.shop(.bomb)))
+        #expect(VoiceGrammar.overworldAction(["potion"]) == .mark(.potionShop))           // "shop" optional
+        #expect(VoiceGrammar.overworldAction(["meat"]) == .mark(.shop(.meat)))
+        #expect(VoiceGrammar.overworldAction(["bookshop"]) == .mark(.shop(.book)))         // glued
+        #expect(VoiceGrammar.overworldAction(["armas"]) == .mark(.armos))                  // homophone
+        #expect(VoiceGrammar.overworldAction(["white", "sword"]) == .mark(.swordCave(2)))
+        #expect(VoiceGrammar.overworldAction(["don", "t", "care"]) == .mark(.dontCare))
+        #expect(VoiceGrammar.overworldAction(["nothing"]) == .mark(.unmarked))
+    }
+
+    @Test func overworldActionTakeAnyAndStart() {
+        #expect(VoiceGrammar.overworldAction(["take", "any", "potion"]) == .takeAny(.takenPotion))
+        #expect(VoiceGrammar.overworldAction(["take", "any", "heart"]) == .takeAny(.takenHeart))
+        #expect(VoiceGrammar.overworldAction(["take", "any"]) == .takeAny(.untaken))
+        #expect(VoiceGrammar.overworldAction(["set", "start"]) == .setStart)
+        #expect(VoiceGrammar.overworldAction(["clear", "start"]) == .clearStart)
+    }
+
+    @Test func takeAnyBeatsPotionShop() {
+        // "take any potion" must be a take-any (potion), not a potion shop.
+        #expect(VoiceGrammar.overworldAction(["take", "any", "potion"]) != .mark(.potionShop))
     }
 }
 
 extension VoiceGrammarTests {
-    @Test func gluedAndHomophoneMarks() {
-        // "bookshop" as one word still resolves to the book shop.
-        #expect(VoiceGrammar.parse("E5 bookshop") == .overworldMark(column: 4, row: 4, mark: .shop(.book)))
-        // Common armos mishears.
-        #expect(VoiceGrammar.parse("H2 armas") == .overworldMark(column: 1, row: 7, mark: .armos))
-        // "don't care" → the dark-X (don't-care) mark.
-        #expect(VoiceGrammar.parse("G2 don't care") == .overworldMark(column: 1, row: 6, mark: .dontCare))
-        // "any road 2".
-        #expect(VoiceGrammar.parse("D5 any road 2") == .overworldMark(column: 4, row: 3, mark: .anyRoad(2)))
-    }
-}
-
-extension VoiceGrammarTests {
-    @Test func twoDigitColumnWords() {
-        #expect(VoiceGrammar.parse("E twelve bomb shop") == .overworldMark(column: 11, row: 4, mark: .shop(.bomb)))
-        #expect(VoiceGrammar.parse("E12 bomb shop") == .overworldMark(column: 11, row: 4, mark: .shop(.bomb)))
-        #expect(VoiceGrammar.parse("H sixteen armos") == .overworldMark(column: 15, row: 7, mark: .armos))
-    }
-}
-
-extension VoiceGrammarTests {
-    @Test func takeAnyStates() {
-        #expect(VoiceGrammar.parse("E6 take any potion") == .overworldTakeAny(column: 5, row: 4, state: .takenPotion))
-        #expect(VoiceGrammar.parse("E6 take any heart") == .overworldTakeAny(column: 5, row: 4, state: .takenHeart))
-        #expect(VoiceGrammar.parse("E6 take any candle") == .overworldTakeAny(column: 5, row: 4, state: .takenCandle))
-        #expect(VoiceGrammar.parse("E6 take any") == .overworldTakeAny(column: 5, row: 4, state: .untaken))
-        // Regression: "take any potion" must NOT become a potion shop.
-        #expect(VoiceGrammar.parse("E6 take any potion") != .overworldMark(column: 5, row: 4, mark: .potionShop))
+    @Test func setLevelMarksVsEnterSwitches() {
+        // Bare / "enter" level → switch the tab.
+        #expect(VoiceGrammar.parse("enter level 1") == .dungeonTab(1))
+        #expect(VoiceGrammar.parse("level 1") == .dungeonTab(1))
+        // A mark verb → mark the CURSOR tile as that dungeon (no coordinate needed).
+        #expect(VoiceGrammar.parse("set level 1") == .actionAtCursor(words: ["set", "level", "1"]))
+        #expect(VoiceGrammar.parse("mark level 3") == .actionAtCursor(words: ["mark", "level", "3"]))
+        // …and that resolves to a dungeon mark for the overworld.
+        #expect(VoiceGrammar.overworldAction(["set", "level", "1"]) == .mark(.dungeon(1)))
     }
 }
