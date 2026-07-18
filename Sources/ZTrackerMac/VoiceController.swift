@@ -61,6 +61,7 @@ final class VoiceController {
 
     private let model: TrackerModel
     private let focus: TrackerFocusState
+    private let options: TrackerOptions
 
     private(set) var isListening = false
     private(set) var auth: Auth = .unknown
@@ -87,10 +88,11 @@ final class VoiceController {
 
     private let config: VoiceConfig
 
-    init(model: TrackerModel, focus: TrackerFocusState, config: VoiceConfig) {
+    init(model: TrackerModel, focus: TrackerFocusState, config: VoiceConfig, options: TrackerOptions) {
         self.model = model
         self.focus = focus
         self.config = config
+        self.options = options
     }
 
     func toggle() {
@@ -370,8 +372,52 @@ final class VoiceController {
             case .clearStart:
                 model.startSpot = nil
             }
+        case .dungeonMap:
+            applyDungeonAction(words, cell: cell)
         default:
             vlog("voice action in region \(focus.cursorRegion) not supported yet: \(words)")
+        }
+    }
+
+    /// Apply dungeon-region action words at `cell` for the selected dungeon: room
+    /// type / monster / floor drop, or one-or-more door commands, or an entrance.
+    private func applyDungeonAction(_ words: [String], cell: TrackerFocusState.GridCell) {
+        let tab = focus.selectedDungeonTab
+        guard (0..<model.dungeonRoomMaps.count).contains(tab) else { return }
+        let map = model.dungeonRoomMaps[tab]
+        let actions = VoiceGrammar.dungeonActions(words, config: config)
+        if actions.isEmpty { vlog("no dungeon action in \(words)"); return }
+        for action in actions {
+            switch action {
+            case .roomType(let type):
+                DungeonRoomMark.applyRoomType(type, col: cell.col, row: cell.row, map: map,
+                                              inferDoors: options.doDoorInference)
+            case .monster(let monster):
+                DungeonRoomMark.toggleMonster(monster, col: cell.col, row: cell.row, map: map)
+            case .floorDrop(let drop):
+                DungeonRoomMark.setFloorDrop(drop, col: cell.col, row: cell.row, map: map)
+            case let .door(state, dir):
+                setDungeonDoor(state, dir, col: cell.col, row: cell.row, map: map)
+            case .entrance(let dir):
+                let type: RoomType = switch dir {
+                case .north: .startEnterFromN; case .south: .startEnterFromS
+                case .east: .startEnterFromE; case .west: .startEnterFromW
+                }
+                DungeonRoomMark.applyRoomType(type, col: cell.col, row: cell.row, map: map,
+                                              inferDoors: options.doDoorInference)
+            }
+        }
+    }
+
+    /// The door on the `dir` side of room `(col,row)`, guarding grid edges (there is
+    /// no door beyond the outer wall).
+    private func setDungeonDoor(_ state: DoorState, _ dir: VoiceGrammar.VoiceDirection,
+                                col: Int, row: Int, map: DungeonRoomMap) {
+        switch dir {
+        case .east:  if col < DungeonRoomMap.cols - 1 { map.setHorizontalDoor(state, col: col, row: row) }
+        case .west:  if col > 0 { map.setHorizontalDoor(state, col: col - 1, row: row) }
+        case .south: if row < DungeonRoomMap.rows - 1 { map.setVerticalDoor(state, col: col, row: row) }
+        case .north: if row > 0 { map.setVerticalDoor(state, col: col, row: row - 1) }
         }
     }
 

@@ -74,15 +74,25 @@ public final class VoiceConfig {
 
     // MARK: Matching
 
-    /// Whether an action determines the command *shape* (cursor / navigation / dungeon
-    /// tab) — matched at parse time — or is a **region action** applied at the cursor
-    /// (overworld marks, take-any), resolved per-region at execution.
-    public enum Scope: Sendable { case structural, region, any }
+    /// An action's scope: `structural` determines the command *shape* (cursor /
+    /// navigation / dungeon tab), matched at parse time; `overworld` / `dungeon` are
+    /// **region actions** applied at the cursor and resolved per-region at execution.
+    /// `region` (a query value) matches either overworld or dungeon.
+    public enum Scope: Sendable { case structural, overworld, dungeon, region, any }
 
     public static func scope(of action: VoiceAction) -> Scope {
         switch action.category {
         case .cursor, .navigation, .dungeon: .structural
-        default: .region
+        case .overworldShops, .overworldMarks, .takeAny: .overworld
+        case .dungeonRooms, .monsters, .floorDrops, .doors, .entrances: .dungeon
+        }
+    }
+
+    private static func inScope(_ query: Scope, _ actual: Scope) -> Bool {
+        switch query {
+        case .any: true
+        case .region: actual == .overworld || actual == .dungeon
+        default: query == actual
         }
     }
 
@@ -93,7 +103,7 @@ public final class VoiceConfig {
     public func match(_ words: [String], scope: Scope = .any) -> (actionID: String, number: Int?)? {
         let joined = words.joined(separator: " ")
         var best: (id: String, length: Int)?
-        for action in VoiceCatalog.all where scope == .any || Self.scope(of: action) == scope {
+        for action in VoiceCatalog.all where Self.inScope(scope, Self.scope(of: action)) {
             for phrase in phrases(for: action.id) where joined.contains(phrase) {
                 if phrase.count > (best?.length ?? -1) { best = (action.id, phrase.count) }
             }

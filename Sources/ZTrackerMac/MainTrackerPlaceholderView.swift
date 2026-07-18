@@ -277,7 +277,7 @@ struct MainTrackerPlaceholderView: View {
         }
         // Global hotkey dispatch (T-132): live while the tracker is on screen.
         .onAppear {
-            let voiceController = voice ?? VoiceController(model: model, focus: focus, config: voiceConfig)
+            let voiceController = voice ?? VoiceController(model: model, focus: focus, config: voiceConfig, options: options)
             voice = voiceController
             let dispatcher = GlobalHotkeyDispatcher(model: model, options: options, timer: timer, hotkeys: hotkeys, focus: focus, voice: voiceController)
             dispatcher.install()

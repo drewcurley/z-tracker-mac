@@ -78,4 +78,42 @@ struct VoiceGrammarTests {
         c.addPhrase("boom", to: "OW_BombShop")
         #expect(VoiceGrammar.overworldAction(["boom"], config: c) == .mark(.shop(.bomb)))
     }
+
+    // MARK: Dungeon region (T-140)
+
+    @Test func dungeonRoomMonsterAndDropResolve() {
+        #expect(VoiceGrammar.dungeonActions(["gleeok"], config: config) == [.monster(.gleeok)])
+        #expect(VoiceGrammar.dungeonActions(["staircase"], config: config) == [.roomType(.staircaseToUnknown)])
+        #expect(VoiceGrammar.dungeonActions(["heart", "drop"], config: config) == [.floorDrop(.heart)])
+        #expect(VoiceGrammar.dungeonActions(["triforce"], config: config) == [.floorDrop(.triforce)])
+    }
+
+    @Test func dungeonTransportTakesNumber() {
+        #expect(VoiceGrammar.dungeonActions(["transport", "3"], config: config) == [.roomType(.transport3)])
+    }
+
+    @Test func singleDoorCommand() {
+        #expect(VoiceGrammar.dungeonActions(["open", "left"], config: config) == [.door(.yes, .west)])
+        #expect(VoiceGrammar.dungeonActions(["shutter", "right"], config: config) == [.door(.purple, .east)])
+        #expect(VoiceGrammar.dungeonActions(["key", "up"], config: config) == [.door(.yellow, .north)])
+        #expect(VoiceGrammar.dungeonActions(["blocked", "down"], config: config) == [.door(.no, .south)])
+        #expect(VoiceGrammar.dungeonActions(["none", "west"], config: config) == [.door(.unknown, .west)])
+    }
+
+    @Test func compoundDoorCommand() {
+        #expect(VoiceGrammar.dungeonActions(["open", "west", "shutter", "east", "key", "north"], config: config)
+                == [.door(.yes, .west), .door(.purple, .east), .door(.yellow, .north)])
+    }
+
+    @Test func entranceDirection() {
+        #expect(VoiceGrammar.dungeonActions(["entrance", "south"], config: config) == [.entrance(.south)])
+        #expect(VoiceGrammar.dungeonActions(["entrance", "down"], config: config) == [.entrance(.south)])
+    }
+
+    @Test func doorCommandNotEatenByCursorMove() {
+        // "open left" is a door command at the cursor, not a cursor move left.
+        #expect(VoiceGrammar.parse("open left", config: config) == .actionAtCursor(words: ["open", "left"]))
+        // bare "left" is still a cursor move.
+        #expect(VoiceGrammar.parse("left", config: config) == .moveCursor(dcol: -1, drow: 0))
+    }
 }
