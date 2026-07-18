@@ -166,7 +166,7 @@ struct ZTrackerMacApp: App {
         Window("Overworld", id: OverworldWindowID) {
             ScrollView {
                 OverworldSectionView(model: model, options: options, overlays: overlays,
-                                     timer: timer, reminders: reminders).padding(12)
+                                     timer: timer, reminders: reminders, focus: focus).padding(12)
             }
             .frame(minWidth: 640, minHeight: 360)
             .onAppear { breakout.overworldPoppedOut = true }

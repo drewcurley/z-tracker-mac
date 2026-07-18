@@ -94,7 +94,8 @@ struct DungeonMapView: View {
                                         inferDoors: options.doDoorInference,
                                         outlineQuest: outlineMode,
                                         hoveredRow: $hoveredRow,
-                                        grab: grab)
+                                        grab: grab,
+                                        focus: focus)
                     dungeonInfoStrip
                 }
             }
@@ -355,6 +356,9 @@ struct DungeonRoomGridView: View {
     /// The GRAB tool state (T-083) — when armed, cells route clicks/hover to it
     /// and paint the pick-up / drop preview.
     var grab: DungeonGrabController
+    /// Shared focus state (T-134) — the keyboard cursor follows hover here and is
+    /// drawn on the cursor room when the cursor is on the dungeon grid.
+    @Bindable var focus: TrackerFocusState
 
     /// The grid's natural width: 8 cells + the inter-cell door gaps + the 4pt
     /// padding on each side. The map card uses this to cap its total width so a
@@ -391,12 +395,25 @@ struct DungeonRoomGridView: View {
                                  onHover: { hovering in
                                      if hovering {
                                          hoveredRow = row
+                                         focus.hoverDungeon(col: col, row: row)   // cursor follows (T-134)
                                          if grab.isGrabMode { grab.hoverCell = .init(col: col, row: row) }
                                      } else {
                                          if hoveredRow == row { hoveredRow = nil }
                                          if grab.hoverCell == .init(col: col, row: row) { grab.hoverCell = nil }
                                      }
                                  })
+                        .overlay {
+                            // Keyboard cursor (T-134): bright ring on the cursor room
+                            // while the cursor is on the dungeon grid.
+                            if focus.cursorShown, focus.cursorRegion == .dungeonMap,
+                               focus.dungeonCursor == .init(col: col, row: row) {
+                                RoundedRectangle(cornerRadius: 3)
+                                    .strokeBorder(Color.cyan, lineWidth: 2)
+                                    .shadow(color: .cyan, radius: 2)
+                                    .frame(width: Self.cellW, height: Self.cellH)
+                                    .allowsHitTesting(false)
+                            }
+                        }
                         .offset(x: CGFloat(col) * Self.pitchX, y: CGFloat(row) * Self.pitchY)
                 }
             }
@@ -576,20 +593,15 @@ private struct RoomCellView: View {
         ))
         .popover(isPresented: $showingPicker, arrowEdge: .bottom) {
             RoomTypePicker(current: room.roomType) { newType in
-                let wasUnmarked = room.roomType.isNotMarked
-                var r = room
-                r.roomType = newType
-                map.setRoom(r, col: col, row: row)
-                map.firstInteractionDone = true
-                if inferDoors, wasUnmarked { map.inferEntryDoor(col: col, row: row) }
+                DungeonRoomMark.applyRoomType(newType, col: col, row: row,
+                                              map: map, inferDoors: inferDoors)
                 showingPicker = false
             }
         }
         .popover(isPresented: $showingMonster, arrowEdge: .bottom) {
             MonsterPicker(primary: room.monsterDetail, secondary: room.monsterDetail2,
                           onToggle: { md in
-                              var r = room; r.toggleMonster(md)
-                              map.setRoom(r, col: col, row: row)
+                              DungeonRoomMark.toggleMonster(md, col: col, row: row, map: map)
                               // Clearing dismisses; otherwise stay open so a second
                               // monster can be added (T-116).
                               if md.isNotMarked { showingMonster = false }
@@ -598,8 +610,7 @@ private struct RoomCellView: View {
         }
         .popover(isPresented: $showingFloorDrop, arrowEdge: .bottom) {
             FloorDropPicker(current: room.floorDropDetail) { fd in
-                var r = room; r.floorDropDetail = fd
-                map.setRoom(r, col: col, row: row)
+                DungeonRoomMark.setFloorDrop(fd, col: col, row: row, map: map)
                 showingFloorDrop = false
             }
         }

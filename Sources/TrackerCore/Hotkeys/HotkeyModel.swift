@@ -67,10 +67,71 @@ public struct HotkeyChord: Equatable, Hashable, Sendable {
         modifier == .none ? key : "\(modifier.rawValue) \(key)"
     }
 
-    /// A friendly label for the editor, e.g. `"⇧ 4"`, `"A"`, `"\75"`.
+    /// A friendly label for the editor, e.g. `"⇧4"`, `"A"`, `"F8"`, `"→"`. Raw key
+    /// codes (`\nnn`) are resolved to the physical key they name so the user never
+    /// sees `\100`.
     public var displayName: String {
-        let k = key.hasPrefix("\\") ? key : key.uppercased()
+        let k: String
+        if key.hasPrefix("\\"), let code = Int(key.dropFirst()) {
+            k = HotkeyChord.keyLabel(forCode: code) ?? key
+        } else {
+            k = key.uppercased()
+        }
         return modifier == .none ? k : "\(modifier.symbol) \(k)"
+    }
+
+    /// The physical-key name for a raw Mac virtual key code (the `\nnn` form), or
+    /// `nil` for an unmapped code. Covers the keys a tracker binding realistically
+    /// uses — punctuation, function row, nav cluster, arrows, whitespace.
+    public static func keyLabel(forCode code: Int) -> String? {
+        switch code {
+        // Punctuation (letters/digits are stored as characters, not codes).
+        case 27: return "-"
+        case 24: return "="
+        case 33: return "["
+        case 30: return "]"
+        case 42: return "\\"
+        case 41: return ";"
+        case 39: return "'"
+        case 43: return ","
+        case 47: return "."
+        case 44: return "/"
+        case 50: return "`"
+        // Whitespace / editing.
+        case 49: return "Space"
+        case 36: return "Return"
+        case 48: return "Tab"
+        case 51: return "Delete"        // backspace
+        case 117: return "Fwd Del"      // forward delete
+        case 53: return "Esc"
+        // Nav cluster.
+        case 115: return "Home"
+        case 119: return "End"
+        case 116: return "Page Up"
+        case 121: return "Page Down"
+        // Arrows.
+        case 123: return "←"
+        case 124: return "→"
+        case 125: return "↓"
+        case 126: return "↑"
+        // Function row.
+        case 122: return "F1"
+        case 120: return "F2"
+        case 99:  return "F3"
+        case 118: return "F4"
+        case 96:  return "F5"
+        case 97:  return "F6"
+        case 98:  return "F7"
+        case 100: return "F8"
+        case 101: return "F9"
+        case 109: return "F10"
+        case 103: return "F11"
+        case 111: return "F12"
+        case 105: return "F13"
+        case 107: return "F14"
+        case 113: return "F15"
+        default: return nil
+        }
     }
 }
 
@@ -208,12 +269,18 @@ public enum HotkeyCatalog {
         ("DungeonTab9", "Dungeon tab 9"), ("DungeonTabS", "Dungeon tab Summary"),
         ("MoveCursorLeft", "Move cursor left"), ("MoveCursorRight", "Move cursor right"),
         ("MoveCursorUp", "Move cursor up"), ("MoveCursorDown", "Move cursor down"),
-        ("ToggleCursorOverworldOrDungeon", "Toggle cursor: overworld / dungeon"),
+        // The cursor visits a ring of regions (T-135); these cycle it either way.
+        // (Replaces the reference's 2-way overworld/dungeon toggle; import aliases
+        // the old `ToggleCursorOverworldOrDungeon` id onto the forward cycle.)
+        ("CycleRegionForward", "Cycle region ▶ (next)"),
+        ("CycleRegionBackward", "Cycle region ◀ (previous)"),
         ("LeftClick", "Left click"), ("MiddleClick", "Middle click"),
         ("RightClick", "Right click"), ("ScrollUp", "Scroll up"), ("ScrollDown", "Scroll down"),
-        // Beyond the Windows app (T-131, user request) — these ids won't round-trip
-        // into the reference tracker, which is expected (Mac-only actions).
+        // Beyond the Windows app (T-131/T-135, user request) — these ids won't round-
+        // trip into the reference tracker, which is expected (Mac-only actions).
         ("StartTimer", "Start timer"),
         ("GroundhogReset", "Groundhog reset (skip confirmation)"),
+        ("RecorderDestPrev", "Whistle destination ◀"),
+        ("RecorderDestNext", "Whistle destination ▶"),
     ])
 }

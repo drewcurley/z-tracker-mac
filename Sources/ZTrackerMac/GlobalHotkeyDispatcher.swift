@@ -14,13 +14,16 @@ import TrackerCore
 @MainActor
 final class GlobalHotkeyDispatcher {
     private let model: TrackerModel
+    private let options: TrackerOptions
     private let timer: TrackerTimer
     private let hotkeys: HotkeyConfig
     private let focus: TrackerFocusState
     private var monitor: Any?
 
-    init(model: TrackerModel, timer: TrackerTimer, hotkeys: HotkeyConfig, focus: TrackerFocusState) {
+    init(model: TrackerModel, options: TrackerOptions, timer: TrackerTimer,
+         hotkeys: HotkeyConfig, focus: TrackerFocusState) {
         self.model = model
+        self.options = options
         self.timer = timer
         self.hotkeys = hotkeys
         self.focus = focus
@@ -44,9 +47,95 @@ final class GlobalHotkeyDispatcher {
         guard event.window?.title == "Z-Tracker" else { return false }
         let responder = event.window?.firstResponder
         if responder is NSTextView || responder is NSText { return false }
-        guard let chord = HotkeyChord(nsEvent: event),
-              let selectorID = hotkeys.selectorID(boundTo: chord, in: .global) else { return false }
-        return perform(selectorID)
+        guard let chord = HotkeyChord(nsEvent: event) else { return false }
+        // Global keys are always live (a chord can't be bound both global and in a
+        // region — their conflict scopes intersect, so this ordering is unambiguous).
+        if let selectorID = hotkeys.selectorID(boundTo: chord, in: .global) {
+            return perform(selectorID)
+        }
+        // Region keys act on the keyboard cursor's cell when it's on that region
+        // (T-134/T-135).
+        guard focus.cursorShown else { return false }
+        switch focus.cursorRegion {
+        case .overworld:
+            if let selectorID = hotkeys.selectorID(boundTo: chord, in: .overworld) {
+                return performOverworld(selectorID)
+            }
+        case .dungeonMap:
+            if let selectorID = hotkeys.selectorID(boundTo: chord, in: .dungeonRoom) {
+                return performDungeonRoom(selectorID)
+            }
+        case .items:
+            if let selectorID = hotkeys.selectorID(boundTo: chord, in: .items) {
+                return performItems(selectorID)
+            }
+        case .blockers:
+            if let selectorID = hotkeys.selectorID(boundTo: chord, in: .blockers) {
+                return performBlockers(selectorID)
+            }
+        default:
+            break   // dungeon-item cursor nav not built yet
+        }
+        return false
+    }
+
+    /// Set the blocker at the cursor's (dungeon, slot) to the selector's kind (T-135),
+    /// the same as its picker.
+    private func performBlockers(_ selectorID: String) -> Bool {
+        let t = BlockerRegion.target(focus.blockersCursor)
+        model.dungeonBlockers.setDungeonBlocker(DungeonBlocker.fromHotKeyName(selectorID),
+                                                dungeon: t.dungeon, slot: t.slot)
+        return true
+    }
+
+    /// Apply an `Item_*` mark to the item box under the cursor (T-135). Only the
+    /// grid's assignable picker-boxes (white-sword / coast / armos item) respond;
+    /// the fixed toggle boxes have their own Global hotkeys, so the key is consumed
+    /// there but does nothing on a non-box cell.
+    private func performItems(_ selectorID: String) -> Bool {
+        let prefix = "Item_"
+        guard selectorID.hasPrefix(prefix),
+              let index = ItemBoxMark.itemIndex(forHotkeySuffix: String(selectorID.dropFirst(prefix.count)))
+        else { return false }
+        let cell = focus.itemsCursor
+        guard (0..<ItemProgressGrid.rows).contains(cell.row),
+              (0..<ItemProgressGrid.columns).contains(cell.col),
+              case .pickerBox(let coast) = ItemProgressGrid.layout[cell.row][cell.col]
+        else { return true }   // consumed, but not a box cell
+        ItemBoxMark.apply(itemIndex: index, to: coast.box(in: model.dungeonTracker),
+                          instance: model.dungeonTracker)
+        return true
+    }
+
+    /// Apply a `DungeonRoom_*` mark to the dungeon-map cursor room (T-135), the same
+    /// way its picker would. No-op on the Summary tab (no room map).
+    private func performDungeonRoom(_ selectorID: String) -> Bool {
+        let tab = focus.selectedDungeonTab
+        guard (0..<model.dungeonRoomMaps.count).contains(tab) else { return false }
+        let cell = focus.dungeonCursor
+        return DungeonRoomMark.applyHotkey(selectorID, col: cell.col, row: cell.row,
+                                           map: model.dungeonRoomMaps[tab],
+                                           inferDoors: options.doDoorInference)
+    }
+
+    /// Apply an `Overworld_*` mark to the overworld cursor cell (T-134), the same
+    /// way a mouse click on the tile picker would.
+    private func performOverworld(_ selectorID: String) -> Bool {
+        let prefix = "Overworld_"
+        guard selectorID.hasPrefix(prefix),
+              let mark = OverworldTileMark.fromHotkeySuffix(String(selectorID.dropFirst(prefix.count)))
+        else { return false }
+        let cell = focus.overworldCursor
+        // Don't mark a border screen that never holds anything.
+        let instance = OverworldInstance(quest: model.quest ?? .first)
+        guard !instance.alwaysEmpty(x: cell.col, y: cell.row) else { return true }
+        OverworldMark.apply(mark, column: cell.col, row: cell.row, grid: model.overworldGrid,
+                            releaseTakeAny: { c, r in model.releaseOverworldTakeAny(column: c, row: r) },
+                            placeDungeon: { number, c, r in
+                                model.levelHints[HintTarget.dungeon(number)] =
+                                    HintZone.forZoneChar(OverworldZones.zone(column: c, row: r))
+                            })
+        return true
     }
 
     /// Perform a Global selector's action. Returns `true` if handled (consumed).
@@ -79,9 +168,19 @@ final class GlobalHotkeyDispatcher {
         case "Global_DungeonTab8": focus.selectedDungeonTab = 7
         case "Global_DungeonTab9": focus.selectedDungeonTab = 8
         case "Global_DungeonTabS": focus.selectedDungeonTab = 9
+        // Keyboard cursor movement (T-134) + region cycle (T-135).
+        case "Global_MoveCursorLeft":  focus.moveCursor(dcol: -1, drow: 0)
+        case "Global_MoveCursorRight": focus.moveCursor(dcol: 1, drow: 0)
+        case "Global_MoveCursorUp":    focus.moveCursor(dcol: 0, drow: -1)
+        case "Global_MoveCursorDown":  focus.moveCursor(dcol: 0, drow: 1)
+        case "Global_CycleRegionForward":  focus.cycleRegion(forward: true)
+        case "Global_CycleRegionBackward": focus.cycleRegion(forward: false)
+        // Whistle destination stepper (T-135): same as the ◀ ▶ arrows by the recorder.
+        case "Global_RecorderDestPrev": model.recorderDestinationManual = true; model.recorderDestinationIndex -= 1
+        case "Global_RecorderDestNext": model.recorderDestinationManual = true; model.recorderDestinationIndex += 1
         default:
-            // Cursor / click / scroll globals are later phases — a recognized-but-
-            // unimplemented Global key is left for the app (not consumed).
+            // Click / scroll globals + hover-region marks are phase 2b — a
+            // recognized-but-unimplemented Global key is left for the app.
             return false
         }
         return true

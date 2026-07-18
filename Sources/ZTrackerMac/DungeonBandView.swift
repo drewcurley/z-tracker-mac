@@ -45,7 +45,7 @@ struct DungeonBandView: View {
     private var blockersNotesColumn: some View {
         VStack(alignment: .leading, spacing: 12) {
             TopSectionGroup(title: "Blockers") {
-                BlockersView(model: model)
+                BlockersView(model: model, focus: focus)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
             TopSectionGroup(title: "Notes") {

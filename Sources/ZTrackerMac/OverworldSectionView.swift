@@ -11,6 +11,8 @@ struct OverworldSectionView: View {
     var overlays: OverworldOverlayState
     var timer: TrackerTimer
     var reminders: ReminderController
+    /// Shared focus state (T-134) — the keyboard cursor.
+    var focus: TrackerFocusState
 
     /// The live overworld map-state summary feeding the map's true GYR highlight.
     private var mapState: MapStateSummary {
@@ -45,6 +47,7 @@ struct OverworldSectionView: View {
             grid: model.overworldGrid,
             quest: model.quest ?? .first,
             options: options,
+            focus: focus,
             playerState: model.playerComputedStateSummary,
             mapState: mapState,
             overlays: overlays,

@@ -20,6 +20,8 @@ import TrackerCore
 /// (docs/ux.md § Accessibility).
 struct BlockersView: View {
     @Bindable var model: TrackerModel
+    /// Shared keyboard-cursor state (T-135) — this is the "blockers" cursor region.
+    var focus: TrackerFocusState
 
     private var located: Set<Int> { DungeonTrackerView.locatedDungeonIndices(in: model.overworldGrid) }
 
@@ -47,7 +49,26 @@ struct BlockersView: View {
                     dungeonIndex: dungeonIndex,
                     slot: slot,
                     playerState: model.playerComputedStateSummary)
+                    .overlay { cursorRing(dungeon: dungeonIndex, slot: slot) }
+                    .onHover { hovering in
+                        if hovering {
+                            let c = BlockerRegion.cell(dungeon: dungeonIndex, slot: slot)
+                            focus.hoverBlockers(col: c.col, row: c.row)
+                        }
+                    }
             }
+        }
+    }
+
+    /// The keyboard cursor's cyan ring on its blocker box (T-135).
+    @ViewBuilder
+    private func cursorRing(dungeon: Int, slot: Int) -> some View {
+        if focus.cursorShown, focus.cursorRegion == .blockers,
+           focus.blockersCursor == BlockerRegion.cell(dungeon: dungeon, slot: slot) {
+            RoundedRectangle(cornerRadius: 4)
+                .strokeBorder(Color.cyan, lineWidth: 2)
+                .shadow(color: .cyan, radius: 2)
+                .allowsHitTesting(false)
         }
     }
 }
