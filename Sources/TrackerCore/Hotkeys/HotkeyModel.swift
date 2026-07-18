@@ -282,5 +282,6 @@ public enum HotkeyCatalog {
         ("GroundhogReset", "Groundhog reset (skip confirmation)"),
         ("RecorderDestPrev", "Whistle destination ◀"),
         ("RecorderDestNext", "Whistle destination ▶"),
+        ("ToggleVoice", "Toggle voice control"),
     ])
 }

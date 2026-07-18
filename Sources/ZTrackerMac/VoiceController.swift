@@ -1,0 +1,316 @@
+import AVFoundation
+import Observation
+import Speech
+import TrackerCore
+
+/// Thread-safe holder so the audio tap (audio render thread) always feeds whatever
+/// recognition request the main actor has installed — letting us swap requests between
+/// commands **without** reconfiguring the audio graph (which, done on a live engine,
+/// races the audio IO thread and crashes). `append` is safe to call off any thread.
+private final class RequestBox: @unchecked Sendable {
+    private let lock = NSLock()
+    private var request: SFSpeechAudioBufferRecognitionRequest?
+    private var appended = 0
+    /// How many audio buffers have been fed (diagnostics — proves the mic tap is live).
+    var bufferCount: Int { lock.lock(); defer { lock.unlock() }; return appended }
+    /// Swap in a new request, finalizing the old one — **all under the lock**, so an
+    /// in-flight `append` on the audio thread can never race `endAudio`/dealloc of the
+    /// request it's writing to (that race corrupts the heap).
+    func swap(to r: SFSpeechAudioBufferRecognitionRequest?) {
+        lock.lock(); request?.endAudio(); request = r; lock.unlock()
+    }
+    /// Called on the audio render thread. `append` happens *inside* the lock so it is
+    /// mutually exclusive with `swap`.
+    func append(_ buffer: AVAudioPCMBuffer) {
+        lock.lock(); request?.append(buffer); appended += 1; lock.unlock()
+    }
+}
+
+/// File diagnostics for the voice pipeline (T-137). Written to a fixed path so it can
+/// be read regardless of how the app was launched (a raw-binary launch bypasses the
+/// bundle Info.plist and is TCC-killed, so stderr isn't reliable here).
+private let vlogPath = "/tmp/ztracker-voice.log"
+private func vlog(_ s: String) {
+    guard let data = "[voice] \(s)\n".data(using: .utf8) else { return }
+    let url = URL(fileURLWithPath: vlogPath)
+    if let fh = try? FileHandle(forWritingTo: url) {
+        defer { try? fh.close() }
+        fh.seekToEndOfFile()
+        fh.write(data)
+    } else {
+        try? data.write(to: url)
+    }
+}
+
+/// Hands-free voice control (T-137). On-device `SFSpeechRecognizer` over the mic; each
+/// spoken phrase is parsed by `VoiceGrammar` and executed through the same region-apply
+/// code the hotkey cursor uses. Toggled from the FLAGS mic button.
+///
+/// Lifecycle: the audio engine + tap are set up **once** in `start()` and torn down
+/// **once** in `stop()`. Between commands only the (cheap) recognition request is
+/// swapped. Utterance boundaries are detected with a silence debounce, so you speak a
+/// command, pause, and it fires — then a clean request is ready for the next.
+///
+/// Concurrency: Speech/TCC/audio callbacks fire on background queues, so each is
+/// nonisolated (`@Sendable` / async continuation), extracts only `Sendable` values, and
+/// hops to the main actor to touch state.
+@Observable
+@MainActor
+final class VoiceController {
+    enum Auth: Equatable { case unknown, authorized, denied }
+
+    private let model: TrackerModel
+    private let focus: TrackerFocusState
+
+    private(set) var isListening = false
+    private(set) var auth: Auth = .unknown
+    private(set) var lastHeard = ""
+    private(set) var lastCommand = ""
+
+    @ObservationIgnored private let recognizer = SFSpeechRecognizer()
+    @ObservationIgnored private let engine = AVAudioEngine()
+    @ObservationIgnored private let box = RequestBox()
+    @ObservationIgnored private var request: SFSpeechAudioBufferRecognitionRequest?
+    @ObservationIgnored private var task: SFSpeechRecognitionTask?
+    @ObservationIgnored private var endTimer: Task<Void, Never>?
+    @ObservationIgnored private var diagTimer: Task<Void, Never>?
+    @ObservationIgnored private var tapInstalled = false
+    /// The last utterance we acted on, to avoid double-firing a command (T-137).
+    @ObservationIgnored private var lastProcessed = ""
+    /// Guards the restart so `isFinal` + a "no speech" error can't spin up a
+    /// thousands-per-second task-churn loop that starves the recognizer.
+    @ObservationIgnored private var restarting = false
+    /// Bumped each session; a recognition callback whose generation is stale (from a
+    /// task we've already superseded/cancelled) is ignored — this kills the 301
+    /// "canceled" feedback loop where cancelling the old task restarts everything.
+    @ObservationIgnored private var generation = 0
+
+    init(model: TrackerModel, focus: TrackerFocusState) {
+        self.model = model
+        self.focus = focus
+    }
+
+    func toggle() {
+        if isListening { stop() } else { requestAuthThenStart() }
+    }
+
+    // MARK: Permissions (off the main actor, then hop back)
+
+    private func requestAuthThenStart() {
+        Task {
+            let speechOK = await Self.requestSpeechAuth()
+            let micOK = speechOK ? await AVCaptureDevice.requestAccess(for: .audio) : false
+            auth = (speechOK && micOK) ? .authorized : .denied
+            if speechOK && micOK { start() }
+        }
+    }
+
+    private nonisolated static func requestSpeechAuth() async -> Bool {
+        await withCheckedContinuation { cont in
+            SFSpeechRecognizer.requestAuthorization { cont.resume(returning: $0 == .authorized) }
+        }
+    }
+
+    // MARK: Engine lifecycle — set up / torn down ONCE
+
+    private func start() {
+        guard !isListening, let recognizer, recognizer.isAvailable else {
+            vlog("start aborted: recognizer available=\(recognizer?.isAvailable ?? false)")
+            return
+        }
+        try? "".write(toFile: vlogPath, atomically: true, encoding: .utf8)   // fresh log
+        do {
+            let input = engine.inputNode
+            let format = input.outputFormat(forBus: 0)
+            vlog("input format: \(format.sampleRate)Hz \(format.channelCount)ch; onDevice=\(recognizer.supportsOnDeviceRecognition)")
+            if format.sampleRate == 0 || format.channelCount == 0 {
+                vlog("⚠️ invalid input format — no usable mic device")
+            }
+            if !tapInstalled {
+                let box = self.box
+                input.installTap(onBus: 0, bufferSize: 1024, format: format) { @Sendable buffer, _ in
+                    box.append(buffer)
+                }
+                tapInstalled = true
+            }
+            engine.prepare()
+            try engine.start()
+            isListening = true
+            startDiag()
+            startSession()
+        } catch {
+            lastCommand = "mic error"
+            stop()
+        }
+    }
+
+    func stop() {
+        endTimer?.cancel(); endTimer = nil
+        diagTimer?.cancel(); diagTimer = nil
+        task?.cancel(); task = nil
+        box.swap(to: nil)   // finalizes + clears the request under the lock
+        request = nil
+        if engine.isRunning { engine.stop() }
+        if tapInstalled { engine.inputNode.removeTap(onBus: 0); tapInstalled = false }
+        isListening = false
+        restarting = false
+        lastHeard = ""
+    }
+
+    /// Restart the recognition session after a short beat — **guarded** so overlapping
+    /// end signals (isFinal, "no speech" error, fallback) collapse into one restart,
+    /// and **delayed** so we never busy-loop creating tasks the recognizer can't serve.
+    private func restart() {
+        guard isListening, !restarting else { return }
+        restarting = true
+        Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .milliseconds(150))
+            guard let self, self.isListening else { self?.restarting = false; return }
+            self.restarting = false
+            self.startSession()
+        }
+    }
+
+    /// Begin **one** recognition task for the session. It runs continuously; commands
+    /// are pulled from its growing transcript on each pause (`processNewTail`). We only
+    /// come back here when the task naturally ends (its ~1-minute limit or an error) —
+    /// never per command, which is what wedged the recognizer before. Only the request
+    /// is swapped; the audio engine/tap are left running.
+    private func startSession() {
+        guard isListening else { return }
+        endTimer?.cancel(); endTimer = nil
+        generation &+= 1
+        let gen = generation
+        task?.cancel(); task = nil        // its stale callback is ignored via `gen`
+        lastHeard = ""
+        lastProcessed = ""
+
+        let req = SFSpeechAudioBufferRecognitionRequest()
+        req.shouldReportPartialResults = true
+        req.requiresOnDeviceRecognition = true
+        req.contextualStrings = VoiceGrammar.contextualVocabulary   // bias toward jargon
+        request = req
+        box.swap(to: req)   // finalizes the previous request under the lock, atomically
+
+        let started = Date()
+        vlog("session \(gen) started")
+        task = recognizer?.recognitionTask(with: req) { @Sendable result, error in
+            let transcript = result?.bestTranscription.formattedString
+            let isFinal = result?.isFinal ?? false
+            let errCode = (error as NSError?)?.code
+            Task { @MainActor [weak self] in
+                // Ignore callbacks from a task we've already replaced.
+                guard let self, self.isListening, gen == self.generation else { return }
+                if let transcript { self.heard(transcript, isFinal: isFinal) }
+                if let errCode {
+                    let ms = Int(Date().timeIntervalSince(started) * 1000)
+                    // Code 1110 = "no speech detected": a silent window, normal between
+                    // commands — not a failure. Any end reason ends the task; open a
+                    // fresh one. (ms tells us if the task actually listened.)
+                    vlog("session \(gen) ended \(errCode == 1110 ? "no-speech" : "err \(errCode)") after \(ms)ms")
+                    self.restart()
+                }
+            }
+        }
+    }
+
+    /// Log every second whether audio buffers are flowing — the fast way to tell
+    /// "deaf" (0 buffers = mic/tap problem) from "heard-but-didn't-parse".
+    private func startDiag() {
+        diagTimer?.cancel()
+        diagTimer = Task { @MainActor [weak self] in
+            var last = 0
+            while !Task.isCancelled, let self, self.isListening {
+                let n = self.box.bufferCount
+                vlog("buffers=\(n) (+\(n - last)/s)  heard=\"\(self.lastHeard)\"")
+                last = n
+                try? await Task.sleep(for: .seconds(1))
+            }
+        }
+    }
+
+    // MARK: Utterance handling
+
+    /// A recognition result arrived. The recognizer finalizes each spoken phrase
+    /// (`isFinal`) — that's the natural command boundary, so act on it and start the
+    /// next session. A change-based fallback timer covers the rare phrase that never
+    /// finalizes (only re-armed when the transcript actually *changes*, so a repeated
+    /// partial can't keep it from firing).
+    private func heard(_ transcript: String, isFinal: Bool) {
+        if transcript != lastHeard {
+            lastHeard = transcript
+            armFallback()
+        }
+        if isFinal {
+            processUtterance(transcript)
+            restart()
+        }
+    }
+
+    /// ~0.5s after the transcript stops changing, act — faster than waiting for the
+    /// recognizer's own (slow) end-of-speech, and re-armed only on a real change so a
+    /// repeated partial can't keep it from firing.
+    private func armFallback() {
+        endTimer?.cancel()
+        endTimer = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .milliseconds(700))
+            guard !Task.isCancelled, let self, self.isListening else { return }
+            let text = self.lastHeard
+            self.processUtterance(text)
+            self.restart()
+        }
+    }
+
+    /// Parse and run one finalized phrase (deduped so `isFinal` + fallback can't both
+    /// fire it).
+    private func processUtterance(_ text: String) {
+        endTimer?.cancel(); endTimer = nil
+        let phrase = text.trimmingCharacters(in: .whitespaces)
+        guard !phrase.isEmpty, phrase != lastProcessed else { return }
+        lastProcessed = phrase
+        if let command = VoiceGrammar.parse(phrase) {
+            vlog("utterance=\"\(phrase)\" → \(command)")
+            execute(command)
+            lastCommand = describe(command)
+        } else {
+            vlog("utterance=\"\(phrase)\" → (no command)")
+        }
+    }
+
+    // MARK: Execute
+
+    private func execute(_ command: VoiceCommand) {
+        switch command {
+        case let .overworldMark(column, row, mark):
+            let instance = OverworldInstance(quest: model.quest ?? .first)
+            guard !instance.alwaysEmpty(x: column, y: row) else { return }
+            focus.hoverOverworld(col: column, row: row)
+            OverworldMark.apply(mark, column: column, row: row, grid: model.overworldGrid,
+                                releaseTakeAny: { c, r in model.releaseOverworldTakeAny(column: c, row: r) },
+                                placeDungeon: { number, c, r in
+                                    model.levelHints[HintTarget.dungeon(number)] =
+                                        HintZone.forZoneChar(OverworldZones.zone(column: c, row: r))
+                                })
+        case let .overworldTakeAny(column, row, state):
+            let instance = OverworldInstance(quest: model.quest ?? .first)
+            guard !instance.alwaysEmpty(x: column, y: row) else { return }
+            focus.hoverOverworld(col: column, row: row)
+            model.setOverworldTakeAny(state, column: column, row: row)
+        case let .dungeonTab(n):
+            focus.selectedDungeonTab = n - 1
+        case let .moveCursor(dcol, drow):
+            focus.moveCursor(dcol: dcol, drow: drow)
+        }
+    }
+
+    private func describe(_ command: VoiceCommand) -> String {
+        switch command {
+        case let .overworldMark(c, r, mark):
+            return "\(OverworldCoords.label(column: c, row: r)) → \(mark.displayName)"
+        case let .overworldTakeAny(c, r, state):
+            return "\(OverworldCoords.label(column: c, row: r)) → take-any \(state.label)"
+        case let .dungeonTab(n): return "Level \(n)"
+        case .moveCursor: return "move"
+        }
+    }
+}

@@ -37,6 +37,8 @@ struct MainTrackerPlaceholderView: View {
     @State private var timelineCollapsed = false
     /// The runtime dispatcher for Global hotkeys (T-132), installed while on screen.
     @State private var globalHotkeys: GlobalHotkeyDispatcher?
+    /// Voice control (T-137) — created on appear (needs model + focus).
+    @State private var voice: VoiceController?
 
     /// The live overworld map-state summary (T-015.3) feeding the map's true
     /// GYR highlight. Recomputed here from the observable model each time the
@@ -188,7 +190,7 @@ struct MainTrackerPlaceholderView: View {
                         ObtainableItemsView(model: model, playerState: model.playerComputedStateSummary, mapState: mapState, focus: focus)
                     }
                     TopSectionGroup(title: "Flags") {
-                        SeedFlagsView(model: model, options: options, playerState: model.playerComputedStateSummary, mapState: mapState, timer: timer)
+                        SeedFlagsView(model: model, options: options, playerState: model.playerComputedStateSummary, mapState: mapState, timer: timer, voice: voice)
                     }
                     TopSectionGroup(title: "Info") {
                         MapInfoView(model: model, playerState: model.playerComputedStateSummary, mapState: mapState, overlays: overlays, timer: timer, onResetApp: onResetApp)
@@ -274,13 +276,16 @@ struct MainTrackerPlaceholderView: View {
         }
         // Global hotkey dispatch (T-132): live while the tracker is on screen.
         .onAppear {
-            let dispatcher = GlobalHotkeyDispatcher(model: model, options: options, timer: timer, hotkeys: hotkeys, focus: focus)
+            let voiceController = voice ?? VoiceController(model: model, focus: focus)
+            voice = voiceController
+            let dispatcher = GlobalHotkeyDispatcher(model: model, options: options, timer: timer, hotkeys: hotkeys, focus: focus, voice: voiceController)
             dispatcher.install()
             globalHotkeys = dispatcher
         }
         .onDisappear {
             globalHotkeys?.uninstall()
             globalHotkeys = nil
+            voice?.stop()
         }
     }
 }
