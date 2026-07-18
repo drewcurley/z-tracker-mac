@@ -359,6 +359,10 @@ final class VoiceController {
             guard !instance.alwaysEmpty(x: cell.col, y: cell.row) else { return }
             switch action {
             case .mark(let mark):
+                // A second shop word on an existing shop tile sets the tile's *second*
+                // item rather than overwriting the primary (T-141).
+                if OverworldMark.applyVoiceSecondShopItem(mark, column: cell.col, row: cell.row,
+                                                          grid: model.overworldGrid) { return }
                 OverworldMark.apply(mark, column: cell.col, row: cell.row, grid: model.overworldGrid,
                                     releaseTakeAny: { c, r in model.releaseOverworldTakeAny(column: c, row: r) },
                                     placeDungeon: { number, c, r in
