@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Info.plist template for the ZTrackerMac.app bundle (T-136). @@VERSION@@ is
+  substituted from the top-level VERSION file by scripts/build-app.sh.
+
+  The .app wrapper exists because macOS TCC will not grant microphone / speech
+  access to a bare executable — it needs a bundle id + usage-description strings
+  (for the voice feature). The bundle also carries the version fields the future
+  self-update system will read.
+-->
+<plist version="1.0">
+<dict>
+    <key>CFBundleIdentifier</key>
+    <string>com.drewcurley.ztracker-mac</string>
+    <key>CFBundleName</key>
+    <string>Z-Tracker</string>
+    <key>CFBundleDisplayName</key>
+    <string>Z-Tracker</string>
+    <key>CFBundleExecutable</key>
+    <string>ZTrackerMac</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <!-- Versioning (T-136 earmark): both sourced from ./VERSION. The self-update
+         system will compare CFBundleShortVersionString against a release feed. -->
+    <key>CFBundleShortVersionString</key>
+    <string>@@VERSION@@</string>
+    <key>CFBundleVersion</key>
+    <string>@@VERSION@@</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>14.0</string>
+    <key>LSApplicationCategoryType</key>
+    <string>public.app-category.utilities</string>
+    <key>NSHighResolutionCapable</key>
+    <true/>
+    <key>NSPrincipalClass</key>
+    <string>NSApplication</string>
+    <!-- TCC usage strings — required or the process is killed on first mic/speech
+         request (T-136, for the voice feature T-137). -->
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Z-Tracker listens for spoken commands so you can mark the map hands-free.</string>
+    <key>NSSpeechRecognitionUsageDescription</key>
+    <string>Z-Tracker turns your spoken commands into tracker marks using on-device speech recognition.</string>
+</dict>
+</plist>

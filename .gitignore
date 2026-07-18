@@ -20,3 +20,6 @@ Package.resolved
 *.xcodeproj
 
 !default.pbxproj
+
+# App bundle build product
+/ZTrackerMac.app/
