@@ -17,6 +17,7 @@ struct ContentView: View {
     var overlays: OverworldOverlayState
     /// The hotkey bindings (T-131); Global keys are dispatched at runtime (T-132).
     var hotkeys: HotkeyConfig
+    var voiceConfig: VoiceConfig
     /// Shared UI focus state (T-133) — selected dungeon tab (+ later, the cursor).
     var focus: TrackerFocusState
     /// "Reset App" — discard everything and return here to the startup screen
@@ -33,7 +34,7 @@ struct ContentView: View {
                     model.selectQuest(quest)
                 })
             } else {
-                MainTrackerPlaceholderView(model: model, options: options, breakout: breakout, timer: timer, reminders: reminders, overlays: overlays, hotkeys: hotkeys, focus: focus, onResetApp: onResetApp)
+                MainTrackerPlaceholderView(model: model, options: options, breakout: breakout, timer: timer, reminders: reminders, overlays: overlays, hotkeys: hotkeys, voiceConfig: voiceConfig, focus: focus, onResetApp: onResetApp)
             }
         }
         // Prime live TTS at launch (T-069/T-045): speaking a silent space loads
@@ -54,5 +55,5 @@ struct ContentView: View {
 }
 
 #Preview {
-    ContentView(model: TrackerModel(), options: TrackerOptions(), breakout: BreakoutWindows(), timer: TrackerTimer(), reminders: ReminderController(), overlays: OverworldOverlayState(), hotkeys: HotkeyConfig(), focus: TrackerFocusState(), onResetApp: {})
+    ContentView(model: TrackerModel(), options: TrackerOptions(), breakout: BreakoutWindows(), timer: TrackerTimer(), reminders: ReminderController(), overlays: OverworldOverlayState(), hotkeys: HotkeyConfig(), voiceConfig: VoiceConfig(), focus: TrackerFocusState(), onResetApp: {})
 }

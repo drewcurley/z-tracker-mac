@@ -24,6 +24,7 @@ struct MainTrackerPlaceholderView: View {
     var overlays: OverworldOverlayState
     /// The hotkey bindings (T-131); Global keys fire at runtime via the dispatcher (T-132).
     var hotkeys: HotkeyConfig
+    var voiceConfig: VoiceConfig
     /// Shared UI focus state (T-133) — selected dungeon tab (+ later, the cursor).
     var focus: TrackerFocusState
     /// "Reset App" — discard the run and return to the startup screen (T-046),
@@ -276,7 +277,7 @@ struct MainTrackerPlaceholderView: View {
         }
         // Global hotkey dispatch (T-132): live while the tracker is on screen.
         .onAppear {
-            let voiceController = voice ?? VoiceController(model: model, focus: focus)
+            let voiceController = voice ?? VoiceController(model: model, focus: focus, config: voiceConfig)
             voice = voiceController
             let dispatcher = GlobalHotkeyDispatcher(model: model, options: options, timer: timer, hotkeys: hotkeys, focus: focus, voice: voiceController)
             dispatcher.install()
@@ -291,5 +292,5 @@ struct MainTrackerPlaceholderView: View {
 }
 
 #Preview {
-    MainTrackerPlaceholderView(model: TrackerModel(quest: .first, heartShuffle: true), options: TrackerOptions(), breakout: BreakoutWindows(), timer: TrackerTimer(), reminders: ReminderController(), overlays: OverworldOverlayState(), hotkeys: HotkeyConfig(), focus: TrackerFocusState())
+    MainTrackerPlaceholderView(model: TrackerModel(quest: .first, heartShuffle: true), options: TrackerOptions(), breakout: BreakoutWindows(), timer: TrackerTimer(), reminders: ReminderController(), overlays: OverworldOverlayState(), hotkeys: HotkeyConfig(), voiceConfig: VoiceConfig(), focus: TrackerFocusState())
 }

@@ -85,9 +85,12 @@ final class VoiceController {
     /// "canceled" feedback loop where cancelling the old task restarts everything.
     @ObservationIgnored private var generation = 0
 
-    init(model: TrackerModel, focus: TrackerFocusState) {
+    private let config: VoiceConfig
+
+    init(model: TrackerModel, focus: TrackerFocusState, config: VoiceConfig) {
         self.model = model
         self.focus = focus
+        self.config = config
     }
 
     func toggle() {
@@ -188,7 +191,7 @@ final class VoiceController {
         let req = SFSpeechAudioBufferRecognitionRequest()
         req.shouldReportPartialResults = true
         req.requiresOnDeviceRecognition = true
-        req.contextualStrings = VoiceGrammar.contextualVocabulary   // bias toward jargon
+        req.contextualStrings = VoiceGrammar.contextualVocabulary(config)   // bias toward jargon
         request = req
         box.swap(to: req)   // finalizes the previous request under the lock, atomically
 
@@ -268,7 +271,7 @@ final class VoiceController {
         let phrase = text.trimmingCharacters(in: .whitespaces)
         guard !phrase.isEmpty, phrase != lastProcessed else { return }
         lastProcessed = phrase
-        if let command = VoiceGrammar.parse(phrase) {
+        if let command = VoiceGrammar.parse(phrase, config: config) {
             vlog("utterance=\"\(phrase)\" → \(command)")
             execute(command)
             lastCommand = describe(command)
@@ -347,7 +350,7 @@ final class VoiceController {
         let cell = focus.cursorCell
         switch focus.cursorRegion {
         case .overworld:
-            guard let action = VoiceGrammar.overworldAction(words) else {
+            guard let action = VoiceGrammar.overworldAction(words, config: config) else {
                 vlog("no overworld action in \(words)"); return
             }
             let instance = OverworldInstance(quest: model.quest ?? .first)
