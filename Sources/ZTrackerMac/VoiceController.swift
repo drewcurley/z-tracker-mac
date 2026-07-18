@@ -281,36 +281,106 @@ final class VoiceController {
 
     private func execute(_ command: VoiceCommand) {
         switch command {
-        case let .overworldMark(column, row, mark):
-            let instance = OverworldInstance(quest: model.quest ?? .first)
-            guard !instance.alwaysEmpty(x: column, y: row) else { return }
-            focus.hoverOverworld(col: column, row: row)
-            OverworldMark.apply(mark, column: column, row: row, grid: model.overworldGrid,
-                                releaseTakeAny: { c, r in model.releaseOverworldTakeAny(column: c, row: r) },
-                                placeDungeon: { number, c, r in
-                                    model.levelHints[HintTarget.dungeon(number)] =
-                                        HintZone.forZoneChar(OverworldZones.zone(column: c, row: r))
-                                })
-        case let .overworldTakeAny(column, row, state):
-            let instance = OverworldInstance(quest: model.quest ?? .first)
-            guard !instance.alwaysEmpty(x: column, y: row) else { return }
-            focus.hoverOverworld(col: column, row: row)
-            model.setOverworldTakeAny(state, column: column, row: row)
-        case let .dungeonTab(n):
-            focus.selectedDungeonTab = n - 1
         case let .moveCursor(dcol, drow):
             focus.moveCursor(dcol: dcol, drow: drow)
+        case let .cursorTo(column, row):
+            focus.setCursor(col: column, row: row)
+        case let .actionAtCursor(words):
+            applyAction(words)
+        case let .actionAt(column, row, words):
+            focus.setCursor(col: column, row: row)
+            applyAction(words)
+        case let .dungeonTab(n):
+            focus.selectedDungeonTab = n - 1
+            focus.cursorRegion = .dungeonMap        // drop the cursor into that dungeon
+            focus.cursorShown = true
+            // If this dungeon already has an entrance marked, jump the cursor there.
+            if let cell = dungeonEntranceCell() { focus.setCursor(col: cell.col, row: cell.row) }
+        case .exitToOverworld:
+            // Leaving a dungeon lands on that dungeon's marker on the overworld map.
+            let dungeonNumber = focus.cursorRegion == .dungeonMap ? focus.selectedDungeonTab + 1 : nil
+            focus.cursorRegion = .overworld
+            focus.cursorShown = true
+            if let n = dungeonNumber, let cell = overworldDungeonMarker(n) {
+                focus.setCursor(col: cell.col, row: cell.row)
+            }
+        case .gotoStart:
+            // Contextual: in a dungeon → its entrance; on the overworld → the start tile.
+            if focus.cursorRegion == .dungeonMap {
+                if let cell = dungeonEntranceCell() { focus.setCursor(col: cell.col, row: cell.row) }
+            } else if let s = model.startSpot {
+                focus.cursorRegion = .overworld
+                focus.setCursor(col: s.x, row: s.y)
+            }
+        }
+    }
+
+    /// The entrance room (a `startEnterFrom*`) of the currently-selected dungeon, if any.
+    private func dungeonEntranceCell() -> TrackerFocusState.GridCell? {
+        let tab = focus.selectedDungeonTab
+        guard (0..<model.dungeonRoomMaps.count).contains(tab) else { return nil }
+        let map = model.dungeonRoomMaps[tab]
+        for row in 0..<DungeonRoomMap.rows {
+            for col in 0..<DungeonRoomMap.cols where map.room(col: col, row: row).roomType.isEntrance {
+                return .init(col: col, row: row)
+            }
+        }
+        return nil
+    }
+
+    /// The overworld tile marked as dungeon `n` (1–9), if any.
+    private func overworldDungeonMarker(_ n: Int) -> TrackerFocusState.GridCell? {
+        let grid = model.overworldGrid
+        for row in 0..<OverworldGrid.rowCount {
+            for col in 0..<OverworldGrid.columnCount {
+                if case .dungeon(let d) = grid.mark(column: col, row: row), d == n {
+                    return .init(col: col, row: row)
+                }
+            }
+        }
+        return nil
+    }
+
+    /// Apply action words at the current cursor cell, interpreted for the active
+    /// region. Overworld is wired; the other regions come as their vocabularies land.
+    private func applyAction(_ words: [String]) {
+        let cell = focus.cursorCell
+        switch focus.cursorRegion {
+        case .overworld:
+            guard let action = VoiceGrammar.overworldAction(words) else {
+                vlog("no overworld action in \(words)"); return
+            }
+            let instance = OverworldInstance(quest: model.quest ?? .first)
+            guard !instance.alwaysEmpty(x: cell.col, y: cell.row) else { return }
+            switch action {
+            case .mark(let mark):
+                OverworldMark.apply(mark, column: cell.col, row: cell.row, grid: model.overworldGrid,
+                                    releaseTakeAny: { c, r in model.releaseOverworldTakeAny(column: c, row: r) },
+                                    placeDungeon: { number, c, r in
+                                        model.levelHints[HintTarget.dungeon(number)] =
+                                            HintZone.forZoneChar(OverworldZones.zone(column: c, row: r))
+                                    })
+            case .takeAny(let state):
+                model.setOverworldTakeAny(state, column: cell.col, row: cell.row)
+            case .setStart:
+                model.startSpot = OverworldScreenCoordinate(x: cell.col, y: cell.row)
+            case .clearStart:
+                model.startSpot = nil
+            }
+        default:
+            vlog("voice action in region \(focus.cursorRegion) not supported yet: \(words)")
         }
     }
 
     private func describe(_ command: VoiceCommand) -> String {
         switch command {
-        case let .overworldMark(c, r, mark):
-            return "\(OverworldCoords.label(column: c, row: r)) → \(mark.displayName)"
-        case let .overworldTakeAny(c, r, state):
-            return "\(OverworldCoords.label(column: c, row: r)) → take-any \(state.label)"
-        case let .dungeonTab(n): return "Level \(n)"
         case .moveCursor: return "move"
+        case let .cursorTo(c, r): return OverworldCoords.label(column: c, row: r)
+        case .actionAtCursor: return "mark"
+        case let .actionAt(c, r, _): return "\(OverworldCoords.label(column: c, row: r)) mark"
+        case let .dungeonTab(n): return "Level \(n)"
+        case .exitToOverworld: return "overworld"
+        case .gotoStart: return "→ start"
         }
     }
 }

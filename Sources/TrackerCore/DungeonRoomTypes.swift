@@ -38,6 +38,15 @@ public enum RoomType: CaseIterable, Sendable, Equatable {
             || self == .hungryGoriyaMeatBlock || self == .lifeOrMoney
     }
 
+    /// Whether this room is a dungeon entrance (a `startEnterFrom*`). Used by voice's
+    /// contextual "restart" → jump to the entrance (T-138).
+    public var isEntrance: Bool {
+        switch self {
+        case .startEnterFromE, .startEnterFromW, .startEnterFromN, .startEnterFromS: true
+        default: false
+        }
+    }
+
     /// The next entrance direction on click (`NextEntranceRoom`): S→W→N→E→S.
     /// `nil` for non-entrance rooms.
     public var nextEntranceRoom: RoomType? {
