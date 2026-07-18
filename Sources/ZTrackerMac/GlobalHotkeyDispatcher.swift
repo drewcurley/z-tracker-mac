@@ -18,15 +18,17 @@ final class GlobalHotkeyDispatcher {
     private let timer: TrackerTimer
     private let hotkeys: HotkeyConfig
     private let focus: TrackerFocusState
+    private let voice: VoiceController?
     private var monitor: Any?
 
     init(model: TrackerModel, options: TrackerOptions, timer: TrackerTimer,
-         hotkeys: HotkeyConfig, focus: TrackerFocusState) {
+         hotkeys: HotkeyConfig, focus: TrackerFocusState, voice: VoiceController? = nil) {
         self.model = model
         self.options = options
         self.timer = timer
         self.hotkeys = hotkeys
         self.focus = focus
+        self.voice = voice
     }
 
     func install() {
@@ -178,6 +180,7 @@ final class GlobalHotkeyDispatcher {
         // Whistle destination stepper (T-135): same as the ◀ ▶ arrows by the recorder.
         case "Global_RecorderDestPrev": model.recorderDestinationManual = true; model.recorderDestinationIndex -= 1
         case "Global_RecorderDestNext": model.recorderDestinationManual = true; model.recorderDestinationIndex += 1
+        case "Global_ToggleVoice": voice?.toggle()   // T-137 (unbound by default)
         default:
             // Click / scroll globals + hover-region marks are phase 2b — a
             // recognized-but-unimplemented Global key is left for the app.

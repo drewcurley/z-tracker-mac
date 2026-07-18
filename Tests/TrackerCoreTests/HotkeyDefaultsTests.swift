@@ -7,8 +7,10 @@ struct HotkeyDefaultsTests {
 
     @Test func bindsEverySelectorExceptDoorNudges() {
         for sel in HotkeyCatalog.all {
-            let isDoorNudge = sel.id.contains("DoorIncrement") || sel.id.contains("DoorDecrement")
-            if isDoorNudge {
+            // Door nudges and the voice toggle are intentionally unbound by default.
+            let unboundByDesign = sel.id.contains("DoorIncrement") || sel.id.contains("DoorDecrement")
+                || sel.id == "Global_ToggleVoice"
+            if unboundByDesign {
                 #expect(defaults[sel.id] == nil, "\(sel.id) should be unbound by default")
             } else {
                 #expect(defaults[sel.id] != nil, "\(sel.id) has no default binding")

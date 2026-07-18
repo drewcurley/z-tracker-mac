@@ -25,6 +25,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-137](./T-137.md) | Voice control (structured grammar) — on-device speech → overworld/tab/cursor actions | frontend-engineer | T-136 | feat/voice-control | — | docs/reviews/feat-voice-control/final.md |
 | [T-136](./T-136.md) | App-bundle + permission scaffolding (prerequisite for voice) | devops | — | chore/app-bundle | — | docs/reviews/chore-app-bundle/final.md |
 | [T-135](./T-135.md) | Part B — region cursor cycle, per-region hotkey dispatch, right-half defaults | frontend-engineer | T-134 | feat/hotkey-region-cursor | — | docs/reviews/feat-hotkey-region-cursor/final.md |
 | [T-134](./T-134.md) | Part B — keyboard cursor (movable ring over overworld + dungeon map) | frontend-engineer | T-133 | feat/hotkey-region-cursor | — | docs/reviews/feat-hotkey-region-cursor/final.md |

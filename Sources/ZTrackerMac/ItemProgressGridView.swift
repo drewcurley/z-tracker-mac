@@ -378,6 +378,8 @@ struct SeedFlagsView: View {
     /// state, so once the run has started (even if paused) they confirm first
     /// (T-051/T-052).
     var timer: TrackerTimer
+    /// Voice control (T-137) — the mic toggle lives here in Flags.
+    var voice: VoiceController? = nil
     @State private var pending: DestructiveAction?
 
     var body: some View {
@@ -403,8 +405,40 @@ struct SeedFlagsView: View {
             // Recorder destination (T-104): moved here from the Info group to save
             // vertical space; its new/unbeaten settings are seed flags anyway.
             RecorderInfoWidget(model: model, playerState: playerState, mapState: mapState)
+            if let voice { micToggle(voice) }
         }
         .destructiveActionConfirmation($pending)
+    }
+
+    /// Voice-control mic toggle (T-137): green live mic while listening, with a small
+    /// feedback line showing the last command run. Denied auth shows a hint.
+    @ViewBuilder
+    private func micToggle(_ voice: VoiceController) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Button {
+                voice.toggle()
+            } label: {
+                HStack(spacing: 5) {
+                    Image(systemName: voice.isListening ? "mic.fill" : "mic.slash")
+                        .font(.system(size: 13))
+                        .foregroundStyle(voice.isListening ? .green : .secondary)
+                    Text(voice.isListening ? "Listening…" : "Voice control")
+                        .font(.system(size: 11, weight: .medium))
+                }
+            }
+            .buttonStyle(.plain)
+            .help("Toggle voice control. Say e.g. \u{201C}D5 bomb shop\u{201D}, \u{201C}enter level 5\u{201D}, \u{201C}north\u{201D}.")
+
+            if voice.auth == .denied {
+                Text("Mic/speech access denied — enable in System Settings ▸ Privacy.")
+                    .font(.system(size: 9)).foregroundStyle(.orange)
+            } else if voice.isListening, !voice.lastCommand.isEmpty {
+                Text("✓ \(voice.lastCommand)").font(.system(size: 9)).foregroundStyle(.green)
+            } else if voice.isListening, !voice.lastHeard.isEmpty {
+                Text("“\(voice.lastHeard)”").font(.system(size: 9)).foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+        }
     }
 
     /// Heart Shuffle (T-049) — moved off the startup screen. Uses the model's
