@@ -59,6 +59,11 @@ struct VoiceCommandEditorView: View {
                         .foregroundStyle(.secondary)
                         .help("Takes a spoken number, e.g. \u{201C}level 5\u{201D}")
                 }
+                if action.takesDirection {
+                    Text("\u{2194}").font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(.secondary)
+                        .help("Takes a direction: left/right/up/down (or west/east/north/south)")
+                }
             }
             .frame(width: 150, alignment: .leading)
 

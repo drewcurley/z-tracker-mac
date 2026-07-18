@@ -33,27 +33,82 @@ public enum VoiceGrammar {
         let coord = coordinate(in: tokens)
         let words = coord?.rest ?? tokens
 
-        // Match across ALL actions so the longest phrase wins regardless of scope
-        // (so "set level" [region: mark] beats "level" [structural: enter tab]), then
-        // branch on the winner's scope.
-        if let m = config.match(words, scope: .any), let action = VoiceCatalog.action(id: m.actionID) {
-            switch VoiceConfig.scope(of: action) {
-            case .structural:
-                if let cmd = structuralCommand(m) { return cmd }
-            default:
-                // A region action applies at the cursor cell (execution resolves it
-                // per-region); with a coordinate, move there first.
-                if let coord {
-                    return .actionAt(column: coord.coord.column, row: coord.coord.row, words: words)
-                }
-                return .actionAtCursor(words: words)
+        // Region actions win over structural, so a door command like "open left" isn't
+        // swallowed by "left" (a cursor move). Execution resolves the words per-region
+        // ("set level" beats "level" inside `match` via longest-phrase-wins).
+        if config.match(words, scope: .region) != nil {
+            if let coord {
+                return .actionAt(column: coord.coord.column, row: coord.coord.row, words: words)
             }
+            return .actionAtCursor(words: words)
+        }
+        // Otherwise a structural action (cursor / nav / dungeon tab).
+        if let m = config.match(words, scope: .structural), let cmd = structuralCommand(m) {
+            return cmd
         }
         // A coordinate alone → just move the cursor.
         if let coord, coord.rest.isEmpty {
             return .cursorTo(column: coord.coord.column, row: coord.coord.row)
         }
         return nil
+    }
+
+    // MARK: Dungeon region resolution
+
+    public enum VoiceDirection: Equatable, Sendable { case north, south, east, west }
+
+    public enum DungeonAction: Equatable, Sendable {
+        case roomType(RoomType)
+        case monster(MonsterDetail)
+        case floorDrop(FloorDropDetail)
+        case door(DoorState, VoiceDirection)
+        case entrance(VoiceDirection)
+    }
+
+    /// Resolve action words for the **dungeon** region. Returns an array to support
+    /// compound door commands ("open west shutter east key north" → three doors).
+    public static func dungeonActions(_ words: [String], config: VoiceConfig) -> [DungeonAction] {
+        // 1) Doors — one or more "<state> <direction>" pairs.
+        var doorPairs: [DungeonAction] = []
+        var i = 0
+        while i < words.count {
+            if let state = doorState(words[i], config: config),
+               i + 1 < words.count, let dir = direction(words[i + 1]) {
+                doorPairs.append(.door(state, dir)); i += 2
+            } else { i += 1 }
+        }
+        if !doorPairs.isEmpty { return doorPairs }
+
+        // 2) Entrance — "<entrance word> <direction>".
+        let entrancePhrases = Set(config.phrases(for: "Entrance"))
+        for (idx, w) in words.enumerated() where entrancePhrases.contains(w) {
+            if idx + 1 < words.count, let dir = direction(words[idx + 1]) { return [.entrance(dir)] }
+        }
+
+        // 3) A single room / monster / floor-drop.
+        if let m = config.match(words, scope: .dungeon), let a = dungeonMeaning(m) { return [a] }
+        return []
+    }
+
+    /// The door state a single word names (via the editable Door_* phrases).
+    static func doorState(_ token: String, config: VoiceConfig) -> DoorState? {
+        for (id, state): (String, DoorState) in [
+            ("Door_Open", .yes), ("Door_Blocked", .no), ("Door_Key", .yellow),
+            ("Door_Shutter", .purple), ("Door_None", .unknown),
+        ] where config.phrases(for: id).contains(token) {
+            return state
+        }
+        return nil
+    }
+
+    static func direction(_ token: String) -> VoiceDirection? {
+        switch token {
+        case "left", "west": .west
+        case "right", "east": .east
+        case "up", "north": .north
+        case "down", "south": .south
+        default: nil
+        }
     }
 
     /// Resolve action words for the **overworld** region via the config.
@@ -123,6 +178,82 @@ public enum VoiceGrammar {
         case "TakeAny_Potion": return .takeAny(.takenPotion)
         case "TakeAny_Candle": return .takeAny(.takenCandle)
         case "TakeAny_Heart":  return .takeAny(.takenHeart)
+        default: return nil
+        }
+    }
+
+    private static func dungeonMeaning(_ m: (actionID: String, number: Int?)) -> DungeonAction? {
+        switch m.actionID {
+        // Room types
+        case "Room_NonDescript":   return .roomType(.nonDescript)
+        case "Room_ItemBasement":  return .roomType(.itemBasement)
+        case "Room_Staircase":     return .roomType(.staircaseToUnknown)
+        case "Room_MaybePush":     return .roomType(.maybePushBlock)
+        case "Room_Transport":
+            switch m.number {
+            case 1: return .roomType(.transport1); case 2: return .roomType(.transport2)
+            case 3: return .roomType(.transport3); case 4: return .roomType(.transport4)
+            case 5: return .roomType(.transport5); case 6: return .roomType(.transport6)
+            case 7: return .roomType(.transport7); case 8: return .roomType(.transport8)
+            default: return .roomType(.transport1)
+            }
+        case "Room_Chevy":         return .roomType(.chevy)
+        case "Room_DoubleMoat":    return .roomType(.doubleMoat)
+        case "Room_TopMoat":       return .roomType(.topMoat)
+        case "Room_RightMoat":     return .roomType(.rightMoat)
+        case "Room_CircleMoat":    return .roomType(.circleMoat)
+        case "Room_Tee":           return .roomType(.tee)
+        case "Room_LavaMoat":      return .roomType(.lavaMoat)
+        case "Room_VChute":        return .roomType(.vChute)
+        case "Room_HChute":        return .roomType(.hChute)
+        case "Room_Turnstile":     return .roomType(.turnstile)
+        case "Room_OldMan":        return .roomType(.oldManHint)
+        case "Room_BombUpgrade":   return .roomType(.bombUpgrade)
+        case "Room_LifeOrMoney":   return .roomType(.lifeOrMoney)
+        case "Room_HungryGoriya":  return .roomType(.hungryGoriyaMeatBlock)
+        case "Room_OffTheMap":     return .roomType(.offTheMap)
+        case "Room_Gannon":        return .roomType(.gannon)
+        case "Room_Zelda":         return .roomType(.zelda)
+        case "Room_Unmarked":      return .roomType(.unmarked)
+        // Monsters
+        case "Mon_Gleeok":     return .monster(.gleeok)
+        case "Mon_Gohma":      return .monster(.bow)
+        case "Mon_Digdogger":  return .monster(.digdogger)
+        case "Mon_Dodongo":    return .monster(.dodongo)
+        case "Mon_Patra":      return .monster(.patra)
+        case "Mon_Manhandla":  return .monster(.manhandla)
+        case "Mon_Aquamentus": return .monster(.aquamentus)
+        case "Mon_Moldorm":    return .monster(.moldorm)
+        case "Mon_Lanmola":    return .monster(.blueLanmola)
+        case "Mon_Wizzrobe":   return .monster(.blueWizzrobe)
+        case "Mon_Darknut":    return .monster(.blueDarknut)
+        case "Mon_Lynel":      return .monster(.redLynel)
+        case "Mon_PolsVoice":  return .monster(.polsVoice)
+        case "Mon_Goriya":     return .monster(.redGoriya)
+        case "Mon_Gibdo":      return .monster(.gibdo)
+        case "Mon_Rope":       return .monster(.rope)
+        case "Mon_Vire":       return .monster(.vire)
+        case "Mon_Keese":      return .monster(.keese)
+        case "Mon_Zol":        return .monster(.zol)
+        case "Mon_Gel":        return .monster(.gel)
+        case "Mon_Stalfos":    return .monster(.stalfos)
+        case "Mon_Wallmaster": return .monster(.wallmaster)
+        case "Mon_Likelike":   return .monster(.likelike)
+        case "Mon_Moblin":     return .monster(.blueMoblin)
+        case "Mon_Tektite":    return .monster(.redTektite)
+        case "Mon_BlueBubble": return .monster(.blueBubble)
+        case "Mon_RedBubble":  return .monster(.redBubble)
+        case "Mon_Traps":      return .monster(.traps)
+        case "Mon_RupeeBoss":  return .monster(.rupeeBoss)
+        // Floor drops
+        case "Drop_Triforce":     return .floorDrop(.triforce)
+        case "Drop_Heart":        return .floorDrop(.heart)
+        case "Drop_OtherKeyItem": return .floorDrop(.otherKeyItem)
+        case "Drop_BombPack":     return .floorDrop(.bombPack)
+        case "Drop_Key":          return .floorDrop(.key)
+        case "Drop_FiveRupee":    return .floorDrop(.fiveRupee)
+        case "Drop_Map":          return .floorDrop(.map)
+        case "Drop_Compass":      return .floorDrop(.compass)
         default: return nil
         }
     }

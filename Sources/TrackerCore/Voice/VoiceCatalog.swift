@@ -12,17 +12,23 @@ public struct VoiceAction: Identifiable, Equatable, Sendable {
     public let category: VoiceCategory
     /// True for actions that consume a spoken number ("level N", "any road N").
     public let takesNumber: Bool
+    /// True for actions that consume a spoken direction ("open **left**", "entrance
+    /// **south**").
+    public let takesDirection: Bool
     public let defaultPhrases: [String]
 
     public init(_ id: String, _ displayName: String, _ category: VoiceCategory,
-                takesNumber: Bool = false, _ defaultPhrases: [String]) {
+                takesNumber: Bool = false, takesDirection: Bool = false,
+                _ defaultPhrases: [String]) {
         self.id = id; self.displayName = displayName; self.category = category
-        self.takesNumber = takesNumber; self.defaultPhrases = defaultPhrases
+        self.takesNumber = takesNumber; self.takesDirection = takesDirection
+        self.defaultPhrases = defaultPhrases
     }
 }
 
 public enum VoiceCategory: String, CaseIterable, Sendable, Codable {
     case cursor, navigation, dungeon, overworldShops, overworldMarks, takeAny
+    case dungeonRooms, monsters, floorDrops, doors, entrances
 
     public var title: String {
         switch self {
@@ -32,6 +38,11 @@ public enum VoiceCategory: String, CaseIterable, Sendable, Codable {
         case .overworldShops: "Overworld — shops"
         case .overworldMarks: "Overworld — marks"
         case .takeAny: "Take-any"
+        case .dungeonRooms: "Dungeon — room types"
+        case .monsters: "Monsters"
+        case .floorDrops: "Dungeon — floor drops"
+        case .doors: "Dungeon — doors"
+        case .entrances: "Dungeon — entrances"
         }
     }
 }
@@ -39,6 +50,7 @@ public enum VoiceCategory: String, CaseIterable, Sendable, Codable {
 public enum VoiceCatalog {
     public static let all: [VoiceAction] =
         cursor + navigation + dungeon + overworldShops + overworldMarks + takeAny
+        + dungeonRooms + monsters + floorDrops + doors + entrances
 
     public static func action(id: String) -> VoiceAction? { all.first { $0.id == id } }
     public static func actions(in category: VoiceCategory) -> [VoiceAction] {
@@ -46,7 +58,8 @@ public enum VoiceCatalog {
     }
     /// Categories in editor order.
     public static let categoryOrder: [VoiceCategory] =
-        [.cursor, .navigation, .dungeon, .overworldShops, .overworldMarks, .takeAny]
+        [.cursor, .navigation, .dungeon, .doors, .entrances,
+         .dungeonRooms, .monsters, .floorDrops, .overworldShops, .overworldMarks, .takeAny]
 
     // MARK: Actions
 
@@ -107,5 +120,95 @@ public enum VoiceCatalog {
         VoiceAction("TakeAny_Potion", "Take-any: potion", .takeAny, ["take any potion"]),
         VoiceAction("TakeAny_Candle", "Take-any: candle", .takeAny, ["take any candle"]),
         VoiceAction("TakeAny_Heart", "Take-any: heart", .takeAny, ["take any heart"]),
+    ]
+
+    // MARK: Dungeon actions (apply to the cursor room when the cursor is in a dungeon)
+
+    /// Doors — a state word + a direction ("open left"); compound utterances mark
+    /// several ("open west shutter east key north"). Colors are the user's convention.
+    private static let doors: [VoiceAction] = [
+        VoiceAction("Door_Open", "Door: open (green)", .doors, takesDirection: true, ["open"]),
+        VoiceAction("Door_Blocked", "Door: blocked / wall (red)", .doors, takesDirection: true,
+                    ["blocked", "wall", "no door"]),
+        VoiceAction("Door_Key", "Door: key (gold)", .doors, takesDirection: true, ["key", "locked"]),
+        VoiceAction("Door_Shutter", "Door: shutter (purple)", .doors, takesDirection: true, ["shutter"]),
+        VoiceAction("Door_None", "Door: unknown / clear", .doors, takesDirection: true,
+                    ["none", "unknown", "clear door"]),
+    ]
+
+    private static let entrances: [VoiceAction] = [
+        VoiceAction("Entrance", "Mark entrance (from direction)", .entrances, takesDirection: true,
+                    ["entrance", "entered", "enter from"]),
+    ]
+
+    private static let dungeonRooms: [VoiceAction] = [
+        VoiceAction("Room_NonDescript", "Non-descript", .dungeonRooms, ["non descript", "empty room", "plain room", "nondescript"]),
+        VoiceAction("Room_ItemBasement", "Item basement", .dungeonRooms, ["item basement", "basement item", "stair item"]),
+        VoiceAction("Room_Staircase", "Staircase (unknown)", .dungeonRooms, ["staircase", "stairs", "stairway"]),
+        VoiceAction("Room_MaybePush", "Maybe push block", .dungeonRooms, ["push block", "maybe stairs"]),
+        VoiceAction("Room_Transport", "Transport staircase", .dungeonRooms, takesNumber: true, ["transport"]),
+        VoiceAction("Room_Chevy", "Chevy", .dungeonRooms, ["chevy"]),
+        VoiceAction("Room_DoubleMoat", "Double moat", .dungeonRooms, ["double moat"]),
+        VoiceAction("Room_TopMoat", "Top moat", .dungeonRooms, ["top moat", "north moat"]),
+        VoiceAction("Room_RightMoat", "Right moat", .dungeonRooms, ["right moat", "east moat"]),
+        VoiceAction("Room_CircleMoat", "Circle moat", .dungeonRooms, ["circle moat"]),
+        VoiceAction("Room_Tee", "Tee", .dungeonRooms, ["tee moat", "tee room"]),
+        VoiceAction("Room_LavaMoat", "Lava moat", .dungeonRooms, ["lava moat", "lava"]),
+        VoiceAction("Room_VChute", "Vertical chute", .dungeonRooms, ["vertical chute", "v chute"]),
+        VoiceAction("Room_HChute", "Horizontal chute", .dungeonRooms, ["horizontal chute", "h chute"]),
+        VoiceAction("Room_Turnstile", "Turnstile", .dungeonRooms, ["turnstile"]),
+        VoiceAction("Room_OldMan", "Old-man hint", .dungeonRooms, ["old man", "hint room", "npc"]),
+        VoiceAction("Room_BombUpgrade", "Bomb upgrade", .dungeonRooms, ["bomb upgrade"]),
+        VoiceAction("Room_LifeOrMoney", "Life or money", .dungeonRooms, ["life or money"]),
+        VoiceAction("Room_HungryGoriya", "Hungry Goriya (meat block)", .dungeonRooms, ["hungry goriya", "meat block"]),
+        VoiceAction("Room_OffTheMap", "Off the map", .dungeonRooms, ["off the map", "off map"]),
+        VoiceAction("Room_Gannon", "Ganon", .dungeonRooms, ["ganon", "gannon"]),
+        VoiceAction("Room_Zelda", "Zelda", .dungeonRooms, ["zelda"]),
+        VoiceAction("Room_Unmarked", "Clear room", .dungeonRooms, ["clear room", "unmark room", "empty the room"]),
+    ]
+
+    /// Monsters — a shared category (a dungeon room's monster; overworld enemy support
+    /// is a later slice).
+    private static let monsters: [VoiceAction] = [
+        VoiceAction("Mon_Gleeok", "Gleeok", .monsters, ["gleeok"]),
+        VoiceAction("Mon_Gohma", "Gohma", .monsters, ["gohma"]),
+        VoiceAction("Mon_Digdogger", "Digdogger", .monsters, ["digdogger"]),
+        VoiceAction("Mon_Dodongo", "Dodongo", .monsters, ["dodongo"]),
+        VoiceAction("Mon_Patra", "Patra", .monsters, ["patra"]),
+        VoiceAction("Mon_Manhandla", "Manhandla", .monsters, ["manhandla"]),
+        VoiceAction("Mon_Aquamentus", "Aquamentus", .monsters, ["aquamentus"]),
+        VoiceAction("Mon_Moldorm", "Moldorm", .monsters, ["moldorm"]),
+        VoiceAction("Mon_Lanmola", "Lanmola", .monsters, ["lanmola"]),
+        VoiceAction("Mon_Wizzrobe", "Wizzrobe", .monsters, ["wizzrobe", "wizrobe"]),
+        VoiceAction("Mon_Darknut", "Darknut", .monsters, ["darknut", "dark nut"]),
+        VoiceAction("Mon_Lynel", "Lynel", .monsters, ["lynel"]),
+        VoiceAction("Mon_PolsVoice", "Pols Voice", .monsters, ["pols voice", "pols"]),
+        VoiceAction("Mon_Goriya", "Goriya", .monsters, ["goriya"]),
+        VoiceAction("Mon_Gibdo", "Gibdo", .monsters, ["gibdo"]),
+        VoiceAction("Mon_Rope", "Rope", .monsters, ["rope"]),
+        VoiceAction("Mon_Vire", "Vire", .monsters, ["vire"]),
+        VoiceAction("Mon_Keese", "Keese", .monsters, ["keese"]),
+        VoiceAction("Mon_Zol", "Zol", .monsters, ["zol"]),
+        VoiceAction("Mon_Gel", "Gel", .monsters, ["gel"]),
+        VoiceAction("Mon_Stalfos", "Stalfos", .monsters, ["stalfos"]),
+        VoiceAction("Mon_Wallmaster", "Wallmaster", .monsters, ["wallmaster", "wall master"]),
+        VoiceAction("Mon_Likelike", "Like Like", .monsters, ["like like", "likelike"]),
+        VoiceAction("Mon_Moblin", "Moblin", .monsters, ["moblin"]),
+        VoiceAction("Mon_Tektite", "Tektite", .monsters, ["tektite"]),
+        VoiceAction("Mon_BlueBubble", "Blue bubble", .monsters, ["blue bubble"]),
+        VoiceAction("Mon_RedBubble", "Red bubble", .monsters, ["red bubble"]),
+        VoiceAction("Mon_Traps", "Traps", .monsters, ["trap", "traps"]),
+        VoiceAction("Mon_RupeeBoss", "Rupee boss", .monsters, ["rupee boss"]),
+    ]
+
+    private static let floorDrops: [VoiceAction] = [
+        VoiceAction("Drop_Triforce", "Triforce", .floorDrops, ["triforce"]),
+        VoiceAction("Drop_Heart", "Heart", .floorDrops, ["heart drop", "drop heart", "dropped heart", "floor heart"]),
+        VoiceAction("Drop_OtherKeyItem", "Other key item", .floorDrops, ["key item drop", "item drop", "dropped item"]),
+        VoiceAction("Drop_BombPack", "Bomb pack", .floorDrops, ["bomb pack", "bomb drop"]),
+        VoiceAction("Drop_Key", "Key", .floorDrops, ["key drop", "drop key", "dropped key"]),
+        VoiceAction("Drop_FiveRupee", "Five rupee", .floorDrops, ["rupee drop", "five rupee", "dropped rupee"]),
+        VoiceAction("Drop_Map", "Map", .floorDrops, ["map drop", "drop map", "map"]),
+        VoiceAction("Drop_Compass", "Compass", .floorDrops, ["compass drop", "drop compass", "compass"]),
     ]
 }

@@ -25,6 +25,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-140](./T-140.md) | Voice — dungeon-region vocabulary (rooms, monsters, floor drops, doors, entrances) | frontend-engineer | T-139 | feat/voice-dungeon-vocab | — | docs/reviews/feat-voice-dungeon-vocab/final.md |
 | [T-139](./T-139.md) | Voice command editor — data-driven grammar (VoiceCatalog + VoiceConfig + editor UI) | frontend-engineer | T-138 | feat/voice-command-editor | — | docs/reviews/feat-voice-command-editor/final.md |
 | [T-138](./T-138.md) | Voice — cursor-driven & region-aware (coord moves cursor, action at cursor, NATO, contextual nav) | frontend-engineer | T-137 | feat/voice-cursor-driven | — | docs/reviews/feat-voice-cursor-driven/final.md |
 | [T-137](./T-137.md) | Voice control (structured grammar) — on-device speech → overworld/tab/cursor actions | frontend-engineer | T-136 | feat/voice-control | — | docs/reviews/feat-voice-control/final.md |
