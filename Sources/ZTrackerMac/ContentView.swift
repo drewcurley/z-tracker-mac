@@ -24,6 +24,10 @@ struct ContentView: View {
     /// (T-046). Owned by the app (it replaces the model instance).
     var onResetApp: () -> Void
 
+    /// Live FPS readout monitor (dev diagnostic) — only sampled while the readout
+    /// is on screen (i.e. when `options.showFPS` is on).
+    @State private var fpsMonitor = FPSMonitor()
+
     var body: some View {
         Group {
             if model.quest == nil {
@@ -35,6 +39,12 @@ struct ContentView: View {
                 })
             } else {
                 MainTrackerPlaceholderView(model: model, options: options, breakout: breakout, timer: timer, reminders: reminders, overlays: overlays, hotkeys: hotkeys, voiceConfig: voiceConfig, focus: focus, onResetApp: onResetApp)
+            }
+        }
+        // Live FPS diagnostic (dev), pinned top-trailing when enabled in Settings.
+        .overlay(alignment: .topTrailing) {
+            if options.showFPS {
+                FPSReadout(monitor: fpsMonitor).padding(6)
             }
         }
         // Prime live TTS at launch (T-069/T-045): speaking a silent space loads

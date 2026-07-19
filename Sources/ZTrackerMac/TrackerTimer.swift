@@ -10,6 +10,14 @@ enum TimerFormatting {
         let totalSec = totalMs / 1000
         return String(format: "%d:%02d:%02d.%03d", totalSec / 3600, (totalSec / 60) % 60, totalSec % 60, ms)
     }
+
+    /// `H:MM:SS` without milliseconds — the on-screen display format. The ms are
+    /// only needed at capture time (written to the notes), read from the timer at
+    /// that instant via `hmsMillis`, so the visible clock can tick once per second.
+    static func hms(_ interval: TimeInterval) -> String {
+        let totalSec = Int(max(0, interval).rounded(.down))
+        return String(format: "%d:%02d:%02d", totalSec / 3600, (totalSec / 60) % 60, totalSec % 60)
+    }
 }
 
 /// The run timer: a **main** stopwatch (counts up from session start, pausable)
