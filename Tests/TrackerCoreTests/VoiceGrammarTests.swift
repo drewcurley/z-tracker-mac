@@ -98,6 +98,20 @@ struct VoiceGrammarTests {
         #expect(VoiceGrammar.dungeonActions(["triforce"], config: config) == [.floorDrop(.triforce)])
     }
 
+    @Test func combinedDungeonCommand() {
+        // Room + monster + door in one utterance (T-150). Order: doors, entrance,
+        // room, monster, drop.
+        #expect(VoiceGrammar.dungeonActions(["nondescript", "digdogger", "open", "left"], config: config)
+                == [.door(.yes, .west), .roomType(.nonDescript), .monster(.digdogger)])
+        #expect(VoiceGrammar.dungeonActions(["nondescript", "digdogger"], config: config)
+                == [.roomType(.nonDescript), .monster(.digdogger)])
+        #expect(VoiceGrammar.dungeonActions(["nondescript", "heart", "drop"], config: config)
+                == [.roomType(.nonDescript), .floorDrop(.heart)])
+        // Room + two doors.
+        #expect(VoiceGrammar.dungeonActions(["nondescript", "open", "left", "open", "down"], config: config)
+                == [.door(.yes, .west), .door(.yes, .south), .roomType(.nonDescript)])
+    }
+
     @Test func dungeonTransportTakesNumber() {
         #expect(VoiceGrammar.dungeonActions(["transport", "3"], config: config) == [.roomType(.transport3)])
     }

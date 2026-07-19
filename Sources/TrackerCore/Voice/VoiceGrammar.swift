@@ -190,35 +190,52 @@ public enum VoiceGrammar {
     /// compound door commands ("open west shutter east key north" → three doors).
     public static func dungeonActions(_ words: [String], config: VoiceConfig) -> [DungeonAction] {
         let joined = words.joined(separator: " ")
-        // 1) Doors — one or more "<state> <direction>" pairs, skipping fillers like
-        // the word "door" between them ("open door north", "shutter door left").
-        // Colour words (green/red/gold/purple) are Door_* synonyms via the catalog.
-        var doorPairs: [DungeonAction] = []
+        var result: [DungeonAction] = []
+
+        // Doors — every "<state> <direction>" pair (filler-tolerant; colour synonyms
+        // via the catalog). Compound: "open west shutter east key north".
         var i = 0
         while i < words.count {
             if let state = doorState(words[i], config: config) {
                 var j = i + 1
                 while j < words.count, Self.doorFillers.contains(words[j]) { j += 1 }
                 if j < words.count, let dir = direction(words[j]) {
-                    doorPairs.append(.door(state, dir)); i = j + 1; continue
+                    result.append(.door(state, dir)); i = j + 1; continue
                 }
             }
             i += 1
         }
-        if !doorPairs.isEmpty { return doorPairs }
 
-        // 2) Entrance — an entrance trigger anywhere + a direction anywhere. Tolerant
-        // of fillers ("entrance FROM north") and either order ("north entrance"); the
-        // `joined` test catches multi-word triggers like "enter from" without needing
-        // them adjacent to the direction.
+        // Entrance — a trigger anywhere + a direction anywhere (either order, filler-
+        // tolerant): "entrance from north", "north entrance".
         if config.phrases(for: "Entrance").contains(where: { joined.contains($0) }),
            let dir = words.compactMap(direction).first {
-            return [.entrance(dir)]
+            result.append(.entrance(dir))
         }
 
-        // 3) A single room / monster / floor-drop.
-        if let m = config.match(words, scope: .dungeon), let a = dungeonMeaning(m) { return [a] }
-        return []
+        // One each of room type / monster / floor drop — so a single utterance can
+        // combine them ("nondescript digdogger heart drop"). Only ONE per category
+        // (a 2nd monster is a separate utterance, T-116).
+        if let m = matchCategory(words, .dungeonRooms, config: config), let a = dungeonMeaning(m) { result.append(a) }
+        if let m = matchCategory(words, .monsters, config: config), let a = dungeonMeaning(m) { result.append(a) }
+        if let m = matchCategory(words, .floorDrops, config: config), let a = dungeonMeaning(m) { result.append(a) }
+        return result
+    }
+
+    /// Longest-phrase match within a single catalog **category** (so room type,
+    /// monster, and floor drop can each be picked out of one utterance).
+    static func matchCategory(_ words: [String], _ category: VoiceCategory,
+                              config: VoiceConfig) -> (actionID: String, number: Int?)? {
+        let joined = words.joined(separator: " ")
+        var best: (id: String, length: Int)?
+        for action in VoiceCatalog.actions(in: category) {
+            for phrase in config.phrases(for: action.id) where joined.contains(phrase) {
+                if phrase.count > (best?.length ?? -1) { best = (action.id, phrase.count) }
+            }
+        }
+        guard let best, let action = VoiceCatalog.action(id: best.id) else { return nil }
+        let number = action.takesNumber ? words.compactMap(Self.asInt).first : nil
+        return (best.id, number)
     }
 
     /// Filler words allowed between a door state and its direction ("open **door**
