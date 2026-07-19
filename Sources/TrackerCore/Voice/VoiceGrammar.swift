@@ -371,13 +371,26 @@ public enum VoiceGrammar {
         "echo": 4, "foxtrot": 5, "golf": 6, "hotel": 7,
     ]
 
+    /// Homophones speech-to-text produces for the bare letters — chiefly **H**
+    /// ("aitch"), which live QA showed is by far the worst-recognised row ("H4" →
+    /// "each four", "H8" → "eight …"). Only consulted when the token sits right
+    /// before a number (`coordinate`), so collisions with ordinary words are rare.
+    private static let letterHomophones: [String: Int] = [
+        "each": 7, "aitch": 7, "itch": 7, "age": 7, "h.": 7,   // H
+        "hey": 0, "eh": 0,                                     // A
+        "bee": 1,                                              // B
+        "cee": 2, "sea": 2,                                    // C
+        "dee": 3,                                              // D
+        "gee": 6, "jee": 6,                                    // G
+    ]
+
     static func asInt(_ token: String) -> Int? { Int(token) ?? numberWords[token] }
 
     static func rowLetter(_ token: String) -> Int? {
         if token.count == 1, let c = token.first, ("a"..."h").contains(c) {
             return Int(c.asciiValue! - Character("a").asciiValue!)
         }
-        return natoRows[token]
+        return natoRows[token] ?? letterHomophones[token]
     }
 
     /// The first row-letter immediately followed by a number (1–16). Returns the
