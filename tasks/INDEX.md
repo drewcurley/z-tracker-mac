@@ -25,6 +25,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-152](./T-152.md) | Voice — fold split two-digit columns ("G1 two" → G12) | frontend-engineer | T-137 | feat/voice-two-digit-column | — | docs/reviews/feat-voice-two-digit-column/final.md |
 | [T-151](./T-151.md) | Voice — coordinate + "level N" marks the dungeon at that cell | frontend-engineer | T-137 | feat/voice-coord-level-mark | — | docs/reviews/feat-voice-coord-level-mark/final.md |
 | [T-150](./T-150.md) | Voice — combined dungeon commands (room + monster + door(s) in one utterance) | frontend-engineer | T-140 | feat/voice-combined-dungeon | — | docs/reviews/feat-voice-combined-dungeon/final.md |
 | [T-149](./T-149.md) | Voice — universal clear / un-mark verb (dungeon, doors, progression, overworld) | frontend-engineer | T-140 | feat/voice-clear-verb | — | docs/reviews/feat-voice-clear-verb/final.md |
