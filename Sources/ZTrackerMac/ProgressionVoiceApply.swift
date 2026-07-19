@@ -28,10 +28,12 @@ enum ProgressionVoiceApply {
     /// applied, `false` if the id was unknown or blocked by region scope.
     @MainActor @discardableResult
     static func apply(id: String, region: TrackerFocusState.CursorRegion,
-                      progress: PlayerProgressAndTakeAnyHearts) -> Bool {
+                      progress: PlayerProgressAndTakeAnyHearts, value: Bool = true) -> Bool {
         guard let toggle = toggle(forID: id) else { return false }
-        if !VoiceGrammar.isGlobalProgression(id), region != .overworld { return false }
-        progress[keyPath: toggle.keyPath] = true
+        // Overworld-acquired items are set only from the overworld; a *clear* (value
+        // false) is allowed from anywhere — undoing shouldn't be region-gated.
+        if value, !VoiceGrammar.isGlobalProgression(id), region != .overworld { return false }
+        progress[keyPath: toggle.keyPath] = value
         return true
     }
 }

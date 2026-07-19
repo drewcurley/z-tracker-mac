@@ -324,6 +324,69 @@ final class VoiceController {
                                         tracker: model.dungeonTracker) {
                 vlog("item box \(boxID)=\(itemID) not applied (region \(focus.cursorRegion), or item can't go here)")
             }
+        case let .clearAtCursor(words):
+            applyClear(words, cell: focus.cursorCell)
+        case let .clearAt(column, row, words):
+            focus.setCursor(col: column, row: row)
+            applyClear(words, cell: focus.cursorCell)
+        }
+    }
+
+    /// Un-mark / clear (T-149) — region-aware. Empty `words` = clear the cursor cell
+    /// (overworld) or room (dungeon); otherwise clear the named target.
+    private func applyClear(_ words: [String], cell: TrackerFocusState.GridCell) {
+        switch focus.cursorRegion {
+        case .overworld:
+            if clearProgression(words) { return }   // "un-take wood sword" from the overworld
+            OverworldMark.apply(.unmarked, column: cell.col, row: cell.row, grid: model.overworldGrid,
+                                releaseTakeAny: { c, r in model.releaseOverworldTakeAny(column: c, row: r) },
+                                placeDungeon: { _, _, _ in })
+        case .dungeonMap:
+            applyDungeonClear(words, cell: cell)
+        default:
+            // .items / .blockers / .dungeonItem — the only generic clear is a
+            // progression flag ("un-take wood sword").
+            _ = clearProgression(words)
+        }
+    }
+
+    /// Clear a progression flag if the words name one. Returns whether it did.
+    @discardableResult
+    private func clearProgression(_ words: [String]) -> Bool {
+        guard let m = config.match(words, scope: .progression) else { return false }
+        return ProgressionVoiceApply.apply(id: m.actionID, region: focus.cursorRegion,
+                                           progress: model.playerProgress, value: false)
+    }
+
+    /// Clear a dungeon target: door(s) by direction, a room type / monster / floor
+    /// drop by name, or — with no target — the whole room.
+    private func applyDungeonClear(_ words: [String], cell: TrackerFocusState.GridCell) {
+        let tab = focus.selectedDungeonTab
+        guard (0..<model.dungeonRoomMaps.count).contains(tab) else { return }
+        let map = model.dungeonRoomMaps[tab]
+        let actions = VoiceGrammar.dungeonClearActions(words, config: config)
+        if actions.isEmpty {
+            // Generic "clear this room" — wipe type, monsters, and floor drop.
+            DungeonRoomMark.applyRoomType(.unmarked, col: cell.col, row: cell.row, map: map, inferDoors: false)
+            var r = map.room(col: cell.col, row: cell.row)
+            r.floorDropDetail = .unmarked
+            while let m = r.monsters.first { r.toggleMonster(m) }
+            _ = map.setRoom(r, col: cell.col, row: cell.row)
+            return
+        }
+        for a in actions {
+            switch a {
+            case .roomType, .entrance:
+                DungeonRoomMark.applyRoomType(.unmarked, col: cell.col, row: cell.row, map: map, inferDoors: false)
+            case .floorDrop:
+                DungeonRoomMark.setFloorDrop(.unmarked, col: cell.col, row: cell.row, map: map)
+            case .monster(let m):
+                if map.room(col: cell.col, row: cell.row).monsters.contains(m) {
+                    DungeonRoomMark.toggleMonster(m, col: cell.col, row: cell.row, map: map)
+                }
+            case let .door(_, dir):
+                setDungeonDoor(.unknown, dir, col: cell.col, row: cell.row, map: map)
+            }
         }
     }
 
@@ -451,6 +514,8 @@ final class VoiceController {
         case .gotoStart: return "→ start"
         case let .toggleProgression(id): return ProgressionVoiceApply.toggle(forID: id)?.help ?? "item"
         case let .setItemBox(boxID, _): return ItemBoxVoiceApply.box(forID: boxID)?.help ?? "item box"
+        case let .clearAtCursor(words): return words.isEmpty ? "clear" : "clear \(words.joined(separator: " "))"
+        case let .clearAt(c, r, _): return "\(OverworldCoords.label(column: c, row: r)) clear"
         }
     }
 }

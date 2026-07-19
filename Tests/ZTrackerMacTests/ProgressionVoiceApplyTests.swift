@@ -35,6 +35,15 @@ struct ProgressionVoiceApplyTests {
         #expect(progress.hasMeat)
     }
 
+    @Test func clearSetsFlagFalseFromAnyRegion() {
+        // Un-mark (T-149): value:false clears, and isn't region-gated (undo from anywhere).
+        let progress = PlayerProgressAndTakeAnyHearts()
+        progress.hasWoodSword = true
+        #expect(ProgressionVoiceApply.apply(id: "Prog_WoodSword", region: .dungeonMap,
+                                            progress: progress, value: false))
+        #expect(progress.hasWoodSword == false)
+    }
+
     @Test func unknownIdIsNotApplied() {
         let progress = PlayerProgressAndTakeAnyHearts()
         #expect(ProgressionVoiceApply.apply(id: "Prog_Nope", region: .overworld, progress: progress) == false)
