@@ -150,8 +150,10 @@ public enum VoiceCatalog {
     /// "armos" / "white sword" still marks the overworld cave.
     private static let itemBoxes: [VoiceAction] = [
         VoiceAction("Box_Coast", "Coast item box", .itemBoxes, ["coast item", "coast box", "coast"]),
-        VoiceAction("Box_Armos", "Armos item box", .itemBoxes, ["armos item", "armor item", "armos box", "armor box"]),
-        VoiceAction("Box_WhiteSword", "White-sword item box", .itemBoxes, ["white sword item", "white sword box"]),
+        VoiceAction("Box_Armos", "Armos item box", .itemBoxes,
+                    ["armos item", "armor item", "armos box", "armor box", "armos", "armor"]),
+        VoiceAction("Box_WhiteSword", "White-sword item box", .itemBoxes,
+                    ["white sword item", "white sword box", "white sword"]),
     ]
 
     /// The items an item box can hold (T-143). Ids are `Item_<suffix>` matching
