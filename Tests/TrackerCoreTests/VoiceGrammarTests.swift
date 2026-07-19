@@ -43,6 +43,17 @@ struct VoiceGrammarTests {
         #expect(VoiceGrammar.overworldAction(["set", "level", "1"], config: config) == .mark(.dungeon(1)))
     }
 
+    @Test func coordinatePlusLevelMarksNotTab() {
+        // A coordinate before "level N" places the dungeon at that cell (T-151),
+        // not a tab switch.
+        #expect(VoiceGrammar.parse("E2 level two", config: config)
+                == .actionAt(column: 1, row: 4, words: ["set", "level", "2"]))
+        #expect(VoiceGrammar.parse("A6 level six", config: config)
+                == .actionAt(column: 5, row: 0, words: ["set", "level", "6"]))
+        // No coordinate → still a tab switch.
+        #expect(VoiceGrammar.parse("level two", config: config) == .dungeonTab(2))
+    }
+
     @Test func natoLettersAndNumberWords() {
         #expect(VoiceGrammar.parse("echo seven", config: config) == .cursorTo(column: 6, row: 4))
         #expect(VoiceGrammar.parse("charlie three bomb shop", config: config)
