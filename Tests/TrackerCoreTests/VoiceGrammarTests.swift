@@ -249,6 +249,17 @@ struct VoiceGrammarTests {
         #expect(VoiceGrammar.parse("armos", config: config) == .actionAtCursor(words: ["armos"]))
     }
 
+    @Test func itemBoxWithoutQualifier() {
+        // "armos ladder" / "white sword bow" set the box without needing "item"/"box" (T-153);
+        // the following item disambiguates from the bare cave mark.
+        #expect(VoiceGrammar.parse("armos ladder", config: config)
+                == .setItemBox(boxID: "Box_Armos", itemID: "Item_Ladder"))
+        #expect(VoiceGrammar.parse("white sword bow", config: config)
+                == .setItemBox(boxID: "Box_WhiteSword", itemID: "Item_Bow"))
+        #expect(VoiceGrammar.parse("armor recorder", config: config)
+                == .setItemBox(boxID: "Box_Armos", itemID: "Item_Recorder"))
+    }
+
     // MARK: Clear / un-mark (T-149)
 
     @Test func clearRoutesToClearCommand() {
