@@ -12,6 +12,7 @@ public enum VoiceCommand: Equatable, Sendable {
     case exitToOverworld                                  // "overworld" / "leave dungeon"
     case gotoStart                                        // "start" / "restart"
     case toggleProgression(id: String)                    // "took wood sword" (item acquired)
+    case setItemBox(boxID: String, itemID: String)        // "coast ladder" (box holds item)
 }
 
 /// A resolved overworld action — the app calls it once it knows the cursor is on the
@@ -39,6 +40,12 @@ public enum VoiceGrammar {
         // Checked before region/structural so the action word wins the disambiguation.
         if let id = progressionToggle(words, config: config) {
             return .toggleProgression(id: id)
+        }
+
+        // Item boxes (T-143): "coast ladder" = box + item. Checked before region so
+        // "white sword item bow" isn't grabbed by the "white sword" overworld cave mark.
+        if let box = itemBoxCommand(words, config: config) {
+            return .setItemBox(boxID: box.boxID, itemID: box.itemID)
         }
 
         // Region actions win over structural, so a door command like "open left" isn't
@@ -86,6 +93,26 @@ public enum VoiceGrammar {
     static func progressionToggle(_ words: [String], config: VoiceConfig) -> String? {
         guard words.contains(where: { actionWords.contains($0) }) else { return nil }
         return config.match(words, scope: .progression)?.actionID
+    }
+
+    // MARK: Item boxes (T-143)
+
+    /// The (box, item) an item-box utterance names ("coast ladder"). Requires both a box
+    /// name and a following item; the box phrase is stripped before matching the item so
+    /// a word in the box's own name ("white sword" in "white sword item") can't be read
+    /// as the item.
+    static func itemBoxCommand(_ words: [String], config: VoiceConfig)
+        -> (boxID: String, itemID: String)? {
+        guard let boxMatch = config.match(words, scope: .itemBox) else { return nil }
+        let joined = words.joined(separator: " ")
+        // The longest matched box phrase, so we strip "coast item" not just "coast".
+        let boxPhrase = config.phrases(for: boxMatch.actionID)
+            .filter { joined.contains($0) }
+            .max { $0.count < $1.count } ?? ""
+        let remainder = joined.replacingOccurrences(of: boxPhrase, with: " ")
+        let remainderWords = remainder.split(separator: " ").map(String.init)
+        guard let itemMatch = config.match(remainderWords, scope: .item) else { return nil }
+        return (boxMatch.actionID, itemMatch.actionID)
     }
 
     // MARK: Dungeon region resolution

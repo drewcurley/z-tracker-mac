@@ -319,6 +319,11 @@ final class VoiceController {
             }
         case let .toggleProgression(id):
             applyProgression(id)
+        case let .setItemBox(boxID, itemID):
+            if !ItemBoxVoiceApply.apply(boxID: boxID, itemID: itemID, region: focus.cursorRegion,
+                                        tracker: model.dungeonTracker) {
+                vlog("item box \(boxID)=\(itemID) not applied (region \(focus.cursorRegion), or item can't go here)")
+            }
         }
     }
 
@@ -445,6 +450,7 @@ final class VoiceController {
         case .exitToOverworld: return "overworld"
         case .gotoStart: return "→ start"
         case let .toggleProgression(id): return ProgressionVoiceApply.toggle(forID: id)?.help ?? "item"
+        case let .setItemBox(boxID, _): return ItemBoxVoiceApply.box(forID: boxID)?.help ?? "item box"
         }
     }
 }

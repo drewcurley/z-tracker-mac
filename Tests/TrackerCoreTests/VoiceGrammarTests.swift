@@ -142,6 +142,30 @@ struct VoiceGrammarTests {
         #expect(VoiceGrammar.isGlobalProgression("Prog_Meat") == false)
     }
 
+    // MARK: Item boxes (T-143)
+
+    @Test func itemBoxCommandResolvesBoxAndItem() {
+        #expect(VoiceGrammar.parse("coast ladder", config: config) == .setItemBox(boxID: "Box_Coast", itemID: "Item_Ladder"))
+        #expect(VoiceGrammar.parse("coast item recorder", config: config) == .setItemBox(boxID: "Box_Coast", itemID: "Item_Recorder"))
+        #expect(VoiceGrammar.parse("armos item bow", config: config) == .setItemBox(boxID: "Box_Armos", itemID: "Item_Bow"))
+        #expect(VoiceGrammar.parse("coast item nothing", config: config) == .setItemBox(boxID: "Box_Coast", itemID: "Item_Nothing"))
+    }
+
+    @Test func whiteSwordBoxDoesNotEatItsOwnName() {
+        // "white sword item bow" → the box holds a *bow*, not the white sword.
+        #expect(VoiceGrammar.parse("white sword item bow", config: config)
+                == .setItemBox(boxID: "Box_WhiteSword", itemID: "Item_Bow"))
+        // …but the box CAN hold the white sword item.
+        #expect(VoiceGrammar.parse("white sword box white sword", config: config)
+                == .setItemBox(boxID: "Box_WhiteSword", itemID: "Item_WhiteSword"))
+    }
+
+    @Test func bareBoxWordStaysACaveMark() {
+        // No item after the box word → the overworld cave mark, not a box command.
+        #expect(VoiceGrammar.parse("white sword", config: config) == .actionAtCursor(words: ["white", "sword"]))
+        #expect(VoiceGrammar.parse("armos", config: config) == .actionAtCursor(words: ["armos"]))
+    }
+
     @Test func doorCommandNotEatenByCursorMove() {
         // "open left" is a door command at the cursor, not a cursor move left.
         #expect(VoiceGrammar.parse("open left", config: config) == .actionAtCursor(words: ["open", "left"]))
