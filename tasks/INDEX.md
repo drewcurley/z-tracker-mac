@@ -25,6 +25,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-146](./T-146.md) | Voice — flexible entrance phrasing ("entrance from north", "north entrance") | frontend-engineer | T-140 | feat/voice-entrance-flexible | — | docs/reviews/feat-voice-entrance-flexible/final.md |
 | [T-145](./T-145.md) | Dungeon — consolidate 192 per-cell popovers to 3 grid-level (snappier + fewer crashes) | frontend-engineer | — | fix/dungeon-popover-consolidation | — | docs/reviews/fix-dungeon-popover-consolidation/final.md |
 | [T-144](./T-144.md) | Perf — timer no longer pegs 100% CPU (1 fps H:MM:SS) + FPS diagnostic | frontend-engineer | — | perf/timer-render-cpu | — | docs/reviews/perf-timer-render-cpu/final.md |
 | [T-143](./T-143.md) | Voice — item boxes (coast / armos / white-sword) via "box + item" | frontend-engineer | T-142 | feat/voice-item-boxes | — | docs/reviews/feat-voice-item-boxes/final.md |
