@@ -267,7 +267,8 @@ public enum VoiceCatalog {
     private static let floorDrops: [VoiceAction] = [
         VoiceAction("Drop_Triforce", "Triforce", .floorDrops, ["triforce"]),
         VoiceAction("Drop_Heart", "Heart", .floorDrops, ["heart drop", "drop heart", "dropped heart", "floor heart"]),
-        VoiceAction("Drop_OtherKeyItem", "Other key item", .floorDrops, ["key item drop", "item drop", "dropped item"]),
+        VoiceAction("Drop_OtherKeyItem", "Other key item", .floorDrops,
+                    ["key item drop", "item drop", "dropped item", "floor drop", "drop", "dropped", "the drop"]),
         VoiceAction("Drop_BombPack", "Bomb pack", .floorDrops, ["bomb pack", "bomb drop"]),
         VoiceAction("Drop_Key", "Key", .floorDrops, ["key drop", "drop key", "dropped key"]),
         VoiceAction("Drop_FiveRupee", "Five rupee", .floorDrops, ["rupee drop", "five rupee", "dropped rupee"]),
