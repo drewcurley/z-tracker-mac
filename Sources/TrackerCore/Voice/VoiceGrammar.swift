@@ -15,6 +15,7 @@ public enum VoiceCommand: Equatable, Sendable {
     case setItemBox(boxID: String, itemID: String)        // "coast ladder" (box holds item)
     case clearAtCursor(words: [String])                   // "clear triforce" / "un-take wood sword"
     case clearAt(column: Int, row: Int, words: [String])  // "D5 clear"
+    case stopListening                                    // "pause voice" / "stop listening"
 }
 
 /// A resolved overworld action — the app calls it once it knows the cursor is on the
@@ -294,6 +295,7 @@ public enum VoiceGrammar {
         case "Cursor_Right":  return .moveCursor(dcol: 1, drow: 0)
         case "Nav_Overworld": return .exitToOverworld
         case "Nav_Start":     return .gotoStart
+        case "Nav_StopVoice": return .stopListening
         case "Dungeon_Enter":
             if let n = m.number, (1...9).contains(n) { return .dungeonTab(n) }
             return nil
