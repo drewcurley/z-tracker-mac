@@ -9,6 +9,15 @@ import SwiftUI
 /// The three reset actions (Reset App / Reset Timer / Reset (keep maps)) are
 /// **not** here — they're omnipresent buttons under the Info group (T-048), so
 /// pausing is just pausing and a groundhog reset never pauses the main timer.
+/// How often the on-screen stopwatch repaints — once per second. On macOS 27
+/// every tick forces the main window's single `NSHostingView` to re-measure the
+/// *entire* tracker layout (`sizeThatFits` over the whole tree, ~68 ms/pass), so
+/// a 33 fps clock pegged a full core and lagged the game (measured). The visible
+/// clock only shows `H:MM:SS`, so 1 fps is all it needs; the millisecond value
+/// written to the notes (e.g. on Zelda capture) is read from the timer at that
+/// instant, independent of this repaint rate.
+let timerDisplayRefreshInterval: TimeInterval = 1.0
+
 struct TimerView: View {
     var timer: TrackerTimer
 
@@ -39,25 +48,39 @@ struct TimerView: View {
     }
 
     private var runningTimer: some View {
-        TimelineView(.periodic(from: refreshAnchor, by: 0.03)) { context in
-            let now = context.date
-            HStack(alignment: .center, spacing: 10) {
-                VStack(alignment: .trailing, spacing: 0) {
-                    Text(TimerFormatting.hmsMillis(timer.mainElapsed(asOf: now)))
-                        .font(.system(size: 24, weight: .bold, design: .monospaced))
-                        .foregroundStyle(timer.isRunning ? .green : .orange)
-                    // The lap line always reserves its height (hidden until a
-                    // lap starts), so it appearing doesn't shift the main timer.
-                    Text(TimerFormatting.hmsMillis(timer.lapElapsed(asOf: now)))
-                        .font(.system(size: 15, weight: .semibold, design: .monospaced))
-                        .foregroundStyle(.yellow)
-                        .opacity(timer.hasLap ? 1 : 0)
-                        .help("Lap timer — resets on each groundhog/routers reset; the main timer keeps running")
+        // Only the running timer needs to tick. A paused timer's elapsed is
+        // constant regardless of `now`, so we render it **once** (no
+        // `TimelineView`) — otherwise the paused clock would still drive 33
+        // display-cycle re-layouts/sec for nothing.
+        Group {
+            if timer.isRunning {
+                TimelineView(.periodic(from: refreshAnchor, by: timerDisplayRefreshInterval)) { context in
+                    readout(asOf: context.date)
                 }
-                Button(timer.isRunning ? "Pause" : "Resume") { timer.togglePause() }
-                    .font(.caption)
-                    .controlSize(.small)
+            } else {
+                readout(asOf: Date())
             }
+        }
+    }
+
+    /// The timer readout — `H:MM:SS` (no ms; see `timerDisplayRefreshInterval`).
+    private func readout(asOf now: Date) -> some View {
+        HStack(alignment: .center, spacing: 10) {
+            VStack(alignment: .trailing, spacing: 0) {
+                Text(TimerFormatting.hms(timer.mainElapsed(asOf: now)))
+                    .font(.system(size: 24, weight: .bold, design: .monospaced))
+                    .foregroundStyle(timer.isRunning ? .green : .orange)
+                // The lap line always reserves its height (hidden until a
+                // lap starts), so it appearing doesn't shift the main timer.
+                Text(TimerFormatting.hms(timer.lapElapsed(asOf: now)))
+                    .font(.system(size: 15, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(.yellow)
+                    .opacity(timer.hasLap ? 1 : 0)
+                    .help("Lap timer — resets on each groundhog/routers reset; the main timer keeps running")
+            }
+            Button(timer.isRunning ? "Pause" : "Resume") { timer.togglePause() }
+                .font(.caption)
+                .controlSize(.small)
         }
     }
 }

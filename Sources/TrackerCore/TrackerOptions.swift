@@ -199,6 +199,9 @@ public final class TrackerOptions {
     /// Warn before quitting while the run timer is still running (T-109, beyond
     /// the reference). Default **true**.
     public var warnOnCloseWhileTimerRunning: Bool
+    /// Show a small live FPS/main-thread-responsiveness readout (dev diagnostic,
+    /// beyond the reference). Default **false**.
+    public var showFPS: Bool
 
     public init(
         drawRoutes: Bool = true,
@@ -232,7 +235,8 @@ public final class TrackerOptions {
         broadcastWindowIncludesOverworldMagnifier: Bool = false,
         showMouseMagnifierWindow: Bool = false,
         hideTimer: Bool = false,
-        warnOnCloseWhileTimerRunning: Bool = true
+        warnOnCloseWhileTimerRunning: Bool = true,
+        showFPS: Bool = false
     ) {
         self.drawRoutes = drawRoutes
         self.showScreenScrolls = showScreenScrolls
@@ -266,6 +270,7 @@ public final class TrackerOptions {
         self.showMouseMagnifierWindow = showMouseMagnifierWindow
         self.hideTimer = hideTimer
         self.warnOnCloseWhileTimerRunning = warnOnCloseWhileTimerRunning
+        self.showFPS = showFPS
     }
 
     /// Every category defaults to `true` except `.recorderPBSpotsAndBoomstickBook`
@@ -421,6 +426,7 @@ public final class TrackerOptions {
         "showMouseMagnifierWindow": \.showMouseMagnifierWindow,
         "hideTimer": \.hideTimer,
         "warnOnCloseWhileTimerRunning": \.warnOnCloseWhileTimerRunning,
+        "showFPS": \.showFPS,
     ]
 
     /// Turn on startup-settings persistence and apply whatever a previous launch

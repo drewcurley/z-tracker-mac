@@ -15,26 +15,35 @@ struct TimerWindowView: View {
     var body: some View {
         GeometryReader { geo in
             let main = Self.mainFontSize(for: geo.size, hasLap: timer.hasLap)
-            TimelineView(.periodic(from: refreshAnchor, by: 0.03)) { context in
-                let now = context.date
-                VStack(spacing: main * 0.1) {
-                    Text(TimerFormatting.hmsMillis(timer.mainElapsed(asOf: now)))
-                        .font(.system(size: main, weight: .bold, design: .monospaced))
-                        .foregroundStyle(timer.hasStarted ? (timer.isRunning ? .green : .orange) : .secondary)
-                        .minimumScaleFactor(0.4)
-                        .lineLimit(1)
-                    if timer.hasLap {
-                        Text(TimerFormatting.hmsMillis(timer.lapElapsed(asOf: now)))
-                            .font(.system(size: main * 0.5, weight: .semibold, design: .monospaced))
-                            .foregroundStyle(.yellow)
-                            .minimumScaleFactor(0.4)
-                            .lineLimit(1)
-                    }
+            // Only tick while running — a paused (or not-yet-started) clock is
+            // constant, so we render it once instead of driving 33 redraws/sec.
+            if timer.isRunning {
+                TimelineView(.periodic(from: refreshAnchor, by: timerDisplayRefreshInterval)) { context in
+                    readout(asOf: context.date, main: main)
                 }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .padding(main * 0.15)
+            } else {
+                readout(asOf: Date(), main: main)
             }
         }
+    }
+
+    private func readout(asOf now: Date, main: CGFloat) -> some View {
+        VStack(spacing: main * 0.1) {
+            Text(TimerFormatting.hms(timer.mainElapsed(asOf: now)))
+                .font(.system(size: main, weight: .bold, design: .monospaced))
+                .foregroundStyle(timer.hasStarted ? (timer.isRunning ? .green : .orange) : .secondary)
+                .minimumScaleFactor(0.4)
+                .lineLimit(1)
+            if timer.hasLap {
+                Text(TimerFormatting.hms(timer.lapElapsed(asOf: now)))
+                    .font(.system(size: main * 0.5, weight: .semibold, design: .monospaced))
+                    .foregroundStyle(.yellow)
+                    .minimumScaleFactor(0.4)
+                    .lineLimit(1)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(main * 0.15)
     }
 
     /// A main-readout font size that fills the window. The monospaced readout is

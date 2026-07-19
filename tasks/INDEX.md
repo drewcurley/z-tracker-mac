@@ -25,6 +25,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-144](./T-144.md) | Perf — timer no longer pegs 100% CPU (1 fps H:MM:SS) + FPS diagnostic | frontend-engineer | — | perf/timer-render-cpu | — | docs/reviews/perf-timer-render-cpu/final.md |
 | [T-143](./T-143.md) | Voice — item boxes (coast / armos / white-sword) via "box + item" | frontend-engineer | T-142 | feat/voice-item-boxes | — | docs/reviews/feat-voice-item-boxes/final.md |
 | [T-142](./T-142.md) | Voice — progression toggles ("took wood sword") with action-word disambiguation | frontend-engineer | T-141 | feat/voice-progression-toggles | — | docs/reviews/feat-voice-progression-toggles/final.md |
 | [T-141](./T-141.md) | Voice — a second shop word sets the tile's second item (not overwrite) | frontend-engineer | T-140 | feat/voice-shop-second-item | — | docs/reviews/feat-voice-shop-second-item/final.md |
