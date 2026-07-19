@@ -303,6 +303,45 @@ public enum VoiceGrammar {
         }
     }
 
+    /// The eight real shop kinds and the catalog action id that names each. Potion
+    /// and hint shops are their own tile marks (not `ShopKind`), so they never form a
+    /// shop pair.
+    private static let shopKindByID: [(id: String, kind: ShopKind)] = [
+        ("OW_BombShop", .bomb), ("OW_ArrowShop", .arrow), ("OW_CandleShop", .candle),
+        ("OW_BookShop", .book), ("OW_BlueRingShop", .blueRing), ("OW_MeatShop", .meat),
+        ("OW_KeyShop", .key), ("OW_ShieldShop", .shield),
+    ]
+
+    /// Voice (T-158): one utterance that names two distinct shop items — "bomb shop
+    /// and meat", "bomb shop second item meat" — sets the tile's primary shop *and*
+    /// its second item (T-060) in a single command, instead of needing two separate
+    /// utterances on the same tile. Returns the two kinds in the order spoken, or nil
+    /// when fewer than two *distinct* shops are named (the normal single-mark path
+    /// then handles it).
+    public static func overworldShopPair(_ words: [String], config: VoiceConfig) -> (primary: ShopKind, second: ShopKind)? {
+        var ordered: [ShopKind] = []
+        var i = 0
+        while i < words.count {
+            var advanced = false
+            for (id, kind) in shopKindByID {
+                for phrase in config.phrases(for: id) {
+                    let toks = phrase.split(separator: " ").map(String.init)
+                    guard !toks.isEmpty, i + toks.count <= words.count else { continue }
+                    if Array(words[i..<i + toks.count]) == toks {
+                        if !ordered.contains(kind) { ordered.append(kind) }
+                        i += toks.count
+                        advanced = true
+                        break
+                    }
+                }
+                if advanced { break }
+            }
+            if !advanced { i += 1 }
+        }
+        guard ordered.count >= 2 else { return nil }
+        return (ordered[0], ordered[1])
+    }
+
     private static func overworldMeaning(_ m: (actionID: String, number: Int?)) -> OverworldAction? {
         switch m.actionID {
         case "OW_BombShop":     return .mark(.shop(.bomb))

@@ -433,11 +433,21 @@ final class VoiceController {
         let cell = focus.cursorCell
         switch focus.cursorRegion {
         case .overworld:
+            let instance = OverworldInstance(quest: model.quest ?? .first)
+            guard !instance.alwaysEmpty(x: cell.col, y: cell.row) else { return }
+            // Two distinct shop items named in one utterance set the primary shop mark
+            // *and* the tile's second item together (T-158) — no need for two commands.
+            if let pair = VoiceGrammar.overworldShopPair(words, config: config) {
+                OverworldMark.apply(.shop(pair.primary), column: cell.col, row: cell.row,
+                                    grid: model.overworldGrid,
+                                    releaseTakeAny: { c, r in model.releaseOverworldTakeAny(column: c, row: r) },
+                                    placeDungeon: { _, _, _ in })
+                model.overworldGrid.setShopSecondItem(pair.second, column: cell.col, row: cell.row)
+                return
+            }
             guard let action = VoiceGrammar.overworldAction(words, config: config) else {
                 vlog("no overworld action in \(words)"); return
             }
-            let instance = OverworldInstance(quest: model.quest ?? .first)
-            guard !instance.alwaysEmpty(x: cell.col, y: cell.row) else { return }
             switch action {
             case .mark(let mark):
                 // A second shop word on an existing shop tile sets the tile's *second*

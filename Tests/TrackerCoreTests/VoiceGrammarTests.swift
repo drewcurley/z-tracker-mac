@@ -317,4 +317,51 @@ struct VoiceGrammarTests {
         // bare "left" is still a cursor move.
         #expect(VoiceGrammar.parse("left", config: config) == .moveCursor(dcol: -1, drow: 0))
     }
+
+    // MARK: - T-158: single-utterance two-item shop
+
+    private func shopPair(_ phrase: String) -> (primary: ShopKind, second: ShopKind)? {
+        VoiceGrammar.overworldShopPair(phrase.split(separator: " ").map(String.init), config: config)
+    }
+
+    @Test func twoShopWordsGiveAPair() {
+        // "second item" filler between the two shop names.
+        #expect(shopPair("bomb shop second item meat")?.primary == .bomb)
+        #expect(shopPair("bomb shop second item meat")?.second == .meat)
+    }
+
+    @Test func twoShopWordsJoinedByAnd() {
+        let p = shopPair("bomb shop and meat")
+        #expect(p?.primary == .bomb)
+        #expect(p?.second == .meat)
+    }
+
+    @Test func shopPairKeepsSpokenOrder() {
+        // Order spoken decides primary vs second, regardless of enum order.
+        let p = shopPair("meat and bomb shop")
+        #expect(p?.primary == .meat)
+        #expect(p?.second == .bomb)
+    }
+
+    @Test func singleShopIsNotAPair() {
+        #expect(shopPair("bomb shop") == nil)
+        #expect(shopPair("meat") == nil)
+    }
+
+    @Test func repeatedSameShopIsNotAPair() {
+        // Two mentions of the *same* kind is not two distinct items.
+        #expect(shopPair("bomb shop and bombs") == nil)
+    }
+
+    @Test func potionAndHintShopsNeverPair() {
+        // Potion/hint are their own marks, not ShopKind — never a shop pair.
+        #expect(shopPair("potion shop and hint shop") == nil)
+        #expect(shopPair("bomb shop and potion") == nil)   // only one real shop kind
+    }
+
+    @Test func threeShopsTakeFirstTwo() {
+        let p = shopPair("candle bomb shop meat")
+        #expect(p?.primary == .candle)
+        #expect(p?.second == .bomb)
+    }
 }
