@@ -29,7 +29,7 @@ public struct VoiceAction: Identifiable, Equatable, Sendable {
 public enum VoiceCategory: String, CaseIterable, Sendable, Codable {
     case cursor, navigation, dungeon, overworldShops, overworldMarks, takeAny
     case dungeonRooms, monsters, floorDrops, doors, entrances
-    case progression
+    case progression, itemBoxes, items
 
     public var title: String {
         switch self {
@@ -45,6 +45,8 @@ public enum VoiceCategory: String, CaseIterable, Sendable, Codable {
         case .doors: "Dungeon — doors"
         case .entrances: "Dungeon — entrances"
         case .progression: "Items — acquired (say with \u{201C}took / got / bought\u{201D})"
+        case .itemBoxes: "Item boxes (say box + item, e.g. \u{201C}coast ladder\u{201D})"
+        case .items: "Items (for the item boxes)"
         }
     }
 }
@@ -53,6 +55,7 @@ public enum VoiceCatalog {
     public static let all: [VoiceAction] =
         cursor + navigation + dungeon + overworldShops + overworldMarks + takeAny
         + dungeonRooms + monsters + floorDrops + doors + entrances + progression
+        + itemBoxes + items
 
     public static func action(id: String) -> VoiceAction? { all.first { $0.id == id } }
     public static func actions(in category: VoiceCategory) -> [VoiceAction] {
@@ -62,7 +65,7 @@ public enum VoiceCatalog {
     public static let categoryOrder: [VoiceCategory] =
         [.cursor, .navigation, .dungeon, .doors, .entrances,
          .dungeonRooms, .monsters, .floorDrops, .overworldShops, .overworldMarks, .takeAny,
-         .progression]
+         .progression, .itemBoxes, .items]
 
     // MARK: Actions
 
@@ -140,6 +143,37 @@ public enum VoiceCatalog {
         VoiceAction("Prog_Meat", "Meat / bait", .progression, ["meat", "bait", "food"]),
         VoiceAction("Prog_Ganon", "Ganon (defeated)", .progression, ["ganon", "gannon"]),
         VoiceAction("Prog_Zelda", "Zelda (rescued)", .progression, ["zelda", "princess"]),
+    ]
+
+    /// The three off-map item boxes (T-143). Said as **box + item** ("coast ladder").
+    /// The `armos`/`white sword` boxes require a qualifier ("item"/"box") so a bare
+    /// "armos" / "white sword" still marks the overworld cave.
+    private static let itemBoxes: [VoiceAction] = [
+        VoiceAction("Box_Coast", "Coast item box", .itemBoxes, ["coast item", "coast box", "coast"]),
+        VoiceAction("Box_Armos", "Armos item box", .itemBoxes, ["armos item", "armor item", "armos box", "armor box"]),
+        VoiceAction("Box_WhiteSword", "White-sword item box", .itemBoxes, ["white sword item", "white sword box"]),
+    ]
+
+    /// The items an item box can hold (T-143). Ids are `Item_<suffix>` matching
+    /// `ItemBoxMark.itemIndex(forHotkeySuffix:)`. Also reused for the dungeon item card
+    /// later. Only matched *after* a box name, so "heart" here can't clash elsewhere.
+    private static let items: [VoiceAction] = [
+        VoiceAction("Item_Bow", "Bow", .items, ["bow"]),
+        VoiceAction("Item_Raft", "Raft", .items, ["raft"]),
+        VoiceAction("Item_Ladder", "Ladder", .items, ["ladder", "step ladder", "stepladder"]),
+        VoiceAction("Item_Recorder", "Recorder", .items, ["recorder", "whistle", "flute"]),
+        VoiceAction("Item_Wand", "Wand", .items, ["wand", "magic wand", "magical rod"]),
+        VoiceAction("Item_RedCandle", "Red candle", .items, ["red candle"]),
+        VoiceAction("Item_RedRing", "Red ring", .items, ["red ring"]),
+        VoiceAction("Item_SilverArrow", "Silver arrow", .items, ["silver arrow", "silver arrows"]),
+        VoiceAction("Item_MagicBoomerang", "Magic boomerang", .items, ["magic boomerang", "magical boomerang"]),
+        VoiceAction("Item_Boomerang", "Boomerang", .items, ["boomerang"]),
+        VoiceAction("Item_PowerBracelet", "Power bracelet", .items, ["power bracelet", "bracelet"]),
+        VoiceAction("Item_WhiteSword", "White sword", .items, ["white sword"]),
+        VoiceAction("Item_HeartContainer", "Heart container", .items, ["heart container", "heart"]),
+        VoiceAction("Item_BookOrShield", "Book / magic shield", .items, ["book or shield", "magic book", "magic shield", "shield"]),
+        VoiceAction("Item_AnyKey", "Any key (magical key)", .items, ["any key", "magical key", "master key"]),
+        VoiceAction("Item_Nothing", "Nothing (clear box)", .items, ["nothing", "empty", "clear", "none"]),
     ]
 
     // MARK: Dungeon actions (apply to the cursor room when the cursor is in a dungeon)

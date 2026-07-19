@@ -78,7 +78,9 @@ public final class VoiceConfig {
     /// navigation / dungeon tab), matched at parse time; `overworld` / `dungeon` are
     /// **region actions** applied at the cursor and resolved per-region at execution.
     /// `region` (a query value) matches either overworld or dungeon.
-    public enum Scope: Sendable { case structural, overworld, dungeon, progression, region, any }
+    public enum Scope: Sendable {
+        case structural, overworld, dungeon, progression, itemBox, item, region, any
+    }
 
     public static func scope(of action: VoiceAction) -> Scope {
         switch action.category {
@@ -86,6 +88,8 @@ public final class VoiceConfig {
         case .overworldShops, .overworldMarks, .takeAny: .overworld
         case .dungeonRooms, .monsters, .floorDrops, .doors, .entrances: .dungeon
         case .progression: .progression
+        case .itemBoxes: .itemBox
+        case .items: .item
         }
     }
 
