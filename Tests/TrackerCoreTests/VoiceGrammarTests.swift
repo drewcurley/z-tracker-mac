@@ -89,6 +89,14 @@ struct VoiceGrammarTests {
         #expect(VoiceGrammar.parse("hello there", config: config) == nil)
     }
 
+    @Test func partialPhraseAliases() {
+        // Natural partial forms that missed in QA now resolve (T-154).
+        #expect(VoiceGrammar.overworldAction(["money", "making"], config: config) == .mark(.moneyMakingGame))
+        #expect(VoiceGrammar.overworldAction(["money"], config: config) == .mark(.moneyMakingGame))
+        #expect(VoiceGrammar.dungeonActions(["possible", "push"], config: config) == [.roomType(.maybePushBlock)])
+        #expect(VoiceGrammar.dungeonActions(["maybe", "push"], config: config) == [.roomType(.maybePushBlock)])
+    }
+
     @Test func overworldActionResolvesMarks() {
         #expect(VoiceGrammar.overworldAction(["bomb", "shop"], config: config) == .mark(.shop(.bomb)))
         #expect(VoiceGrammar.overworldAction(["potion"], config: config) == .mark(.potionShop))
