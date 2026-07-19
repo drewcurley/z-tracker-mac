@@ -7,6 +7,25 @@ import TrackerCore
 struct DungeonRoomMarkApplyTests {
     private func freshMap() -> DungeonRoomMap { DungeonRoomMap() }
 
+    // Diagnostic (2026-07-18): does the shared apply path infer the entry door when
+    // marking a room adjacent to an already-marked one? (Voice + hotkey + click all use
+    // this path.) If this passes, voice door inference works *when the setting is on*.
+    @Test func markingAdjacentRoomInfersConnectingDoorWhenEnabled() {
+        let map = freshMap()
+        // Mark room A at (0,0), then the adjacent room B at (1,0), inference ON.
+        DungeonRoomMark.applyRoomType(.nonDescript, col: 0, row: 0, map: map, inferDoors: true)
+        DungeonRoomMark.applyRoomType(.nonDescript, col: 1, row: 0, map: map, inferDoors: true)
+        // The wall between A(0,0) and B(1,0) is the horizontal door at col 0 — should now be open.
+        #expect(map.horizontalDoor(col: 0, row: 0) == .yes)
+    }
+
+    @Test func markingAdjacentRoomDoesNotInferWhenDisabled() {
+        let map = freshMap()
+        DungeonRoomMark.applyRoomType(.nonDescript, col: 0, row: 0, map: map, inferDoors: false)
+        DungeonRoomMark.applyRoomType(.nonDescript, col: 1, row: 0, map: map, inferDoors: false)
+        #expect(map.horizontalDoor(col: 0, row: 0) == .unknown)
+    }
+
     @Test func hotkeySetsRoomType() {
         let map = freshMap()
         let ok = DungeonRoomMark.applyHotkey("DungeonRoom_RoomType_CircleMoat",

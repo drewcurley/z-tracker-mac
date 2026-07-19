@@ -56,12 +56,12 @@ struct SettingsPersistenceTests {
         let (s, cleanup) = makeStore(); defer { cleanup() }
         let first = TrackerOptions()
         first.enableSettingsPersistence(store: s)
-        first.doDoorInference = true          // changed but not committed
+        first.boardInsteadOfLevel = true      // changed but not committed (default false)
         // no saveSettings()
 
         let second = TrackerOptions()
         second.enableSettingsPersistence(store: s)
-        #expect(!second.doDoorInference)      // stays default
+        #expect(!second.boardInsteadOfLevel)  // stays default
     }
 
     @Test("plain TrackerOptions never touches the store")

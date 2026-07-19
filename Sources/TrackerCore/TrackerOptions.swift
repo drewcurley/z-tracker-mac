@@ -125,7 +125,9 @@ public final class TrackerOptions {
     public var boardInsteadOfLevel: Bool
     /// `ShowBasementInfo`, default `true`.
     public var showBasementInfo: Bool
-    /// `DoDoorInference`, default `false`.
+    /// `DoDoorInference` — default **true** (T-156): auto-open the inferred entry
+    /// door when a room is newly marked. It's a helpful default (and what makes
+    /// voice "mark, move, mark" draw the connecting doors); toggle off in Settings.
     public var doDoorInference: Bool
     /// `BookForHelpfulHints`, default `false`.
     public var bookForHelpfulHints: Bool
@@ -211,7 +213,7 @@ public final class TrackerOptions {
         shopsBeforeDungeons: Bool = true,
         boardInsteadOfLevel: Bool = false,
         showBasementInfo: Bool = true,
-        doDoorInference: Bool = false,
+        doDoorInference: Bool = true,
         bookForHelpfulHints: Bool = false,
         leftDragAutoInverts: Bool = false,
         defaultToNonDescript: Bool = false,
