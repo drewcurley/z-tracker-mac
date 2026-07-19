@@ -17,7 +17,7 @@ struct TrackerOptionsTests {
         // Dungeon settings
         #expect(options.boardInsteadOfLevel == false)
         #expect(options.showBasementInfo == true)
-        #expect(options.doDoorInference == false)
+        #expect(options.doDoorInference == true)   // helpful default (T-156)
         #expect(options.bookForHelpfulHints == false)
         #expect(options.leftDragAutoInverts == false)
         #expect(options.defaultToNonDescript == false)
