@@ -152,6 +152,15 @@ struct VoiceGrammarTests {
                 == [.door(.yes, .west), .door(.yes, .south), .roomType(.nonDescript)])
     }
 
+    @Test func genericDropMarker() {
+        // Bare "drop"/"floor drop"/"dropped" → a generic item drop (T-157)...
+        #expect(VoiceGrammar.dungeonActions(["drop"], config: config) == [.floorDrop(.otherKeyItem)])
+        #expect(VoiceGrammar.dungeonActions(["floor", "drop"], config: config) == [.floorDrop(.otherKeyItem)])
+        // ...but specific drops still win via longest-match.
+        #expect(VoiceGrammar.dungeonActions(["heart", "drop"], config: config) == [.floorDrop(.heart)])
+        #expect(VoiceGrammar.dungeonActions(["key", "drop"], config: config) == [.floorDrop(.key)])
+    }
+
     @Test func dungeonTransportTakesNumber() {
         #expect(VoiceGrammar.dungeonActions(["transport", "3"], config: config) == [.roomType(.transport3)])
     }
