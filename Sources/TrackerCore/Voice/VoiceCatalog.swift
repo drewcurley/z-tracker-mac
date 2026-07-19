@@ -181,11 +181,13 @@ public enum VoiceCatalog {
     /// Doors — a state word + a direction ("open left"); compound utterances mark
     /// several ("open west shutter east key north"). Colors are the user's convention.
     private static let doors: [VoiceAction] = [
-        VoiceAction("Door_Open", "Door: open (green)", .doors, takesDirection: true, ["open"]),
+        VoiceAction("Door_Open", "Door: open (green)", .doors, takesDirection: true, ["open", "green"]),
         VoiceAction("Door_Blocked", "Door: blocked / wall (red)", .doors, takesDirection: true,
-                    ["blocked", "wall", "no door"]),
-        VoiceAction("Door_Key", "Door: key (gold)", .doors, takesDirection: true, ["key", "locked"]),
-        VoiceAction("Door_Shutter", "Door: shutter (purple)", .doors, takesDirection: true, ["shutter"]),
+                    ["blocked", "wall", "no door", "red"]),
+        VoiceAction("Door_Key", "Door: key (gold)", .doors, takesDirection: true,
+                    ["key", "locked", "gold", "yellow"]),
+        VoiceAction("Door_Shutter", "Door: shutter (purple)", .doors, takesDirection: true,
+                    ["shutter", "purple"]),
         VoiceAction("Door_None", "Door: unknown / clear", .doors, takesDirection: true,
                     ["none", "unknown", "clear door"]),
     ]

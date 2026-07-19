@@ -25,6 +25,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-147](./T-147.md) | Voice — door "door" filler tolerance + colour synonyms (green/red/gold/purple) | frontend-engineer | T-140 | feat/voice-door-flexible | — | docs/reviews/feat-voice-door-flexible/final.md |
 | [T-146](./T-146.md) | Voice — flexible entrance phrasing ("entrance from north", "north entrance") | frontend-engineer | T-140 | feat/voice-entrance-flexible | — | docs/reviews/feat-voice-entrance-flexible/final.md |
 | [T-145](./T-145.md) | Dungeon — consolidate 192 per-cell popovers to 3 grid-level (snappier + fewer crashes) | frontend-engineer | — | fix/dungeon-popover-consolidation | — | docs/reviews/fix-dungeon-popover-consolidation/final.md |
 | [T-144](./T-144.md) | Perf — timer no longer pegs 100% CPU (1 fps H:MM:SS) + FPS diagnostic | frontend-engineer | — | perf/timer-render-cpu | — | docs/reviews/perf-timer-render-cpu/final.md |

@@ -131,14 +131,20 @@ public enum VoiceGrammar {
     /// compound door commands ("open west shutter east key north" → three doors).
     public static func dungeonActions(_ words: [String], config: VoiceConfig) -> [DungeonAction] {
         let joined = words.joined(separator: " ")
-        // 1) Doors — one or more "<state> <direction>" pairs.
+        // 1) Doors — one or more "<state> <direction>" pairs, skipping fillers like
+        // the word "door" between them ("open door north", "shutter door left").
+        // Colour words (green/red/gold/purple) are Door_* synonyms via the catalog.
         var doorPairs: [DungeonAction] = []
         var i = 0
         while i < words.count {
-            if let state = doorState(words[i], config: config),
-               i + 1 < words.count, let dir = direction(words[i + 1]) {
-                doorPairs.append(.door(state, dir)); i += 2
-            } else { i += 1 }
+            if let state = doorState(words[i], config: config) {
+                var j = i + 1
+                while j < words.count, Self.doorFillers.contains(words[j]) { j += 1 }
+                if j < words.count, let dir = direction(words[j]) {
+                    doorPairs.append(.door(state, dir)); i = j + 1; continue
+                }
+            }
+            i += 1
         }
         if !doorPairs.isEmpty { return doorPairs }
 
@@ -155,6 +161,10 @@ public enum VoiceGrammar {
         if let m = config.match(words, scope: .dungeon), let a = dungeonMeaning(m) { return [a] }
         return []
     }
+
+    /// Filler words allowed between a door state and its direction ("open **door**
+    /// north"). Grammar constants, like the NATO letters.
+    static let doorFillers: Set<String> = ["door", "the", "on", "is", "to", "a"]
 
     /// The door state a single word names (via the editable Door_* phrases).
     static func doorState(_ token: String, config: VoiceConfig) -> DoorState? {

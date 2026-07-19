@@ -105,6 +105,25 @@ struct VoiceGrammarTests {
                 == [.door(.yes, .west), .door(.purple, .east), .door(.yellow, .north)])
     }
 
+    @Test func doorFillerWordSkipped() {
+        // "door" between state and direction is tolerated (T-147).
+        #expect(VoiceGrammar.dungeonActions(["open", "door", "north"], config: config) == [.door(.yes, .north)])
+        #expect(VoiceGrammar.dungeonActions(["shutter", "door", "left"], config: config) == [.door(.purple, .west)])
+        #expect(VoiceGrammar.dungeonActions(["open", "door", "right", "shutter", "door", "down"], config: config)
+                == [.door(.yes, .east), .door(.purple, .south)])
+    }
+
+    @Test func doorColourSynonyms() {
+        #expect(VoiceGrammar.dungeonActions(["green", "north"], config: config) == [.door(.yes, .north)])
+        #expect(VoiceGrammar.dungeonActions(["green", "door", "north"], config: config) == [.door(.yes, .north)])
+        #expect(VoiceGrammar.dungeonActions(["red", "east"], config: config) == [.door(.no, .east)])
+        #expect(VoiceGrammar.dungeonActions(["gold", "up"], config: config) == [.door(.yellow, .north)])
+        #expect(VoiceGrammar.dungeonActions(["purple", "down"], config: config) == [.door(.purple, .south)])
+        // Compound with colours.
+        #expect(VoiceGrammar.dungeonActions(["green", "west", "purple", "east", "gold", "north"], config: config)
+                == [.door(.yes, .west), .door(.purple, .east), .door(.yellow, .north)])
+    }
+
     @Test func entranceDirection() {
         #expect(VoiceGrammar.dungeonActions(["entrance", "south"], config: config) == [.entrance(.south)])
         #expect(VoiceGrammar.dungeonActions(["entrance", "down"], config: config) == [.entrance(.south)])
