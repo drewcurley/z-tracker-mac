@@ -211,6 +211,32 @@ struct VoiceGrammarTests {
         #expect(VoiceGrammar.parse("armos", config: config) == .actionAtCursor(words: ["armos"]))
     }
 
+    // MARK: Clear / un-mark (T-149)
+
+    @Test func clearRoutesToClearCommand() {
+        #expect(VoiceGrammar.parse("clear triforce", config: config) == .clearAtCursor(words: ["triforce"]))
+        #expect(VoiceGrammar.parse("clear gleeok", config: config) == .clearAtCursor(words: ["gleeok"]))
+        #expect(VoiceGrammar.parse("clear north", config: config) == .clearAtCursor(words: ["north"]))
+        #expect(VoiceGrammar.parse("clear", config: config) == .clearAtCursor(words: []))
+        #expect(VoiceGrammar.parse("remove", config: config) == .clearAtCursor(words: []))
+        // Progression un-mark (negation is the action word here).
+        #expect(VoiceGrammar.parse("un take silver arrows", config: config) == .clearAtCursor(words: ["silver", "arrows"]))
+        #expect(VoiceGrammar.parse("untake wood sword", config: config) == .clearAtCursor(words: ["wood", "sword"]))
+    }
+
+    @Test func clearStartStaysASpecificCommand() {
+        // "clear start" is OW_ClearStart, not a generic clear — must fall through.
+        #expect(VoiceGrammar.parse("clear start", config: config) == .actionAtCursor(words: ["clear", "start"]))
+    }
+
+    @Test func dungeonClearTargets() {
+        #expect(VoiceGrammar.dungeonClearActions(["triforce"], config: config) == [.floorDrop(.triforce)])
+        #expect(VoiceGrammar.dungeonClearActions(["gleeok"], config: config) == [.monster(.gleeok)])
+        #expect(VoiceGrammar.dungeonClearActions(["north"], config: config) == [.door(.unknown, .north)])
+        #expect(VoiceGrammar.dungeonClearActions(["door", "left"], config: config) == [.door(.unknown, .west)])
+        #expect(VoiceGrammar.dungeonClearActions([], config: config) == [])   // → generic room clear
+    }
+
     @Test func doorCommandNotEatenByCursorMove() {
         // "open left" is a door command at the cursor, not a cursor move left.
         #expect(VoiceGrammar.parse("open left", config: config) == .actionAtCursor(words: ["open", "left"]))

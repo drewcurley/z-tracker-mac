@@ -13,6 +13,8 @@ public enum VoiceCommand: Equatable, Sendable {
     case gotoStart                                        // "start" / "restart"
     case toggleProgression(id: String)                    // "took wood sword" (item acquired)
     case setItemBox(boxID: String, itemID: String)        // "coast ladder" (box holds item)
+    case clearAtCursor(words: [String])                   // "clear triforce" / "un-take wood sword"
+    case clearAt(column: Int, row: Int, words: [String])  // "D5 clear"
 }
 
 /// A resolved overworld action — the app calls it once it knows the cursor is on the
@@ -34,6 +36,18 @@ public enum VoiceGrammar {
         guard !tokens.isEmpty else { return nil }
         let coord = coordinate(in: tokens)
         let words = coord?.rest ?? tokens
+
+        // Clear / un-mark (T-149) — a negation word ("clear / remove / un-take…") whose
+        // target is generic, a dungeon thing, a bare direction (door), or a progression
+        // item. Checked before the setters so "clear triforce" un-sets it instead of
+        // re-marking it. A negation whose target is a *specific* command (e.g. "clear
+        // start" → OW_ClearStart) returns nil here and falls through to normal parse.
+        if let target = clearRequest(words, config: config) {
+            if let coord {
+                return .clearAt(column: coord.coord.column, row: coord.coord.row, words: target)
+            }
+            return .clearAtCursor(words: target)
+        }
 
         // Player-progress toggles (T-142) need an action word ("took / got / bought…"),
         // so a bare "meat" still marks the meat shop while "took meat" flags the item.
@@ -66,6 +80,51 @@ public enum VoiceGrammar {
             return .cursorTo(column: coord.coord.column, row: coord.coord.row)
         }
         return nil
+    }
+
+    // MARK: Clear / un-mark (T-149)
+
+    /// Single-word "un-mark this" verbs. Grammar constants.
+    static let negationWords: Set<String> = [
+        "clear", "unmark", "unmarked", "remove", "removed", "erase", "erased",
+        "delete", "deleted", "untake", "reset", "cancel", "gone",
+    ]
+    /// Multi-word negations the recognizer often splits ("un take", "take off").
+    static let negationPhrases: [String] = ["un take", "un mark", "take off", "no longer", "get rid"]
+    /// The filler tokens that make up the negations above — stripped to leave the target.
+    static let negationStripTokens: Set<String> = [
+        "un", "take", "off", "no", "longer", "not", "there", "get", "rid", "mark", "the", "that", "this",
+    ]
+
+    /// If the utterance is a clear/un-mark request, the **target** words (negation
+    /// stripped); `nil` if there's no negation or the target names a *specific*
+    /// command better handled by the normal parse (e.g. "clear start"). An empty
+    /// array means a generic "clear here".
+    static func clearRequest(_ words: [String], config: VoiceConfig) -> [String]? {
+        let joined = words.joined(separator: " ")
+        let hasNeg = words.contains { negationWords.contains($0) }
+            || negationPhrases.contains { joined.contains($0) }
+        guard hasNeg else { return nil }
+        let target = words.filter { !negationWords.contains($0) && !negationStripTokens.contains($0) }
+        if target.isEmpty { return target }                                   // generic clear
+        // Bare direction(s) → a door clear ("clear north", "clear door left").
+        if target.allSatisfy({ direction($0) != nil || doorFillers.contains($0) }),
+           target.contains(where: { direction($0) != nil }) { return target }
+        if !dungeonActions(target, config: config).isEmpty { return target }  // room / monster / drop
+        if config.match(target, scope: .progression) != nil { return target } // "un-take wood sword"
+        return nil                                                            // e.g. "clear start"
+    }
+
+    /// The dungeon targets to clear for a clear request: bare direction(s) → door
+    /// clears (`.door(.unknown, dir)`); otherwise the resolved room/monster/drop
+    /// (the caller applies the cleared version of each case). Empty = clear the room.
+    public static func dungeonClearActions(_ words: [String], config: VoiceConfig) -> [DungeonAction] {
+        if !words.isEmpty,
+           words.allSatisfy({ direction($0) != nil || doorFillers.contains($0) }),
+           words.contains(where: { direction($0) != nil }) {
+            return words.compactMap { direction($0).map { DungeonAction.door(.unknown, $0) } }
+        }
+        return dungeonActions(words, config: config)
     }
 
     // MARK: Progression toggles (T-142)
