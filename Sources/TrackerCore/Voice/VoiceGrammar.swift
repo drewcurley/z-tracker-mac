@@ -73,6 +73,13 @@ public enum VoiceGrammar {
         }
         // Otherwise a structural action (cursor / nav / dungeon tab).
         if let m = config.match(words, scope: .structural), let cmd = structuralCommand(m) {
+            // A coordinate + "level N" means MARK dungeon N at that overworld cell
+            // ("E2 level two"), not switch tabs — the coordinate signals intent to
+            // place, so route it like "set E2 level N" (T-151).
+            if let coord, case let .dungeonTab(n) = cmd {
+                return .actionAt(column: coord.coord.column, row: coord.coord.row,
+                                 words: ["set", "level", "\(n)"])
+            }
             return cmd
         }
         // A coordinate alone → just move the cursor.
