@@ -481,9 +481,17 @@ public enum VoiceGrammar {
     static func coordinate(in tokens: [String]) -> (coord: (column: Int, row: Int), rest: [String])? {
         for i in 0..<tokens.count {
             guard let row = rowLetter(tokens[i]),
-                  i + 1 < tokens.count, let num = asInt(tokens[i + 1]), (1...16).contains(num)
+                  i + 1 < tokens.count, var num = asInt(tokens[i + 1]), (1...16).contains(num)
             else { continue }
-            let rest = Array(tokens[..<i] + tokens[(i + 2)...])
+            var consumed = 2
+            // Fold a split two-digit column (T-152): the recogniser often hears "G12"
+            // (or "twelve") as "G1 2" / "G1 two". If the first digit is 1 and the next
+            // token is a small number, combine them into a 10–16 column.
+            if num == 1, i + 2 < tokens.count, let d = asInt(tokens[i + 2]), (0...6).contains(d) {
+                num = 10 + d
+                consumed = 3
+            }
+            let rest = Array(tokens[..<i] + tokens[(i + consumed)...])
             return ((column: num - 1, row: row), rest)
         }
         return nil

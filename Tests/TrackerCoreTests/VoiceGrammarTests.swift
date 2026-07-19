@@ -61,6 +61,19 @@ struct VoiceGrammarTests {
         #expect(VoiceGrammar.parse("echo twelve", config: config) == .cursorTo(column: 11, row: 4))
     }
 
+    @Test func twoDigitColumnFold() {
+        // "G12" heard as "G1 two" / "G1 2" folds back to column 12 (T-152).
+        #expect(VoiceGrammar.parse("G1 two", config: config) == .cursorTo(column: 11, row: 6))
+        #expect(VoiceGrammar.parse("G1 2", config: config) == .cursorTo(column: 11, row: 6))
+        #expect(VoiceGrammar.parse("E1 six", config: config) == .cursorTo(column: 15, row: 4))
+        // With a trailing action: "G1 two door repair" → mark at G12.
+        #expect(VoiceGrammar.parse("G1 two door repair", config: config)
+                == .actionAt(column: 11, row: 6, words: ["door", "repair"]))
+        // A number that isn't a number-word doesn't fold: "G2 potion" stays G2.
+        #expect(VoiceGrammar.parse("G2 potion", config: config)
+                == .actionAt(column: 1, row: 6, words: ["potion"]))
+    }
+
     @Test func letterHomophonesForCoordinates() {
         // H ("aitch") is the worst-recognised row (T-148).
         #expect(VoiceGrammar.parse("each four", config: config) == .cursorTo(column: 3, row: 7))
