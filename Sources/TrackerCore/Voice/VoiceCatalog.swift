@@ -81,6 +81,8 @@ public enum VoiceCatalog {
                     ["overworld", "over world", "leave dungeon", "exit dungeon"]),
         VoiceAction("Nav_Start", "Go to start / entrance", .navigation,
                     ["start", "restart", "home", "go to start"]),
+        VoiceAction("Nav_StopVoice", "Stop listening", .navigation,
+                    ["stop listening", "pause voice", "stop voice", "mute voice", "go to sleep", "stop recording"]),
     ]
 
     private static let dungeon: [VoiceAction] = [

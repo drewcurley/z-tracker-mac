@@ -29,6 +29,14 @@ struct VoiceGrammarTests {
         #expect(VoiceGrammar.parse("left", config: config) == .moveCursor(dcol: -1, drow: 0))
     }
 
+    @Test func stopListeningCommand() {
+        #expect(VoiceGrammar.parse("stop listening", config: config) == .stopListening)
+        #expect(VoiceGrammar.parse("pause voice", config: config) == .stopListening)
+        #expect(VoiceGrammar.parse("go to sleep", config: config) == .stopListening)
+        // "restart" is still go-to-start, not stop.
+        #expect(VoiceGrammar.parse("restart", config: config) == .gotoStart)
+    }
+
     @Test func regionNavAndStart() {
         #expect(VoiceGrammar.parse("overworld", config: config) == .exitToOverworld)
         #expect(VoiceGrammar.parse("leave dungeon", config: config) == .exitToOverworld)

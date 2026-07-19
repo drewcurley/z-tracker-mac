@@ -324,6 +324,9 @@ final class VoiceController {
                                         tracker: model.dungeonTracker) {
                 vlog("item box \(boxID)=\(itemID) not applied (region \(focus.cursorRegion), or item can't go here)")
             }
+        case .stopListening:
+            vlog("stop listening (voice command)")
+            stop()
         case let .clearAtCursor(words):
             applyClear(words, cell: focus.cursorCell)
         case let .clearAt(column, row, words):
@@ -516,6 +519,7 @@ final class VoiceController {
         case let .setItemBox(boxID, _): return ItemBoxVoiceApply.box(forID: boxID)?.help ?? "item box"
         case let .clearAtCursor(words): return words.isEmpty ? "clear" : "clear \(words.joined(separator: " "))"
         case let .clearAt(c, r, _): return "\(OverworldCoords.label(column: c, row: r)) clear"
+        case .stopListening: return "⏸ voice"
         }
     }
 }
