@@ -25,6 +25,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-159](./T-159.md) | Voice — dungeon blockers vocabulary + apply | frontend-engineer | T-140 | feat/voice-blockers | — | docs/reviews/feat-voice-blockers/final.md |
 | [T-158](./T-158.md) | Voice — single-utterance two-item shop ("bomb shop and meat") | frontend-engineer | T-140 | feat/voice-two-item-shop | — | docs/reviews/feat-voice-two-item-shop/final.md |
 | [T-157](./T-157.md) | Voice — generic "drop" / "floor drop" marks a generic item drop | frontend-engineer | T-140 | feat/voice-generic-drop | — | docs/reviews/feat-voice-generic-drop/final.md |
 | [T-156](./T-156.md) | Door inference default ON (fixes "door inference doesn't work in voice") | frontend-engineer | T-140 | feat/door-inference-default-on | — | docs/reviews/feat-door-inference-default-on/final.md |

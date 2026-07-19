@@ -44,4 +44,36 @@ struct BlockerRegionTests {
             }
         }
     }
+
+    /// T-159: a spoken blocker word applied at a blockers cursor cell sets that
+    /// dungeon+slot — the end-to-end path grammar → BlockerRegion.target → model.
+    @Test func spokenBlockerSetsTheCursorSlot() {
+        let config = VoiceConfig()
+        let model = TrackerModel(quest: .first)
+        let cell = BlockerRegion.cell(dungeon: 5, slot: 1)
+        let kind = VoiceGrammar.blockerAction(["maybe", "ladder"], config: config)
+        #expect(kind == .maybeLadder)
+        let t = BlockerRegion.target(cell)
+        model.dungeonBlockers.setDungeonBlocker(kind!, dungeon: t.dungeon, slot: t.slot)
+        #expect(model.dungeonBlockers.dungeonBlocker(dungeon: 5, slot: 1) == .maybeLadder)
+        // A "nothing" clears it.
+        model.dungeonBlockers.setDungeonBlocker(.nothing, dungeon: t.dungeon, slot: t.slot)
+        #expect(model.dungeonBlockers.dungeonBlocker(dungeon: 5, slot: 1) == .nothing)
+    }
+
+    /// Every catalog voice-blocker phrase resolves to the kind whose hotkey-name
+    /// matches its id, so the voice vocabulary can't silently drift from the model.
+    @Test func everyVoiceBlockerActionResolves() {
+        let config = VoiceConfig()
+        for action in VoiceCatalog.actions(in: .blockers) {
+            let kind = DungeonBlocker.fromHotKeyName(action.id)
+            #expect(kind.asHotKeyName == action.id, "\(action.id) → \(kind.asHotKeyName)")
+            // And its first default phrase parses back to that same kind.
+            if let phrase = action.defaultPhrases.first {
+                let words = phrase.split(separator: " ").map(String.init)
+                #expect(VoiceGrammar.blockerAction(words, config: config) == kind,
+                        "phrase \(phrase) did not resolve to \(action.id)")
+            }
+        }
+    }
 }

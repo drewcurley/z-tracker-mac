@@ -79,7 +79,7 @@ public final class VoiceConfig {
     /// **region actions** applied at the cursor and resolved per-region at execution.
     /// `region` (a query value) matches either overworld or dungeon.
     public enum Scope: Sendable {
-        case structural, overworld, dungeon, progression, itemBox, item, region, any
+        case structural, overworld, dungeon, progression, itemBox, item, blocker, region, any
     }
 
     public static func scope(of action: VoiceAction) -> Scope {
@@ -90,6 +90,7 @@ public final class VoiceConfig {
         case .progression: .progression
         case .itemBoxes: .itemBox
         case .items: .item
+        case .blockers: .blocker
         }
     }
 

@@ -346,9 +346,13 @@ final class VoiceController {
                                 placeDungeon: { _, _, _ in })
         case .dungeonMap:
             applyDungeonClear(words, cell: cell)
+        case .blockers:
+            // A slot holds one blocker, so any clear here empties the slot (T-159).
+            let t = BlockerRegion.target(cell)
+            model.dungeonBlockers.setDungeonBlocker(.nothing, dungeon: t.dungeon, slot: t.slot)
         default:
-            // .items / .blockers / .dungeonItem — the only generic clear is a
-            // progression flag ("un-take wood sword").
+            // .items / .dungeonItem — the only generic clear is a progression flag
+            // ("un-take wood sword").
             _ = clearProgression(words)
         }
     }
@@ -469,6 +473,12 @@ final class VoiceController {
             }
         case .dungeonMap:
             applyDungeonAction(words, cell: cell)
+        case .blockers:
+            guard let blocker = VoiceGrammar.blockerAction(words, config: config) else {
+                vlog("no blocker action in \(words)"); return
+            }
+            let t = BlockerRegion.target(cell)
+            model.dungeonBlockers.setDungeonBlocker(blocker, dungeon: t.dungeon, slot: t.slot)
         default:
             vlog("voice action in region \(focus.cursorRegion) not supported yet: \(words)")
         }
