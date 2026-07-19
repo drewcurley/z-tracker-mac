@@ -110,6 +110,22 @@ struct VoiceGrammarTests {
         #expect(VoiceGrammar.dungeonActions(["entrance", "down"], config: config) == [.entrance(.south)])
     }
 
+    @Test func entranceFlexiblePhrasing() {
+        // Filler "from" between the trigger and the direction (T-146).
+        #expect(VoiceGrammar.dungeonActions(["entrance", "from", "north"], config: config) == [.entrance(.north)])
+        #expect(VoiceGrammar.dungeonActions(["enter", "from", "north"], config: config) == [.entrance(.north)])
+        #expect(VoiceGrammar.dungeonActions(["entered", "from", "west"], config: config) == [.entrance(.west)])
+        // Direction before the trigger.
+        #expect(VoiceGrammar.dungeonActions(["north", "entrance"], config: config) == [.entrance(.north)])
+        // west/east/up/down all resolve.
+        #expect(VoiceGrammar.dungeonActions(["entrance", "from", "left"], config: config) == [.entrance(.west)])
+    }
+
+    @Test func enterLevelStillSwitchesTab() {
+        // Adding "enter"-ish entrance triggers must not steal "enter level N".
+        #expect(VoiceGrammar.parse("enter level 5", config: config) == .dungeonTab(5))
+    }
+
     // MARK: Progression toggles (T-142)
 
     @Test func actionWordTriggersProgressionToggle() {

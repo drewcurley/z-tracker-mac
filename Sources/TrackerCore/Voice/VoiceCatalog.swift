@@ -192,7 +192,7 @@ public enum VoiceCatalog {
 
     private static let entrances: [VoiceAction] = [
         VoiceAction("Entrance", "Mark entrance (from direction)", .entrances, takesDirection: true,
-                    ["entrance", "entered", "enter from"]),
+                    ["entrance", "entered", "enter from", "entered from", "came from", "entering"]),
     ]
 
     private static let dungeonRooms: [VoiceAction] = [

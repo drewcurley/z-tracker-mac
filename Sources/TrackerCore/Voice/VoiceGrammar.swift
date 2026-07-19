@@ -130,6 +130,7 @@ public enum VoiceGrammar {
     /// Resolve action words for the **dungeon** region. Returns an array to support
     /// compound door commands ("open west shutter east key north" → three doors).
     public static func dungeonActions(_ words: [String], config: VoiceConfig) -> [DungeonAction] {
+        let joined = words.joined(separator: " ")
         // 1) Doors — one or more "<state> <direction>" pairs.
         var doorPairs: [DungeonAction] = []
         var i = 0
@@ -141,10 +142,13 @@ public enum VoiceGrammar {
         }
         if !doorPairs.isEmpty { return doorPairs }
 
-        // 2) Entrance — "<entrance word> <direction>".
-        let entrancePhrases = Set(config.phrases(for: "Entrance"))
-        for (idx, w) in words.enumerated() where entrancePhrases.contains(w) {
-            if idx + 1 < words.count, let dir = direction(words[idx + 1]) { return [.entrance(dir)] }
+        // 2) Entrance — an entrance trigger anywhere + a direction anywhere. Tolerant
+        // of fillers ("entrance FROM north") and either order ("north entrance"); the
+        // `joined` test catches multi-word triggers like "enter from" without needing
+        // them adjacent to the direction.
+        if config.phrases(for: "Entrance").contains(where: { joined.contains($0) }),
+           let dir = words.compactMap(direction).first {
+            return [.entrance(dir)]
         }
 
         // 3) A single room / monster / floor-drop.
