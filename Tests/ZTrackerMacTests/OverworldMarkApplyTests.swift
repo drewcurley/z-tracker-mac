@@ -95,6 +95,22 @@ struct OverworldMarkApplyTests {
                                                        grid: model.overworldGrid) == false)
     }
 
+    @Test func twoItemShopUtteranceSetsPrimaryAndSecond() {
+        // T-158: the controller resolves a two-shop utterance to (primary, second),
+        // then applies the primary mark and sets the second item. This is that outcome.
+        let config = VoiceConfig()
+        let pair = VoiceGrammar.overworldShopPair(["bomb", "shop", "and", "meat"], config: config)
+        #expect(pair?.primary == .bomb)
+        #expect(pair?.second == .meat)
+
+        let model = TrackerModel(quest: .first)
+        OverworldMark.apply(.shop(pair!.primary), column: 6, row: 4, grid: model.overworldGrid,
+                            releaseTakeAny: noop, placeDungeon: noopPlace)
+        model.overworldGrid.setShopSecondItem(pair!.second, column: 6, row: 4)
+        #expect(model.overworldGrid.mark(column: 6, row: 4) == .shop(.bomb))
+        #expect(model.overworldGrid.shopSecondItem(column: 6, row: 4) == .meat)
+    }
+
     @Test func reportsPriorMark() {
         let model = TrackerModel(quest: .first)
         model.overworldGrid.setMark(.armos, column: 3, row: 3)
