@@ -50,6 +50,16 @@ struct VoiceGrammarTests {
         #expect(VoiceGrammar.parse("echo twelve", config: config) == .cursorTo(column: 11, row: 4))
     }
 
+    @Test func letterHomophonesForCoordinates() {
+        // H ("aitch") is the worst-recognised row (T-148).
+        #expect(VoiceGrammar.parse("each four", config: config) == .cursorTo(column: 3, row: 7))
+        #expect(VoiceGrammar.parse("each 8", config: config) == .cursorTo(column: 7, row: 7))
+        #expect(VoiceGrammar.parse("aitch 2", config: config) == .cursorTo(column: 1, row: 7))
+        #expect(VoiceGrammar.parse("gee 3", config: config) == .cursorTo(column: 2, row: 6))
+        // A homophone with no following number is NOT a coordinate.
+        #expect(VoiceGrammar.parse("each", config: config) == nil)
+    }
+
     @Test func gibberishIsRejected() {
         #expect(VoiceGrammar.parse("", config: config) == nil)
         #expect(VoiceGrammar.parse("hello there", config: config) == nil)
