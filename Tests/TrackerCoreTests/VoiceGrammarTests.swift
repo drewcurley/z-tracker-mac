@@ -364,4 +364,45 @@ struct VoiceGrammarTests {
         #expect(p?.primary == .candle)
         #expect(p?.second == .bomb)
     }
+
+    // MARK: - T-159: dungeon blocker voice
+
+    private func blocker(_ phrase: String) -> DungeonBlocker? {
+        VoiceGrammar.blockerAction(phrase.split(separator: " ").map(String.init), config: config)
+    }
+
+    @Test func definiteBlockerWords() {
+        #expect(blocker("ladder") == .ladder)
+        #expect(blocker("recorder") == .recorder)
+        #expect(blocker("bow and arrow") == .bowAndArrow)
+        #expect(blocker("combat") == .combat)
+        #expect(blocker("bombs") == .bomb)
+        #expect(blocker("keys") == .key)
+        #expect(blocker("meat") == .bait)
+        #expect(blocker("mugger") == .money)
+    }
+
+    @Test func maybeBlockerBeatsDefinite() {
+        #expect(blocker("maybe ladder") == .maybeLadder)
+        #expect(blocker("might need recorder") == .maybeRecorder)
+        #expect(blocker("maybe bombs") == .maybeBomb)
+        #expect(blocker("maybe meat") == .maybeBait)
+    }
+
+    @Test func clearBlockerWord() {
+        #expect(blocker("nothing") == .nothing)
+        #expect(blocker("no blocker") == .nothing)
+    }
+
+    @Test func unrelatedWordIsNotABlocker() {
+        #expect(blocker("triforce") == nil)
+        #expect(blocker("gleeok") == nil)
+    }
+
+    @Test func bareBlockerWordParsesToAnAction() {
+        // A blocker-only word ("ladder") must route to actionAtCursor so the blockers
+        // region can act on it — it's not a region word on its own.
+        #expect(VoiceGrammar.parse("ladder", config: config) == .actionAtCursor(words: ["ladder"]))
+        #expect(VoiceGrammar.parse("recorder", config: config) == .actionAtCursor(words: ["recorder"]))
+    }
 }

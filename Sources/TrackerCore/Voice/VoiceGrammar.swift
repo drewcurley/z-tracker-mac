@@ -65,8 +65,11 @@ public enum VoiceGrammar {
 
         // Region actions win over structural, so a door command like "open left" isn't
         // swallowed by "left" (a cursor move). Execution resolves the words per-region
-        // ("set level" beats "level" inside `match` via longest-phrase-wins).
-        if config.match(words, scope: .region) != nil {
+        // ("set level" beats "level" inside `match` via longest-phrase-wins). Blocker
+        // words (T-159) route the same way — many double as overworld/dungeon words, so
+        // the blocker-only ones ("ladder", "recorder", "combat") need routing too;
+        // execution applies them only when the cursor is in the blockers region.
+        if config.match(words, scope: .region) != nil || config.match(words, scope: .blocker) != nil {
             if let coord {
                 return .actionAt(column: coord.coord.column, row: coord.coord.row, words: words)
             }
@@ -275,6 +278,14 @@ public enum VoiceGrammar {
     public static func overworldAction(_ words: [String], config: VoiceConfig) -> OverworldAction? {
         guard let m = config.match(words, scope: .region) else { return nil }
         return overworldMeaning(m)
+    }
+
+    /// The dungeon blocker named by the words, applied at the blockers cursor's
+    /// dungeon+slot (T-159). Catalog ids equal `DungeonBlocker.asHotKeyName`, so the
+    /// matched id maps straight back. "maybe / might need X" beats "X" by longest match.
+    public static func blockerAction(_ words: [String], config: VoiceConfig) -> DungeonBlocker? {
+        guard let m = config.match(words, scope: .blocker) else { return nil }
+        return DungeonBlocker.fromHotKeyName(m.actionID)
     }
 
     /// All phrases + the structural vocabulary, to bias the recognizer.

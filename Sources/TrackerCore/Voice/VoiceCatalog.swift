@@ -29,7 +29,7 @@ public struct VoiceAction: Identifiable, Equatable, Sendable {
 public enum VoiceCategory: String, CaseIterable, Sendable, Codable {
     case cursor, navigation, dungeon, overworldShops, overworldMarks, takeAny
     case dungeonRooms, monsters, floorDrops, doors, entrances
-    case progression, itemBoxes, items
+    case progression, itemBoxes, items, blockers
 
     public var title: String {
         switch self {
@@ -47,6 +47,7 @@ public enum VoiceCategory: String, CaseIterable, Sendable, Codable {
         case .progression: "Items — acquired (say with \u{201C}took / got / bought\u{201D})"
         case .itemBoxes: "Item boxes (say box + item, e.g. \u{201C}coast ladder\u{201D})"
         case .items: "Items (for the item boxes)"
+        case .blockers: "Dungeon — blockers (say with the blockers cursor)"
         }
     }
 }
@@ -55,7 +56,7 @@ public enum VoiceCatalog {
     public static let all: [VoiceAction] =
         cursor + navigation + dungeon + overworldShops + overworldMarks + takeAny
         + dungeonRooms + monsters + floorDrops + doors + entrances + progression
-        + itemBoxes + items
+        + itemBoxes + items + blockers
 
     public static func action(id: String) -> VoiceAction? { all.first { $0.id == id } }
     public static func actions(in category: VoiceCategory) -> [VoiceAction] {
@@ -64,7 +65,7 @@ public enum VoiceCatalog {
     /// Categories in editor order.
     public static let categoryOrder: [VoiceCategory] =
         [.cursor, .navigation, .dungeon, .doors, .entrances,
-         .dungeonRooms, .monsters, .floorDrops, .overworldShops, .overworldMarks, .takeAny,
+         .dungeonRooms, .monsters, .floorDrops, .blockers, .overworldShops, .overworldMarks, .takeAny,
          .progression, .itemBoxes, .items]
 
     // MARK: Actions
@@ -274,5 +275,37 @@ public enum VoiceCatalog {
         VoiceAction("Drop_FiveRupee", "Five rupee", .floorDrops, ["rupee drop", "five rupee", "dropped rupee"]),
         VoiceAction("Drop_Map", "Map", .floorDrops, ["map drop", "drop map", "map"]),
         VoiceAction("Drop_Compass", "Compass", .floorDrops, ["compass drop", "drop compass", "compass"]),
+    ]
+
+    // MARK: Dungeon blockers (T-159 — apply at the blockers cursor's dungeon+slot)
+    // Ids MUST equal `DungeonBlocker.asHotKeyName` so `fromHotKeyName` resolves them.
+    // The "maybe / might need" variants beat the definite ones by longest-phrase-wins.
+    private static let blockers: [VoiceAction] = [
+        VoiceAction("Blocker_Bow_And_Arrow", "Need bow & arrow", .blockers,
+                    ["bow and arrow", "bow arrow", "bow", "arrow", "arrows"]),
+        VoiceAction("Blocker_Recorder", "Need recorder", .blockers, ["recorder", "whistle", "flute"]),
+        VoiceAction("Blocker_Ladder", "Need ladder", .blockers, ["ladder"]),
+        VoiceAction("Blocker_Key", "Need keys", .blockers, ["key", "keys", "locked", "locked door"]),
+        VoiceAction("Blocker_Bait", "Need meat", .blockers, ["bait", "meat", "food", "hungry"]),
+        VoiceAction("Blocker_Money", "Need money", .blockers, ["money", "rupees", "mugger"]),
+        VoiceAction("Blocker_Bomb", "Need bombs", .blockers, ["bomb", "bombs", "bombable"]),
+        VoiceAction("Blocker_Combat", "Need better weapon/armor", .blockers,
+                    ["combat", "weapon", "armor", "better weapon", "stronger enemy", "tough enemy"]),
+        VoiceAction("Blocker_Maybe_Bow_And_Arrow", "Might need bow & arrow", .blockers,
+                    ["maybe bow and arrow", "maybe bow", "maybe arrow", "might need bow", "might need arrow"]),
+        VoiceAction("Blocker_Maybe_Recorder", "Might need recorder", .blockers,
+                    ["maybe recorder", "might need recorder", "maybe whistle"]),
+        VoiceAction("Blocker_Maybe_Ladder", "Might need ladder", .blockers,
+                    ["maybe ladder", "might need ladder"]),
+        VoiceAction("Blocker_Maybe_Key", "Might need keys", .blockers,
+                    ["maybe key", "maybe keys", "might need key", "might need keys"]),
+        VoiceAction("Blocker_Maybe_Bait", "Might need meat", .blockers,
+                    ["maybe bait", "maybe meat", "might need meat", "might need bait"]),
+        VoiceAction("Blocker_Maybe_Money", "Might need money", .blockers,
+                    ["maybe money", "might need money", "maybe mugger"]),
+        VoiceAction("Blocker_Maybe_Bomb", "Might need bombs", .blockers,
+                    ["maybe bomb", "maybe bombs", "might need bomb", "might need bombs"]),
+        VoiceAction("Blocker_Nothing", "Clear blocker", .blockers,
+                    ["nothing", "no blocker", "unmarked"]),
     ]
 }
