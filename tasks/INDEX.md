@@ -25,6 +25,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-150](./T-150.md) | Voice — combined dungeon commands (room + monster + door(s) in one utterance) | frontend-engineer | T-140 | feat/voice-combined-dungeon | — | docs/reviews/feat-voice-combined-dungeon/final.md |
 | [T-149](./T-149.md) | Voice — universal clear / un-mark verb (dungeon, doors, progression, overworld) | frontend-engineer | T-140 | feat/voice-clear-verb | — | docs/reviews/feat-voice-clear-verb/final.md |
 | [T-148](./T-148.md) | Voice — row-letter homophones (H "each"/"aitch") for coordinates | frontend-engineer | T-137 | feat/voice-coord-letter-h | — | docs/reviews/feat-voice-coord-letter-h/final.md |
 | [T-147](./T-147.md) | Voice — door "door" filler tolerance + colour synonyms (green/red/gold/purple) | frontend-engineer | T-140 | feat/voice-door-flexible | — | docs/reviews/feat-voice-door-flexible/final.md |
