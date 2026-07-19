@@ -325,6 +325,20 @@ struct DungeonMapView: View {
 
 }
 
+/// Which detail picker a room cell requested (T-145).
+enum RoomPickerKind: Equatable { case roomType, monster, floorDrop }
+
+/// A request to open a detail picker anchored at a specific room cell. Lifted to
+/// the grid (T-145) so all 64 cells share **one** popover per kind (3 total)
+/// instead of each carrying its own three (192 popover anchors) — that
+/// proliferation was slow to present (~500 ms) and crash-prone on macOS 27.
+private struct RoomPickerRequest: Identifiable, Equatable {
+    let col: Int
+    let row: Int
+    let kind: RoomPickerKind
+    var id: String { "\(col).\(row).\(kind)" }
+}
+
 /// One dungeon's 8×8 room grid.
 struct DungeonRoomGridView: View {
     @Bindable var map: DungeonRoomMap
@@ -359,6 +373,10 @@ struct DungeonRoomGridView: View {
     /// Shared focus state (T-134) — the keyboard cursor follows hover here and is
     /// drawn on the cursor room when the cursor is on the dungeon grid.
     @Bindable var focus: TrackerFocusState
+
+    /// The single active detail-picker request (T-145). Grid-level so there are
+    /// three popovers total, not three per cell.
+    @State private var activePicker: RoomPickerRequest?
 
     /// The grid's natural width: 8 cells + the inter-cell door gaps + the 4pt
     /// padding on each side. The map card uses this to cap its total width so a
@@ -400,6 +418,16 @@ struct DungeonRoomGridView: View {
                                      } else {
                                          if hoveredRow == row { hoveredRow = nil }
                                          if grab.hoverCell == .init(col: col, row: row) { grab.hoverCell = nil }
+                                     }
+                                 },
+                                 onPick: { kind in
+                                     // Present without the popover's fade/expand animation so it
+                                     // snaps in immediately (T-145) — the animation is the bulk of
+                                     // the perceived open delay.
+                                     var t = Transaction()
+                                     t.disablesAnimations = true
+                                     withTransaction(t) {
+                                         activePicker = RoomPickerRequest(col: col, row: row, kind: kind)
                                      }
                                  })
                         .overlay {
@@ -444,6 +472,56 @@ struct DungeonRoomGridView: View {
             }
         }
         .frame(width: Self.roomsW, height: Self.roomsH, alignment: .topLeading)
+        // Three grid-level popovers (T-145), each anchored to whichever cell is
+        // active — replacing 3-per-cell (192 total). Same behaviour: right =
+        // room type, shift+left/scroll-up = monster (stays open to add a 2nd),
+        // shift+right/scroll-down = floor drop.
+        .popover(isPresented: pickerPresented(.roomType),
+                 attachmentAnchor: .rect(.rect(activeCellRect)), arrowEdge: .bottom) {
+            if let req = activePicker {
+                RoomTypePicker(current: map.room(col: req.col, row: req.row).roomType) { newType in
+                    DungeonRoomMark.applyRoomType(newType, col: req.col, row: req.row,
+                                                  map: map, inferDoors: inferDoors)
+                    activePicker = nil
+                }
+            }
+        }
+        .popover(isPresented: pickerPresented(.monster),
+                 attachmentAnchor: .rect(.rect(activeCellRect)), arrowEdge: .bottom) {
+            if let req = activePicker {
+                let r = map.room(col: req.col, row: req.row)
+                MonsterPicker(primary: r.monsterDetail, secondary: r.monsterDetail2,
+                              onToggle: { md in
+                                  DungeonRoomMark.toggleMonster(md, col: req.col, row: req.row, map: map)
+                                  if md.isNotMarked { activePicker = nil }   // clearing dismisses (T-116)
+                              },
+                              onDone: { activePicker = nil })
+            }
+        }
+        .popover(isPresented: pickerPresented(.floorDrop),
+                 attachmentAnchor: .rect(.rect(activeCellRect)), arrowEdge: .bottom) {
+            if let req = activePicker {
+                FloorDropPicker(current: map.room(col: req.col, row: req.row).floorDropDetail) { fd in
+                    DungeonRoomMark.setFloorDrop(fd, col: req.col, row: req.row, map: map)
+                    activePicker = nil
+                }
+            }
+        }
+    }
+
+    /// A presentation binding for one picker kind: true iff that kind is the
+    /// active request; setting false (dismiss) clears it.
+    private func pickerPresented(_ kind: RoomPickerKind) -> Binding<Bool> {
+        Binding(get: { activePicker?.kind == kind },
+                set: { shown in if !shown, activePicker?.kind == kind { activePicker = nil } })
+    }
+
+    /// The active cell's rect in the rooms/doors coordinate space (top-left
+    /// origin), so the shared popover's arrow points at the right room.
+    private var activeCellRect: CGRect {
+        guard let p = activePicker else { return .zero }
+        return CGRect(x: CGFloat(p.col) * Self.pitchX, y: CGFloat(p.row) * Self.pitchY,
+                      width: Self.cellW, height: Self.cellH)
     }
 
     /// The header letters spread one-per-column (`LEVEL-1` over columns 0…6), so
@@ -483,9 +561,9 @@ private struct RoomCellView: View {
     var grab: DungeonGrabController
     /// Reports hover enter/leave for the row-locator (T-078).
     var onHover: (Bool) -> Void = { _ in }
-    @State private var showingPicker = false
-    @State private var showingMonster = false
-    @State private var showingFloorDrop = false
+    /// Requests a detail picker for this cell — the grid owns the (shared) popover
+    /// state and anchors it here (T-145).
+    var onPick: (RoomPickerKind) -> Void = { _ in }
 
     /// Dim factor for a "handled" detail (completed monster / collected drop) —
     /// the reference's `DARKEN = 0.5` black overlay, as an opacity here.
@@ -576,11 +654,11 @@ private struct RoomCellView: View {
                 }
                 switch gesture {
                 case .left: markWithInference()
-                case .right: showingPicker = true
+                case .right: onPick(.roomType)
                 // Scroll (Windows wheel) and Shift+click both open the detail pickers:
                 // up/Shift-left = monster, down/Shift-right = floor drop.
-                case .shiftLeft, .scrollUp: showingMonster = true
-                case .shiftRight, .scrollDown: showingFloorDrop = true
+                case .shiftLeft, .scrollUp: onPick(.monster)
+                case .shiftRight, .scrollDown: onPick(.floorDrop)
                 // ⌥-click stands in for the reference middle-click (no middle button).
                 case .middle, .optionLeft: map.middleClick(col: col, row: row)
                 }
@@ -591,29 +669,8 @@ private struct RoomCellView: View {
             dragContext: .init(col: col, row: row, pitchX: pitchX, pitchY: pitchY),
             onDragPaint: { button, c, r in if !grab.isGrabMode { map.dragPaint(button, col: c, row: r) } }
         ))
-        .popover(isPresented: $showingPicker, arrowEdge: .bottom) {
-            RoomTypePicker(current: room.roomType) { newType in
-                DungeonRoomMark.applyRoomType(newType, col: col, row: row,
-                                              map: map, inferDoors: inferDoors)
-                showingPicker = false
-            }
-        }
-        .popover(isPresented: $showingMonster, arrowEdge: .bottom) {
-            MonsterPicker(primary: room.monsterDetail, secondary: room.monsterDetail2,
-                          onToggle: { md in
-                              DungeonRoomMark.toggleMonster(md, col: col, row: row, map: map)
-                              // Clearing dismisses; otherwise stay open so a second
-                              // monster can be added (T-116).
-                              if md.isNotMarked { showingMonster = false }
-                          },
-                          onDone: { showingMonster = false })
-        }
-        .popover(isPresented: $showingFloorDrop, arrowEdge: .bottom) {
-            FloorDropPicker(current: room.floorDropDetail) { fd in
-                DungeonRoomMark.setFloorDrop(fd, col: col, row: row, map: map)
-                showingFloorDrop = false
-            }
-        }
+        // The detail-picker popovers live at the grid level now (T-145) — the cell
+        // only requests them via `onPick`.
         // VoiceOver (docs/ux.md § Accessibility). Default action = the primary
         // left-click; named actions open each detail picker.
         .accessibilityElement(children: .ignore)
@@ -621,9 +678,9 @@ private struct RoomCellView: View {
         .accessibilityValue(accessibilityValue)
         .accessibilityAddTraits(.isButton)
         .accessibilityAction { markWithInference() }
-        .accessibilityAction(named: "Set room type") { showingPicker = true }
-        .accessibilityAction(named: "Set monster") { showingMonster = true }
-        .accessibilityAction(named: "Set floor drop") { showingFloorDrop = true }
+        .accessibilityAction(named: "Set room type") { onPick(.roomType) }
+        .accessibilityAction(named: "Set monster") { onPick(.monster) }
+        .accessibilityAction(named: "Set floor drop") { onPick(.floorDrop) }
         .accessibilityAction(named: "Toggle circle or drop brightness") { map.middleClick(col: col, row: row) }
     }
 
