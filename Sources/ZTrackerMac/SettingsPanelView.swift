@@ -44,9 +44,27 @@ struct SettingsPanelView: View {
                 Text("Customize the phrases that trigger each voice action.")
                     .font(.caption).foregroundStyle(.secondary)
             }
+            Divider()
+            // About / version (audit #23): the clickable version + project link.
+            HStack(spacing: 8) {
+                settingsHeader("About")
+                Text("Z-Tracker \(Self.appVersion)")
+                    .font(.caption).foregroundStyle(.secondary)
+                    .textSelection(.enabled)
+                Link("Project page ↗", destination: Self.projectURL)
+                    .font(.caption)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
+
+    /// The app's short version string from the bundle Info.plist (built from the
+    /// top-level `VERSION` file); `vdev` when unbundled (e.g. `swift run`, tests).
+    static var appVersion: String {
+        let v = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
+        return "v" + (v ?? "dev")
+    }
+    static let projectURL = URL(string: "https://github.com/drewcurley/z-tracker-mac")!
 
     private var overworldAndDungeonColumn: some View {
         VStack(alignment: .leading, spacing: 10) {
