@@ -23,12 +23,12 @@ Legend: **S/M/L** = rough size.
 | 10 | **Mouse-hover explainer** | '?' near the timer revealing a diagram of every hover target. Absent. | use §general-mouse-hover | S |
 | 11 | **Speech recognition** | "tracker set {bomb shop / level one / …}" voice marking. `listenForSpeech` toggle only. | use §speech-recognition | L |
 | 12 | **Show/Run Custom** | `ShowRunCustom.txt` button to show image windows / run exes+URLs, persisted positions. Absent. | use §main-buttons | M |
-| 13 | **Custom waypoint** | A second freely-placeable Start-Spot-like marker. Absent. | whats-new v13 | S |
-| 14 | **Reminder log** | "log" button (timeline upper-right) showing past reminders / beep explanations. Absent. | whats-new v13 | S |
+| 13 | ~~**Custom waypoint**~~ | ✅ SHIPPED — T-162: a second freely-placeable marker (amber diamond) via the tile context menu, independent of the start spot. | whats-new v13 | S |
+| 14 | ~~**Reminder log**~~ | ✅ SHIPPED — `ReminderLogView` (button + past-reminder list). | whats-new v13 | S |
 | 15 | **HFQ / HSQ buttons** | Hide-First/Second-Quest to prune mixed-quest spots after discovering the quest. Absent. | use §hfq-hsq | M |
 | 16 | **Remaining-items hover** | Hover an empty item box → popup of items that could still appear there. Absent. | whats-new v13 | S |
 | 17 | **Highlight potential dungeon continuations** | Hover BLOCKERS label → highlight bombable/boss-blocked/meat-block/unvisited-doorway rooms. Absent. | use §main-hpdc | M |
-| 18 | **Dungeon row-location assistance** | Rupee/blank/key/bomb icons beside the dungeon map; highlight follows the hovered room's row + column letter. Absent. **(user-requested next)** | use §main-dungeon-row-location | S |
+| 18 | ~~**Dungeon row-location assistance**~~ | ✅ SHIPPED — `RowLocatorWidget` (T-078/T-078.1): always-on rupee/key/bomb HUD-row bands + hover marker. | use §main-dungeon-row-location | S |
 | 19 | **Special-NPC room tab dots / colored outlines** | Bomb-Upgrade (blue) / NPC-Hint (red) room outlines + matching dungeon-tab dots + bait icon for Hungry-Goriya. Room types exist; surfacing doesn't. | use §main-dungeon-special-rooms | M |
 | 20 | **Notes.txt default population** | Notes box pre-filled from `Notes.txt` at startup. | use §main-notes | S |
 | 21 | **"Other randomizers" suite** | Alternative OW maps (draw-your-own / from-disk revealed/hidden), Draw (icons + ExtraIcons folder), User Custom Checklist. Niche. | other.md | L |

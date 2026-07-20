@@ -82,6 +82,11 @@ public final class TrackerModel {
     /// unset). Rendered as a lime/violet ring on the map; purely a marker.
     public var startSpot: OverworldScreenCoordinate? = nil
 
+    /// A second, freely-placeable personal marker (audit #18… custom waypoint,
+    /// `whats-new` v13), independent of the start spot and of any tile mark. Rendered
+    /// as a distinct ring on the map; purely a user bookmark. `nil` if unset.
+    public var customWaypoint: OverworldScreenCoordinate? = nil
+
     /// Recorder-warp destination settings (T-035.7). `recorderToNewDungeons`
     /// (default true) selects discovered map locations vs the fixed vanilla-1Q
     /// screens; `recorderToUnbeatenDungeons` (default false) inverts the triforce

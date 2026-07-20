@@ -76,6 +76,9 @@ struct OverworldMapView: View {
     var startSpot: OverworldScreenCoordinate? = nil
     var onSetStartSpot: (Int, Int) -> Void = { _, _ in }
     var onClearStartSpot: () -> Void = {}
+    var customWaypoint: OverworldScreenCoordinate? = nil
+    var onSetWaypoint: (Int, Int) -> Void = { _, _ in }
+    var onClearWaypoint: () -> Void = {}
 
     /// Mark a take-any tile with what was taken, syncing its linked Items-group
     /// heart slot (T-066). `(state, column, row)`.
@@ -296,6 +299,17 @@ struct OverworldMapView: View {
                                                 .overlay(Circle().stroke(Color(red: 0.5, green: 1, blue: 0), lineWidth: 2))
                                                 .frame(width: tileHeight * 0.62, height: tileHeight * 0.62)
                                                 .shadow(color: Color(red: 0.58, green: 0, blue: 0.83), radius: 2)
+                                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                                .allowsHitTesting(false)
+                                        }
+                                        // Custom waypoint (T-162): an amber diamond, visually
+                                        // distinct from the violet start-spot ring.
+                                        if customWaypoint == OverworldScreenCoordinate(x: column, y: row) {
+                                            Rectangle()
+                                                .stroke(Color(red: 1, green: 0.72, blue: 0.1), lineWidth: 3)
+                                                .rotationEffect(.degrees(45))
+                                                .frame(width: tileHeight * 0.44, height: tileHeight * 0.44)
+                                                .shadow(color: Color(red: 1, green: 0.72, blue: 0.1), radius: 2)
                                                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                                                 .allowsHitTesting(false)
                                         }
@@ -668,6 +682,12 @@ struct OverworldMapView: View {
             Button("Clear start spot") { onClearStartSpot() }
         } else {
             Button("Set as start spot") { onSetStartSpot(column, row) }
+        }
+        // Custom waypoint (T-162): a second, freely-placeable personal marker.
+        if customWaypoint == OverworldScreenCoordinate(x: column, y: row) {
+            Button("Clear waypoint") { onClearWaypoint() }
+        } else {
+            Button("Set waypoint") { onSetWaypoint(column, row) }
         }
     }
 }
