@@ -510,7 +510,9 @@ struct OverworldMapView: View {
         // cave immediately asks what item was there. A slight delay lets the context
         // menu finish dismissing before the popover opens.
         if let isArmos = result.itemPromptIsArmos {
-            DispatchQueue.main.async { itemPrompt = .init(column: column, row: row, isArmos: isArmos) }
+            DispatchQueue.main.async {
+                presentPopoverWithoutAnimation { itemPrompt = .init(column: column, row: row, isArmos: isArmos) }
+            }
         }
     }
 

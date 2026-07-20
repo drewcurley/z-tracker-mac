@@ -424,9 +424,7 @@ struct DungeonRoomGridView: View {
                                      // Present without the popover's fade/expand animation so it
                                      // snaps in immediately (T-145) — the animation is the bulk of
                                      // the perceived open delay.
-                                     var t = Transaction()
-                                     t.disablesAnimations = true
-                                     withTransaction(t) {
+                                     presentPopoverWithoutAnimation {
                                          activePicker = RoomPickerRequest(col: col, row: row, kind: kind)
                                      }
                                  })
