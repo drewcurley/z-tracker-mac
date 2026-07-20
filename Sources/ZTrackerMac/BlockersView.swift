@@ -103,8 +103,8 @@ private struct BlockerBoxView: View {
         .contentShape(Rectangle())
         // Left-click sets the kind (need / might-need); right-click sets what the
         // blocker "applies to" (the reference uses middle / shift-left for that).
-        .onTapGesture { showingKindPicker = true }
-        .onRightClick { showingAppliesTo = true }
+        .onTapGesture { presentPopoverWithoutAnimation { showingKindPicker = true } }
+        .onRightClick { presentPopoverWithoutAnimation { showingAppliesTo = true } }
         .help("Dungeon \(dungeonIndex + 1) blocker: \(blocker.displayDescription.replacingOccurrences(of: "\n", with: " ")) — right-click to set what it applies to")
         .popover(isPresented: $showingKindPicker, arrowEdge: .bottom) {
             BlockerKindPicker(current: blocker, playerState: playerState) { kind in
@@ -122,7 +122,7 @@ private struct BlockerBoxView: View {
         .accessibilityLabel("Dungeon \(dungeonIndex + 1) blocker \(slot + 1)")
         .accessibilityValue(blocker == .nothing ? "Empty" : blocker.displayDescription.replacingOccurrences(of: "\n", with: " "))
         .accessibilityAddTraits(.isButton)
-        .accessibilityAction { showingKindPicker = true }
+        .accessibilityAction { presentPopoverWithoutAnimation { showingKindPicker = true } }
     }
 
     /// The state border: gray (empty), green→red gradient (maybe), light-gray

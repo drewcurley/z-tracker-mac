@@ -52,7 +52,7 @@ struct DungeonNumberLabel: View {
             .overlay(RoundedRectangle(cornerRadius: 3)
                 .strokeBorder(Color(white: 0.35), lineWidth: 1))
             .contentShape(Rectangle())
-            .onTapGesture { showPicker = true }
+            .onTapGesture { presentPopoverWithoutAnimation { showPicker = true } }
             .help("Dungeon \(slotLabel): assigned number \(isUnassigned ? "unknown" : String(dungeon.labelChar)) — tap to set color & number")
             .popover(isPresented: $showPicker, arrowEdge: .bottom) {
                 DungeonNumberPicker(dungeon: dungeon, slotLabel: slotLabel) { showPicker = false }
@@ -63,7 +63,7 @@ struct DungeonNumberLabel: View {
             .accessibilityValue(isUnassigned ? "Unknown" : String(dungeon.labelChar))
             .accessibilityHint("Choose the color and number")
             .accessibilityAddTraits(.isButton)
-            .accessibilityAction { showPicker = true }
+            .accessibilityAction { presentPopoverWithoutAnimation { showPicker = true } }
     }
 }
 

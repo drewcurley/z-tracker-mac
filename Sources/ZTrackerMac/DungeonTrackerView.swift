@@ -305,9 +305,10 @@ struct BoxView: View {
             // change the item. An empty box has nothing to toggle, so a
             // left-click opens the picker too.
             .onTapGesture {
-                if box.hasKnownItem { box.toggleTaken() } else { showPicker = true }
+                if box.hasKnownItem { box.toggleTaken() }
+                else { presentPopoverWithoutAnimation { showPicker = true } }
             }
-            .onRightClick { showPicker = true }
+            .onRightClick { presentPopoverWithoutAnimation { showPicker = true } }
             .popover(isPresented: $showPicker, arrowEdge: .bottom) {
                 BoxItemPicker(box: box, instance: instance, iconOptions: iconOptions) { showPicker = false }
             }
@@ -319,11 +320,12 @@ struct BoxView: View {
             .accessibilityAddTraits(disabled ? [] : .isButton)
             .accessibilityAction {
                 guard !disabled else { return }
-                if box.hasKnownItem { box.toggleTaken() } else { showPicker = true }
+                if box.hasKnownItem { box.toggleTaken() }
+                else { presentPopoverWithoutAnimation { showPicker = true } }
             }
             .accessibilityAction(named: "Set item") {
                 guard !disabled else { return }
-                showPicker = true
+                presentPopoverWithoutAnimation { showPicker = true }
             }
             if let label {
                 Text(label).font(.system(size: 8)).foregroundStyle(.secondary)

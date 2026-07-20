@@ -17,7 +17,7 @@ struct HintLabel: View {
             .padding(.horizontal, 3).padding(.vertical, 1)
             .background(RoundedRectangle(cornerRadius: 3).fill(Color(white: 0.16)))
             .contentShape(Rectangle())
-            .onTapGesture { showPicker = true }
+            .onTapGesture { presentPopoverWithoutAnimation { showPicker = true } }
             .help("Location hint for \(title): \(hint.displayName)")
             .popover(isPresented: $showPicker, arrowEdge: .bottom) {
                 HintZonePicker(hint: $hint, title: title) { showPicker = false }
@@ -30,7 +30,7 @@ struct HintLabel: View {
             .accessibilityValue(hint.displayName)
             .accessibilityHint("Choose the hinted region")
             .accessibilityAddTraits(.isButton)
-            .accessibilityAction { showPicker = true }
+            .accessibilityAction { presentPopoverWithoutAnimation { showPicker = true } }
     }
 }
 
