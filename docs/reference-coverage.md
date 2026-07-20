@@ -33,7 +33,7 @@ Legend: **S/M/L** = rough size.
 | 20 | **Notes.txt default population** | Notes box pre-filled from `Notes.txt` at startup. | use §main-notes | S |
 | 21 | **"Other randomizers" suite** | Alternative OW maps (draw-your-own / from-disk revealed/hidden), Draw (icons + ExtraIcons folder), User Custom Checklist. Niche. | other.md | L |
 | 22 | **Zelda-finish → Notes text + screenshots** | Clicking Zelda posts finish time into Notes + saves completion screenshots. Timer-pause done; these aren't. | use §main-oia | S |
-| 23 | **LEGEND block + version button** | Map legend below OW (dungeon numerals, any-road icons) + clickable version/website button. | use §main-owm | S |
+| 23 | **LEGEND block + version button** | Map legend below OW (dungeon numerals, any-road icons) + clickable version/website button. **Version/project-link done (T-163, in Settings → About); LEGEND block still open.** | use §main-owm | S |
 
 ## 2. PARTIAL — built but incomplete
 
