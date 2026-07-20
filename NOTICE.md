@@ -32,3 +32,21 @@ SOFTWARE.
 
 See `docs/decisions/0001-native-swiftui-over-avalonia-port.md` for the
 decision to reuse these assets rather than redraw them.
+
+## Game sprite GIFs (`Resources/*.gif`)
+
+The individual sprite GIFs in `Sources/ZTrackerMac/Resources/*.gif` are ripped
+*The Legend of Zelda* (1986) game sprites — **© Nintendo**. They are used here
+only as functional item/marker indicators in a non-commercial, personal fan
+tracker (this project is a clone of Zelda1RandoTools, which serves the same
+purpose). They are **not** MIT-licensed and are not covered by the notice above;
+they remain the property of Nintendo. `T-161` migrated the tracker's icons onto
+them, replacing the cruder reference atlases.
+
+## App icon (`Bundle/AppIcon.png`)
+
+The app icon is an original "quest-log" crest supplied by the project owner
+(generated with an image tool). It uses generic RPG iconography — a plain
+heraldic shield, hearts, a map/compass, a sword, a banner — and deliberately
+avoids Nintendo's protected marks (no Triforce, Hylian Shield crest, or Master
+Sword).

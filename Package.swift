@@ -16,20 +16,11 @@ let package = Package(
         .executableTarget(
             name: "ZTrackerMac",
             dependencies: ["TrackerCore"],
+            // Process the whole Resources directory so every sprite (the original
+            // MIT third-party atlases per /NOTICE.md, plus the game sprite GIFs the
+            // user supplied) is bundled and reachable at the bundle root by name.
             resources: [
-                // Third-party assets, MIT-licensed -- see /NOTICE.md.
-                .copy("Resources/ow_icons5x9.png"),
-                .copy("Resources/icons3x7.png"),
-                .copy("Resources/s_map_overworld_vanilla_strip8.png"),
-                .copy("Resources/icons7x7.png"),
-                .copy("Resources/icons8x16.png"),
-                .copy("Resources/icons10x10.png"),
-                .copy("Resources/zelda_items16x16.png"),
-                .copy("Resources/all-items-hud-pixels1.png"),
-                .copy("Resources/all-items-hud-pixels1-worse.png"),
-                .copy("Resources/icons8x8.png"),
-                .copy("Resources/new_icons13x9.png"),
-                .copy("Resources/zelda_bosses16x16.png"),
+                .process("Resources"),
             ]
         ),
         .testTarget(
