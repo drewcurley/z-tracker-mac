@@ -140,7 +140,7 @@ public enum CombatUnblockerDetail: String, CaseIterable, Sendable, Codable {
 /// Which of a dungeon's UI elements a blocker annotation attaches to —
 /// map, compass, triforce, box1, box2, box3 (6 flags). Ported from
 /// `DungeonBlockerAppliesTo` (`TrackerModel.fs:1254-1256`).
-public struct DungeonBlockerAppliesTo: Sendable, Equatable {
+public struct DungeonBlockerAppliesTo: Sendable, Equatable, Codable {
     public static let max = 6
     /// `[map, compass, triforce, box1, box2, box3]`.
     public var data: [Bool]
@@ -178,6 +178,18 @@ public final class DungeonBlockersContainer {
     public init() {
         blockers = Array(repeating: .nothing, count: Self.dungeonCount * Self.maxBlockersPerDungeon)
         appliesTo = (0..<(Self.dungeonCount * Self.maxBlockersPerDungeon)).map { _ in DungeonBlockerAppliesTo() }
+    }
+
+    /// A `Codable` snapshot of the blockers grid + applies-to for save/load (T-164).
+    public struct State: Codable, Sendable {
+        var blockers: [DungeonBlocker]
+        var appliesTo: [DungeonBlockerAppliesTo]
+    }
+    public var state: State { State(blockers: blockers, appliesTo: appliesTo) }
+    public func restore(_ s: State) {
+        let n = Self.dungeonCount * Self.maxBlockersPerDungeon
+        guard s.blockers.count == n, s.appliesTo.count == n else { return }
+        blockers = s.blockers; appliesTo = s.appliesTo
     }
 
     /// `i` = dungeon index (0–7), `j` = which blocker slot (0–2).

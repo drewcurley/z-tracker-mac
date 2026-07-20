@@ -10,7 +10,7 @@ private func hotKeyToken(_ prefix: String, _ caseName: String) -> String {
 }
 
 /// What kind of room this is (`RoomType`, `DungeonRoomState.fs:230-272`).
-public enum RoomType: CaseIterable, Sendable, Equatable {
+public enum RoomType: CaseIterable, Sendable, Equatable, Codable {
     case unmarked
     case nonDescript
     // staircase family
@@ -121,7 +121,7 @@ public enum RoomType: CaseIterable, Sendable, Equatable {
 
 /// The monster marked in a room (`MonsterDetail`, `DungeonRoomState.fs:26-59`).
 /// Note the internal case `bow` displays as **"Gohma"** (the bow-blocker boss).
-public enum MonsterDetail: CaseIterable, Sendable, Equatable {
+public enum MonsterDetail: CaseIterable, Sendable, Equatable, Codable {
     case unmarked
     case gleeok, bow, digdogger, blueBubble, redBubble, dodongo, patra
     case blueWizzrobe, blueDarknut, manhandla, vire, zol, polsVoice, redTektite
@@ -198,7 +198,7 @@ public enum MonsterDetail: CaseIterable, Sendable, Equatable {
 }
 
 /// The floor/standing item in a room (`FloorDropDetail`, `DungeonRoomState.fs:175-197`).
-public enum FloorDropDetail: CaseIterable, Sendable, Equatable {
+public enum FloorDropDetail: CaseIterable, Sendable, Equatable, Codable {
     case unmarked, triforce, heart, otherKeyItem, bombPack, key, fiveRupee, map, compass
 
     public var isNotMarked: Bool { self == .unmarked }

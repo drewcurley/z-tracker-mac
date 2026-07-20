@@ -280,7 +280,7 @@ public enum OverworldRoutingGraph {
 
 /// An overworld screen coordinate, independent of which portion(s) of it
 /// are modeled as separate vertices.
-public struct OverworldScreenCoordinate: Hashable, Sendable {
+public struct OverworldScreenCoordinate: Hashable, Sendable, Codable {
     public let x: Int
     public let y: Int
 

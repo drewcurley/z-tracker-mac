@@ -133,6 +133,71 @@ public final class TrackerModel {
     /// Fed once a second from the app's poll loop (`recordTimeline`).
     public let timeline = TimelineModel()
 
+    // MARK: Save/Load snapshot (T-164)
+
+    /// A `Codable` snapshot of the full game state — everything a save file needs
+    /// (the timer lives in the app layer and is combined there). Starting-items config
+    /// and the Timeline history are intentionally out of scope for now (they don't
+    /// change mid-run / are deferred to Phase 2).
+    public struct State: Codable, Sendable {
+        public var version = 1
+        var quest: OverworldQuest?
+        var heartShuffle: Bool
+        var hideDungeonNumbers: Bool
+        var isWSMSReplacedByBU: Bool
+        var isCurrentlyBook: Bool
+        var mirrorOverworld: Bool
+        var startSpot: OverworldScreenCoordinate?
+        var customWaypoint: OverworldScreenCoordinate?
+        var recorderToNewDungeons: Bool
+        var recorderToUnbeatenDungeons: Bool
+        var recorderDestinationIndex: Int
+        var recorderDestinationManual: Bool
+        var levelHints: [HintZone]
+        var notes: String
+        var overworld: OverworldGrid.State
+        var roomMaps: [DungeonRoomMap.State]
+        var tracker: DungeonTrackerInstance.State
+        var blockers: DungeonBlockersContainer.State
+        var progress: PlayerProgressAndTakeAnyHearts.State
+    }
+
+    public func snapshot() -> State {
+        State(quest: quest, heartShuffle: heartShuffle, hideDungeonNumbers: hideDungeonNumbers,
+              isWSMSReplacedByBU: isWSMSReplacedByBU, isCurrentlyBook: isCurrentlyBook,
+              mirrorOverworld: mirrorOverworld, startSpot: startSpot, customWaypoint: customWaypoint,
+              recorderToNewDungeons: recorderToNewDungeons, recorderToUnbeatenDungeons: recorderToUnbeatenDungeons,
+              recorderDestinationIndex: recorderDestinationIndex, recorderDestinationManual: recorderDestinationManual,
+              levelHints: levelHints, notes: notes,
+              overworld: overworldGrid.state, roomMaps: dungeonRoomMaps.map(\.state),
+              tracker: dungeonTracker.state, blockers: dungeonBlockers.state, progress: playerProgress.state)
+    }
+
+    /// Restore a saved snapshot into this model. Order matters: the HDN flag is applied
+    /// via `setHideDungeonNumbers` first so the dungeon-tracker is rebuilt to the right
+    /// structure *before* its box contents are written back.
+    public func restore(_ s: State) {
+        quest = s.quest
+        heartShuffle = s.heartShuffle
+        setHideDungeonNumbers(s.hideDungeonNumbers)
+        isWSMSReplacedByBU = s.isWSMSReplacedByBU
+        isCurrentlyBook = s.isCurrentlyBook
+        mirrorOverworld = s.mirrorOverworld
+        startSpot = s.startSpot
+        customWaypoint = s.customWaypoint
+        recorderToNewDungeons = s.recorderToNewDungeons
+        recorderToUnbeatenDungeons = s.recorderToUnbeatenDungeons
+        recorderDestinationIndex = s.recorderDestinationIndex
+        recorderDestinationManual = s.recorderDestinationManual
+        levelHints = s.levelHints
+        notes = s.notes
+        overworldGrid.restore(s.overworld)
+        for (map, ms) in zip(dungeonRoomMaps, s.roomMaps) { map.restore(ms) }
+        dungeonTracker.restore(s.tracker)
+        dungeonBlockers.restore(s.blockers)
+        playerProgress.restore(s.progress)
+    }
+
     public init(
         quest: OverworldQuest? = nil,
         heartShuffle: Bool = false,

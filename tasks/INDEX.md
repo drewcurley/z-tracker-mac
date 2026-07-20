@@ -25,6 +25,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-164](./T-164.md) | Save/Load — serialization core (Phase 1) | backend-engineer | — | feat/save-load | — | docs/reviews/feat-save-load/final.md |
 | [T-163](./T-163.md) | About footer — app version + project link | frontend-engineer | — | feat/about-version | — | docs/reviews/feat-about-version/final.md |
 | [T-162](./T-162.md) | Custom waypoint — a second freely-placeable overworld marker | frontend-engineer | — | feat/custom-waypoint | — | docs/reviews/feat-custom-waypoint/final.md |
 | [T-161](./T-161.md) | Higher-fidelity game sprites + app icon | frontend-engineer | — | feat/hires-item-icons | — | docs/reviews/feat-hires-item-icons/final.md |

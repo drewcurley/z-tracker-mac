@@ -95,6 +95,24 @@ final class TrackerTimer {
         hasLap = false
     }
 
+    /// A `Codable` snapshot of the timer for save/load (T-164): the total elapsed and
+    /// whether the run had started. On restore the timer is set **paused** at that
+    /// elapsed — resuming a saved run leaves the clock stopped until the user is ready.
+    struct State: Codable, Sendable {
+        var elapsed: TimeInterval
+        var hasStarted: Bool
+    }
+    func snapshot(asOf now: Date = Date()) -> State {
+        State(elapsed: mainElapsed(asOf: now), hasStarted: hasStarted)
+    }
+    func restore(_ s: State) {
+        accumulated = max(0, s.elapsed)
+        segmentStart = nil          // paused
+        hasStarted = s.hasStarted
+        lapOrigin = 0
+        hasLap = false
+    }
+
     /// Reset to the pristine pre-"Go" state (T-109) — used by Reset App, which
     /// keeps the same timer instance (so the quit-warning check stays valid)
     /// instead of replacing it.

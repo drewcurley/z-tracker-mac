@@ -38,6 +38,31 @@ public final class DungeonRoomMap {
         transportCounts = Array(repeating: 0, count: 9)
     }
 
+    /// A `Codable` snapshot of one dungeon's whole map for save/load (T-164).
+    public struct State: Codable, Sendable {
+        var rooms: [DungeonRoom]
+        var horizontalDoors: [DoorState]
+        var verticalDoors: [DoorState]
+        var circled: [Bool]
+        var transportCounts: [Int]
+        var firstInteractionDone: Bool
+    }
+    public var state: State {
+        State(rooms: rooms, horizontalDoors: horizontalDoors, verticalDoors: verticalDoors,
+              circled: circled, transportCounts: transportCounts, firstInteractionDone: firstInteractionDone)
+    }
+    /// Restore a saved map; ignored if any array is the wrong size (corrupt-save guard).
+    public func restore(_ s: State) {
+        guard s.rooms.count == Self.cols * Self.rows,
+              s.horizontalDoors.count == 7 * Self.rows,
+              s.verticalDoors.count == Self.cols * 7,
+              s.circled.count == Self.cols * Self.rows,
+              s.transportCounts.count == 9 else { return }
+        rooms = s.rooms; horizontalDoors = s.horizontalDoors; verticalDoors = s.verticalDoors
+        circled = s.circled; transportCounts = s.transportCounts
+        firstInteractionDone = s.firstInteractionDone
+    }
+
     // MARK: Rooms
 
     public func room(col: Int, row: Int) -> DungeonRoom {

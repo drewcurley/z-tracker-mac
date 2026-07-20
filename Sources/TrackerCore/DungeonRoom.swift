@@ -1,7 +1,7 @@
 /// One dungeon room (T-019.3) — the five fields of the reference's
 /// `DungeonRoomState` (`DungeonRoomState.fs:469-491`). A value type; the grid
 /// (`DungeonRoomMap`) owns the mutable collection.
-public struct DungeonRoom: Sendable, Equatable {
+public struct DungeonRoom: Sendable, Equatable, Codable {
     public var isCompleted: Bool
     public var roomType: RoomType
     /// The room's primary monster.
