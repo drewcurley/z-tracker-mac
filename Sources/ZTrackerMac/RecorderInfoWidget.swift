@@ -102,11 +102,10 @@ struct RecorderInfoWidget: View {
 
     private var recorderIcon: some View {
         ZStack {
-            if let img = Image(atlasIcon: ItemIconAtlas.cgImage(.recorder)) {
-                img.interpolation(.none).resizable().frame(width: 22, height: 22)
-                    .opacity(haveRecorder ? 1 : 0.28)
-                    .saturation(haveRecorder ? 1 : 0)
-            }
+            ItemGlyph(.recorder)
+                .frame(width: 22, height: 22)
+                .opacity(haveRecorder ? 1 : 0.28)
+                .saturation(haveRecorder ? 1 : 0)
         }
         .frame(width: 26, height: 26)
     }

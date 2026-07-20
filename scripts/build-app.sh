@@ -32,6 +32,22 @@ cp -R "$BIN_DIR/$RES_BUNDLE" "$APP/Contents/Resources/$RES_BUNDLE"
 
 sed "s/@@VERSION@@/$VERSION/g" Bundle/Info.plist.template > "$APP/Contents/Info.plist"
 
+# App icon (T-161): build AppIcon.icns from the transparent-corner master
+# (Bundle/AppIcon.png). macOS shows app icons as-is (no auto-rounding), so the
+# master already has its rounded panel on a transparent field.
+if [ -f Bundle/AppIcon.png ]; then
+    echo "==> building AppIcon.icns"
+    ICONSET="$(mktemp -d)/AppIcon.iconset"
+    mkdir -p "$ICONSET"
+    for sz in 16 32 128 256 512; do
+        sips -z "$sz" "$sz" Bundle/AppIcon.png --out "$ICONSET/icon_${sz}x${sz}.png" >/dev/null
+        d=$((sz * 2))
+        sips -z "$d" "$d" Bundle/AppIcon.png --out "$ICONSET/icon_${sz}x${sz}@2x.png" >/dev/null
+    done
+    iconutil -c icns "$ICONSET" -o "$APP/Contents/Resources/AppIcon.icns"
+    rm -rf "$(dirname "$ICONSET")"
+fi
+
 # Sign with a STABLE identity so TCC (mic/speech permission) persists across rebuilds.
 # A self-signed "ZTracker Dev" code-signing cert gives a stable designated requirement
 # — unlike ad-hoc (--sign -), whose identity is the ever-changing binary hash, which

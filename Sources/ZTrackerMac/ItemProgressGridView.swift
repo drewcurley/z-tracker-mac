@@ -526,8 +526,8 @@ struct SeedFlagsView: View {
         ZStack {
             if let systemImage {
                 Image(systemName: systemImage).font(.system(size: 18)).foregroundStyle(tint)
-            } else if let atlasIcon, let img = Image(atlasIcon: ItemIconAtlas.cgImage(atlasIcon)) {
-                img.interpolation(.none).resizable().frame(width: 22, height: 22)
+            } else if let atlasIcon {
+                ItemGlyph(atlasIcon).frame(width: 22, height: 22)
             }
         }
         .frame(width: itemGridCellSize, height: itemGridCellSize)
@@ -673,8 +673,8 @@ struct MapInfoView: View {
             if let systemImage {
                 Image(systemName: systemImage).font(.system(size: 18))
                     .foregroundStyle(locked ? Color.green : Color(white: 0.75))
-            } else if let atlasIcon, let img = Image(atlasIcon: ItemIconAtlas.cgImage(atlasIcon)) {
-                img.interpolation(.none).resizable().frame(width: 22, height: 22)
+            } else if let atlasIcon {
+                ItemGlyph(atlasIcon).frame(width: 22, height: 22)
             }
         }
         .frame(width: itemGridCellSize, height: itemGridCellSize)
@@ -695,11 +695,9 @@ private struct IndicatorCell: View {
 
     var body: some View {
         ZStack {
-            if let image = Image(atlasIcon: ItemIconAtlas.cgImage(icon)) {
-                image.interpolation(.none).resizable()
-                    .frame(width: size - 12, height: size - 12)
-                    .opacity(0.85)
-            }
+            ItemGlyph(icon)
+                .frame(width: size - 12, height: size - 12)
+                .opacity(0.85)
         }
         .frame(width: size, height: size)
         .help(help)
@@ -734,11 +732,9 @@ private struct ItemToggleBox: View {
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 4).fill(Color.black)
-            if let image = Image(atlasIcon: ItemIconAtlas.cgImage(iconOverride ?? toggle.icon)) {
-                image.interpolation(.none).resizable()
-                    .frame(width: size - 10, height: size - 10)
-                    .opacity(has ? 1 : 0.4)
-            }
+            ItemGlyph(iconOverride ?? toggle.icon)
+                .frame(width: size - 10, height: size - 10)
+                .opacity(has ? 1 : 0.4)
             // Superseded items are moot — mark with an X (the reference's
             // placeSkippedItemXDecoration).
             if superseded && !has {
@@ -799,16 +795,19 @@ private struct TakeAnyHeartBox: View {
     private var overlayIcon: some View {
         switch state {
         case .takenPotion:
-            // The potion-shop sprite (ow_icons5x9 index 5) doubles as the potion.
-            if let potion = Image(atlasIcon: OverworldInteriorIconAtlas.icon(at: 5)) {
-                potion.interpolation(.none).resizable()
-                    .frame(width: (size - 12) * 0.7, height: (size - 12) * 0.9)
+            // The real Life Potion game sprite (T-161); the ow_icons5x9 index-5
+            // potion-shop glyph is the fallback if it's missing.
+            Group {
+                if let cg = GameSprite.image("Life Potion") {
+                    Image(decorative: cg, scale: 1, orientation: .up).resizable().interpolation(.none)
+                } else if let potion = Image(atlasIcon: OverworldInteriorIconAtlas.icon(at: 5)) {
+                    potion.interpolation(.none).resizable()
+                }
             }
+            .frame(width: (size - 12) * 0.7, height: (size - 12) * 0.9)
         case .takenCandle:
-            if let candle = Image(atlasIcon: ItemIconAtlas.cgImage(.blueCandle)) {
-                candle.interpolation(.none).resizable()
-                    .frame(width: (size - 12) * 0.8, height: (size - 12) * 0.8)
-            }
+            ItemGlyph(.blueCandle)
+                .frame(width: (size - 12) * 0.8, height: (size - 12) * 0.8)
         case .untaken, .takenHeart:
             EmptyView()
         }

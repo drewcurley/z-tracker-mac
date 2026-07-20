@@ -92,9 +92,8 @@ private struct BlockerBoxView: View {
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 4).fill(.black.opacity(0.35))
-            if let icon = BlockerIcons.icon(for: blocker),
-               let image = Image(atlasIcon: ItemIconAtlas.cgImage(icon)) {
-                image.interpolation(.none).resizable().frame(width: 20, height: 20)
+            if let icon = BlockerIcons.icon(for: blocker) {
+                ItemGlyph(icon).frame(width: 20, height: 20)
                     .opacity(blocker.isMaybe ? 0.85 : 1)
             }
         }
@@ -181,9 +180,8 @@ private struct BlockerKindPicker: View {
                     let canBlock = kind.playerCouldBeBlockedByThis(playerState)
                     Button { onPick(kind) } label: {
                         ZStack {
-                            if let icon = BlockerIcons.icon(for: kind),
-                               let image = Image(atlasIcon: ItemIconAtlas.cgImage(icon)) {
-                                image.interpolation(.none).resizable().frame(width: 22, height: 22)
+                            if let icon = BlockerIcons.icon(for: kind) {
+                                ItemGlyph(icon).frame(width: 22, height: 22)
                             }
                         }
                         .frame(width: 40, height: 34)
@@ -239,9 +237,8 @@ private struct BlockerAppliesToPanel: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 6) {
-                if let icon = BlockerIcons.icon(for: blocker),
-                   let image = Image(atlasIcon: ItemIconAtlas.cgImage(icon)) {
-                    image.interpolation(.none).resizable().frame(width: 18, height: 18)
+                if let icon = BlockerIcons.icon(for: blocker) {
+                    ItemGlyph(icon).frame(width: 18, height: 18)
                 }
                 Text(blocker == .nothing ? "Applies to… (set a blocker first)"
                      : "\(blocker.displayDescription.replacingOccurrences(of: "\n", with: " ")) applies to…")
@@ -287,9 +284,8 @@ struct BlockerChip: View {
         ZStack {
             Rectangle().fill(resolved ? Color.green : Color.black)
                 .frame(width: 11, height: 11)
-            if let icon = BlockerIcons.icon(for: blocker),
-               let image = Image(atlasIcon: ItemIconAtlas.cgImage(icon)) {
-                image.interpolation(.none).resizable().frame(width: 9, height: 9)
+            if let icon = BlockerIcons.icon(for: blocker) {
+                ItemGlyph(icon).frame(width: 9, height: 9)
             }
         }
     }

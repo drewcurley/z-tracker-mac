@@ -25,6 +25,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-161](./T-161.md) | Higher-fidelity game sprites + app icon | frontend-engineer | — | feat/hires-item-icons | — | docs/reviews/feat-hires-item-icons/final.md |
 | [T-160](./T-160.md) | Snappier popovers — disable the SwiftUI open animation app-wide | frontend-engineer | — | feat/snappy-popovers | — | docs/reviews/feat-snappy-popovers/final.md |
 | [T-159](./T-159.md) | Voice — dungeon blockers vocabulary + apply | frontend-engineer | T-140 | feat/voice-blockers | — | docs/reviews/feat-voice-blockers/final.md |
 | [T-158](./T-158.md) | Voice — single-utterance two-item shop ("bomb shop and meat") | frontend-engineer | T-140 | feat/voice-two-item-shop | — | docs/reviews/feat-voice-two-item-shop/final.md |

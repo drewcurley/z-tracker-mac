@@ -265,19 +265,13 @@ struct BoxView: View {
             ZStack {
                 RoundedRectangle(cornerRadius: 4).fill(Color.black)
                 if box.cellCurrent != -1,
-                   let icon = ItemIconAtlas.icon(forItemIndex: box.cellCurrent, options: iconOptions),
-                   let image = Image(atlasIcon: ItemIconAtlas.cgImage(icon)) {
-                    image
-                        .interpolation(.none)
-                        .resizable()
+                   let icon = ItemIconAtlas.icon(forItemIndex: box.cellCurrent, options: iconOptions) {
+                    ItemGlyph(icon)
                         .frame(width: Self.size - 10, height: Self.size - 10)
                         .opacity(box.playerHas == .no ? 0.45 : 1)
                 }
-                if instance.currentlyHasBasementStair(box),
-                   let stair = Image(atlasIcon: ItemIconAtlas.cgImage(.basementStair)) {
-                    stair
-                        .interpolation(.none)
-                        .resizable()
+                if instance.currentlyHasBasementStair(box) {
+                    ItemGlyph(.basementStair)
                         .frame(width: 10, height: 10)
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
                         .padding(1)
@@ -357,9 +351,8 @@ struct BoxItemPicker: View {
                     let available = instance.canSelectItem(item, forBox: box)
                     let isCurrent = box.cellCurrent == item
                     Group {
-                        if let icon = ItemIconAtlas.icon(forItemIndex: item, options: iconOptions),
-                           let image = Image(atlasIcon: ItemIconAtlas.cgImage(icon)) {
-                            image.interpolation(.none).resizable().frame(width: 22, height: 22)
+                        if let icon = ItemIconAtlas.icon(forItemIndex: item, options: iconOptions) {
+                            ItemGlyph(icon).frame(width: 22, height: 22)
                         } else {
                             Color.gray.frame(width: 22, height: 22)
                         }

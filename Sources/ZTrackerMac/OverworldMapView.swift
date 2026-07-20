@@ -907,15 +907,47 @@ private struct TileView: View {
     /// sprite doesn't touch the tile border.
     @ViewBuilder
     private var interiorSpriteView: some View {
-        if case .interiorSprite(let index) = mark.iconSource,
-           let icon = OverworldInteriorIconAtlas.icon(at: index) {
-            Image(decorative: icon, scale: 1, orientation: .up)
-                .resizable()
-                .interpolation(.none) // crisp nearest-neighbor, matches the reference's integer scaling
-                .aspectRatio(contentMode: .fit)
-                .frame(width: tileWidth, height: tileHeight * 0.9)
+        if case .interiorSprite(let index) = mark.iconSource {
+            switch index {
+            // Secret rupee spots: 1 / 2 / 3 five-rupee sprites clustered for
+            // small / medium / large (indices 9 / 6 / 8). The money game (10) is a
+            // single static orange rupee via the sprite map, so it stays distinct.
+            case 9: secretRupees(1)
+            case 6: secretRupees(2)
+            case 8: secretRupees(3)
+            default:
+                // Prefer the real game sprite; fall back to the atlas glyph for marks
+                // (e.g. the unknown secret) that still have none.
+                if let file = GameSprite.overworldFile(index: index), let cg = GameSprite.image(file) {
+                    Image(decorative: cg, scale: 1, orientation: .up)
+                        .resizable().interpolation(.none).aspectRatio(contentMode: .fit)
+                        .frame(width: tileWidth, height: tileHeight * 0.9)
+                } else if let icon = OverworldInteriorIconAtlas.icon(at: index) {
+                    Image(decorative: icon, scale: 1, orientation: .up)
+                        .resizable()
+                        .interpolation(.none) // crisp nearest-neighbor, matches the reference's integer scaling
+                        .aspectRatio(contentMode: .fit)
+                        .frame(width: tileWidth, height: tileHeight * 0.9)
+                }
+            }
         }
     }
+
+    /// A cluster of `count` five-rupee sprites for a secret-money spot (T-161).
+    @ViewBuilder
+    private func secretRupees(_ count: Int) -> some View {
+        if let cg = GameSprite.image("5 Rupees") {
+            HStack(spacing: -tileWidth * 0.05) {
+                ForEach(0..<count, id: \.self) { _ in
+                    Image(decorative: cg, scale: 1, orientation: .up)
+                        .resizable().interpolation(.none).aspectRatio(contentMode: .fit)
+                        .frame(height: tileHeight * 0.72)
+                }
+            }
+            .frame(width: tileWidth, height: tileHeight * 0.9)
+        }
+    }
+
 
     @ViewBuilder
     private var shopIconView: some View {
@@ -927,7 +959,12 @@ private struct TileView: View {
                 // `ShopKind` order for a stable layout.
                 HStack(spacing: 0) {
                     ForEach(orderedShopItems, id: \.self) { kind in
-                        if let icon = OverworldShopIconAtlas.icon(at: ShopKind.allCases.firstIndex(of: kind) ?? 0) {
+                        // Real game sprite (T-161) at its natural aspect; the crude
+                        // 3×7 atlas glyph only if a sprite is somehow missing.
+                        if let file = GameSprite.shopFile(kind), let cg = GameSprite.image(file) {
+                            Image(decorative: cg, scale: 1, orientation: .up)
+                                .resizable().interpolation(.none).aspectRatio(contentMode: .fit)
+                        } else if let icon = OverworldShopIconAtlas.icon(at: ShopKind.allCases.firstIndex(of: kind) ?? 0) {
                             Image(decorative: icon, scale: 1, orientation: .up)
                                 .resizable()
                                 .interpolation(.none)
