@@ -2,7 +2,7 @@
 /// (T-039). Ported from `TrackerModel.HintZone` (`TrackerModel.fs:1299-1373`).
 /// The `zoneChar` matches `OverworldData.owMapZone`'s letters, so a hint ties
 /// into the Zones overlay's regions.
-public enum HintZone: Int, CaseIterable, Sendable {
+public enum HintZone: Int, CaseIterable, Sendable, Codable {
     case unknown = 0
     case deathMountain
     case lake

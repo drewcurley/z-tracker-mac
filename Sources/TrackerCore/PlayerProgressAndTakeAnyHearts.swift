@@ -9,7 +9,7 @@ import Observation
 /// and `takenCandle` (3), so the tracker can record which was taken — the
 /// Extra Candles randomizer option makes a blue candle a possible take-any
 /// item alongside the red potion and the heart.
-public enum TakeAnyHeartState: Int, Sendable, CaseIterable {
+public enum TakeAnyHeartState: Int, Sendable, CaseIterable, Codable {
     case untaken = 0
     case takenHeart = 1
     case takenPotion = 2
@@ -55,6 +55,26 @@ public final class PlayerProgressAndTakeAnyHearts {
     /// tracks meat (its HUD always greys it out); the user wants an explicit
     /// toggle so the Progress HUD's meat slot can light up.
     public var hasMeat: Bool
+
+    /// A `Codable` snapshot of all progress for save/load (T-164).
+    public struct State: Codable, Sendable {
+        var takeAnyHearts: [TakeAnyHeartState]
+        var hasBoomBook, hasWoodSword, hasWoodArrow, hasBlueRing, hasBlueCandle: Bool
+        var hasMagicalSword, hasDefeatedGanon, hasRescuedZelda, hasBombs, hasMeat: Bool
+    }
+    public var state: State {
+        State(takeAnyHearts: takeAnyHearts, hasBoomBook: hasBoomBook, hasWoodSword: hasWoodSword,
+              hasWoodArrow: hasWoodArrow, hasBlueRing: hasBlueRing, hasBlueCandle: hasBlueCandle,
+              hasMagicalSword: hasMagicalSword, hasDefeatedGanon: hasDefeatedGanon,
+              hasRescuedZelda: hasRescuedZelda, hasBombs: hasBombs, hasMeat: hasMeat)
+    }
+    public func restore(_ s: State) {
+        hasBoomBook = s.hasBoomBook; hasWoodSword = s.hasWoodSword; hasWoodArrow = s.hasWoodArrow
+        hasBlueRing = s.hasBlueRing; hasBlueCandle = s.hasBlueCandle; hasMagicalSword = s.hasMagicalSword
+        hasDefeatedGanon = s.hasDefeatedGanon; hasRescuedZelda = s.hasRescuedZelda
+        hasBombs = s.hasBombs; hasMeat = s.hasMeat
+        if s.takeAnyHearts.count == 4 { takeAnyHearts = s.takeAnyHearts }
+    }
 
     public init(
         takeAnyHearts: [TakeAnyHeartState] = Array(repeating: .untaken, count: 4),

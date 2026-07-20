@@ -48,6 +48,30 @@ public final class OverworldGrid {
         enemyPairs = Array(repeating: .unmarked, count: Self.columnCount * Self.rowCount * 2)
     }
 
+    /// A `Codable` snapshot of the full grid state for save/load (T-164). `restore`
+    /// only accepts a snapshot whose arrays are the expected sizes, so a corrupt or
+    /// mismatched save can't produce an out-of-bounds grid.
+    public struct State: Codable, Sendable {
+        var tiles: [OverworldTileMark]
+        var extraData: [Int]
+        var takeAnySlotLinks: [Int]
+        var enemyPairs: [MonsterDetail]
+    }
+    public var state: State {
+        State(tiles: tiles, extraData: extraData, takeAnySlotLinks: takeAnySlotLinks, enemyPairs: enemyPairs)
+    }
+    /// Restore a saved snapshot; ignored (leaving the grid unchanged) if any array is
+    /// the wrong size, guarding against corrupt saves.
+    public func restore(_ s: State) {
+        let n = Self.columnCount * Self.rowCount
+        guard s.tiles.count == n,
+              s.extraData.count == n * Self.extraDataKeyCount,
+              s.takeAnySlotLinks.count == n,
+              s.enemyPairs.count == n * 2 else { return }
+        tiles = s.tiles; extraData = s.extraData
+        takeAnySlotLinks = s.takeAnySlotLinks; enemyPairs = s.enemyPairs
+    }
+
     public func mark(column: Int, row: Int) -> OverworldTileMark {
         tiles[Self.index(column: column, row: row)]
     }

@@ -225,6 +225,53 @@ public final class DungeonTrackerInstance {
         }
     }
 
+    /// A `Codable` snapshot of every box's contents for save/load (T-164). Only the
+    /// mutable content (which item, and whether the player has it) is captured; the
+    /// box *structure* (counts, stair/owner metadata) is rebuilt from `kind` before a
+    /// restore, so a restore just writes contents back into the existing boxes.
+    public struct BoxContent: Codable, Sendable { var cellCurrent: Int; var playerHas: PlayerHas }
+    public struct DungeonContent: Codable, Sendable {
+        var playerHasTriforce: Bool
+        var playerHasMap: Bool
+        var boxes: [BoxContent]
+    }
+    public struct State: Codable, Sendable {
+        var isSecondQuestDungeons: Bool
+        var dungeons: [DungeonContent]
+        var finalBox: BoxContent
+        var ladderBox: BoxContent
+        var armosBox: BoxContent
+        var sword2Box: BoxContent
+    }
+    private func content(_ b: Box) -> BoxContent { BoxContent(cellCurrent: b.cellCurrent, playerHas: b.playerHas) }
+    public var state: State {
+        State(isSecondQuestDungeons: isSecondQuestDungeons,
+              dungeons: dungeons.map { d in
+                  DungeonContent(playerHasTriforce: d.playerHasTriforce, playerHasMap: d.playerHasMap,
+                                 boxes: d.baseBoxes.map(content))
+              },
+              finalBox: content(finalBoxOf1Or4), ladderBox: content(ladderBox),
+              armosBox: content(armosBox), sword2Box: content(sword2Box))
+    }
+    /// Restore box contents. Assumes the structure already matches the save (same
+    /// `kind`); dungeons/boxes with mismatched counts are skipped, guarding corruption.
+    public func restore(_ s: State) {
+        isSecondQuestDungeons = s.isSecondQuestDungeons
+        finalBoxOf1Or4.set(cellCurrent: s.finalBox.cellCurrent, playerHas: s.finalBox.playerHas)
+        ladderBox.set(cellCurrent: s.ladderBox.cellCurrent, playerHas: s.ladderBox.playerHas)
+        armosBox.set(cellCurrent: s.armosBox.cellCurrent, playerHas: s.armosBox.playerHas)
+        sword2Box.set(cellCurrent: s.sword2Box.cellCurrent, playerHas: s.sword2Box.playerHas)
+        guard s.dungeons.count == dungeons.count else { return }
+        for (d, dc) in zip(dungeons, s.dungeons) {
+            d.playerHasTriforce = dc.playerHasTriforce
+            d.playerHasMap = dc.playerHasMap
+            guard dc.boxes.count == d.baseBoxes.count else { continue }
+            for (box, bc) in zip(d.baseBoxes, dc.boxes) {
+                box.set(cellCurrent: bc.cellCurrent, playerHas: bc.playerHas)
+            }
+        }
+    }
+
     /// Max times an item may appear across all boxes — the item's
     /// `ITEMS.itemNamesAndCounts` count (`TrackerModel.fs:179-194`): every item
     /// is unique (1) except the Heart Container, which may appear **9** times

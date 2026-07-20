@@ -34,7 +34,7 @@ public enum BoxOwner: Sendable, Equatable {
 /// (`NO=0`, `YES=1`, `SKIPPED=2`) so a future save/load layer round-trips
 /// identically — the same discipline `TakeAnyHeartState` (T-012) used for
 /// its own reference tri-state.
-public enum PlayerHas: Int, Sendable, CaseIterable {
+public enum PlayerHas: Int, Sendable, CaseIterable, Codable {
     case no = 0
     case yes = 1
     case skipped = 2
