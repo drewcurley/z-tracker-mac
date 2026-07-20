@@ -166,4 +166,19 @@ struct TakeAnySyncTests {
         // The mark itself is kept (map knowledge).
         #expect(m.overworldGrid.mark(column: 2, row: 3) == .takeAny)
     }
+
+    /// T-162: the custom waypoint is an independent, freely-placeable marker —
+    /// set/clear, and it doesn't disturb (or get disturbed by) the start spot.
+    @Test("custom waypoint sets, clears, and is independent of the start spot")
+    func customWaypointIndependent() {
+        let m = TrackerModel(quest: .first)
+        #expect(m.customWaypoint == nil)
+        m.startSpot = OverworldScreenCoordinate(x: 7, y: 3)
+        m.customWaypoint = OverworldScreenCoordinate(x: 2, y: 5)
+        #expect(m.customWaypoint == OverworldScreenCoordinate(x: 2, y: 5))
+        #expect(m.startSpot == OverworldScreenCoordinate(x: 7, y: 3))   // unaffected
+        m.customWaypoint = nil
+        #expect(m.customWaypoint == nil)
+        #expect(m.startSpot == OverworldScreenCoordinate(x: 7, y: 3))   // still there
+    }
 }
