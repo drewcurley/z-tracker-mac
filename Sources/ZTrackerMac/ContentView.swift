@@ -27,6 +27,12 @@ struct ContentView: View {
     /// Live FPS readout monitor (dev diagnostic) — only sampled while the readout
     /// is on screen (i.e. when `options.showFPS` is on).
     @State private var fpsMonitor = FPSMonitor()
+    /// Guards the one-time startup "resume your last run?" prompt (T-165).
+    @State private var resumeChecked = false
+    /// The autosaved unfinished session offered on launch; drives the resume dialog.
+    @State private var pendingResume: GameSave.SaveFile?
+    /// Drives the ~60s autosave of the last session (T-165).
+    private let autosaveTick = Timer.publish(every: 60, on: .main, in: .common).autoconnect()
 
     var body: some View {
         Group {
@@ -56,7 +62,42 @@ struct ContentView: View {
         // hoisted timer + options; `Reset App` resets the timer in place so this
         // closure stays valid across a reset.
         .onAppear {
-            AppDelegate.confirmQuit = { confirmQuitWhileTimerRunning(timer: timer, options: options) }
+            // Quit gate (T-165): the Save / Don't Save / Cancel dialog for an
+            // unfinished run supersedes the plain timer-running warning.
+            AppDelegate.confirmQuit = { GameSave.confirmQuitSaving(model: model, timer: timer) }
+            // One-time startup resume check; the dialog below presents it.
+            if !resumeChecked {
+                resumeChecked = true
+                pendingResume = GameSave.pendingResume()
+            }
+        }
+        // Startup "resume your last run?" — a SwiftUI dialog, so it displays reliably
+        // once the window is up (a raw NSAlert from onAppear at launch doesn't).
+        .confirmationDialog(
+            "Resume your last run?",
+            isPresented: Binding(get: { pendingResume != nil }, set: { if !$0 { pendingResume = nil } }),
+            titleVisibility: .visible
+        ) {
+            Button("Resume") {
+                if let file = pendingResume { GameSave.apply(file, to: model, timer: timer) }
+                pendingResume = nil
+            }
+            Button("Discard", role: .destructive) {
+                GameSave.clearLastSession()
+                pendingResume = nil
+            }
+            Button("Cancel", role: .cancel) { pendingResume = nil }
+        } message: {
+            if let file = pendingResume {
+                let when = DateFormatter.localizedString(from: file.savedAt, dateStyle: .medium, timeStyle: .short)
+                Text("An unfinished run was auto-saved on \(when). The timer stays paused until you're ready.")
+            }
+        }
+        // ~60s autosave of the last session while a run is active and unfinished.
+        .onReceive(autosaveTick) { _ in
+            if model.quest != nil, !model.playerProgress.hasRescuedZelda {
+                GameSave.autosave(model: model, timer: timer)
+            }
         }
         // Remember where the user puts the window, and restore it next launch
         // (T-046.1) — so it reopens on the same display/spot every time.

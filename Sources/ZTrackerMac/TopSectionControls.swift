@@ -39,6 +39,11 @@ struct ResetButtonsView: View {
                 .help("Set the run timer back to 0:00:00 (keeps your marks and items)")
             Button("Reset (keep maps)") { confirmingGroundhog = true }
                 .help("Groundhog/routers restart: clear inventory but keep your overworld marks and known item locations. Does not pause the timer.")
+            Divider().frame(width: 96)
+            Button("Save…") { GameSave.manualSave(model: model, timer: timer) }
+                .help("Save the current run to a file (default: ~/Documents/ztracker)")
+            Button("Load…") { GameSave.manualLoad(model: model, timer: timer) }
+                .help("Load a previously saved run, replacing the current tracker state")
         }
         .font(.system(size: 10))
         .controlSize(.small)
@@ -46,7 +51,7 @@ struct ResetButtonsView: View {
             Button("Reset App (discard everything)", role: .destructive, action: onResetApp)
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Returns to the startup screen as if you'd just reopened the app. All marks, items, hints, and the timer are discarded. This can't be undone (no save yet).")
+            Text("Returns to the startup screen as if you'd just reopened the app. All marks, items, hints, and the timer are discarded. Use Save first if you want to keep it.")
         }
         .confirmationDialog("Reset the timer to 0:00:00?", isPresented: $confirmingResetTimer, titleVisibility: .visible) {
             Button("Reset Timer", role: .destructive) { timer.reset() }
@@ -62,7 +67,7 @@ struct ResetButtonsView: View {
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Removes all items, triforces, and take-any hearts so you can replay the same seed. Your overworld marks and known item locations stay, and the lap timer restarts while the main timer keeps running. This can't be undone (no save yet).")
+            Text("Removes all items, triforces, and take-any hearts so you can replay the same seed. Your overworld marks and known item locations stay, and the lap timer restarts while the main timer keeps running. Use Save first if you want to keep it.")
         }
     }
 }
@@ -92,7 +97,7 @@ struct AutoMapDungeonsMenu: View {
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Removes your current dungeon markers and places the \(pendingVanillaSecondQuest ? "second" : "first")-quest vanilla dungeon locations. This can't be undone (no save yet).")
+            Text("Removes your current dungeon markers and places the \(pendingVanillaSecondQuest ? "second" : "first")-quest vanilla dungeon locations. Use Save first if you want to keep it.")
         }
     }
 }
