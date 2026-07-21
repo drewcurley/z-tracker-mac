@@ -14,7 +14,7 @@ Legend: **S/M/L** = rough size.
 | 1 | **Timeline** | Item-acquisition history strip + OW-progress-over-time graph; per-item second splits; finish-time capture. Placeholder only. | use §main-timeline | L |
 | 2 | **Broadcast window** | Separate squarer stream window auto-switching OW/dungeon by mouse pos; 1/3·2/3·full. Options+panel exist; no window created. | extras §broadcast; stream-capture | L |
 | 3 | **HotKeys (whole system)** | `HotKeys.txt` bindings per context, arrow-nav, click-emulation, cheat-sheet window, popup hints. Only naming tokens exist. (stub) | extras §hotkeys | L |
-| 4 | **Save / Load state** | Save full state to file, load at startup, ~1-min autosave, save-on-completion. Only settings/window persist. (pinned) | extras §save-state | L |
+| 4 | **Save / Load state** | Manual Save/Load, ~60s autosave, startup resume + quit Save/Don't-Save/Cancel done (T-164/T-165). Remaining: save-on-completion wiring, starting-items + timeline in the save. | extras §save-state | L |
 | 5 | **Link (on-demand routing)** | Click Link → pick destination → draw best path(s) ~10s incl. ambiguous-hint routing. Backlog T-015.6. | use §main-link | M |
 | 6 | **Overworld magnifier** | Hover a tile → magnified nearby view + Lost Woods/Hills maze hints + legend. `showMagnifier` toggle only. | use §main-owm | M |
 | 7 | **Mouse magnifier window** | Separate mouse-following magnifier window. Toggle only. | whats-new v13 | M |
