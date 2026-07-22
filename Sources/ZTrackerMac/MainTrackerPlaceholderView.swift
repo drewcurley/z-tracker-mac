@@ -53,7 +53,8 @@ struct MainTrackerPlaceholderView: View {
             progress: model.playerProgress,
             drawRoutes: options.drawRoutes,
             routesCanScreenScroll: options.showScreenScrolls,
-            mirrorOverworld: model.mirrorOverworld
+            mirrorOverworld: model.mirrorOverworld,
+            customMapActive: model.customMapImagePath != nil
         )
     }
 
@@ -167,7 +168,7 @@ struct MainTrackerPlaceholderView: View {
                 // space on the left, the run timer, and the three reset actions
                 // to its right.
                 HStack(alignment: .center, spacing: 16) {
-                    StatusReadoutView(mapState: mapState)
+                    StatusReadoutView(mapState: mapState, customMapActive: model.customMapImagePath != nil)
                     Spacer()
                     TimerView(timer: timer)
                     // Duplicate the timer into its own window (T-101), e.g. for a

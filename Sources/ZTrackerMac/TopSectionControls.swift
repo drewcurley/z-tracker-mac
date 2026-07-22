@@ -5,6 +5,9 @@ import TrackerCore
 /// space left of the timer, since it's the number the player glances at most.
 struct StatusReadoutView: View {
     var mapState: MapStateSummary
+    /// On a custom map (T-167) the tracker can't know the terrain, so "gettable"
+    /// (spots your current items could uncover) is meaningless and is hidden.
+    var customMapActive: Bool = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
@@ -12,10 +15,12 @@ struct StatusReadoutView: View {
                 .font(.system(size: 20, weight: .semibold))
                 .foregroundStyle(.orange)
                 .help("Unmarked overworld screens remaining")
-            Text("\(ItemProgressGrid.gettableCount(mapState)) gettable")
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(.green)
-                .help("Unmarked spots you can currently uncover with your items (raft / recorder / bracelet / candle / bombs), for this quest")
+            if !customMapActive {
+                Text("\(ItemProgressGrid.gettableCount(mapState)) gettable")
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(.green)
+                    .help("Unmarked spots you can currently uncover with your items (raft / recorder / bracelet / candle / bombs), for this quest")
+            }
         }
     }
 }

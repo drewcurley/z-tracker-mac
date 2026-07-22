@@ -79,6 +79,8 @@ struct OverworldMapView: View {
     var customWaypoint: OverworldScreenCoordinate? = nil
     var onSetWaypoint: (Int, Int) -> Void = { _, _ in }
     var onClearWaypoint: () -> Void = {}
+    /// A user-imported custom map (T-167); when set, the map renders from it with fog.
+    var customMapImagePath: String? = nil
 
     /// Mark a take-any tile with what was taken, syncing its linked Items-group
     /// heart slot (T-066). `(state, column, row)`.
@@ -196,6 +198,12 @@ struct OverworldMapView: View {
     }
 
     /// The green/yellow/red tint for a highlighted screen (T-015.4).
+    /// A "dead spot" (no potential opening) — vanilla map only. A custom map (T-167)
+    /// has none, so every screen stays clickable/markable there.
+    private func screenIsDeadSpot(_ column: Int, _ row: Int) -> Bool {
+        customMapImagePath == nil && overworldInstance.alwaysEmpty(x: column, y: row)
+    }
+
     private func gyrColor(column: Int, row: Int, mark: OverworldTileMark) -> Color {
         switch OverworldRouteTint.forHighlightedTile(
             markRawIndex: mark.rawIndex,
@@ -215,14 +223,43 @@ struct OverworldMapView: View {
             let highlights = highlightByCoordinate
 
             ZStack(alignment: .topLeading) {
+                // Custom map (T-167): draw the imported image ONCE, stretched across the
+                // whole 16×8 grid, rather than slicing 128 per-screen crops. Slicing
+                // assumed the image was an exact multiple of 16×8 screens at the NES
+                // 256:176 aspect; anything else got integer-truncated (`width / 16`
+                // drops the remainder, so every column drifted left) and then
+                // aspect-fill-cropped inside each tile — which is what made imported
+                // maps render zoomed and misaligned. One stretch puts screen N on cell
+                // N by construction, whatever the source resolution or aspect.
+                if let path = customMapImagePath, let image = CustomMapImage.full(path) {
+                    Image(decorative: image, scale: 1, orientation: .up)
+                        .resizable()
+                        .frame(width: tileWidth * CGFloat(OverworldGrid.columnCount),
+                               height: tileHeight * CGFloat(OverworldGrid.rowCount))
+                }
                 VStack(spacing: 0) {
                     ForEach(0..<OverworldGrid.rowCount, id: \.self) { row in
                         HStack(spacing: 0) {
                             ForEach(0..<OverworldGrid.columnCount, id: \.self) { column in
                                 let mark = grid.mark(column: column, row: row)
-                                let background = OverworldBackgroundAtlas.tile(quest: quest, column: column, row: row)
-                                let isAlwaysEmpty = overworldInstance.alwaysEmpty(x: column, y: row)
-                                let showsFairy = isAlwaysEmpty && OverworldFairySpots.isFairySpot(column: column, row: row, quest: quest)
+                                // Custom-map mode (T-167): the imported image supplies the
+                                // per-screen background and fog gates its visibility.
+                                let customActive = customMapImagePath != nil
+                                // On a custom map the terrain comes from the single
+                                // stretched image behind this grid, so tiles draw no
+                                // background of their own (see the ZStack above).
+                                let background = customActive
+                                    ? nil
+                                    : OverworldBackgroundAtlas.tile(quest: quest, column: column, row: row)
+                                let fog = customActive && !grid.isCustomMapRevealed(column: column, row: row)
+                                // On a custom map the quest's *openings* are meaningless — every
+                                // screen is markable (no dead spots) and the vanilla fixed fairy
+                                // spots don't apply; fairies are placed by hand instead (T-167).
+                                // The chosen quest still drives secrets/door-repair logic.
+                                let isAlwaysEmpty = screenIsDeadSpot(column, row)
+                                let showsFairy = customActive
+                                    ? grid.isCustomFairy(column: column, row: row)
+                                    : (isAlwaysEmpty && OverworldFairySpots.isFairySpot(column: column, row: row, quest: quest))
                                 // Dim = claimed ("used") OR a permanently-dimmed
                                 // mark (door repair — one-shot, never revisited).
                                 // The latter derives from the mark, so a groundhog
@@ -235,9 +272,9 @@ struct OverworldMapView: View {
                                 let shopSecondItem = grid.shopSecondItem(column: column, row: row)
                                 let dungeonDone: Bool = { if case .dungeon(let n) = mark { return dungeonComplete(n) } else { return false } }()
                                 let kindHidden = OverworldTileHiding.isKindHidden(mark: mark, options: options, hasRescuedZelda: hasRescuedZelda)
-                                TileView(mark: mark, background: background, tileWidth: tileWidth, tileHeight: tileHeight, isAlwaysEmpty: isAlwaysEmpty, showsFairy: showsFairy, mirrored: mirrored, hideDungeonNumbers: hideDungeonNumbers, used: used, shopSecondItem: shopSecondItem, hideMarks: overlays?.isActive(.hideMarks) ?? false, dungeonComplete: dungeonDone, kindHidden: kindHidden)
+                                TileView(mark: mark, background: background, tileWidth: tileWidth, tileHeight: tileHeight, isAlwaysEmpty: isAlwaysEmpty, showsFairy: showsFairy, mirrored: mirrored, hideDungeonNumbers: hideDungeonNumbers, used: used, shopSecondItem: shopSecondItem, hideMarks: overlays?.isActive(.hideMarks) ?? false, dungeonComplete: dungeonDone, kindHidden: kindHidden, fog: fog, sharedBackground: customActive)
                                     .overlay {
-                                        if options.highlightNearby, !isAlwaysEmpty,
+                                        if options.highlightNearby, !customActive, !isAlwaysEmpty,
                                            let isBold = highlights[OverworldScreenCoordinate(x: column, y: row)] {
                                             // True GYR (T-015.4): green = accessible, yellow =
                                             // sometimes-empty, red = inaccessible, per the
@@ -402,10 +439,12 @@ struct OverworldMapView: View {
     private func handleHover(column: Int, row: Int, phase: HoverPhase, tileWidth: CGFloat, tileHeight: CGFloat) {
         // The keyboard cursor follows the mouse (T-134) — track the hovered tile
         // regardless of the routing/highlight options below.
-        if case .active = phase, !overworldInstance.alwaysEmpty(x: column, y: row) {
+        if case .active = phase, !screenIsDeadSpot(column, row) {
             focus.hoverOverworld(col: column, row: row)
         }
-        guard options.drawRoutes || options.highlightNearby else {
+        // Routing/GYR is derived from the vanilla map's openings — meaningless on a
+        // custom map, so skip it entirely there (T-167).
+        guard customMapImagePath == nil, options.drawRoutes || options.highlightNearby else {
             hoveredVertex = nil
             routeHighlight = nil
             return
@@ -449,7 +488,7 @@ struct OverworldMapView: View {
     private func handleLeftClick(column: Int, row: Int) {
         // Always-empty screens are permanent "don't care" and never editable
         // (defensive — the tile also sets `.allowsHitTesting(false)`).
-        if overworldInstance.alwaysEmpty(x: column, y: row) { return }
+        if screenIsDeadSpot(column, row) { return }
         // "LC unmarked → mark dark" (docs/domain.md § 4.5). Left-click on an
         // already-dark tile is handled by the context menu, matching "LC
         // dark tile ... → popup" — SwiftUI's contextMenu also responds to a
@@ -656,6 +695,14 @@ struct OverworldMapView: View {
             .disabled(isExhausted(.hintShop, column: column, row: row, counts: counts))
         Button("Potion shop") { applyMark(.potionShop, column: column, row: row) }
             .disabled(isExhausted(.potionShop, column: column, row: row, counts: counts))
+        // Custom-map fairy fountains (T-167): vanilla fairy spots are fixed map truth,
+        // but a custom map has none, so they're hand-placed. It belongs with the other
+        // "what's on this screen" marks rather than down with the fog utilities.
+        if customMapImagePath != nil {
+            Button(grid.isCustomFairy(column: column, row: row) ? "Remove fairy fountain" : "Place fairy fountain") {
+                grid.toggleCustomFairy(column: column, row: row)
+            }
+        }
         Divider()
         // Enemies (T-117): an up-to-two enemy annotation from the reduced overworld
         // set, independent of the tile's mark. Each pick toggles; reopen to add a
@@ -688,6 +735,15 @@ struct OverworldMapView: View {
             Button("Clear waypoint") { onClearWaypoint() }
         } else {
             Button("Set waypoint") { onSetWaypoint(column, row) }
+        }
+        // Custom-map fog (T-167): manually reveal/re-hide a screen without marking it.
+        if customMapImagePath != nil {
+            Divider()
+            if grid.isCustomMapRevealed(column: column, row: row) {
+                Button("Re-hide screen (fog)") { grid.setCustomMapRevealed(false, column: column, row: row) }
+            } else {
+                Button("Reveal screen") { grid.setCustomMapRevealed(true, column: column, row: row) }
+            }
         }
     }
 }
@@ -759,6 +815,12 @@ private struct TileView: View {
     /// This marked tile's *kind* is set to hide in "More settings" (T-004.3):
     /// its icon is dimmed on the map, revealed on hover.
     var kindHidden: Bool = false
+    /// Custom-map fog-of-war (T-167): this screen is undiscovered, so cover it with
+    /// fog until it's revealed (by marking it, or manually).
+    var fog: Bool = false
+    /// The terrain is painted by one image behind the whole grid (custom maps, T-167),
+    /// so this tile must stay transparent instead of drawing its own background.
+    var sharedBackground: Bool = false
 
     /// Reveals a `kindHidden` tile's icon while the pointer is over it (the
     /// reference's `temporarilyDisplayHiddenOverworldTileMarks` peek).
@@ -786,6 +848,12 @@ private struct TileView: View {
     var body: some View {
         ZStack(alignment: .topLeading) {
             backgroundView
+            // Custom-map fog (T-167): cover undiscovered screens. Drawn over the
+            // terrain; an undiscovered screen has no user mark (marking reveals it),
+            // so nothing important is hidden.
+            if fog {
+                fogView.frame(width: tileWidth, height: tileHeight)
+            }
             // When "Hide tile icons" is active (T-062), every user-placed mark
             // layer is suppressed so the terrain reads cleanly — only the
             // always-empty / fairy truth below still draws.
@@ -836,15 +904,19 @@ private struct TileView: View {
             if isAlwaysEmpty {
                 Rectangle().fill(.black.opacity(0.62))
                     .frame(width: tileWidth, height: tileHeight)
-                if showsFairy, let fairy = FairyIconAtlas.image {
-                    Image(decorative: fairy, scale: 1, orientation: .up)
-                        .resizable()
-                        .interpolation(.none)
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: tileHeight * 0.7, height: tileHeight * 0.7)
-                        .frame(width: tileWidth, height: tileHeight)
-                        .scaleEffect(x: mirrored ? -1 : 1, y: 1)
-                }
+            }
+            // The fairy icon is map truth, not a user mark, so it draws on its own —
+            // *not* nested under `isAlwaysEmpty`. Vanilla fairy spots happen to be
+            // always-empty screens, but a custom map has no always-empty screens
+            // (T-167), so nesting meant a hand-placed fairy never drew.
+            if showsFairy, let fairy = FairyIconAtlas.image {
+                Image(decorative: fairy, scale: 1, orientation: .up)
+                    .resizable()
+                    .interpolation(.none)
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: tileHeight * 0.7, height: tileHeight * 0.7)
+                    .frame(width: tileWidth, height: tileHeight)
+                    .scaleEffect(x: mirrored ? -1 : 1, y: 1)
             }
             // A claimed ("used") tile — or a 100%-complete dungeon (T-035.6) —
             // gets the full-tile dim so it reads as "done" like every other
@@ -864,7 +936,9 @@ private struct TileView: View {
 
     @ViewBuilder
     private var backgroundView: some View {
-        if let background {
+        if sharedBackground {
+            Color.clear
+        } else if let background {
             Image(decorative: background, scale: 1, orientation: .up)
                 .resizable()
                 .interpolation(.none)
@@ -872,6 +946,20 @@ private struct TileView: View {
         } else {
             Rectangle().fill(.gray.opacity(0.3))
         }
+    }
+
+    /// The custom-map fog cover (T-167): a dark blue-grey "mist" (not the reference's
+    /// checkerboard) with a faint diagonal sheen and a thin grid line on top, so
+    /// undiscovered screens read as unexplored while the grid stays visible. Cheap
+    /// (gradients only) so it doesn't cost framerate at 128 tiles.
+    private var fogView: some View {
+        Rectangle()
+            .fill(LinearGradient(colors: [Color(red: 0.11, green: 0.12, blue: 0.17),
+                                          Color(red: 0.04, green: 0.05, blue: 0.09)],
+                                 startPoint: .top, endPoint: .bottom))
+            .overlay(LinearGradient(colors: [.white.opacity(0.05), .clear, .white.opacity(0.03)],
+                                    startPoint: .topLeading, endPoint: .bottomTrailing))
+            .overlay(Rectangle().strokeBorder(.white.opacity(0.07), lineWidth: 0.5))
     }
 
     @ViewBuilder

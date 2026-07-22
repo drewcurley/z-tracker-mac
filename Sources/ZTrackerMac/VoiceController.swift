@@ -437,8 +437,7 @@ final class VoiceController {
         let cell = focus.cursorCell
         switch focus.cursorRegion {
         case .overworld:
-            let instance = OverworldInstance(quest: model.quest ?? .first)
-            guard !instance.alwaysEmpty(x: cell.col, y: cell.row) else { return }
+            guard !model.isDeadSpot(x: cell.col, y: cell.row) else { return }
             // Two distinct shop items named in one utterance set the primary shop mark
             // *and* the tile's second item together (T-158) — no need for two commands.
             if let pair = VoiceGrammar.overworldShopPair(words, config: config) {
