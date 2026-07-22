@@ -128,9 +128,9 @@ final class GlobalHotkeyDispatcher {
               let mark = OverworldTileMark.fromHotkeySuffix(String(selectorID.dropFirst(prefix.count)))
         else { return false }
         let cell = focus.overworldCursor
-        // Don't mark a border screen that never holds anything.
-        let instance = OverworldInstance(quest: model.quest ?? .first)
-        guard !instance.alwaysEmpty(x: cell.col, y: cell.row) else { return true }
+        // Don't mark a border screen that never holds anything (vanilla map only —
+        // a custom map has no dead spots, T-167).
+        guard !model.isDeadSpot(x: cell.col, y: cell.row) else { return true }
         OverworldMark.apply(mark, column: cell.col, row: cell.row, grid: model.overworldGrid,
                             releaseTakeAny: { c, r in model.releaseOverworldTakeAny(column: c, row: r) },
                             placeDungeon: { number, c, r in

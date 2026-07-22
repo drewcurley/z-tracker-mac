@@ -11,7 +11,6 @@ Legend: **S/M/L** = rough size.
 
 | # | Feature | Description | Doc | Size |
 |---|---------|-------------|-----|------|
-| 5 | **Link — on-demand routing** | Click Link → pick a destination → draw best path(s) ~10s incl. ambiguous-hint routing. (The GYR accessibility highlight is done — T-015.4; this is the *path-drawing* feature.) | use §main-link | M |
 | 6 | **Overworld magnifier** | Hover a tile → magnified nearby view + Lost Woods/Hills maze hints + legend. Only the `showMagnifier` toggle exists. | use §main-owm | M |
 | 7 | **Mouse magnifier window** | Separate mouse-following magnifier window. Only the toggle exists. | whats-new v13 | M |
 | 9 | **Circle overworld tiles** | Middle-click circle a tile; shift-left add label char; scroll/shift-right change color. | use §circle-overworld | M |
@@ -23,7 +22,7 @@ Legend: **S/M/L** = rough size.
 | 20 | **Notes.txt auto-population** | Notes box pre-filled from a file at startup. *(Needs a decision on the macOS file location.)* | use §main-notes | S |
 | 22 | **Zelda-finish → completion screenshots** | Clicking Zelda saves completion screenshots. *(The finish-time → Notes half is done, T-107.)* | use §main-oia | S |
 | 23 | **LEGEND block** | Map legend below the OW (dungeon numerals, any-road icons). *(The version/website-button half shipped — T-163.)* | use §main-owm | S |
-| 21 | **"Other randomizers" suite** | Alternative OW maps (draw-your-own / from-disk revealed/hidden), Draw layer, User Custom Checklist. Niche. *(The user's custom-map fog-of-war lives here.)* | other.md | L |
+| 21 | **"Other randomizers" suite** | Alternative OW maps (draw-your-own / from-disk revealed/hidden), Draw layer, User Custom Checklist. Niche. *(The custom-map-from-disk part shipped as T-167; draw-your-own, Draw layer, and the custom checklist are not planned.)* | other.md | L |
 
 ## 2. Partial — built, needs finishing
 
@@ -48,11 +47,13 @@ Legend: **S/M/L** = rough size.
 - **Reminder log** (#14) — `ReminderLogView`.
 - **Dungeon row-location assistance** (#18) — `RowLocatorWidget` (T-078/T-078.1).
 - **LEGEND version/website button** (#23, half) — T-163 (Settings → About).
+- **Custom-map import + per-tile fog-of-war** — T-167 (beyond parity, user request): import a custom OW map, every screen fogged until marked; vanilla dead spots / fairies / GYR / routing off, fairies hand-placed. Covers the useful part of the "other randomizers" suite (#21).
 - **Higher-fidelity game sprites + app icon** — T-161 (beyond parity: replaced the crude atlases with real game sprites).
 
 ## 4. Descoped / not planned
 
 - **Special-NPC room outlines + tab dots** (was #19) — **dropped (user, 2026-07-21):** the standout custom room tile already makes bomb-upgrade / NPC-hint rooms obvious, so the colored outlines + tab dots + hungry-goriya bait icon aren't needed.
+- **Link — on-demand routing** (was #5) — **dropped (user, 2026-07-22):** "most experienced players know how to route the map." The GYR accessibility highlight (T-015.4) already covers what's actually useful; the path-drawing half isn't planned.
 - **Take-Any pie menu** (#8) — the clone edits take-any directly (a deliberate deviation); the radial accelerator is niche and not planned.
 - **Snoop seed/flags** — reads an emulator's window title; macOS-specific with no clean equivalent. Deferred / likely never.
 
@@ -63,11 +64,10 @@ Legend: **S/M/L** = rough size.
 
 ## 6. Beyond the reference — planned user requests (not in the original audit)
 
-- **Custom-map import + per-tile fog-of-war** — load a custom OW map, hide each tile until marked/revealed. Unblocked now that Save/Load exists. (Related to the "other randomizers" suite, #21.)
 - **"Make a note {X}" voice command** — append dictated text to the NOTES field (buildable with Speech.framework free-form dictation).
 
 ## Biggest remaining pillars
 
-**HotKeys full system · Broadcast window · Timeline graph · Link on-demand routing** — plus
-the user-requested **custom-map fog-of-war**. Save/Load and Voice, formerly two of the big
-four, are now done.
+**HotKeys full system · Broadcast window · Timeline graph** — the user's three chosen
+pillars. Save/Load, Voice, and custom-map fog-of-war are done; Link on-demand routing was
+descoped (§4).

@@ -24,7 +24,8 @@ struct OverworldSectionView: View {
             progress: model.playerProgress,
             drawRoutes: options.drawRoutes,
             routesCanScreenScroll: options.showScreenScrolls,
-            mirrorOverworld: model.mirrorOverworld
+            mirrorOverworld: model.mirrorOverworld,
+            customMapActive: model.customMapImagePath != nil
         )
     }
 
@@ -67,6 +68,7 @@ struct OverworldSectionView: View {
             customWaypoint: model.customWaypoint,
             onSetWaypoint: { c, r in model.customWaypoint = OverworldScreenCoordinate(x: c, y: r) },
             onClearWaypoint: { model.customWaypoint = nil },
+            customMapImagePath: model.customMapImagePath,
             onSetTakeAny: { state, c, r in model.setOverworldTakeAny(state, column: c, row: r) },
             onCycleTakeAny: { c, r in model.cycleOverworldTakeAny(column: c, row: r) },
             onReleaseTakeAny: { c, r in model.releaseOverworldTakeAny(column: c, row: r) },

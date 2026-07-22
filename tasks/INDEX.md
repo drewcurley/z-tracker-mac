@@ -25,6 +25,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-167](./T-167.md) | Custom overworld map with fog-of-war | frontend-engineer | — | feat/custom-map-fog | — | docs/reviews/feat-custom-map-fog/final.md |
 | [T-166](./T-166.md) | Refresh the reference-coverage audit against current code | analyst | — | chore/audit-refresh | — | docs/reviews/chore-audit-refresh/final.md |
 | [T-165](./T-165.md) | Save/Load — UI, autosave, resume + quit dialog (Phase 2) | frontend-engineer | T-164 | feat/save-load-ui | — | docs/reviews/feat-save-load-ui/final.md |
 | [T-164](./T-164.md) | Save/Load — serialization core (Phase 1) | backend-engineer | — | feat/save-load | — | docs/reviews/feat-save-load/final.md |

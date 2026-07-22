@@ -87,6 +87,21 @@ public final class TrackerModel {
     /// as a distinct ring on the map; purely a user bookmark. `nil` if unset.
     public var customWaypoint: OverworldScreenCoordinate? = nil
 
+    /// Path to a user-imported custom overworld map image (T-167); nil = the vanilla
+    /// background. When set, the map renders with fog-of-war (each screen hidden until
+    /// revealed, tracked per-screen on `overworldGrid`). Persisted with the save.
+    public var customMapImagePath: String? = nil
+
+    /// Whether a screen is a "dead spot" (no potential opening for the quest, so it can
+    /// never hold anything). **Only meaningful on the vanilla map** — a custom overworld
+    /// (T-167) has no dead spots, since the user places everything themselves, so every
+    /// screen stays markable. Every click / hover / voice / hotkey path must ask *this*
+    /// rather than `OverworldInstance.alwaysEmpty` directly.
+    public func isDeadSpot(x: Int, y: Int) -> Bool {
+        guard customMapImagePath == nil else { return false }
+        return OverworldInstance(quest: quest ?? .first).alwaysEmpty(x: x, y: y)
+    }
+
     /// Recorder-warp destination settings (T-035.7). `recorderToNewDungeons`
     /// (default true) selects discovered map locations vs the fixed vanilla-1Q
     /// screens; `recorderToUnbeatenDungeons` (default false) inverts the triforce
@@ -149,6 +164,8 @@ public final class TrackerModel {
         var mirrorOverworld: Bool
         var startSpot: OverworldScreenCoordinate?
         var customWaypoint: OverworldScreenCoordinate?
+        /// Defaulted so pre-T-167 saves still decode.
+        var customMapImagePath: String? = nil
         var recorderToNewDungeons: Bool
         var recorderToUnbeatenDungeons: Bool
         var recorderDestinationIndex: Int
@@ -166,6 +183,7 @@ public final class TrackerModel {
         State(quest: quest, heartShuffle: heartShuffle, hideDungeonNumbers: hideDungeonNumbers,
               isWSMSReplacedByBU: isWSMSReplacedByBU, isCurrentlyBook: isCurrentlyBook,
               mirrorOverworld: mirrorOverworld, startSpot: startSpot, customWaypoint: customWaypoint,
+              customMapImagePath: customMapImagePath,
               recorderToNewDungeons: recorderToNewDungeons, recorderToUnbeatenDungeons: recorderToUnbeatenDungeons,
               recorderDestinationIndex: recorderDestinationIndex, recorderDestinationManual: recorderDestinationManual,
               levelHints: levelHints, notes: notes,
@@ -185,6 +203,7 @@ public final class TrackerModel {
         mirrorOverworld = s.mirrorOverworld
         startSpot = s.startSpot
         customWaypoint = s.customWaypoint
+        customMapImagePath = s.customMapImagePath
         recorderToNewDungeons = s.recorderToNewDungeons
         recorderToUnbeatenDungeons = s.recorderToUnbeatenDungeons
         recorderDestinationIndex = s.recorderDestinationIndex

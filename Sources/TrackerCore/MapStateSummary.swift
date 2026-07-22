@@ -93,7 +93,10 @@ public struct MapStateSummary: Sendable {
         progress: PlayerProgressAndTakeAnyHearts,
         drawRoutes: Bool,
         routesCanScreenScroll: Bool,
-        mirrorOverworld: Bool
+        mirrorOverworld: Bool,
+        /// A custom overworld map (T-167) has no quest-derived dead spots, so every
+        /// screen counts toward the spots-remaining total.
+        customMapActive: Bool = false
     ) -> MapStateSummary {
         var dungeonLocations = [OverworldScreenCoordinate?](repeating: nil, count: 9)
         var anyRoadLocations = [OverworldScreenCoordinate?](repeating: nil, count: 4)
@@ -119,7 +122,7 @@ public struct MapStateSummary: Sendable {
 
         for i in 0..<16 {
             for j in 0..<8 {
-                if instance.alwaysEmpty(x: i, y: j) { continue }
+                if !customMapActive, instance.alwaysEmpty(x: i, y: j) { continue }
                 let cur = grid.mark(column: i, row: j).rawIndex
                 switch cur {
                 case 0...8: // dungeon 1-9

@@ -41,11 +41,42 @@ public final class OverworldGrid {
     /// knowledge, so it survives a groundhog/routers reset.
     private var enemyPairs: [MonsterDetail]
 
+    /// Per-screen "revealed" flags for custom-map fog-of-war (T-167): a screen starts
+    /// hidden under fog and is revealed when it's first marked (or manually). Map
+    /// knowledge — survives a groundhog reset and rides in the save.
+    private var customMapRevealed: [Bool]
+
+    /// Per-screen manually-placed fairy fountains for custom maps (T-167): on a custom
+    /// overworld the vanilla fixed fairy spots don't apply, so the user places their
+    /// own. Map knowledge; rides in the save.
+    private var customFairySpots: [Bool]
+
     public init() {
         tiles = Array(repeating: .unmarked, count: Self.columnCount * Self.rowCount)
         extraData = Array(repeating: 0, count: Self.columnCount * Self.rowCount * Self.extraDataKeyCount)
         takeAnySlotLinks = Array(repeating: -1, count: Self.columnCount * Self.rowCount)
         enemyPairs = Array(repeating: .unmarked, count: Self.columnCount * Self.rowCount * 2)
+        customMapRevealed = Array(repeating: false, count: Self.columnCount * Self.rowCount)
+        customFairySpots = Array(repeating: false, count: Self.columnCount * Self.rowCount)
+    }
+
+    // MARK: Custom-map fog (T-167)
+    public func isCustomMapRevealed(column: Int, row: Int) -> Bool {
+        customMapRevealed[Self.index(column: column, row: row)]
+    }
+    public func setCustomMapRevealed(_ revealed: Bool, column: Int, row: Int) {
+        customMapRevealed[Self.index(column: column, row: row)] = revealed
+    }
+    public func isCustomFairy(column: Int, row: Int) -> Bool {
+        customFairySpots[Self.index(column: column, row: row)]
+    }
+    public func toggleCustomFairy(column: Int, row: Int) {
+        let i = Self.index(column: column, row: row)
+        customFairySpots[i].toggle()
+        // Placing a fairy reveals its screen, exactly like placing a mark does — you
+        // only know a fountain is there because you've been there. Removing one never
+        // re-hides, again matching `setMark`.
+        if customFairySpots[i] { customMapRevealed[i] = true }
     }
 
     /// A `Codable` snapshot of the full grid state for save/load (T-164). `restore`
@@ -56,9 +87,17 @@ public final class OverworldGrid {
         var extraData: [Int]
         var takeAnySlotLinks: [Int]
         var enemyPairs: [MonsterDetail]
+        /// Optional so saves written before custom-map fog (T-167) still decode
+        /// (a missing key → nil; a synthesized default value is *not* used for a
+        /// missing key, so this must be optional, not a defaulted non-optional).
+        var customMapRevealed: [Bool]?
+        /// Optional for the same back-compat reason as `customMapRevealed`.
+        var customFairySpots: [Bool]?
     }
     public var state: State {
-        State(tiles: tiles, extraData: extraData, takeAnySlotLinks: takeAnySlotLinks, enemyPairs: enemyPairs)
+        State(tiles: tiles, extraData: extraData, takeAnySlotLinks: takeAnySlotLinks,
+              enemyPairs: enemyPairs, customMapRevealed: customMapRevealed,
+              customFairySpots: customFairySpots)
     }
     /// Restore a saved snapshot; ignored (leaving the grid unchanged) if any array is
     /// the wrong size, guarding against corrupt saves.
@@ -70,6 +109,9 @@ public final class OverworldGrid {
               s.enemyPairs.count == n * 2 else { return }
         tiles = s.tiles; extraData = s.extraData
         takeAnySlotLinks = s.takeAnySlotLinks; enemyPairs = s.enemyPairs
+        // Pre-T-167 saves have no reveal array → leave everything hidden (default).
+        if let cmr = s.customMapRevealed, cmr.count == n { customMapRevealed = cmr }
+        if let cfs = s.customFairySpots, cfs.count == n { customFairySpots = cfs }
     }
 
     public func mark(column: Int, row: Int) -> OverworldTileMark {
@@ -78,6 +120,9 @@ public final class OverworldGrid {
 
     public func setMark(_ mark: OverworldTileMark, column: Int, row: Int) {
         tiles[Self.index(column: column, row: row)] = mark
+        // Placing (not clearing) a mark reveals the screen's custom-map tile (T-167).
+        // Clearing never re-hides it — once you've seen a screen it stays revealed.
+        if mark != .unmarked { customMapRevealed[Self.index(column: column, row: row)] = true }
     }
 
     /// Reads a tile's extra-data value for `key` (`0…extraDataKeyCount-1`).
