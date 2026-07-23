@@ -417,6 +417,7 @@ struct DungeonRoomGridView: View {
                                          if grab.isGrabMode { grab.hoverCell = .init(col: col, row: row) }
                                      } else {
                                          if hoveredRow == row { hoveredRow = nil }
+                                         focus.endHover(.dungeonMap)
                                          if grab.hoverCell == .init(col: col, row: row) { grab.hoverCell = nil }
                                      }
                                  },

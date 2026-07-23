@@ -186,7 +186,7 @@ struct MainTrackerPlaceholderView: View {
                 // narrowed (T-043): dungeons · obtainables · flags · info.
                 FlowLayout(spacing: 12, lineSpacing: 12) {
                     TopSectionGroup(title: "Dungeons") {
-                        DungeonTrackerView(model: model)
+                        DungeonTrackerView(model: model, focus: focus)
                     }
                     TopSectionGroup(title: "Items") {
                         ObtainableItemsView(model: model, playerState: model.playerComputedStateSummary, mapState: mapState, focus: focus)

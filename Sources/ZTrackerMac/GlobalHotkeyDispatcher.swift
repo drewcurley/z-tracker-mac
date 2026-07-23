@@ -52,13 +52,31 @@ final class GlobalHotkeyDispatcher {
         guard let chord = HotkeyChord(nsEvent: event) else { return false }
         // Global keys are always live (a chord can't be bound both global and in a
         // region — their conflict scopes intersect, so this ordering is unambiguous).
+        // The one exception is being parked on Notes: there, only cursor navigation
+        // keeps firing, so an ordinary letter starts a note instead of marking.
         if let selectorID = hotkeys.selectorID(boundTo: chord, in: .global) {
-            return perform(selectorID)
+            if !focus.notesParked || Self.isNavigation(selectorID) {
+                return perform(selectorID)
+            }
         }
-        // Region keys act on the keyboard cursor's cell when it's on that region
-        // (T-134/T-135).
-        guard focus.cursorShown else { return false }
-        switch focus.cursorRegion {
+        // Parked on Notes: the first alphanumeric starts typing. The field isn't first
+        // responder yet, so this keystroke would be dropped by the focus change —
+        // append it here and it appears exactly as typed.
+        if focus.notesParked, let typed = Self.typedAlphanumeric(event) {
+            focus.setNotesFocus(true)
+            model.notes.append(typed)
+            return true
+        }
+        // Hint zones aren't a grid region — a hovered hint box claims the key first
+        // (T-168), so `HintZone_*` can reuse letters bound in the grid contexts.
+        if let target = focus.hoveredHintTarget,
+           let selectorID = hotkeys.selectorID(boundTo: chord, in: .hintZones) {
+            return performHintZone(selectorID, target: target)
+        }
+        // Region keys act on whatever the mouse is over, falling back to the keyboard
+        // cursor's region (T-168 — see `TrackerFocusState.activeRegion`).
+        guard let region = focus.activeRegion else { return false }
+        switch region {
         case .overworld:
             if let selectorID = hotkeys.selectorID(boundTo: chord, in: .overworld) {
                 return performOverworld(selectorID)
@@ -75,10 +93,63 @@ final class GlobalHotkeyDispatcher {
             if let selectorID = hotkeys.selectorID(boundTo: chord, in: .blockers) {
                 return performBlockers(selectorID)
             }
-        default:
-            break   // dungeon-item cursor nav not built yet
+        case .dungeonItem:
+            if let selectorID = hotkeys.selectorID(boundTo: chord, in: .items) {
+                return performDungeonItem(selectorID)
+            }
+        case .notes:
+            // Notes has no marks. In practice the field is the first responder here,
+            // so this handler already stood down above; if focus was lost some other
+            // way, region keys simply don't apply.
+            break
         }
         return false
+    }
+
+    /// Cursor-navigation globals, which stay live even while parked on Notes so you
+    /// can always move on without reaching for the mouse.
+    static func isNavigation(_ selectorID: String) -> Bool {
+        selectorID.hasPrefix("Global_MoveCursor") || selectorID.hasPrefix("Global_CycleRegion")
+    }
+
+    /// The character this event types, if it's a plain alphanumeric — Shift is allowed
+    /// (it just picks the capital); ⌘/⌃/⌥ are not, since those are shortcuts, not text.
+    static func typedAlphanumeric(_ event: NSEvent) -> String? {
+        let flags = event.modifierFlags.intersection(.deviceIndependentFlagsMask)
+        guard flags.subtracting(.shift).isEmpty else { return nil }
+        guard let characters = event.characters, characters.count == 1,
+              let scalar = characters.unicodeScalars.first,
+              CharacterSet.alphanumerics.contains(scalar)
+        else { return nil }
+        return characters
+    }
+
+    /// Set the hovered hint box's zone (T-168), the same as picking it in the popover.
+    private func performHintZone(_ selectorID: String, target: Int) -> Bool {
+        let prefix = "HintZone_"
+        guard selectorID.hasPrefix(prefix),
+              let zone = HintZone.fromHotKeyName(String(selectorID.dropFirst(prefix.count)))
+        else { return false }
+        model.levelHints[target] = zone
+        return true
+    }
+
+    /// Apply an `Item_*` mark to the dungeon item box under the cursor (T-168):
+    /// `col` is the dungeon 0…8, `row` the box index 0…2 — the same axes as the
+    /// on-screen layout. A two-boxer dungeon's third cell has no box, so the key is
+    /// consumed but does nothing.
+    private func performDungeonItem(_ selectorID: String) -> Bool {
+        let prefix = "Item_"
+        guard selectorID.hasPrefix(prefix),
+              let index = ItemBoxMark.itemIndex(forHotkeySuffix: String(selectorID.dropFirst(prefix.count)))
+        else { return false }
+        let cell = focus.dungeonItemCursor
+        guard (0..<9).contains(cell.col) else { return true }
+        let dungeon = model.dungeonTracker.dungeon(cell.col)
+        guard cell.row >= 0, cell.row < dungeon.boxes.count else { return true }
+        ItemBoxMark.apply(itemIndex: index, to: dungeon.boxes[cell.row],
+                          instance: model.dungeonTracker)
+        return true
     }
 
     /// Set the blocker at the cursor's (dungeon, slot) to the selector's kind (T-135),

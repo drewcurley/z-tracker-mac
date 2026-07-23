@@ -38,7 +38,9 @@ struct TrackerCursorTests {
     }
 
     @Test func cycleStepsThroughRegionsAndWraps() {
-        // cycleOrder is [items, overworld, dungeonMap, blockers]; starts on overworld.
+        // cycleOrder is [dungeonItem, items, overworld, dungeonMap, blockers, notes]
+        // as of T-168 (dungeonItem gained cursor nav; notes joined at the end of the
+        // ring); starts on overworld.
         let f = TrackerFocusState()
         #expect(f.cursorRegion == .overworld)
         f.cycleRegion(forward: true)
@@ -46,10 +48,16 @@ struct TrackerCursorTests {
         #expect(f.cursorShown)
         f.cycleRegion(forward: true)
         #expect(f.cursorRegion == .blockers)
+        f.cycleRegion(forward: true)
+        #expect(f.cursorRegion == .notes)
         f.cycleRegion(forward: true)          // wraps to the front of the order
+        #expect(f.cursorRegion == .dungeonItem)
+        f.cycleRegion(forward: true)
         #expect(f.cursorRegion == .items)
+        f.cycleRegion(forward: false)         // backward
+        #expect(f.cursorRegion == .dungeonItem)
         f.cycleRegion(forward: false)         // backward wraps to the end
-        #expect(f.cursorRegion == .blockers)
+        #expect(f.cursorRegion == .notes)
     }
 
     @Test func eachRegionRemembersItsOwnPosition() {

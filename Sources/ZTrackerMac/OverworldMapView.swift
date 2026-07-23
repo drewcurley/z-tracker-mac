@@ -441,6 +441,8 @@ struct OverworldMapView: View {
         // regardless of the routing/highlight options below.
         if case .active = phase, !screenIsDeadSpot(column, row) {
             focus.hoverOverworld(col: column, row: row)
+        } else if case .ended = phase {
+            focus.endHover(.overworld)
         }
         // Routing/GYR is derived from the vanilla map's openings — meaningless on a
         // custom map, so skip it entirely there (T-167).

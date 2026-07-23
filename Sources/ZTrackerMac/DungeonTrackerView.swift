@@ -14,6 +14,8 @@ import TrackerCore
 /// re-laid-out as clean cards; the Zelda item sprites are kept.
 struct DungeonTrackerView: View {
     @Bindable var model: TrackerModel
+    /// Hover tracking for the dungeon-item + hint-zone hotkey contexts (T-168).
+    var focus: TrackerFocusState? = nil
 
     /// Dungeon indices (0–8) currently marked somewhere on the overworld —
     /// which numerals light up. Ported behavior of the reference's
@@ -42,7 +44,8 @@ struct DungeonTrackerView: View {
                                     hideDungeonNumbers: model.hideDungeonNumbers,
                                     blockers: model.dungeonBlockers,
                                     chipPlayerState: model.playerComputedStateSummary,
-                                    hint: $model.levelHints[HintTarget.dungeon(i + 1)])
+                                    hint: $model.levelHints[HintTarget.dungeon(i + 1)],
+                                    focus: focus, dungeonRow: i)
                 }
             }
         }
@@ -68,6 +71,11 @@ struct DungeonCardView: View {
     var blockers: DungeonBlockersContainer? = nil
     var chipPlayerState: PlayerComputedStateSummary? = nil
     @Binding var hint: HintZone
+    /// Hover tracking for the dungeon-item / hint-zone hotkey contexts (T-168).
+    /// `dungeonRow` is this card's row (0…8) in the dungeon-item cursor grid; both
+    /// are optional so the dungeon-map inset can omit them.
+    var focus: TrackerFocusState? = nil
+    var dungeonRow: Int? = nil
 
     /// The slot label: A–H under HDN (1–8), else the number; Level 9 stays "9".
     private var slotLabel: String {
@@ -77,6 +85,20 @@ struct DungeonCardView: View {
     /// The label + triforce pip + "applies to" chips, laid out to fill the column
     /// width so the enclosing tap target (T-120) is large. For Level 9 (id 8) this
     /// is just the label — no pip, no chips.
+    /// The keyboard cursor on this card's item box (T-168), matching the Items
+    /// grid's cyan ring so the two regions read the same.
+    @ViewBuilder
+    private func dungeonItemCursorRing(box: Int) -> some View {
+        if let focus, let dungeonRow, focus.cursorShown,
+           focus.cursorRegion == .dungeonItem,
+           focus.dungeonItemCursor == .init(col: dungeonRow, row: box) {
+            RoundedRectangle(cornerRadius: 4)
+                .strokeBorder(Color.cyan, lineWidth: 2)
+                .shadow(color: .cyan, radius: 2)
+                .allowsHitTesting(false)
+        }
+    }
+
     private var triforceRegion: some View {
         VStack(spacing: 4) {
             HStack(spacing: 3) {
@@ -115,7 +137,8 @@ struct DungeonCardView: View {
                         Color.clear.frame(height: 16)
                     }
                 } else {
-                    HintLabel(hint: $hint, title: "Dungeon \(dungeon.id + 1)")
+                    HintLabel(hint: $hint, title: "Dungeon \(dungeon.id + 1)",
+                              focus: focus, hintTarget: HintTarget.dungeon(dungeon.id + 1))
                 }
             }
             // The triforce toggle (dungeons 1–8): its click target spans the whole
@@ -144,6 +167,14 @@ struct DungeonCardView: View {
                         chips: blockers?.blockersApplyingTo(
                             dungeon: dungeon.id, element: DungeonBlockerAppliesTo.Element.box(idx)) ?? [],
                         chipPlayerState: chipPlayerState)
+                    // Dungeon-item hover context (T-168): col = dungeon, row = box index,
+                    // matching the layout (cards across, boxes down).
+                    .onHover { hovering in
+                        guard let focus, let dungeonRow else { return }
+                        hovering ? focus.hoverDungeonItem(col: dungeonRow, row: idx)
+                                 : focus.endHover(.dungeonItem)
+                    }
+                    .overlay { dungeonItemCursorRing(box: idx) }
             }
             // The "ghost" slot under whichever of L1/L4 doesn't hold the movable
             // extra floor item (1Q overworld ↔ 2Q dungeons). Clicking it moves
