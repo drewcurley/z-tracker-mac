@@ -281,7 +281,8 @@ struct ObtainableItemsView: View {
                         ForEach(0..<ItemProgressGrid.columns, id: \.self) { col in
                             cellView(ItemProgressGrid.layout[row][col])
                                 .overlay { cursorRing(col: col, row: row) }
-                                .onHover { if $0 { focus.hoverItems(col: col, row: row) } }
+                                .onHover { $0 ? focus.hoverItems(col: col, row: row)
+                                              : focus.endHover(.items) }
                         }
                     }
                 }
@@ -312,9 +313,11 @@ struct ObtainableItemsView: View {
             ForEach(0..<ItemProgressGrid.columns, id: \.self) { col in
                 Group {
                     if col == 1 {
-                        HintLabel(hint: $model.levelHints[HintTarget.whiteSwordCave], title: "White Sword Cave")
+                        HintLabel(hint: $model.levelHints[HintTarget.whiteSwordCave], title: "White Sword Cave",
+                                  focus: focus, hintTarget: HintTarget.whiteSwordCave)
                     } else if col == 2 {
-                        HintLabel(hint: $model.levelHints[HintTarget.magicalSwordCave], title: "Magical Sword Cave")
+                        HintLabel(hint: $model.levelHints[HintTarget.magicalSwordCave], title: "Magical Sword Cave",
+                                  focus: focus, hintTarget: HintTarget.magicalSwordCave)
                     } else {
                         Color.clear
                     }

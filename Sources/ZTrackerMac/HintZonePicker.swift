@@ -7,6 +7,11 @@ import TrackerCore
 struct HintLabel: View {
     @Binding var hint: HintZone
     var title: String
+    /// Hover tracking for the `HintZone_*` hotkey context (T-168). Optional so the
+    /// preview and any non-tracker use site can omit it.
+    var focus: TrackerFocusState? = nil
+    /// This box's `HintTarget` index (dungeon 0…8, white-sword 9, magical-sword 10).
+    var hintTarget: Int? = nil
     @State private var showPicker = false
 
     var body: some View {
@@ -17,6 +22,10 @@ struct HintLabel: View {
             .padding(.horizontal, 3).padding(.vertical, 1)
             .background(RoundedRectangle(cornerRadius: 3).fill(Color(white: 0.16)))
             .contentShape(Rectangle())
+            .onHover { hovering in
+                guard let focus, let hintTarget else { return }
+                hovering ? focus.beginHoverHint(hintTarget) : focus.endHoverHint(hintTarget)
+            }
             .onTapGesture { presentPopoverWithoutAnimation { showPicker = true } }
             .help("Location hint for \(title): \(hint.displayName)")
             .popover(isPresented: $showPicker, arrowEdge: .bottom) {

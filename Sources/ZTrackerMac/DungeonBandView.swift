@@ -49,7 +49,7 @@ struct DungeonBandView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
             TopSectionGroup(title: "Notes") {
-                NotesView(model: model)
+                NotesView(model: model, focus: focus)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
             .frame(maxHeight: .infinity)

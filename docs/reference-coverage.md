@@ -30,7 +30,7 @@ Legend: **S/M/L** = rough size.
 |---------|---------|-----------|------|
 | **Timeline** (#1) | `GameTimelineView` + `TimelineModel` per-second recording + broken-out window (T-098) | OW-progress-over-time graph; confirm per-item splits + finish capture vs the reference | L |
 | **Broadcast window** (#2) | Options + settings panel + size enum | The actual separate window that auto-switches OW/dungeon by mouse position | L |
-| **HotKeys** (#3) | Config editor, Global dispatch, region cursor-nav (T-130–135) | Full `HotKeys.txt` per-context bindings, click-emulation, cheat-sheet window, popup hints | L |
+| **HotKeys** (#3) | Config editor, Global dispatch, cursor-nav (T-130–135); hover-driven contexts, hint-zone + dungeon-item + Notes regions (T-168) | The per-context "smarts" incl. Unmark–Remark chains (T-169); cheat-sheet window + in-menu hotkey hints (T-170) | M |
 | **GRAB** | Cut/paste model + **grab mode + GRAB button + click pick/drop** (T-073 + controller) | Confirm the reference's drag-drop preview + undo (may already be enough) | S |
 | **Blockers → Specific-Blockers** | Base blocker UI+model (T-017/019.2) | Specific-blocker checklist submenu + tiny-icon projection over the dungeon item boxes | M |
 | **Dungeon Summary tab** | 3×3 + click-select (T-019.9) | 3 modes (preview/detail/default) + hover-preview over Notes + per-dungeon monster-priority list | M |
@@ -61,6 +61,8 @@ Legend: **S/M/L** = rough size.
 
 - **App size/shape presets** (Tall/Square/2·3/5·6) — replaced by responsive layout (ADR 0003).
 - **Coast item ≠ ladder**, **4-state take-any hearts**, **no marked-room drag-eraser** — deliberate rules (see memory).
+- **No hotkey mouse-warping / click emulation** (user, 2026-07-22) — the reference nudges the OS pointer 20px off-grid and recenters it between regions. The keyboard cursor (T-134/135/168) serves the same purpose semantically, and synthetic clicks would require an Accessibility (TCC) grant the user would have to re-approve after every rebuild.
+- **Hotkey context = hover, with the keyboard cursor as fallback** (T-168) — the reference keys purely off mouse hover. Both are supported here; a deliberate keyboard nav overrides a resting mouse.
 
 ## 6. Beyond the reference — planned user requests (not in the original audit)
 

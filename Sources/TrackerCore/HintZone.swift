@@ -15,6 +15,26 @@ public enum HintZone: Int, CaseIterable, Sendable, Codable {
     case nearStart
     case forest
 
+    /// The `HotKeys.txt` selector suffix for this zone (`HintZone_DeathMountain` →
+    /// `.deathMountain`). Names match the reference file's spelling — note
+    /// `CloseToStart`, which this clone calls `nearStart` internally.
+    public static func fromHotKeyName(_ name: String) -> HintZone? {
+        switch name {
+        case "Unknown":       .unknown
+        case "DeathMountain": .deathMountain
+        case "Lake":          .lake
+        case "LostHills":     .lostHills
+        case "River":         .river
+        case "Grave":         .grave
+        case "Desert":        .desert
+        case "Coast":         .coast
+        case "DeadWoods":     .deadWoods
+        case "CloseToStart":  .nearStart
+        case "Forest":        .forest
+        default:              nil
+        }
+    }
+
     /// The two-character label shown above a dungeon / sword box.
     public var twoChars: String {
         switch self {

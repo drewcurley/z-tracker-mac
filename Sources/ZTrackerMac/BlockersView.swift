@@ -54,6 +54,8 @@ struct BlockersView: View {
                         if hovering {
                             let c = BlockerRegion.cell(dungeon: dungeonIndex, slot: slot)
                             focus.hoverBlockers(col: c.col, row: c.row)
+                        } else {
+                            focus.endHover(.blockers)
                         }
                     }
             }
