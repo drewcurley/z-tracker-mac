@@ -636,13 +636,13 @@ struct OverworldMapView: View {
         // "Shops before dungeons" (Overworld.ShopsFirst): the popup starts with
         // shops when on, dungeons when off (OptionsMenu.fs:49).
         if options.shopsBeforeDungeons { shopMenus(column: column, row: row) }
-        Menu(DungeonLabeling.columnWord(boardInsteadOfLevel: options.boardInsteadOfLevel).capitalized) {
+        Menu(DungeonLabeling.columnWord(prefix: options.levelPrefix).capitalized) {
             ForEach(1...9, id: \.self) { number in
                 // Reflect the user's dungeon naming (T-112): LEVEL-N / BOARD-N, or
                 // LEVEL-A…H under HDN. The mark still stores the slot number, so
                 // located-linking is unchanged.
                 let label = DungeonLabeling.columnName(
-                    slot: number, boardInsteadOfLevel: options.boardInsteadOfLevel,
+                    slot: number, prefix: options.levelPrefix,
                     hideDungeonNumbers: hideDungeonNumbers)
                 Button(label) {
                     applyMark(.dungeon(number), column: column, row: row)

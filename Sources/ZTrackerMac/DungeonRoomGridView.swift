@@ -56,7 +56,7 @@ struct DungeonMapView: View {
     /// picker so all dungeon naming agrees (T-112).
     private var headerText: String {
         DungeonLabeling.columnName(slot: selected + 1,
-                                   boardInsteadOfLevel: options.boardInsteadOfLevel,
+                                   prefix: options.levelPrefix,
                                    hideDungeonNumbers: model.hideDungeonNumbers)
     }
 

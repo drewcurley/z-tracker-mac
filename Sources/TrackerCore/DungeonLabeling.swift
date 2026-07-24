@@ -17,19 +17,25 @@ public enum DungeonLabeling {
         return String(UnicodeScalar(UInt8(64 + number)))
     }
 
-    /// The dungeon-column word — "LEVEL" or "BOARD" — chosen by the
-    /// `BOARDInsteadOfLEVEL` option (`Dungeon.fs:783-785`).
-    public static func columnWord(boardInsteadOfLevel: Bool) -> String {
-        boardInsteadOfLevel ? "BOARD" : "LEVEL"
+    /// The dungeon-column **word** — the label prefix with any trailing separator
+    /// stripped, for surfaces that show the word alone (e.g. the overworld picker's
+    /// submenu title). `"LEVEL-"` → `"LEVEL"`, `"area-"` → `"area"`, `"DUNGEON"` →
+    /// `"DUNGEON"`. Generalizes the reference's fixed LEVEL/BOARD choice (T-171).
+    public static func columnWord(prefix: String) -> String {
+        var s = prefix
+        while let last = s.last, !last.isLetter, !last.isNumber { s.removeLast() }
+        return s.isEmpty ? prefix : s
     }
 
-    /// A dungeon slot's full column name in the user's chosen scheme (T-112):
-    /// the column word joined to the slot label, e.g. `LEVEL-9`, `BOARD-3`, or
-    /// `LEVEL-A` under Hidden Dungeon Numbers. Matches the reference dungeon-tab
-    /// text (`DungeonUI.fs:1085`) and is used for the overworld picker's dungeon
-    /// menu and the dungeon-map title so all three agree.
-    public static func columnName(slot number: Int, boardInsteadOfLevel: Bool,
+    /// A dungeon slot's full column name: the label **prefix** (which carries its own
+    /// separator) joined to the slot label — e.g. `LEVEL-` + `9` = `LEVEL-9`,
+    /// `area-` + `1` = `area-1`, `DUNGEON` + `1` = `DUNGEON1`, or `LEVEL-` + `A` =
+    /// `LEVEL-A` under Hidden Dungeon Numbers. Used for the overworld picker's dungeon
+    /// menu and the dungeon-map title so both agree. The prefix generalizes the
+    /// reference's LEVEL/BOARD word (T-171) — the caller resolves it from the rename
+    /// preference (`TrackerOptions.levelPrefix`).
+    public static func columnName(slot number: Int, prefix: String,
                                   hideDungeonNumbers: Bool) -> String {
-        "\(columnWord(boardInsteadOfLevel: boardInsteadOfLevel))-\(slotLabel(number, hideDungeonNumbers: hideDungeonNumbers))"
+        "\(prefix)\(slotLabel(number, hideDungeonNumbers: hideDungeonNumbers))"
     }
 }

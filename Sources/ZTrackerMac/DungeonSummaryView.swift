@@ -20,7 +20,7 @@ struct DungeonSummaryView: View {
                 DungeonSummaryPanel(
                     map: model.dungeonRoomMaps[i],
                     label: DungeonLabeling.slotLabel(i + 1, hideDungeonNumbers: model.hideDungeonNumbers),
-                    prefix: options.boardInsteadOfLevel ? "BOARD" : "LEVEL",
+                    prefix: options.levelPrefix,
                     isComplete: model.dungeonTracker.dungeon(i).isComplete,
                     onSelect: { onSelect(i) }
                 )
@@ -43,7 +43,7 @@ private struct DungeonSummaryPanel: View {
         Button(action: onSelect) {
             VStack(spacing: 4) {
                 HStack(spacing: 4) {
-                    Text("\(prefix)-\(label)")
+                    Text("\(prefix)\(label)")
                         .font(.system(size: 11, weight: .bold, design: .rounded))
                         .foregroundStyle(.white)
                     if isComplete {

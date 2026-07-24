@@ -15,7 +15,14 @@ struct TrackerOptionsTests {
         #expect(options.shopsBeforeDungeons == true)
 
         // Dungeon settings
-        #expect(options.boardInsteadOfLevel == false)
+        #expect(options.renameLevelsEnabled == false)
+        #expect(options.customLevelPrefix == "LEVEL-")
+        #expect(options.levelPrefix == "LEVEL-")
+        // A custom prefix is ignored until renaming is enabled (T-171).
+        options.customLevelPrefix = "area-"
+        #expect(options.levelPrefix == "LEVEL-")
+        options.renameLevelsEnabled = true
+        #expect(options.levelPrefix == "area-")
         #expect(options.showBasementInfo == true)
         #expect(options.doDoorInference == true)   // helpful default (T-156)
         #expect(options.bookForHelpfulHints == false)

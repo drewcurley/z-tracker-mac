@@ -121,8 +121,24 @@ public final class TrackerOptions {
 
     // MARK: Dungeon settings (top-level fields in TrackerModelOptions.fs)
 
-    /// `BOARDInsteadOfLEVEL`, default `false`.
-    public var boardInsteadOfLevel: Bool
+    /// Rename the dungeon column label (T-171, generalizing the reference's
+    /// `BOARDInsteadOfLEVEL`): when on, `customLevelPrefix` replaces the default
+    /// `LEVEL-` word, so dungeons read `area-1`, `DUNGEON1`, `BOARD-1`, etc.
+    public var renameLevelsEnabled: Bool
+    /// The custom dungeon label **prefix** — everything before the slot digit, so it
+    /// carries its own separator (`"area-"` → `area-1`, `"DUNGEON"` → `DUNGEON1`).
+    /// Capped to 7 characters (prefix + 1 digit fills the 8-cell header). Only used
+    /// when `renameLevelsEnabled`; default matches the built-in `LEVEL-`.
+    public var customLevelPrefix: String
+
+    /// The effective dungeon column-label prefix (T-171): the custom prefix when
+    /// renaming is on, else the built-in `"LEVEL-"`. Callers pass this to
+    /// `DungeonLabeling.columnName(slot:prefix:…)`.
+    public var levelPrefix: String { renameLevelsEnabled ? customLevelPrefix : Self.defaultLevelPrefix }
+
+    /// The built-in dungeon label prefix and the editor's character cap.
+    public static let defaultLevelPrefix = "LEVEL-"
+    public static let maxLevelPrefixLength = 7
     /// `ShowBasementInfo`, default `true`.
     public var showBasementInfo: Bool
     /// `DoDoorInference` — default **true** (T-156): auto-open the inferred entry
@@ -215,7 +231,8 @@ public final class TrackerOptions {
         highlightNearby: Bool = true,
         showMagnifier: Bool = true,
         shopsBeforeDungeons: Bool = true,
-        boardInsteadOfLevel: Bool = false,
+        renameLevelsEnabled: Bool = false,
+        customLevelPrefix: String = TrackerOptions.defaultLevelPrefix,
         showBasementInfo: Bool = true,
         doDoorInference: Bool = true,
         bookForHelpfulHints: Bool = false,
@@ -250,7 +267,8 @@ public final class TrackerOptions {
         self.highlightNearby = highlightNearby
         self.showMagnifier = showMagnifier
         self.shopsBeforeDungeons = shopsBeforeDungeons
-        self.boardInsteadOfLevel = boardInsteadOfLevel
+        self.renameLevelsEnabled = renameLevelsEnabled
+        self.customLevelPrefix = customLevelPrefix
         self.showBasementInfo = showBasementInfo
         self.doDoorInference = doDoorInference
         self.bookForHelpfulHints = bookForHelpfulHints
@@ -400,6 +418,7 @@ public final class TrackerOptions {
     private static let settingsBoolsKey = "ztracker.settings.bools"
     private static let broadcastSizeKey = "ztracker.settings.broadcastSize"
     private static let hiddenTilesKey = "ztracker.settings.hiddenTiles"
+    private static let customLevelPrefixKey = "ztracker.settings.customLevelPrefix"
 
     /// Every persisted Bool setting, keyed by a stable name → its storage. This
     /// is the single source of truth for what persists — add a setting here and
@@ -413,7 +432,7 @@ public final class TrackerOptions {
         "highlightNearby": \.highlightNearby,
         "showMagnifier": \.showMagnifier,
         "shopsBeforeDungeons": \.shopsBeforeDungeons,
-        "boardInsteadOfLevel": \.boardInsteadOfLevel,
+        "renameLevelsEnabled": \.renameLevelsEnabled,
         "showBasementInfo": \.showBasementInfo,
         "doDoorInference": \.doDoorInference,
         "bookForHelpfulHints": \.bookForHelpfulHints,
@@ -458,6 +477,9 @@ public final class TrackerOptions {
         if let raw = store.dictionary(forKey: Self.hiddenTilesKey) as? [String: Bool] {
             hiddenOverworldTiles = Self.decodeHiddenTiles(raw, over: hiddenOverworldTiles)
         }
+        if let prefix = store.string(forKey: Self.customLevelPrefixKey) {
+            customLevelPrefix = prefix
+        }
     }
 
     /// Write the current startup settings to the store (no-op if persistence is
@@ -470,6 +492,7 @@ public final class TrackerOptions {
         store.set(bools, forKey: Self.settingsBoolsKey)
         store.set(broadcastWindowSize.rawValue, forKey: Self.broadcastSizeKey)
         store.set(Self.encodeHiddenTiles(hiddenOverworldTiles), forKey: Self.hiddenTilesKey)
+        store.set(customLevelPrefix, forKey: Self.customLevelPrefixKey)
     }
 
     private static func encodeHiddenTiles(_ tiles: [OverworldHiddenTileKind: Bool]) -> [String: Bool] {
