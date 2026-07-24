@@ -45,14 +45,22 @@ struct SettingsPanelView: View {
                     .font(.caption).foregroundStyle(.secondary)
             }
             Divider()
-            // About / version (audit #23): the clickable version + project link.
-            HStack(spacing: 8) {
-                settingsHeader("About")
-                Text("Z-Tracker \(Self.appVersion)")
-                    .font(.caption).foregroundStyle(.secondary)
-                    .textSelection(.enabled)
-                Link("Project page ↗", destination: Self.projectURL)
-                    .font(.caption)
+            // About / version (audit #23): the clickable version, this project's
+            // link, and credit + link to the original Windows Z-Tracker this is a
+            // port of (T-174).
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 8) {
+                    settingsHeader("About")
+                    Text("Z-Tracker \(Self.appVersion)")
+                        .font(.caption).foregroundStyle(.secondary)
+                        .textSelection(.enabled)
+                    Link("Project page ↗", destination: Self.projectURL)
+                        .font(.caption)
+                    Link("Original Z-Tracker ↗", destination: Self.originalProjectURL)
+                        .font(.caption)
+                }
+                Text("A native macOS port of the original Windows Z-Tracker (F#) by Brian McNamara.")
+                    .font(.caption2).foregroundStyle(.secondary)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -65,6 +73,8 @@ struct SettingsPanelView: View {
         return "v" + (v ?? "dev")
     }
     static let projectURL = URL(string: "https://github.com/drewcurley/z-tracker-mac")!
+    /// The original Windows Z-Tracker (F#) by Brian McNamara that this app ports.
+    static let originalProjectURL = URL(string: "https://github.com/brianmcn/Zelda1RandoTools")!
 
     private var overworldAndDungeonColumn: some View {
         VStack(alignment: .leading, spacing: 10) {
