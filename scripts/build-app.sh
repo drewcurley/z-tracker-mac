@@ -54,10 +54,22 @@ fi
 # made macOS re-prompt on every rebuild. Falls back to ad-hoc if the cert is absent.
 # (The SwiftPM resource bundle is a flat asset folder with no Info.plist, so it is not
 # a signable code bundle — don't --deep into it; signing the app seals it as a resource.)
+#
+# For a distributable (notarized) build, set ZTRACKER_SIGN_ID to a "Developer ID
+# Application: …" identity — the script then adds the hardened runtime + entitlements
+# that notarization requires. Any other identity (the default self-signed dev cert)
+# signs without the hardened runtime, which is what local dev + TCC want.
 SIGN_ID="${ZTRACKER_SIGN_ID:-ZTracker Dev}"
 if security find-identity -p codesigning 2>/dev/null | grep -q "$SIGN_ID"; then
-    echo "==> code signing as '$SIGN_ID'"
-    codesign --force --sign "$SIGN_ID" "$APP"
+    if [[ "$SIGN_ID" == Developer\ ID\ Application* ]]; then
+        echo "==> code signing (hardened runtime) as '$SIGN_ID'"
+        codesign --force --options runtime \
+            --entitlements Bundle/ZTrackerMac.entitlements \
+            --timestamp --sign "$SIGN_ID" "$APP"
+    else
+        echo "==> code signing as '$SIGN_ID'"
+        codesign --force --sign "$SIGN_ID" "$APP"
+    fi
 else
     echo "==> '$SIGN_ID' not found; ad-hoc signing (TCC will re-prompt on each rebuild)"
     codesign --force --sign - "$APP"
