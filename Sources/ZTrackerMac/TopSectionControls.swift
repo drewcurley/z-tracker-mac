@@ -12,12 +12,12 @@ struct StatusReadoutView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             Text("\(mapState.owSpotsRemain) OW spots left")
-                .font(.system(size: 20, weight: .semibold))
+                .font(.system(size: 28, weight: .semibold))
                 .foregroundStyle(.orange)
                 .help("Unmarked overworld screens remaining")
             if !customMapActive {
                 Text("\(ItemProgressGrid.gettableCount(mapState)) gettable")
-                    .font(.system(size: 17, weight: .semibold))
+                    .font(.system(size: 23, weight: .semibold))
                     .foregroundStyle(.green)
                     .help("Unmarked spots you can currently uncover with your items (raft / recorder / bracelet / candle / bombs), for this quest")
             }
@@ -45,10 +45,14 @@ struct ResetButtonsView: View {
             Button("Reset (keep maps)") { confirmingGroundhog = true }
                 .help("Groundhog/routers restart: clear inventory but keep your overworld marks and known item locations. Does not pause the timer.")
             Divider().frame(width: 96)
-            Button("Save…") { GameSave.manualSave(model: model, timer: timer) }
-                .help("Save the current run to a file (default: ~/Documents/ztracker)")
-            Button("Load…") { GameSave.manualLoad(model: model, timer: timer) }
-                .help("Load a previously saved run, replacing the current tracker state")
+            // Save/Load share a row (T-173) — they're a natural pair, and pulling
+            // them onto one line shaves a button's height off the header.
+            HStack(spacing: 4) {
+                Button("Save…") { GameSave.manualSave(model: model, timer: timer) }
+                    .help("Save the current run to a file (default: ~/Documents/ztracker)")
+                Button("Load…") { GameSave.manualLoad(model: model, timer: timer) }
+                    .help("Load a previously saved run, replacing the current tracker state")
+            }
         }
         .font(.system(size: 10))
         .controlSize(.small)

@@ -67,20 +67,21 @@ struct TimerView: View {
     private func readout(asOf now: Date) -> some View {
         HStack(alignment: .center, spacing: 10) {
             VStack(alignment: .trailing, spacing: 0) {
+                // Sized to fill the wide-open header (T-172): the clock is the number
+                // glanced at most, so it's the largest thing up here.
                 Text(TimerFormatting.hms(timer.mainElapsed(asOf: now)))
-                    .font(.system(size: 24, weight: .bold, design: .monospaced))
+                    .font(.system(size: 48, weight: .bold, design: .monospaced))
                     .foregroundStyle(timer.isRunning ? .green : .orange)
                 // The lap line always reserves its height (hidden until a
                 // lap starts), so it appearing doesn't shift the main timer.
                 Text(TimerFormatting.hms(timer.lapElapsed(asOf: now)))
-                    .font(.system(size: 15, weight: .semibold, design: .monospaced))
+                    .font(.system(size: 30, weight: .semibold, design: .monospaced))
                     .foregroundStyle(.yellow)
                     .opacity(timer.hasLap ? 1 : 0)
                     .help("Lap timer — resets on each groundhog/routers reset; the main timer keeps running")
             }
             Button(timer.isRunning ? "Pause" : "Resume") { timer.togglePause() }
-                .font(.caption)
-                .controlSize(.small)
+                .controlSize(.large)
         }
     }
 }

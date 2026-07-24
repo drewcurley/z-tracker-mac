@@ -27,6 +27,7 @@
 |----|-------|-------|------|--------|----|--------|
 | [T-168](./T-168.md) | Hotkeys — hover-driven contexts, hint zones, dungeon items, Notes region | frontend-engineer | — | feat/hotkey-contexts | — | docs/reviews/feat-hotkey-contexts/final.md |
 | [T-167](./T-167.md) | Custom overworld map with fog-of-war | frontend-engineer | — | feat/custom-map-fog | — | docs/reviews/feat-custom-map-fog/final.md |
+| [T-173](./T-173.md) | Header polish — bigger timer, side-by-side Save/Load, bigger OW readout | frontend-engineer | — | chore/header-polish | — | docs/reviews/chore-header-polish/final.md |
 | [T-172](./T-172.md) | Credit the original Z-Tracker + bump version to 0.8 | frontend-engineer | — | chore/credits-and-version | — | docs/reviews/chore-credits-and-version/final.md |
 | [T-166](./T-166.md) | Refresh the reference-coverage audit against current code | analyst | — | chore/audit-refresh | — | docs/reviews/chore-audit-refresh/final.md |
 | [T-165](./T-165.md) | Save/Load — UI, autosave, resume + quit dialog (Phase 2) | frontend-engineer | T-164 | feat/save-load-ui | — | docs/reviews/feat-save-load-ui/final.md |
