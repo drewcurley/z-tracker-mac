@@ -47,11 +47,12 @@ struct SettingsPanelView: View {
             Divider()
             // About / version (audit #23): the clickable version, this project's
             // link, and credit + link to the original Windows Z-Tracker this is a
-            // port of (T-174).
+            // port of (T-172/T-175). Named "Z-Tracker for macOS" here to distinguish
+            // it from the original in the credits; the window title stays "Z-Tracker".
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 8) {
                     settingsHeader("About")
-                    Text("Z-Tracker \(Self.appVersion)")
+                    Text("Z-Tracker for macOS \(Self.appVersion)")
                         .font(.caption).foregroundStyle(.secondary)
                         .textSelection(.enabled)
                     Link("Project page ↗", destination: Self.projectURL)
