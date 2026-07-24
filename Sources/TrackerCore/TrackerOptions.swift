@@ -204,6 +204,10 @@ public final class TrackerOptions {
     /// Show a small live FPS/main-thread-responsiveness readout (dev diagnostic,
     /// beyond the reference). Default **false**.
     public var showFPS: Bool
+    /// On launch, check GitHub for a newer release and show a dismissible notice
+    /// (T-174, beyond the reference). Default **true**; it's an unauthenticated GET
+    /// to the project's releases and sends no data, but stays user-toggleable.
+    public var checkForUpdatesOnLaunch: Bool
 
     public init(
         drawRoutes: Bool = true,
@@ -238,7 +242,8 @@ public final class TrackerOptions {
         showMouseMagnifierWindow: Bool = false,
         hideTimer: Bool = false,
         warnOnCloseWhileTimerRunning: Bool = true,
-        showFPS: Bool = false
+        showFPS: Bool = false,
+        checkForUpdatesOnLaunch: Bool = true
     ) {
         self.drawRoutes = drawRoutes
         self.showScreenScrolls = showScreenScrolls
@@ -273,6 +278,7 @@ public final class TrackerOptions {
         self.hideTimer = hideTimer
         self.warnOnCloseWhileTimerRunning = warnOnCloseWhileTimerRunning
         self.showFPS = showFPS
+        self.checkForUpdatesOnLaunch = checkForUpdatesOnLaunch
     }
 
     /// Every category defaults to `true` except `.recorderPBSpotsAndBoomstickBook`
@@ -429,6 +435,7 @@ public final class TrackerOptions {
         "hideTimer": \.hideTimer,
         "warnOnCloseWhileTimerRunning": \.warnOnCloseWhileTimerRunning,
         "showFPS": \.showFPS,
+        "checkForUpdatesOnLaunch": \.checkForUpdatesOnLaunch,
     ]
 
     /// Turn on startup-settings persistence and apply whatever a previous launch

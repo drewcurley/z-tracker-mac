@@ -153,6 +153,8 @@ struct SettingsPanelView: View {
     private var otherColumn: some View {
         VStack(alignment: .leading, spacing: 10) {
             settingsHeader("Other")
+            Toggle("Check for updates on launch", isOn: Bindable(options).checkForUpdatesOnLaunch)
+                .help("On launch, check GitHub for a newer release and show a notice. Sends no data.")
             Toggle("Animate tile changes", isOn: Bindable(options).animateTileChanges)
             Toggle("Animate shop highlights", isOn: Bindable(options).animateShopHighlights)
             Toggle("Save on completion", isOn: Bindable(options).saveOnCompletion)

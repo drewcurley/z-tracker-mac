@@ -23,6 +23,8 @@ struct StartupView: View {
     @State private var pendingCustomMapPath: String?
     /// The overworld type chosen in the custom-map setup sheet (defaults to First).
     @State private var customMapQuest: OverworldQuest = .first
+    /// Check-on-launch update notice (T-174).
+    @State private var updateChecker = UpdateChecker()
 
     var body: some View {
         ScrollView {
@@ -31,6 +33,9 @@ struct StartupView: View {
                     Text("Z-Tracker Mac")
                         .font(.largeTitle.bold())
 
+                    if let update = updateChecker.available {
+                        updateBanner(update)
+                    }
                     questSection
                     savedStateSection
                     tipSection
@@ -45,6 +50,31 @@ struct StartupView: View {
             .padding(32)
         }
         .frame(minWidth: 420, minHeight: 320)
+        // Fire the update check once, gated on the user's setting (T-174).
+        .task { await updateChecker.checkIfEnabled(options) }
+    }
+
+    /// A dismissible "newer version available" banner (T-174). "Download" opens the
+    /// release page in the browser — we don't auto-install (that's a later Sparkle
+    /// step); this just makes sure people know a new version exists.
+    private func updateBanner(_ update: UpdateChecker.Available) -> some View {
+        HStack(spacing: 12) {
+            Image(systemName: "arrow.down.circle.fill").foregroundStyle(.green)
+            Text("Z-Tracker \(update.version) is available.")
+                .fontWeight(.semibold)
+            Spacer()
+            Link("Download ↗", destination: update.url)
+            Button {
+                updateChecker.dismiss()
+            } label: {
+                Image(systemName: "xmark").font(.caption)
+            }
+            .buttonStyle(.plain)
+            .help("Dismiss")
+        }
+        .padding(.horizontal, 14).padding(.vertical, 10)
+        .background(RoundedRectangle(cornerRadius: 8).fill(.green.opacity(0.15)))
+        .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(.green.opacity(0.4)))
     }
 
     private var questSection: some View {
