@@ -201,6 +201,41 @@ public final class DungeonBlockersContainer {
         blockers[Self.index(i, j)] = db
     }
 
+    /// The outcome of an Unmark–Remark "Blocker(X) logic" press (T-169) — surfaced
+    /// so callers can react (e.g. a reminder beep) and tests can assert precisely.
+    public enum MaybeBlockerOutcome: Equatable, Sendable {
+        case addedMaybe         // marked a fresh maybe-X in the first empty slot
+        case promotedToFull     // upgraded an existing maybe-X to the hard X
+        case alreadyBlocked     // a hard X is already present — no change
+        case unblockerHeld      // player already has X's unblocker — stale, no change
+        case dungeon9           // dungeon 9 (index 8) can't hold blockers — no change
+        case noEmptySlot        // no prior X and every slot full — no change
+    }
+
+    /// The Unmark–Remark "Blocker(X) logic" (T-169, `whats-new.md` v1.3, ported from
+    /// `blockerLogic` in `DungeonUI.fs`): given a `maybe*` blocker, if a hard X is
+    /// already marked do nothing; else promote an existing maybe-X to X; else mark a
+    /// maybe-X in the first empty slot. Dungeon 9 (index 8) can't hold blockers, and a
+    /// blocker whose unblocker the player already holds is skipped as stale. Ignores
+    /// AppliesTo (matching the reference's note).
+    @discardableResult
+    public func applyMaybeBlockerLogic(_ maybe: DungeonBlocker, dungeon i: Int,
+                                       playerState: PlayerComputedStateSummary) -> MaybeBlockerOutcome {
+        let full = maybe.hardCanonical
+        guard full.playerCouldBeBlockedByThis(playerState) else { return .unblockerHeld }
+        guard i != 8 else { return .dungeon9 }
+        var firstMaybe = -1, firstEmpty = -1
+        for j in 0..<Self.maxBlockersPerDungeon {
+            let b = dungeonBlocker(dungeon: i, slot: j)
+            if b == full { return .alreadyBlocked }            // a hard block already exists
+            if b == maybe, firstMaybe == -1 { firstMaybe = j }
+            if b == .nothing, firstEmpty == -1 { firstEmpty = j }
+        }
+        if firstMaybe != -1 { setDungeonBlocker(full, dungeon: i, slot: firstMaybe); return .promotedToFull }
+        if firstEmpty != -1 { setDungeonBlocker(maybe, dungeon: i, slot: firstEmpty); return .addedMaybe }
+        return .noEmptySlot
+    }
+
     /// `k` = which UI element (0–5: map, compass, triforce, box1, box2, box3).
     public func dungeonBlockerAppliesTo(dungeon i: Int, slot j: Int, element k: Int) -> Bool {
         precondition((0..<DungeonBlockerAppliesTo.max).contains(k), "element \(k) out of range")
