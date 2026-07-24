@@ -154,12 +154,12 @@ public enum TimelineEvents {
     /// or "Coast" (T-114). Feeds the timeline hover tooltip's location suffix.
     public static func locations(
         dungeonTracker: DungeonTrackerInstance,
-        boardInsteadOfLevel: Bool,
+        levelPrefix: String,
         hideDungeonNumbers: Bool
     ) -> [TimelineEvent: String] {
         var out: [TimelineEvent: String] = [:]
         for n in 1...9 {
-            let name = DungeonLabeling.columnName(slot: n, boardInsteadOfLevel: boardInsteadOfLevel,
+            let name = DungeonLabeling.columnName(slot: n, prefix: levelPrefix,
                                                   hideDungeonNumbers: hideDungeonNumbers)
             for (j, box) in dungeonTracker.dungeon(n - 1).boxes.enumerated()
             where box.playerHas == .yes && box.cellCurrent != -1 {

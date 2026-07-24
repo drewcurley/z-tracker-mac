@@ -14,6 +14,7 @@ struct SettingsPanelView: View {
     @Environment(\.openWindow) private var openWindow
     @State private var showMoreSettings = false
     @State private var showVoicePicker = false
+    @State private var showLevelPrefixEditor = false
 
     private let columns = [
         GridItem(.adaptive(minimum: 220), alignment: .top)
@@ -91,7 +92,7 @@ struct SettingsPanelView: View {
                 }
 
             settingsHeader("Dungeon settings")
-            Toggle("BOARD instead of LEVEL", isOn: Bindable(options).boardInsteadOfLevel)
+            renameLevelsRow
             Toggle("Show basement info", isOn: Bindable(options).showBasementInfo)
             Toggle("Do door inference", isOn: Bindable(options).doDoorInference)
             // "Book for Helpful Hints" is a seed flag now — it lives in the Flags
@@ -182,6 +183,20 @@ struct SettingsPanelView: View {
             Toggle("Show FPS counter (diagnostic)", isOn: Bindable(options).showFPS)
         }
         .toggleStyle(.checkbox)
+    }
+
+    /// Rename-levels row (T-171): a checkbox to enable the custom dungeon label, and
+    /// an Edit button (live only when enabled) that opens the prefix editor.
+    private var renameLevelsRow: some View {
+        HStack(spacing: 8) {
+            Toggle("Rename levels", isOn: Bindable(options).renameLevelsEnabled)
+            Button("Edit…") { showLevelPrefixEditor = true }
+                .controlSize(.small)
+                .disabled(!options.renameLevelsEnabled)
+        }
+        .sheet(isPresented: $showLevelPrefixEditor) {
+            LevelPrefixEditorSheet(options: options)
+        }
     }
 
     private func settingsHeader(_ title: String) -> some View {
@@ -309,4 +324,68 @@ private extension Binding where Value == Int {
     SettingsPanelView(options: TrackerOptions())
         .padding()
         .frame(width: 700)
+}
+
+/// The "Rename levels" editor (T-171): a text field for the label prefix, a live
+/// preview, and Cancel / Save. The prefix carries its own separator (`"area-"` →
+/// `area-1`, `"DUNGEON"` → `DUNGEON1`) and is capped so prefix + digit fills the
+/// 8-cell dungeon header. Edits a draft so Cancel discards.
+private struct LevelPrefixEditorSheet: View {
+    var options: TrackerOptions
+    @Environment(\.dismiss) private var dismiss
+    @State private var draft = ""
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Rename dungeon levels").font(.title2.bold())
+            Text("The text shown before each dungeon number. It carries its own "
+                 + "separator, so “area-” makes area-1 … area-9, and “DUNGEON” makes "
+                 + "DUNGEON1 … DUNGEON9. Up to \(TrackerOptions.maxLevelPrefixLength) characters.")
+                .font(.caption).foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            TextField("Label prefix", text: $draft)
+                .textFieldStyle(.roundedBorder)
+                .onChange(of: draft) { _, v in
+                    // Enforce the cap as they type (prefix + 1 digit = 8-cell header).
+                    if v.count > TrackerOptions.maxLevelPrefixLength {
+                        draft = String(v.prefix(TrackerOptions.maxLevelPrefixLength))
+                    }
+                }
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Preview").font(.caption).foregroundStyle(.secondary)
+                Text(previewText)
+                    .font(.system(size: 15, weight: .heavy, design: .monospaced))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 10).padding(.vertical, 6)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(RoundedRectangle(cornerRadius: 6).fill(.black.opacity(0.4)))
+            }
+
+            Divider()
+
+            HStack {
+                Button("Reset to default") { draft = TrackerOptions.defaultLevelPrefix }
+                Spacer()
+                Button("Cancel", role: .cancel) { dismiss() }
+                    .keyboardShortcut(.cancelAction)
+                Button("Save") {
+                    // An empty prefix falls back to the default rather than blanking labels.
+                    options.customLevelPrefix = draft.isEmpty ? TrackerOptions.defaultLevelPrefix : draft
+                    dismiss()
+                }
+                .keyboardShortcut(.defaultAction)
+            }
+        }
+        .padding(24)
+        .frame(width: 420)
+        .onAppear { draft = options.customLevelPrefix }
+    }
+
+    /// A few sample labels for the chosen prefix (falls back to the default when blank).
+    private var previewText: String {
+        let p = draft.isEmpty ? TrackerOptions.defaultLevelPrefix : draft
+        return (1...3).map { "\(p)\($0)" }.joined(separator: "   ") + "   …   \(p)9"
+    }
 }

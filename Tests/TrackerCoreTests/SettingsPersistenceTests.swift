@@ -22,7 +22,8 @@ struct SettingsPersistenceTests {
         let first = TrackerOptions()
         first.enableSettingsPersistence(store: s)
         first.doDoorInference = true
-        first.boardInsteadOfLevel = true
+        first.renameLevelsEnabled = true
+        first.customLevelPrefix = "area-"        // T-171 — a String setting
         first.defaultToNonDescript = true
         first.saveSettings()
 
@@ -30,7 +31,9 @@ struct SettingsPersistenceTests {
         let second = TrackerOptions()
         second.enableSettingsPersistence(store: s)
         #expect(second.doDoorInference)          // was default false
-        #expect(second.boardInsteadOfLevel)
+        #expect(second.renameLevelsEnabled)
+        #expect(second.customLevelPrefix == "area-")
+        #expect(second.levelPrefix == "area-")   // enabled → uses the custom prefix
         #expect(second.defaultToNonDescript)
         #expect(second.showBasementInfo)         // untouched → keeps default true
     }
@@ -56,12 +59,12 @@ struct SettingsPersistenceTests {
         let (s, cleanup) = makeStore(); defer { cleanup() }
         let first = TrackerOptions()
         first.enableSettingsPersistence(store: s)
-        first.boardInsteadOfLevel = true      // changed but not committed (default false)
+        first.renameLevelsEnabled = true      // changed but not committed (default false)
         // no saveSettings()
 
         let second = TrackerOptions()
         second.enableSettingsPersistence(store: s)
-        #expect(!second.boardInsteadOfLevel)  // stays default
+        #expect(!second.renameLevelsEnabled)  // stays default
     }
 
     @Test("plain TrackerOptions never touches the store")

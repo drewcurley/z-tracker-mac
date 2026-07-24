@@ -16,16 +16,27 @@ struct DungeonLabelingTests {
         #expect(DungeonLabeling.slotLabel(9, hideDungeonNumbers: true) == "9")
     }
 
-    @Test("columnName joins the LEVEL/BOARD word to the slot label (T-112)")
+    @Test("columnName joins the prefix to the slot label; the prefix carries its separator (T-171)")
     func columnNames() {
-        #expect(DungeonLabeling.columnWord(boardInsteadOfLevel: false) == "LEVEL")
-        #expect(DungeonLabeling.columnWord(boardInsteadOfLevel: true) == "BOARD")
-        #expect(DungeonLabeling.columnName(slot: 1, boardInsteadOfLevel: false, hideDungeonNumbers: false) == "LEVEL-1")
-        #expect(DungeonLabeling.columnName(slot: 9, boardInsteadOfLevel: false, hideDungeonNumbers: false) == "LEVEL-9")
-        #expect(DungeonLabeling.columnName(slot: 3, boardInsteadOfLevel: true, hideDungeonNumbers: false) == "BOARD-3")
+        #expect(DungeonLabeling.columnName(slot: 1, prefix: "LEVEL-", hideDungeonNumbers: false) == "LEVEL-1")
+        #expect(DungeonLabeling.columnName(slot: 9, prefix: "LEVEL-", hideDungeonNumbers: false) == "LEVEL-9")
+        // Custom prefixes carry their own separator — a dash, or none at all.
+        #expect(DungeonLabeling.columnName(slot: 1, prefix: "area-", hideDungeonNumbers: false) == "area-1")
+        #expect(DungeonLabeling.columnName(slot: 1, prefix: "DUNGEON", hideDungeonNumbers: false) == "DUNGEON1")
+        #expect(DungeonLabeling.columnName(slot: 3, prefix: "BOARD-", hideDungeonNumbers: false) == "BOARD-3")
         // HDN: 1–8 → letters, 9 stays 9.
-        #expect(DungeonLabeling.columnName(slot: 1, boardInsteadOfLevel: false, hideDungeonNumbers: true) == "LEVEL-A")
-        #expect(DungeonLabeling.columnName(slot: 9, boardInsteadOfLevel: true, hideDungeonNumbers: true) == "BOARD-9")
+        #expect(DungeonLabeling.columnName(slot: 1, prefix: "LEVEL-", hideDungeonNumbers: true) == "LEVEL-A")
+        #expect(DungeonLabeling.columnName(slot: 9, prefix: "BOARD-", hideDungeonNumbers: true) == "BOARD-9")
+    }
+
+    @Test("columnWord strips a trailing separator for the picker submenu title (T-171)")
+    func columnWordStripsSeparator() {
+        #expect(DungeonLabeling.columnWord(prefix: "LEVEL-") == "LEVEL")
+        #expect(DungeonLabeling.columnWord(prefix: "area-") == "area")
+        #expect(DungeonLabeling.columnWord(prefix: "DUNGEON") == "DUNGEON")
+        #expect(DungeonLabeling.columnWord(prefix: "L-") == "L")
+        // All-separator prefix has no word to show — fall back to the raw prefix.
+        #expect(DungeonLabeling.columnWord(prefix: "--") == "--")
     }
 
     @Test("setHideDungeonNumbers rebuilds the tracker (3 boxes) and back")

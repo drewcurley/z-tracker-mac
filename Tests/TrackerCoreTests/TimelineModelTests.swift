@@ -81,14 +81,14 @@ struct TimelineModelTests {
         // The coast item is the ladder.
         dt.ladderBox.set(cellCurrent: ITEMS.ladder, playerHas: .yes)
 
-        let loc = TimelineEvents.locations(dungeonTracker: dt, boardInsteadOfLevel: false,
+        let loc = TimelineEvents.locations(dungeonTracker: dt, levelPrefix: "LEVEL-",
                                            hideDungeonNumbers: false)
         #expect(loc[.silverArrow] == "LEVEL-3 Box 1")
         #expect(loc[.dungeonHeart(1)] == "LEVEL-1 Box 2")
         #expect(loc[.ladder] == "Coast")
 
         // BOARD naming + HDN letters flow through.
-        let board = TimelineEvents.locations(dungeonTracker: dt, boardInsteadOfLevel: true,
+        let board = TimelineEvents.locations(dungeonTracker: dt, levelPrefix: "BOARD-",
                                              hideDungeonNumbers: true)
         #expect(board[.silverArrow] == "BOARD-C Box 1")
     }
