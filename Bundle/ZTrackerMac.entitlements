@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Entitlements for a hardened-runtime (notarizable) build (T-174). Only applied when
+  signing with a Developer ID identity; the local self-signed dev build doesn't need
+  the hardened runtime. Microphone access (voice control) requires this entitlement
+  once the hardened runtime is on, alongside NSMicrophoneUsageDescription in Info.plist.
+-->
+<plist version="1.0">
+<dict>
+    <key>com.apple.security.device.audio-input</key>
+    <true/>
+</dict>
+</plist>

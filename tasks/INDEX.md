@@ -28,6 +28,7 @@
 | [T-168](./T-168.md) | Hotkeys — hover-driven contexts, hint zones, dungeon items, Notes region | frontend-engineer | — | feat/hotkey-contexts | — | docs/reviews/feat-hotkey-contexts/final.md |
 | [T-167](./T-167.md) | Custom overworld map with fog-of-war | frontend-engineer | — | feat/custom-map-fog | — | docs/reviews/feat-custom-map-fog/final.md |
 | [T-175](./T-175.md) | Credits — name the app "Z-Tracker for macOS" | frontend-engineer | — | chore/credits-app-name | — | docs/reviews/chore-credits-app-name/final.md |
+| [T-174](./T-174.md) | Distribution — update notice + DMG packaging + notarization-ready build | devops | — | feat/update-check | — | docs/reviews/feat-update-check/final.md |
 | [T-173](./T-173.md) | Header polish — bigger timer, side-by-side Save/Load, bigger OW readout | frontend-engineer | — | chore/header-polish | — | docs/reviews/chore-header-polish/final.md |
 | [T-172](./T-172.md) | Credit the original Z-Tracker + bump version to 0.8 | frontend-engineer | — | chore/credits-and-version | — | docs/reviews/chore-credits-and-version/final.md |
 | [T-166](./T-166.md) | Refresh the reference-coverage audit against current code | analyst | — | chore/audit-refresh | — | docs/reviews/chore-audit-refresh/final.md |
