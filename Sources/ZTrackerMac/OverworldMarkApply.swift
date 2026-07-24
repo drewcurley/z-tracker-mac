@@ -55,4 +55,35 @@ enum OverworldMark {
         grid.setShopSecondItem(newKind, column: column, row: row)
         return true
     }
+
+    /// The overworld **shop hotkey** smarts (T-169, `extras.md` §hotkeys) for a tile
+    /// that is *already* a shop: pressing an item already in the shop removes it;
+    /// a new item fills the free slot; and when both slots are full, a third item
+    /// replaces the **first** (primary) item. Returns `false` when the tile isn't a
+    /// shop yet, so the caller places it fresh through `apply` (which handles the
+    /// take-any release and other side effects).
+    @MainActor @discardableResult
+    static func applyShopHotkeySmart(_ newKind: ShopKind, column: Int, row: Int,
+                                     grid: OverworldGrid) -> Bool {
+        guard case .shop(let first) = grid.mark(column: column, row: row) else { return false }
+        let second = grid.shopSecondItem(column: column, row: row)
+        if newKind == first {
+            // Remove the primary; a present secondary is promoted to primary.
+            if let second {
+                grid.setMark(.shop(second), column: column, row: row)
+                grid.setShopSecondItem(nil, column: column, row: row)
+            } else {
+                grid.setMark(.unmarked, column: column, row: row)
+            }
+        } else if newKind == second {
+            grid.setShopSecondItem(nil, column: column, row: row)   // remove the secondary
+        } else if second == nil {
+            grid.setShopSecondItem(newKind, column: column, row: row)  // fill the free slot
+        } else {
+            // Both slots full → replace the primary, keep the secondary (which differs,
+            // so no dup).
+            grid.setMark(.shop(newKind), column: column, row: row)
+        }
+        return true
+    }
 }

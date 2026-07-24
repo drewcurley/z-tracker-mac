@@ -41,4 +41,34 @@ enum ItemBoxMark {
         box.set(cellCurrent: index, playerHas: .yes)
         return true
     }
+
+    /// The item-box **hotkey** behavior (T-169), which adds repeat-press smarts on top
+    /// of `apply`. Ported from the box key handler (`Views.fs:360-384`), with one
+    /// deliberate deviation (user, 2026-07-22): a *fresh* mark claims possession
+    /// (`.yes`, green) as this clone already does, rather than the reference's `.no`.
+    ///
+    /// - A key for the item the box **already holds** cycles possession
+    ///   green → skipped → red → green (`.yes → .skipped → .no → .yes`).
+    /// - `Nothing` (index < 0) clears a filled box to empty, or toggles an empty box's
+    ///   outline red ⇄ white (`.no ⇄ .skipped`), matching the reference.
+    /// - Any other key sets that item at `.yes` (respecting the unique-item rule).
+    @MainActor @discardableResult
+    static func cycleHotkey(itemIndex index: Int, box: Box,
+                            instance: DungeonTrackerInstance) -> Bool {
+        if index >= 0, box.cellCurrent == index {
+            switch box.playerHas {
+            case .yes:     box.setPlayerHas(.skipped)
+            case .skipped: box.setPlayerHas(.no)
+            case .no:      box.setPlayerHas(.yes)
+            }
+            return true
+        }
+        if index < 0 {
+            if box.cellCurrent != -1 { box.set(cellCurrent: -1, playerHas: .no) }
+            else if box.playerHas == .no { box.set(cellCurrent: -1, playerHas: .skipped) }
+            else { box.set(cellCurrent: -1, playerHas: .no) }
+            return true
+        }
+        return apply(itemIndex: index, to: box, instance: instance)
+    }
 }

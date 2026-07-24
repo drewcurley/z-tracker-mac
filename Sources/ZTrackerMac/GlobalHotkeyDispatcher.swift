@@ -21,6 +21,12 @@ final class GlobalHotkeyDispatcher {
     private let voice: VoiceController?
     private var monitor: Any?
 
+    /// The last dungeon-room key that *unmarked* a room (T-169) — its tab, cell, and
+    /// selector. Re-marking that same room with that same key is the "Unmark–Remark"
+    /// interaction (`whats-new.md` v1.3) that fires a linked action. Scoped by tab so
+    /// the same room coordinate in a different dungeon can't false-fire.
+    private var justUnmarked: (tab: Int, col: Int, row: Int, selector: String)?
+
     init(model: TrackerModel, options: TrackerOptions, timer: TrackerTimer,
          hotkeys: HotkeyConfig, focus: TrackerFocusState, voice: VoiceController? = nil) {
         self.model = model
@@ -147,16 +153,20 @@ final class GlobalHotkeyDispatcher {
         guard (0..<9).contains(cell.col) else { return true }
         let dungeon = model.dungeonTracker.dungeon(cell.col)
         guard cell.row >= 0, cell.row < dungeon.boxes.count else { return true }
-        ItemBoxMark.apply(itemIndex: index, to: dungeon.boxes[cell.row],
-                          instance: model.dungeonTracker)
+        ItemBoxMark.cycleHotkey(itemIndex: index, box: dungeon.boxes[cell.row],
+                                instance: model.dungeonTracker)
         return true
     }
 
-    /// Set the blocker at the cursor's (dungeon, slot) to the selector's kind (T-135),
-    /// the same as its picker.
-    private func performBlockers(_ selectorID: String) -> Bool {
+    /// Set the blocker at the cursor's (dungeon, slot) to the selector's kind (T-135).
+    /// A **repeat** press of the kind already in that box toggles it back to empty
+    /// (T-169, `extras.md` §hotkeys).
+    @discardableResult
+    func performBlockers(_ selectorID: String) -> Bool {
         let t = BlockerRegion.target(focus.blockersCursor)
-        model.dungeonBlockers.setDungeonBlocker(DungeonBlocker.fromHotKeyName(selectorID),
+        let kind = DungeonBlocker.fromHotKeyName(selectorID)
+        let current = model.dungeonBlockers.dungeonBlocker(dungeon: t.dungeon, slot: t.slot)
+        model.dungeonBlockers.setDungeonBlocker(current == kind ? .nothing : kind,
                                                 dungeon: t.dungeon, slot: t.slot)
         return true
     }
@@ -175,25 +185,172 @@ final class GlobalHotkeyDispatcher {
               (0..<ItemProgressGrid.columns).contains(cell.col),
               case .pickerBox(let coast) = ItemProgressGrid.layout[cell.row][cell.col]
         else { return true }   // consumed, but not a box cell
-        ItemBoxMark.apply(itemIndex: index, to: coast.box(in: model.dungeonTracker),
-                          instance: model.dungeonTracker)
+        ItemBoxMark.cycleHotkey(itemIndex: index, box: coast.box(in: model.dungeonTracker),
+                                instance: model.dungeonTracker)
         return true
     }
 
-    /// Apply a `DungeonRoom_*` mark to the dungeon-map cursor room (T-135), the same
-    /// way its picker would. No-op on the Summary tab (no room map).
-    private func performDungeonRoom(_ selectorID: String) -> Bool {
-        let tab = focus.selectedDungeonTab
-        guard (0..<model.dungeonRoomMaps.count).contains(tab) else { return false }
-        let cell = focus.dungeonCursor
-        return DungeonRoomMark.applyHotkey(selectorID, col: cell.col, row: cell.row,
-                                           map: model.dungeonRoomMaps[tab],
-                                           inferDoors: options.doDoorInference)
+    /// One field a `DungeonRoom_*` hotkey targets, parsed once so the mark, the
+    /// toggle-off check, and the Unmark–Remark behavior all agree.
+    private enum RoomField {
+        case roomType(RoomType), monster(MonsterDetail), floorDrop(FloorDropDetail)
     }
 
-    /// Apply an `Overworld_*` mark to the overworld cursor cell (T-134), the same
-    /// way a mouse click on the tile picker would.
-    private func performOverworld(_ selectorID: String) -> Bool {
+    private static func roomField(for selectorID: String) -> RoomField? {
+        if let s = selectorID.hotkeySuffix("DungeonRoom_RoomType_") {
+            return .roomType(RoomType.fromHotKeyName("RoomType_" + s))
+        }
+        if let s = selectorID.hotkeySuffix("DungeonRoom_MonsterDetail_") {
+            return .monster(MonsterDetail.fromHotKeyName("MonsterDetail_" + s))
+        }
+        if let s = selectorID.hotkeySuffix("DungeonRoom_FloorDropDetail_") {
+            return .floorDrop(FloorDropDetail.fromHotKeyName("FloorDropDetail_" + s))
+        }
+        return nil
+    }
+
+    /// Apply a `DungeonRoom_*` mark to the dungeon-map cursor room (T-135). A repeat
+    /// press toggles the mark back off, and an "Unmark → Remark" of the same room with
+    /// the same key fires that key's linked action (T-169). No-op on the Summary tab.
+    /// Internal (not private) so the Unmark–Remark state machine can be driven directly
+    /// in tests without synthesizing key events.
+    @discardableResult
+    func performDungeonRoom(_ selectorID: String) -> Bool {
+        let tab = focus.selectedDungeonTab
+        guard (0..<model.dungeonRoomMaps.count).contains(tab),
+              let field = Self.roomField(for: selectorID) else { return false }
+        let map = model.dungeonRoomMaps[tab]
+        let cell = focus.dungeonCursor
+        let (col, row) = (cell.col, cell.row)
+
+        // Was this key's value already on the room? If so this press *unmarks* it;
+        // otherwise it *sets* it (and may complete an Unmark→Remark).
+        let wasPresent: Bool
+        switch field {
+        case .roomType(let t):  wasPresent = map.room(col: col, row: row).roomType == t
+        case .monster(let m):   wasPresent = map.room(col: col, row: row).monsters.contains(m)
+        case .floorDrop(let d): wasPresent = map.room(col: col, row: row).floorDropDetail == d
+        }
+
+        if wasPresent {
+            unmarkRoomField(field, col: col, row: row, map: map)
+            justUnmarked = (tab, col, row, selectorID)
+        } else {
+            setRoomField(field, col: col, row: row, map: map)
+            if let ju = justUnmarked, ju.tab == tab, ju.col == col, ju.row == row,
+               ju.selector == selectorID {
+                runUnmarkRemark(field, tab: tab)     // reference leaves justUnmarked set,
+            } else {                                  // so `ttttt` fires on the 3rd and 5th
+                justUnmarked = nil                    // press
+            }
+        }
+        return true
+    }
+
+    private func setRoomField(_ field: RoomField, col: Int, row: Int, map: DungeonRoomMap) {
+        switch field {
+        case .roomType(let t):
+            DungeonRoomMark.applyRoomType(t, col: col, row: row, map: map,
+                                          inferDoors: options.doDoorInference)
+        case .monster(let m):
+            DungeonRoomMark.toggleMonster(m, col: col, row: row, map: map)   // absent → adds
+        case .floorDrop(let d):
+            DungeonRoomMark.setFloorDrop(d, col: col, row: row, map: map)
+        }
+    }
+
+    private func unmarkRoomField(_ field: RoomField, col: Int, row: Int, map: DungeonRoomMap) {
+        switch field {
+        case .roomType:
+            DungeonRoomMark.applyRoomType(.unmarked, col: col, row: row, map: map, inferDoors: false)
+        case .monster(let m):
+            DungeonRoomMark.toggleMonster(m, col: col, row: row, map: map)   // present → removes
+        case .floorDrop:
+            DungeonRoomMark.setFloorDrop(.unmarked, col: col, row: row, map: map)
+        }
+    }
+
+    /// The Unmark–Remark behavior table (T-169, `whats-new.md` v1.3, ported from
+    /// `unmarkRemarkBehavior` in `DungeonUI.fs`). `tab` is the dungeon index.
+    private func runUnmarkRemark(_ field: RoomField, tab: Int) {
+        let dungeon = model.dungeonTracker.dungeon(tab)
+        let playerState = model.playerComputedStateSummary
+        switch field {
+        // Moats drive maybe-Ladder; the meat block and life-or-money their own maybes.
+        case .roomType(.chevy), .roomType(.circleMoat), .roomType(.doubleMoat),
+             .roomType(.lavaMoat), .roomType(.rightMoat), .roomType(.topMoat):
+            model.dungeonBlockers.applyMaybeBlockerLogic(.maybeLadder, dungeon: tab, playerState: playerState)
+        case .roomType(.hungryGoriyaMeatBlock):
+            model.dungeonBlockers.applyMaybeBlockerLogic(.maybeBait, dungeon: tab, playerState: playerState)
+        case .roomType(.lifeOrMoney):
+            model.dungeonBlockers.applyMaybeBlockerLogic(.maybeMoney, dungeon: tab, playerState: playerState)
+        // The three "boss = blocker" monsters.
+        case .monster(.bow):
+            model.dungeonBlockers.applyMaybeBlockerLogic(.maybeBowAndArrow, dungeon: tab, playerState: playerState)
+        case .monster(.digdogger):
+            model.dungeonBlockers.applyMaybeBlockerLogic(.maybeRecorder, dungeon: tab, playerState: playerState)
+        case .monster(.dodongo):
+            model.dungeonBlockers.applyMaybeBlockerLogic(.maybeBomb, dungeon: tab, playerState: playerState)
+        // Floor-drop toggles.
+        case .floorDrop(.triforce):
+            dungeon.toggleTriforce()
+        case .floorDrop(.map):
+            dungeon.playerHasMap.toggle()
+        case .floorDrop(.heart):
+            markFloorHeart(dungeon: dungeon)
+        // "Activate a box" rows: we don't warp the mouse (T-168 descope), so instead
+        // park the dungeon-item cursor on the target box, ready for an item hotkey.
+        case .floorDrop(.otherKeyItem):
+            parkDungeonItemCursor(dungeon: dungeon, tab: tab, basement: false)
+        case .roomType(.itemBasement):
+            parkDungeonItemCursor(dungeon: dungeon, tab: tab, basement: true)
+        default:
+            break
+        }
+    }
+
+    /// FloorDrop.Heart remark: flip the first not-yet-taken floor Heart to taken, else
+    /// fill the first empty non-basement box with a taken Heart Container.
+    private func markFloorHeart(dungeon: Dungeon) {
+        let boxes = dungeon.boxes
+        if let box = boxes.first(where: {
+            !model.dungeonTracker.currentlyHasBasementStair($0)
+                && $0.cellCurrent == ITEMS.heartContainer && $0.playerHas == .no
+        }) {
+            box.setPlayerHas(.yes)
+            return
+        }
+        if let box = boxes.first(where: {
+            !model.dungeonTracker.currentlyHasBasementStair($0) && $0.cellCurrent == -1
+        }), model.dungeonTracker.canSelectItem(ITEMS.heartContainer, forBox: box) {
+            box.set(cellCurrent: ITEMS.heartContainer, playerHas: .yes)
+        }
+    }
+
+    /// Park the dungeon-item cursor on the box an "activate box" remark targets: the
+    /// bottommost empty basement box, or the topmost empty non-basement box (falling
+    /// back to the bottom/top box). Switches the cursor into the dungeon-item region.
+    private func parkDungeonItemCursor(dungeon: Dungeon, tab: Int, basement: Bool) {
+        let boxes = dungeon.boxes
+        guard !boxes.isEmpty else { return }
+        let indices = Array(boxes.indices)
+        let search = basement ? Array(indices.reversed()) : indices
+        let target = search.first(where: { i in
+            let box = boxes[i]
+            let isBasement = model.dungeonTracker.currentlyHasBasementStair(box)
+            return box.cellCurrent == -1 && isBasement == basement
+        }) ?? search.first!
+        focus.dungeonItemCursor = .init(col: tab, row: target)
+        focus.cursorRegion = .dungeonItem
+        focus.cursorShown = true
+    }
+
+    /// Apply an `Overworld_*` mark to the overworld cursor cell (T-134), with the
+    /// T-169 repeat-press smarts: a shop key on a tile that's already a shop
+    /// adds/removes/replaces items, and a repeat of a brightness-toggleable mark
+    /// flips the tile's bright/dark (used) state.
+    @discardableResult
+    func performOverworld(_ selectorID: String) -> Bool {
         let prefix = "Overworld_"
         guard selectorID.hasPrefix(prefix),
               let mark = OverworldTileMark.fromHotkeySuffix(String(selectorID.dropFirst(prefix.count)))
@@ -202,6 +359,20 @@ final class GlobalHotkeyDispatcher {
         // Don't mark a border screen that never holds anything (vanilla map only —
         // a custom map has no dead spots, T-167).
         guard !model.isDeadSpot(x: cell.col, y: cell.row) else { return true }
+        // Shop add/remove/replace on an existing shop (T-169). Returns false on a
+        // non-shop tile, so a fresh shop still places through `apply` below.
+        if case .shop(let kind) = mark,
+           OverworldMark.applyShopHotkeySmart(kind, column: cell.col, row: cell.row,
+                                              grid: model.overworldGrid) {
+            return true
+        }
+        // Brightness repeat (T-169): pressing the mark already on a bright/dark-
+        // toggleable tile flips its used (dark) state instead of re-placing it.
+        if model.overworldGrid.mark(column: cell.col, row: cell.row) == mark,
+           mark.isUsedToggleable {
+            model.overworldGrid.toggleUsed(column: cell.col, row: cell.row)
+            return true
+        }
         OverworldMark.apply(mark, column: cell.col, row: cell.row, grid: model.overworldGrid,
                             releaseTakeAny: { c, r in model.releaseOverworldTakeAny(column: c, row: r) },
                             placeDungeon: { number, c, r in
@@ -258,5 +429,12 @@ final class GlobalHotkeyDispatcher {
             return false
         }
         return true
+    }
+}
+
+private extension String {
+    /// The remainder after `prefix`, or nil if `self` doesn't start with it (T-169).
+    func hotkeySuffix(_ prefix: String) -> String? {
+        hasPrefix(prefix) ? String(dropFirst(prefix.count)) : nil
     }
 }

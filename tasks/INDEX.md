@@ -25,6 +25,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-169](./T-169.md) | Hotkey smarts — repeat-press cycling, shop add/remove/replace, Unmark–Remark chains | frontend-engineer | — | feat/hotkey-smarts | — | docs/reviews/feat-hotkey-smarts/final.md |
 | [T-168](./T-168.md) | Hotkeys — hover-driven contexts, hint zones, dungeon items, Notes region | frontend-engineer | — | feat/hotkey-contexts | — | docs/reviews/feat-hotkey-contexts/final.md |
 | [T-167](./T-167.md) | Custom overworld map with fog-of-war | frontend-engineer | — | feat/custom-map-fog | — | docs/reviews/feat-custom-map-fog/final.md |
 | [T-175](./T-175.md) | Credits — name the app "Z-Tracker for macOS" | frontend-engineer | — | chore/credits-app-name | — | docs/reviews/chore-credits-app-name/final.md |
