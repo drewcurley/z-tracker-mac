@@ -50,9 +50,11 @@ fi
 
 # Alternate "simple" app icon (T-178): copied as a loadable resource so the
 # "Use simple app icon" setting can swap the dock icon at runtime (the .icns above
-# stays the original/default).
-if [ -f Bundle/simple.png ]; then
-    cp Bundle/simple.png "$APP/Contents/Resources/AppIcon-simple.png"
+# stays the original/default). Bundle/AppIcon-simple.png is the pre-rounded, padded
+# version (regenerate with scripts/make-simple-icon.swift if simple.png changes) —
+# rounded once here, not per-launch.
+if [ -f Bundle/AppIcon-simple.png ]; then
+    cp Bundle/AppIcon-simple.png "$APP/Contents/Resources/AppIcon-simple.png"
 fi
 
 # Sign with a STABLE identity so TCC (mic/speech permission) persists across rebuilds.
