@@ -115,7 +115,21 @@ final class TrackerFocusState {
     }
 
     /// Mouse entered `region`. Called by each region's hover handler.
-    func beginHover(_ region: CursorRegion) { hoverRegion = region }
+    // Guard every write below: `@Observable` broadcasts an invalidation on *every*
+    // assignment, even one that sets the same value. A mouse-move over a grid fires
+    // hover repeatedly with an unchanged region/shown flag, and those redundant writes
+    // were re-evaluating the whole tracker tree (overworld, items, blockers, dungeon
+    // cards) every frame — the ~15fps dungeon-hover stall (T-179). Only write on change.
+    func beginHover(_ region: CursorRegion) {
+        if hoverRegion != region { hoverRegion = region }
+    }
+
+    /// Enter `region` and show the cursor, writing only when the value actually
+    /// changes (see the note on `beginHover`).
+    private func enterRegion(_ region: CursorRegion) {
+        if cursorRegion != region { cursorRegion = region }
+        if !cursorShown { cursorShown = true }
+    }
 
     /// Mouse left `region` — only clears if that region is still the hovered one.
     /// Adjacent cells fire enter-then-exit out of order, so an unguarded clear would
@@ -209,35 +223,35 @@ final class TrackerFocusState {
     /// Mouse hover moved onto an overworld tile / dungeon room — the cursor follows
     /// (T-134, user choice), so keyboard nudges continue from where the mouse is.
     func hoverOverworld(col: Int, row: Int) {
-        overworldCursor = GridCell(col: col, row: row)
-        cursorRegion = .overworld
-        cursorShown = true
+        let cell = GridCell(col: col, row: row)
+        if overworldCursor != cell { overworldCursor = cell }
+        enterRegion(.overworld)
         beginHover(.overworld)
     }
     func hoverDungeon(col: Int, row: Int) {
-        dungeonCursor = GridCell(col: col, row: row)
-        cursorRegion = .dungeonMap
-        cursorShown = true
+        let cell = GridCell(col: col, row: row)
+        if dungeonCursor != cell { dungeonCursor = cell }
+        enterRegion(.dungeonMap)
         beginHover(.dungeonMap)
     }
     func hoverItems(col: Int, row: Int) {
-        itemsCursor = GridCell(col: col, row: row)
-        cursorRegion = .items
-        cursorShown = true
+        let cell = GridCell(col: col, row: row)
+        if itemsCursor != cell { itemsCursor = cell }
+        enterRegion(.items)
         beginHover(.items)
     }
     func hoverBlockers(col: Int, row: Int) {
-        blockersCursor = GridCell(col: col, row: row)
-        cursorRegion = .blockers
-        cursorShown = true
+        let cell = GridCell(col: col, row: row)
+        if blockersCursor != cell { blockersCursor = cell }
+        enterRegion(.blockers)
         beginHover(.blockers)
     }
     /// Hovering a dungeon item box (T-168): `col` = dungeon 0…8, `row` = box index 0…2,
     /// matching the on-screen layout.
     func hoverDungeonItem(col: Int, row: Int) {
-        dungeonItemCursor = GridCell(col: col, row: row)
-        cursorRegion = .dungeonItem
-        cursorShown = true
+        let cell = GridCell(col: col, row: row)
+        if dungeonItemCursor != cell { dungeonItemCursor = cell }
+        enterRegion(.dungeonItem)
         beginHover(.dungeonItem)
     }
 }

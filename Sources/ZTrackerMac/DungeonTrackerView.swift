@@ -34,6 +34,7 @@ struct DungeonTrackerView: View {
     }
 
     var body: some View {
+        let _ = perfTrace()
         let dt = model.dungeonTracker
         let loc = Self.locatedDungeonIndices(in: model.overworldGrid)
         VStack(alignment: .leading, spacing: 8) {
@@ -125,6 +126,7 @@ struct DungeonCardView: View {
     }
 
     var body: some View {
+        let _ = perfTrace()
         VStack(spacing: 4) {
             // Above the slot: the location hint (T-039) in default mode; in HDN
             // (T-050) the dungeon-number chooser instead — except Level 9
@@ -206,6 +208,7 @@ private struct GhostBoxView: View {
     private static let size: CGFloat = 34
 
     var body: some View {
+        let _ = perfTrace()
         RoundedRectangle(cornerRadius: 4)
             .fill(Color(white: 0.14))
             .frame(width: Self.size, height: Self.size)
@@ -270,6 +273,7 @@ struct BoxView: View {
     }
 
     var body: some View {
+        let _ = perfTrace()
         if disabled { disabledBox } else { interactiveBox }
     }
 
@@ -372,6 +376,7 @@ struct BoxItemPicker: View {
     private let columns = Array(repeating: GridItem(.fixed(30), spacing: 4), count: 8)
 
     var body: some View {
+        let _ = perfTrace()
         VStack(alignment: .leading, spacing: 8) {
             Text("Set item — left-click = have it, right-click = don't have it")
                 .font(.caption).foregroundStyle(.secondary)

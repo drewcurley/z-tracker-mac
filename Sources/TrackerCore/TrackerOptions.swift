@@ -204,6 +204,9 @@ public final class TrackerOptions {
     /// Show a small live FPS/main-thread-responsiveness readout (dev diagnostic,
     /// beyond the reference). Default **false**.
     public var showFPS: Bool
+    /// Log render-path perf to the console for hover diagnosis (T-179). Session-only
+    /// (not persisted — a debugging switch you don't want stuck on). Default **false**.
+    public var logRenderPerf: Bool
     /// On launch, check GitHub for a newer release and show a dismissible notice
     /// (T-174, beyond the reference). Default **true**; it's an unauthenticated GET
     /// to the project's releases and sends no data, but stays user-toggleable.
@@ -243,7 +246,8 @@ public final class TrackerOptions {
         hideTimer: Bool = false,
         warnOnCloseWhileTimerRunning: Bool = true,
         showFPS: Bool = false,
-        checkForUpdatesOnLaunch: Bool = true
+        checkForUpdatesOnLaunch: Bool = true,
+        logRenderPerf: Bool = false
     ) {
         self.drawRoutes = drawRoutes
         self.showScreenScrolls = showScreenScrolls
@@ -279,6 +283,7 @@ public final class TrackerOptions {
         self.warnOnCloseWhileTimerRunning = warnOnCloseWhileTimerRunning
         self.showFPS = showFPS
         self.checkForUpdatesOnLaunch = checkForUpdatesOnLaunch
+        self.logRenderPerf = logRenderPerf
     }
 
     /// Every category defaults to `true` except `.recorderPBSpotsAndBoomstickBook`

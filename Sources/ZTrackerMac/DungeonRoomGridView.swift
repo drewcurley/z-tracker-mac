@@ -81,6 +81,7 @@ struct DungeonMapView: View {
     }
 
     var body: some View {
+        let _ = perfTrace()
         VStack(alignment: .leading, spacing: 8) {
             tabBar
             if isSummary {
@@ -391,6 +392,7 @@ struct DungeonRoomGridView: View {
     private static var roomsH: CGFloat { cellH * CGFloat(DungeonRoomMap.rows) + gap * CGFloat(DungeonRoomMap.rows - 1) }
 
     var body: some View {
+        let _ = perfTrace()
         VStack(alignment: .leading, spacing: Self.gap) {
             headerRow
             roomsAndDoors
@@ -412,7 +414,8 @@ struct DungeonRoomGridView: View {
                                  grab: grab,
                                  onHover: { hovering in
                                      if hovering {
-                                         hoveredRow = row
+                                         PerfLog.hover("HOVER dungeon (\(col),\(row))")
+                                         if hoveredRow != row { hoveredRow = row }   // only on row crossings (T-179)
                                          focus.hoverDungeon(col: col, row: row)   // cursor follows (T-134)
                                          if grab.isGrabMode { grab.hoverCell = .init(col: col, row: row) }
                                      } else {
@@ -429,18 +432,6 @@ struct DungeonRoomGridView: View {
                                          activePicker = RoomPickerRequest(col: col, row: row, kind: kind)
                                      }
                                  })
-                        .overlay {
-                            // Keyboard cursor (T-134): bright ring on the cursor room
-                            // while the cursor is on the dungeon grid.
-                            if focus.cursorShown, focus.cursorRegion == .dungeonMap,
-                               focus.dungeonCursor == .init(col: col, row: row) {
-                                RoundedRectangle(cornerRadius: 3)
-                                    .strokeBorder(Color.cyan, lineWidth: 2)
-                                    .shadow(color: .cyan, radius: 2)
-                                    .frame(width: Self.cellW, height: Self.cellH)
-                                    .allowsHitTesting(false)
-                            }
-                        }
                         .offset(x: CGFloat(col) * Self.pitchX, y: CGFloat(row) * Self.pitchY)
                 }
             }
@@ -469,6 +460,12 @@ struct DungeonRoomGridView: View {
                 VanillaOutlineOverlay(quest: outlineQuest, dungeon: dungeonNumber - 1,
                                       cellW: Self.cellW, cellH: Self.cellH, gap: Self.gap)
             }
+            // The keyboard/hover cursor ring (T-134) as a single isolated view (T-179):
+            // it reads `focus.dungeonCursor`, so that observable dependency lives here,
+            // NOT inside the 64-cell ForEach — moving the cursor re-evaluates only this
+            // tiny overlay instead of rebuilding the whole grid every mouse-move.
+            DungeonCursorRing(focus: focus, cellW: Self.cellW, cellH: Self.cellH,
+                              pitchX: Self.pitchX, pitchY: Self.pitchY)
         }
         .frame(width: Self.roomsW, height: Self.roomsH, alignment: .topLeading)
         // Three grid-level popovers (T-145), each anchored to whichever cell is
@@ -540,6 +537,31 @@ struct DungeonRoomGridView: View {
     }
 }
 
+/// The cyan cursor ring on the dungeon grid's active cell (T-134), isolated into its
+/// own view (T-179) so it's the *only* thing that re-evaluates when the cursor moves.
+/// It reads `focus.dungeonCursor` — keeping that observable read out of the 64-cell
+/// grid body, so a mouse-move no longer rebuilds the whole grid. Positioned in the
+/// grid's top-leading coordinate space by the same pitch as the cells.
+private struct DungeonCursorRing: View {
+    var focus: TrackerFocusState
+    let cellW: CGFloat, cellH: CGFloat, pitchX: CGFloat, pitchY: CGFloat
+
+    var body: some View {
+        let _ = perfTrace()
+        if focus.cursorShown, focus.cursorRegion == .dungeonMap {
+            let c = focus.dungeonCursor
+            if (0..<DungeonRoomMap.cols).contains(c.col), (0..<DungeonRoomMap.rows).contains(c.row) {
+                RoundedRectangle(cornerRadius: 3)
+                    .strokeBorder(Color.cyan, lineWidth: 2)
+                    .shadow(color: .cyan, radius: 2)
+                    .frame(width: cellW, height: cellH)
+                    .offset(x: CGFloat(c.col) * pitchX, y: CGFloat(c.row) * pitchY)
+                    .allowsHitTesting(false)
+            }
+        }
+    }
+}
+
 /// One room cell: the room-type sprite on a completion-tinted background, with
 /// the monster (top-left) and floor-drop (bottom-right) detail overlays and the
 /// "circled" ring. Left = accelerator/cycle/toggle, right = room-type picker,
@@ -583,6 +605,7 @@ private struct RoomCellView: View {
     }
 
     var body: some View {
+        let _ = perfTrace()
         ZStack {
             // Off-map rooms read as a dark "not part of this dungeon" cell.
             RoundedRectangle(cornerRadius: 3)
@@ -723,6 +746,7 @@ private struct RoomTypePicker: View {
     private let columns = Array(repeating: GridItem(.fixed(44), spacing: 4), count: 7)
 
     var body: some View {
+        let _ = perfTrace()
         VStack(alignment: .leading, spacing: 8) {
             Text("Select a room type").font(.caption).foregroundStyle(.secondary)
             LazyVGrid(columns: columns, spacing: 4) {
@@ -770,6 +794,7 @@ private struct MonsterPicker: View {
     }
 
     var body: some View {
+        let _ = perfTrace()
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text("Select up to two monsters").font(.caption).foregroundStyle(.secondary)
@@ -827,6 +852,7 @@ private struct FloorDropPicker: View {
     private let columns = Array(repeating: GridItem(.fixed(34), spacing: 6), count: 3)
 
     var body: some View {
+        let _ = perfTrace()
         VStack(alignment: .leading, spacing: 8) {
             Text("Select a floor drop").font(.caption).foregroundStyle(.secondary)
             LazyVGrid(columns: columns, spacing: 6) {

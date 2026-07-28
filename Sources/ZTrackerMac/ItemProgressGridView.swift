@@ -270,6 +270,7 @@ struct ObtainableItemsView: View {
     var focus: TrackerFocusState
 
     var body: some View {
+        let _ = perfTrace()
         VStack(alignment: .leading, spacing: 3) {
             // White / magical sword cave location hints (T-039), each sitting
             // directly above its box: the White Sword item box (col 1) and the
@@ -386,6 +387,7 @@ struct SeedFlagsView: View {
     @State private var pending: DestructiveAction?
 
     var body: some View {
+        let _ = perfTrace()
         VStack(alignment: .leading, spacing: 8) {
             // Seed/config flags as toggleable icon tiles (T-035.13), matching the
             // Info overlay tiles for a consistent look; tooltips carry each
@@ -565,6 +567,7 @@ struct MapInfoView: View {
     @Environment(\.dismissWindow) private var dismissWindow
 
     var body: some View {
+        let _ = perfTrace()
         VStack(alignment: .leading, spacing: 8) {
             spotSummaryButton
             hintDecoderButton
@@ -697,6 +700,7 @@ private struct IndicatorCell: View {
     let size: CGFloat
 
     var body: some View {
+        let _ = perfTrace()
         ZStack {
             ItemGlyph(icon)
                 .frame(width: size - 12, height: size - 12)
@@ -733,6 +737,7 @@ private struct ItemToggleBox: View {
     }
 
     var body: some View {
+        let _ = perfTrace()
         ZStack {
             RoundedRectangle(cornerRadius: 4).fill(Color.black)
             ItemGlyph(iconOverride ?? toggle.icon)
@@ -773,6 +778,7 @@ private struct TakeAnyHeartBox: View {
     private var state: TakeAnyHeartState { progress.takeAnyHearts[index] }
 
     var body: some View {
+        let _ = perfTrace()
         ZStack {
             RoundedRectangle(cornerRadius: 4).fill(Color.black)
             // Background heart: full (pink) when a heart was taken, empty

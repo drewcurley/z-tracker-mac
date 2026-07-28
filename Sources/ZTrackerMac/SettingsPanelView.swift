@@ -63,6 +63,12 @@ struct SettingsPanelView: View {
                 }
                 Text("A native macOS port of the original Windows Z-Tracker (F#) by Brian McNamara.")
                     .font(.caption2).foregroundStyle(.secondary)
+                // Build stamp (T-179): git hash + build time, to confirm you're running
+                // the latest local build. "dev" when unbundled.
+                Text("Build \(Self.buildStamp)")
+                    .font(.system(size: 10, design: .monospaced))
+                    .foregroundStyle(.tertiary)
+                    .textSelection(.enabled)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -73,6 +79,10 @@ struct SettingsPanelView: View {
     static var appVersion: String {
         let v = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
         return "v" + (v ?? "dev")
+    }
+    /// The build stamp from Info.plist (git hash + build time), or "dev" unbundled.
+    static var buildStamp: String {
+        (Bundle.main.object(forInfoDictionaryKey: "ZTrackerBuildStamp") as? String) ?? "dev"
     }
     static let projectURL = URL(string: "https://github.com/drewcurley/z-tracker-mac")!
     /// The original Windows Z-Tracker (F#) by Brian McNamara that this app ports.
@@ -176,6 +186,8 @@ struct SettingsPanelView: View {
             Toggle("Hide timer", isOn: Bindable(options).hideTimer)
             Toggle("Warn when quitting while the timer is running", isOn: Bindable(options).warnOnCloseWhileTimerRunning)
             Toggle("Show FPS counter (diagnostic)", isOn: Bindable(options).showFPS)
+            Toggle("Log render perf to file (diagnostic)", isOn: Bindable(options).logRenderPerf)
+                .help("Capture which views re-render on each hover, why, and how long the main thread is busy — for diagnosing frame-rate issues. Writes to a temp file; on Reset App or Quit you're asked where to save it (or to discard it).")
         }
         .toggleStyle(.checkbox)
     }

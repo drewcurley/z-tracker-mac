@@ -65,13 +65,26 @@ struct ContentView: View {
         // Apply the chosen dock icon at launch and whenever the setting changes (T-178).
         .onAppear { AppIconController.apply(useDetailed: options.useDetailedAppIcon) }
         .onChange(of: options.useDetailedAppIcon) { _, v in AppIconController.apply(useDetailed: v) }
+        // Wire the render-perf logging switch (T-179). Reclaim any crash-leftover logs
+        // first, then honor the current setting (which redirects stdout/stderr to a temp
+        // file while on). Runs once — Reset App reuses this ContentView, not a new one.
+        .onAppear {
+            PerfLog.garbageCollectOldLogs()
+            PerfLog.setEnabled(options.logRenderPerf)
+        }
+        .onChange(of: options.logRenderPerf) { _, v in PerfLog.setEnabled(v) }
         // Gate app termination on the run-timer warning (T-109). Captures the
         // hoisted timer + options; `Reset App` resets the timer in place so this
         // closure stays valid across a reset.
         .onAppear {
             // Quit gate (T-165): the Save / Don't Save / Cancel dialog for an
             // unfinished run supersedes the plain timer-running warning.
-            AppDelegate.confirmQuit = { GameSave.confirmQuitSaving(model: model, timer: timer) }
+            // Chain the perf-log save prompt (T-179.1) after the save-run dialog: save the
+            // run first, then offer to keep the captured render-perf log. Either canceling
+            // aborts the quit.
+            AppDelegate.confirmQuit = {
+                GameSave.confirmQuitSaving(model: model, timer: timer) && PerfLog.confirmSaveOnExit()
+            }
             // One-time startup resume check; the dialog below presents it.
             if !resumeChecked {
                 resumeChecked = true

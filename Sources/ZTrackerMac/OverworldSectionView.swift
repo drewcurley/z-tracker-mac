@@ -44,6 +44,7 @@ struct OverworldSectionView: View {
     }
 
     var body: some View {
+        let _ = perfTrace()
         OverworldMapView(
             grid: model.overworldGrid,
             quest: model.quest ?? .first,
