@@ -46,6 +46,7 @@ struct TrackerOptionsTests {
         #expect(options.displaySeedAndFlags == true)
         #expect(options.listenForSpeech == false)
         #expect(options.confirmationSound == true)
+        #expect(options.useDetailedAppIcon == false)
         #expect(options.showInfoPanel == true)
         #expect(options.showMouseMagnifierWindow == false)
         #expect(options.hideTimer == false)

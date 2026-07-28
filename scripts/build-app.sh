@@ -32,29 +32,27 @@ cp -R "$BIN_DIR/$RES_BUNDLE" "$APP/Contents/Resources/$RES_BUNDLE"
 
 sed "s/@@VERSION@@/$VERSION/g" Bundle/Info.plist.template > "$APP/Contents/Info.plist"
 
-# App icon (T-161): build AppIcon.icns from the transparent-corner master
-# (Bundle/AppIcon.png). macOS shows app icons as-is (no auto-rounding), so the
-# master already has its rounded panel on a transparent field.
-if [ -f Bundle/AppIcon.png ]; then
-    echo "==> building AppIcon.icns"
+# App icon (T-161/T-178): the **simple** icon is the default/bundle icon now
+# (Bundle/AppIcon-simple.png, pre-rounded to the standard macOS shape via
+# scripts/make-simple-icon.swift). Building the .icns from it means the simple icon
+# shows reliably whether the app is open or closed, with no writable-location hack.
+if [ -f Bundle/AppIcon-simple.png ]; then
+    echo "==> building AppIcon.icns (simple, default)"
     ICONSET="$(mktemp -d)/AppIcon.iconset"
     mkdir -p "$ICONSET"
     for sz in 16 32 128 256 512; do
-        sips -z "$sz" "$sz" Bundle/AppIcon.png --out "$ICONSET/icon_${sz}x${sz}.png" >/dev/null
+        sips -z "$sz" "$sz" Bundle/AppIcon-simple.png --out "$ICONSET/icon_${sz}x${sz}.png" >/dev/null
         d=$((sz * 2))
-        sips -z "$d" "$d" Bundle/AppIcon.png --out "$ICONSET/icon_${sz}x${sz}@2x.png" >/dev/null
+        sips -z "$d" "$d" Bundle/AppIcon-simple.png --out "$ICONSET/icon_${sz}x${sz}@2x.png" >/dev/null
     done
     iconutil -c icns "$ICONSET" -o "$APP/Contents/Resources/AppIcon.icns"
     rm -rf "$(dirname "$ICONSET")"
 fi
 
-# Alternate "simple" app icon (T-178): copied as a loadable resource so the
-# "Use simple app icon" setting can swap the dock icon at runtime (the .icns above
-# stays the original/default). Bundle/AppIcon-simple.png is the pre-rounded, padded
-# version (regenerate with scripts/make-simple-icon.swift if simple.png changes) —
-# rounded once here, not per-launch.
-if [ -f Bundle/AppIcon-simple.png ]; then
-    cp Bundle/AppIcon-simple.png "$APP/Contents/Resources/AppIcon-simple.png"
+# The alternate **detailed** icon (the original, more complex design) as a loadable
+# resource, so the "Use detailed app icon" setting can swap to it for the running app.
+if [ -f Bundle/AppIcon.png ]; then
+    cp Bundle/AppIcon.png "$APP/Contents/Resources/AppIcon-detailed.png"
 fi
 
 # Sign with a STABLE identity so TCC (mic/speech permission) persists across rebuilds.
