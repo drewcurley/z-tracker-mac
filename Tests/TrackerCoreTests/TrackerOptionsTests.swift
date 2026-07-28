@@ -46,9 +46,7 @@ struct TrackerOptionsTests {
         #expect(options.displaySeedAndFlags == true)
         #expect(options.listenForSpeech == false)
         #expect(options.confirmationSound == true)
-        #expect(options.showBroadcastWindow == false)
-        #expect(options.broadcastWindowSize == .full)
-        #expect(options.broadcastWindowIncludesOverworldMagnifier == false)
+        #expect(options.showInfoPanel == true)
         #expect(options.showMouseMagnifierWindow == false)
         #expect(options.hideTimer == false)
         // Beyond the reference (T-109): warn on quit while timer runs, default on.
@@ -114,20 +112,12 @@ struct TrackerOptionsTests {
     func togglesAreIndependent() {
         let options = TrackerOptions()
         options.drawRoutes = false
-        options.showBroadcastWindow = true
-        options.broadcastWindowSize = .oneThird
+        options.showInfoPanel = false
         #expect(options.drawRoutes == false)
-        #expect(options.showBroadcastWindow == true)
-        #expect(options.broadcastWindowSize == .oneThird)
+        #expect(options.showInfoPanel == false)
         #expect(options.highlightNearby == true) // unaffected
     }
 
-    @Test("BroadcastWindowSize raw values match the reference app's clamp range (1...3)")
-    func broadcastWindowSizeRawValues() {
-        #expect(BroadcastWindowSize.oneThird.rawValue == 1)
-        #expect(BroadcastWindowSize.twoThirds.rawValue == 2)
-        #expect(BroadcastWindowSize.full.rawValue == 3)
-    }
 
     @Test("ReminderCategory display names match the reference app's DisplayName exactly")
     func reminderCategoryDisplayNames() {

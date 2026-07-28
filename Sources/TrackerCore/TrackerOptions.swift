@@ -37,26 +37,6 @@ public enum ReminderCategory: String, Codable, CaseIterable, Sendable {
     }
 }
 
-/// The broadcast window's fixed-size options (docs/domain.md § 4.13,
-/// `docs/contracts.md` § 2 entry 1 — the one place this project keeps the
-/// reference app's fixed sizing on purpose, per
-/// `docs/decisions/0003-responsive-layout-not-fixed-presets.md`). Raw values
-/// match the reference app's `BroadcastWindowSize` field
-/// (`TrackerModelOptions.fs:74`, clamped to 1...3, default 3).
-public enum BroadcastWindowSize: Int, Codable, CaseIterable, Sendable {
-    case oneThird = 1
-    case twoThirds = 2
-    case full = 3
-
-    public var displayName: String {
-        switch self {
-        case .full: "Full size broadcast"
-        case .twoThirds: "2/3 size broadcast"
-        case .oneThird: "1/3 size broadcast"
-        }
-    }
-}
-
 /// The 12 overworld tile kinds the "More settings…" popup can hide
 /// (`TrackerModel.fs`'s `MapSquareChoiceDomainHelper.TilesThatSupportHidingOverworldMarks`,
 /// backed by `TrackerModelOptions.OverworldTilesToHide`, T-005/T-007). Case
@@ -203,12 +183,11 @@ public final class TrackerOptions {
     /// `PlaySoundWhenUseSpeech`, default `true`. Labeled "Confirmation sound"
     /// on-screen.
     public var confirmationSound: Bool
-    /// `ShowBroadcastWindow`, default `false`.
-    public var showBroadcastWindow: Bool
-    /// `BroadcastWindowSize`, default `.full` (raw value 3).
-    public var broadcastWindowSize: BroadcastWindowSize
-    /// `BroadcastWindowIncludesOverworldMagnifier`, default `false`.
-    public var broadcastWindowIncludesOverworldMagnifier: Bool
+    /// Show the top **Info** panel (Spot Summary / Hint Decoder / overlay toggles /
+    /// reset buttons) — T-178, default **true**. Off for players who don't use it and
+    /// want a tighter layout (and a cleaner broadcast). Global: applies to the main
+    /// window and the broadcast mirror alike.
+    public var showInfoPanel: Bool
     /// `ShowMouseMagnifierWindow`, default `false`.
     public var showMouseMagnifierWindow: Bool
     /// `HideTimer`, default `false`. Labeled "Hide timer" on-screen
@@ -253,9 +232,7 @@ public final class TrackerOptions {
         displaySeedAndFlags: Bool = true,
         listenForSpeech: Bool = false,
         confirmationSound: Bool = true,
-        showBroadcastWindow: Bool = false,
-        broadcastWindowSize: BroadcastWindowSize = .full,
-        broadcastWindowIncludesOverworldMagnifier: Bool = false,
+        showInfoPanel: Bool = true,
         showMouseMagnifierWindow: Bool = false,
         hideTimer: Bool = false,
         warnOnCloseWhileTimerRunning: Bool = true,
@@ -289,9 +266,7 @@ public final class TrackerOptions {
         self.displaySeedAndFlags = displaySeedAndFlags
         self.listenForSpeech = listenForSpeech
         self.confirmationSound = confirmationSound
-        self.showBroadcastWindow = showBroadcastWindow
-        self.broadcastWindowSize = broadcastWindowSize
-        self.broadcastWindowIncludesOverworldMagnifier = broadcastWindowIncludesOverworldMagnifier
+        self.showInfoPanel = showInfoPanel
         self.showMouseMagnifierWindow = showMouseMagnifierWindow
         self.hideTimer = hideTimer
         self.warnOnCloseWhileTimerRunning = warnOnCloseWhileTimerRunning
@@ -416,7 +391,6 @@ public final class TrackerOptions {
     @ObservationIgnored private var isApplyingSettings = false
 
     private static let settingsBoolsKey = "ztracker.settings.bools"
-    private static let broadcastSizeKey = "ztracker.settings.broadcastSize"
     private static let hiddenTilesKey = "ztracker.settings.hiddenTiles"
     private static let customLevelPrefixKey = "ztracker.settings.customLevelPrefix"
 
@@ -448,8 +422,7 @@ public final class TrackerOptions {
         "displaySeedAndFlags": \.displaySeedAndFlags,
         "listenForSpeech": \.listenForSpeech,
         "confirmationSound": \.confirmationSound,
-        "showBroadcastWindow": \.showBroadcastWindow,
-        "broadcastWindowIncludesOverworldMagnifier": \.broadcastWindowIncludesOverworldMagnifier,
+        "showInfoPanel": \.showInfoPanel,
         "showMouseMagnifierWindow": \.showMouseMagnifierWindow,
         "hideTimer": \.hideTimer,
         "warnOnCloseWhileTimerRunning": \.warnOnCloseWhileTimerRunning,
@@ -470,10 +443,6 @@ public final class TrackerOptions {
                 if let keyPath = Self.persistedBoolKeyPaths[key] { self[keyPath: keyPath] = value }
             }
         }
-        if store.object(forKey: Self.broadcastSizeKey) != nil,
-           let size = BroadcastWindowSize(rawValue: store.integer(forKey: Self.broadcastSizeKey)) {
-            broadcastWindowSize = size
-        }
         if let raw = store.dictionary(forKey: Self.hiddenTilesKey) as? [String: Bool] {
             hiddenOverworldTiles = Self.decodeHiddenTiles(raw, over: hiddenOverworldTiles)
         }
@@ -490,7 +459,6 @@ public final class TrackerOptions {
         var bools: [String: Bool] = [:]
         for (key, keyPath) in Self.persistedBoolKeyPaths { bools[key] = self[keyPath: keyPath] }
         store.set(bools, forKey: Self.settingsBoolsKey)
-        store.set(broadcastWindowSize.rawValue, forKey: Self.broadcastSizeKey)
         store.set(Self.encodeHiddenTiles(hiddenOverworldTiles), forKey: Self.hiddenTilesKey)
         store.set(customLevelPrefix, forKey: Self.customLevelPrefixKey)
     }
