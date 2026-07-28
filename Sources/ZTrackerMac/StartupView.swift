@@ -17,6 +17,9 @@ struct StartupView: View {
     var model: TrackerModel
     var options: TrackerOptions
     var onQuestSelected: (OverworldQuest) -> Void
+    /// Load a saved run from a file picker (T-177). Provided by ContentView, which
+    /// holds the timer; applying a save sets `model.quest`, which flips to the tracker.
+    var onLoadSavedState: () -> Void = {}
 
     @State private var tip: Tip = TipProvider.random()
     /// A picked custom-map image awaiting the overworld-type choice (T-167).
@@ -96,22 +99,27 @@ struct StartupView: View {
         VStack(spacing: 12) {
             Text("- OR -")
                 .foregroundStyle(.secondary)
-            Button("Start: from a previously saved state") {
-                // Disabled until save-file persistence exists — see
-                // tasks/T-003.md "Out of scope" and data-model.md § 4.
+            // Same label form (full-width text + vertical padding) as the four quest
+            // buttons above, so these two match their size rather than reading as
+            // lesser options (T-177).
+            Button {
+                onLoadSavedState()
+            } label: {
+                Text("Start: from a previously saved state")
+                    .frame(maxWidth: .infinity).padding(.vertical, 10)
             }
             .buttonStyle(.bordered)
-            .frame(maxWidth: .infinity)
-            .disabled(true)
-            .help("Coming soon — needs save-file persistence (see data-model.md)")
+            .help("Load a previously saved run (default: ~/Documents/ztracker).")
 
             // Custom-map fog-of-war (T-167): import a custom overworld image and start
             // with every screen hidden until marked/revealed.
-            Button("Start: with a custom overworld map…") {
+            Button {
                 pendingCustomMapPath = StartupView.pickCustomMapImage()
+            } label: {
+                Text("Start: with a custom overworld map…")
+                    .frame(maxWidth: .infinity).padding(.vertical, 10)
             }
             .buttonStyle(.bordered)
-            .frame(maxWidth: .infinity)
             .help("Pick a custom overworld map image (e.g. from the Infinite Hyrule generator). Screens start under fog and reveal as you mark them.")
         }
         // Custom-map setup (T-167): a real sheet, not a confirmationDialog — macOS

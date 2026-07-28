@@ -28,6 +28,7 @@
 | [T-169](./T-169.md) | Hotkey smarts — repeat-press cycling, shop add/remove/replace, Unmark–Remark chains | frontend-engineer | — | feat/hotkey-smarts | — | docs/reviews/feat-hotkey-smarts/final.md |
 | [T-168](./T-168.md) | Hotkeys — hover-driven contexts, hint zones, dungeon items, Notes region | frontend-engineer | — | feat/hotkey-contexts | — | docs/reviews/feat-hotkey-contexts/final.md |
 | [T-167](./T-167.md) | Custom overworld map with fog-of-war | frontend-engineer | — | feat/custom-map-fog | — | docs/reviews/feat-custom-map-fog/final.md |
+| [T-177](./T-177.md) | Startup buttons — equal sizing + wire the load-saved-state button | frontend-engineer | — | feat/startup-buttons | — | docs/reviews/feat-startup-buttons/final.md |
 | [T-170.1](./T-170.1.md) | Voice editor navigation — bound/unbound/all filter + collapsible sections | frontend-engineer | T-170 | feat/voice-editor-nav | — | docs/reviews/feat-voice-editor-nav/final.md |
 | [T-170](./T-170.md) | Hotkey editor navigation — bound/unbound/all filter + collapsible sections | frontend-engineer | — | feat/hotkey-editor-nav | — | docs/reviews/feat-hotkey-editor-nav/final.md |
 | [T-176](./T-176.md) | Fix — untrack the accidentally-committed release .dmg | devops | — | fix/untrack-dmg | — | docs/reviews/fix-untrack-dmg/final.md |
