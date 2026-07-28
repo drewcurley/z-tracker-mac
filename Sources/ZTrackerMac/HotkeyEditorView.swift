@@ -16,6 +16,13 @@ struct HotkeyEditorView: View {
     @State private var pendingConflict: PendingConflict?
     @State private var importReport: ImportReport?
     @State private var filter: String = ""
+    /// Show all selectors, only bound ones, or only unbound ones (T-170) — the list is
+    /// long, so this makes "what did I bind" and "what's left to bind" one click each.
+    @State private var boundFilter: BoundFilter = .all
+    /// Contexts the user has collapsed (T-170); the rest stay expanded.
+    @State private var collapsed: Set<HotkeyContext> = []
+
+    enum BoundFilter: String, CaseIterable { case all = "All", bound = "Bound", unbound = "Unbound" }
 
     struct PendingConflict: Identifiable {
         let id = UUID(); let selectorID: String; let chord: HotkeyChord; let conflicts: [HotkeySelector]
@@ -32,13 +39,11 @@ struct HotkeyEditorView: View {
                         let rows = visibleSelectors(context)
                         if !rows.isEmpty {
                             Section {
-                                ForEach(rows) { selector in row(selector) }
+                                if !collapsed.contains(context) {
+                                    ForEach(rows) { selector in row(selector) }
+                                }
                             } header: {
-                                Text(context.displayName)
-                                    .font(.caption.bold()).foregroundStyle(.secondary)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .padding(.vertical, 3)
-                                    .background(.bar)
+                                sectionHeader(context, count: rows.count)
                             }
                         }
                     }
@@ -76,17 +81,53 @@ struct HotkeyEditorView: View {
     // MARK: Toolbar
 
     private var toolbar: some View {
-        HStack(spacing: 8) {
-            Text("Hotkeys").font(.headline)
-            Spacer()
-            TextField("Filter", text: $filter)
-                .textFieldStyle(.roundedBorder).frame(width: 130)
-            Button("Import…") { importFile() }
-            Button("Export…") { exportFile() }
-            Button("Clear all") { config.clearAll() }
-                .disabled(config.bindings.isEmpty)
+        VStack(spacing: 6) {
+            HStack(spacing: 8) {
+                Text("Hotkeys").font(.headline)
+                Spacer()
+                TextField("Filter", text: $filter)
+                    .textFieldStyle(.roundedBorder).frame(width: 130)
+                Button("Import…") { importFile() }
+                Button("Export…") { exportFile() }
+                Button("Clear all") { config.clearAll() }
+                    .disabled(config.bindings.isEmpty)
+            }
+            HStack(spacing: 8) {
+                Picker("", selection: $boundFilter) {
+                    ForEach(BoundFilter.allCases, id: \.self) { Text($0.rawValue).tag($0) }
+                }
+                .pickerStyle(.segmented).labelsHidden().fixedSize()
+                Spacer()
+                Button("Expand all") { collapsed.removeAll() }
+                    .disabled(collapsed.isEmpty)
+                Button("Collapse all") { collapsed = Set(HotkeyContext.editorOrder) }
+                    .disabled(collapsed.count == HotkeyContext.editorOrder.count)
+            }
         }
         .controlSize(.small)
+    }
+
+    /// A collapsible section header (T-170): click anywhere on it to fold/unfold the
+    /// context; shows how many rows it currently holds under the active filters.
+    private func sectionHeader(_ context: HotkeyContext, count: Int) -> some View {
+        Button {
+            if collapsed.contains(context) { collapsed.remove(context) } else { collapsed.insert(context) }
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: collapsed.contains(context) ? "chevron.right" : "chevron.down")
+                    .font(.system(size: 9, weight: .bold)).frame(width: 10)
+                Text(context.displayName).font(.caption.bold())
+                Text("\(count)").font(.caption2)
+                    .padding(.horizontal, 5).padding(.vertical, 1)
+                    .background(Capsule().fill(Color(white: 0.25)))
+                Spacer()
+            }
+            .foregroundStyle(.secondary)
+            .padding(.vertical, 3).padding(.horizontal, 2)
+            .contentShape(Rectangle())
+            .background(.bar)
+        }
+        .buttonStyle(.plain)
     }
 
     // MARK: One selector row
@@ -118,7 +159,12 @@ struct HotkeyEditorView: View {
     }
 
     private func visibleSelectors(_ context: HotkeyContext) -> [HotkeySelector] {
-        let sels = HotkeyCatalog.selectors(in: context)
+        var sels = HotkeyCatalog.selectors(in: context)
+        switch boundFilter {
+        case .all: break
+        case .bound:   sels = sels.filter { config.chord(for: $0.id) != nil }
+        case .unbound: sels = sels.filter { config.chord(for: $0.id) == nil }
+        }
         guard !filter.isEmpty else { return sels }
         let f = filter.lowercased()
         return sels.filter { $0.displayName.lowercased().contains(f) || $0.id.lowercased().contains(f) }
