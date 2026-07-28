@@ -42,6 +42,10 @@ struct ContentView: View {
                     // then start the run.
                     options.saveSettings()
                     model.selectQuest(quest)
+                }, onLoadSavedState: {
+                    // Load a saved run (T-177): the picker + apply live in GameSave;
+                    // applying sets model.quest, which flips this view to the tracker.
+                    GameSave.manualLoad(model: model, timer: timer)
                 })
             } else {
                 MainTrackerPlaceholderView(model: model, options: options, breakout: breakout, timer: timer, reminders: reminders, overlays: overlays, hotkeys: hotkeys, voiceConfig: voiceConfig, focus: focus, onResetApp: onResetApp)
