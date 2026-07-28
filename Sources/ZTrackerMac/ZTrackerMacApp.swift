@@ -33,6 +33,9 @@ let DungeonBandWindowID = "z-dungeon-band"
 /// The id of the broken-out overworld map window (T-124).
 let OverworldWindowID = "z-overworld"
 
+/// The id of the broadcast **mirror** window (T-178) — a synced full-tracker clone.
+let BroadcastWindowID = "z-broadcast"
+
 /// The Settings menu command (⌘,), replacing the default app-settings item so it
 /// opens our resizable Settings window instead of a native Settings scene.
 private struct OpenSettingsButton: View {
@@ -87,6 +90,9 @@ struct ZTrackerMacApp: App {
     @State private var options = TrackerOptions.withPersistence()
     /// Which major areas are broken out into their own windows (T-100).
     @State private var breakout = BreakoutWindows()
+    /// A separate breakout state for the broadcast mirror (T-178) so it always shows the
+    /// full inline layout regardless of what the primary window has popped out.
+    @State private var mirrorBreakout = BreakoutWindows()
     /// The run timer (T-035.4), hoisted to app level (T-101) so it can also be
     /// shown in a duplicate window; reset with the app.
     @State private var timer = TrackerTimer()
@@ -133,10 +139,29 @@ struct ZTrackerMacApp: App {
             GameTimelineView(timeline: model.timeline)
                 .padding(10)
                 .frame(minWidth: 360, minHeight: 140)
-                .onAppear { breakout.timelinePoppedOut = true }
-                .onDisappear { breakout.timelinePoppedOut = false }
+                // The pop-out control (main or mirror) flags its own window (T-178);
+                // closing the shared window brings the section back inline in both.
+                .onDisappear { breakout.timelinePoppedOut = false; mirrorBreakout.timelinePoppedOut = false }
         }
         .defaultSize(width: 720, height: 200)
+
+        // The broadcast mirror window (T-178) — a second full tracker over the same
+        // shared state, so it stays in sync and is mouse-editable. `isMirror` keeps the
+        // hotkey dispatcher / voice / poll loop single-instance on the primary; its own
+        // `mirrorBreakout` means it always shows the full inline layout. Titled
+        // "Broadcast" (not "Z-Tracker") so the primary's key monitor doesn't fire for
+        // keystrokes in this window.
+        Window("Broadcast", id: BroadcastWindowID) {
+            Group {
+                if model.quest != nil {
+                    MainTrackerPlaceholderView(model: model, options: options, breakout: mirrorBreakout, timer: timer, reminders: reminders, overlays: overlays, hotkeys: hotkeys, voiceConfig: voiceConfig, focus: focus, onResetApp: resetApp, isMirror: true)
+                } else {
+                    ContentUnavailableView("No run in progress", systemImage: "tv",
+                        description: Text("Start a run in the main window and it will mirror here."))
+                }
+            }
+        }
+        .defaultSize(width: 900, height: 950)
 
         // The hotkey editor window (T-131) — opened from Settings' "Edit hotkeys…".
         Window("Hotkeys", id: HotkeyWindowID) {
@@ -167,8 +192,7 @@ struct ZTrackerMacApp: App {
                 DungeonBandView(model: model, options: options, focus: focus).padding(12)
             }
             .frame(minWidth: 700, minHeight: 400)
-            .onAppear { breakout.dungeonBandPoppedOut = true }
-            .onDisappear { breakout.dungeonBandPoppedOut = false }
+            .onDisappear { breakout.dungeonBandPoppedOut = false; mirrorBreakout.dungeonBandPoppedOut = false }
         }
         .defaultSize(width: 1000, height: 700)
 
@@ -180,8 +204,7 @@ struct ZTrackerMacApp: App {
                                      timer: timer, reminders: reminders, focus: focus).padding(12)
             }
             .frame(minWidth: 640, minHeight: 360)
-            .onAppear { breakout.overworldPoppedOut = true }
-            .onDisappear { breakout.overworldPoppedOut = false }
+            .onDisappear { breakout.overworldPoppedOut = false; mirrorBreakout.overworldPoppedOut = false }
         }
         .defaultSize(width: 1100, height: 620)
 

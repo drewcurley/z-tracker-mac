@@ -165,20 +165,12 @@ struct SettingsPanelView: View {
             Toggle("Listen for speech", isOn: Bindable(options).listenForSpeech)
             Toggle("Confirmation sound", isOn: Bindable(options).confirmationSound)
 
-            Text("Broadcast window")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            Toggle("Broadcast window", isOn: Bindable(options).showBroadcastWindow)
-                .labelsHidden()
-            Picker("", selection: Bindable(options).broadcastWindowSize) {
-                ForEach(BroadcastWindowSize.allCases, id: \.self) { size in
-                    Text(size.displayName).tag(size)
-                }
-            }
-            .pickerStyle(.radioGroup)
-            .disabled(!options.showBroadcastWindow)
-            Toggle("Include overworld magnifier", isOn: Bindable(options).broadcastWindowIncludesOverworldMagnifier)
-                .disabled(!options.showBroadcastWindow)
+            // Show/hide the top Info panel (T-178) — for players who don't use it and
+            // want a tighter layout / cleaner broadcast. The broadcast mirror window
+            // itself is opened from the Window menu, not a persisted toggle.
+            Toggle("Show Info panel", isOn: Bindable(options).showInfoPanel)
+            Toggle("Use detailed app icon", isOn: Bindable(options).useDetailedAppIcon)
+                .help("Swap the dock icon to the original, more detailed design (while the app is open).")
 
             Toggle("Mouse magnifier window", isOn: Bindable(options).showMouseMagnifierWindow)
             Toggle("Hide timer", isOn: Bindable(options).hideTimer)

@@ -30,6 +30,12 @@ struct MainTrackerPlaceholderView: View {
     /// "Reset App" — discard the run and return to the startup screen (T-046),
     /// offered from the Info group's reset buttons (T-048).
     var onResetApp: () -> Void = {}
+    /// True for the broadcast **mirror** window (T-178): renders the same tracker over
+    /// the same shared state (so it stays in sync and is mouse-editable), but does NOT
+    /// install the app-global singletons — the hotkey dispatcher, voice, and the
+    /// reminder/timeline poll loop stay owned by the primary window, or they'd
+    /// double-fire.
+    var isMirror: Bool = false
 
     @Environment(\.openWindow) private var openWindow
     @Environment(\.dismissWindow) private var dismissWindow
@@ -81,7 +87,10 @@ struct MainTrackerPlaceholderView: View {
                 .help(timelineCollapsed ? "Show the timeline" : "Collapse the timeline")
                 // Pop-out lives next to the label (T-121) so it reads as applying to
                 // the whole timeline, not just the log beside it.
-                Button { openWindow(id: TimelineWindowID) } label: {
+                Button {
+                    breakout.timelinePoppedOut = true
+                    openWindow(id: TimelineWindowID)
+                } label: {
                     Image(systemName: "rectangle.portrait.and.arrow.right").font(.system(size: 11))
                 }
                 .buttonStyle(.plain)
@@ -105,7 +114,10 @@ struct MainTrackerPlaceholderView: View {
                 HStack(spacing: 8) {
                     Text("Timeline is in a separate window.")
                         .font(.system(size: 11)).foregroundStyle(.secondary)
-                    Button("Bring back") { dismissWindow(id: TimelineWindowID) }
+                    Button("Bring back") {
+                        breakout.timelinePoppedOut = false
+                        dismissWindow(id: TimelineWindowID)
+                    }
                         .font(.system(size: 11)).controlSize(.small)
                 }
                 .padding(.vertical, 8)
@@ -124,10 +136,11 @@ struct MainTrackerPlaceholderView: View {
     private var dungeonBandSection: some View {
         Group {
             if breakout.dungeonBandPoppedOut {
-                slimBreakoutPlaceholder("Dungeon area", windowID: DungeonBandWindowID)
+                slimBreakoutPlaceholder("Dungeon area", windowID: DungeonBandWindowID,
+                                        onBringBack: { breakout.dungeonBandPoppedOut = false })
             } else {
                 DungeonBandView(model: model, options: options, focus: focus)
-                    .overlay(alignment: .topTrailing) { cornerPopOutButton(windowID: DungeonBandWindowID) }
+                    .overlay(alignment: .topTrailing) { cornerPopOutButton(windowID: DungeonBandWindowID) { breakout.dungeonBandPoppedOut = true } }
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -135,8 +148,11 @@ struct MainTrackerPlaceholderView: View {
 
     /// A small pop-out button tucked into a section's top-trailing corner (T-126),
     /// so a break-out area costs no dedicated header row.
-    private func cornerPopOutButton(windowID: String) -> some View {
-        Button { openWindow(id: windowID) } label: {
+    /// Pop a section into its own window (T-178): the caller flags **its own**
+    /// breakout state (`breakout` here is the main window's or the mirror's), so
+    /// popping out from the broadcast window only affects the broadcast, not the main.
+    private func cornerPopOutButton(windowID: String, onPop: @escaping () -> Void) -> some View {
+        Button { onPop(); openWindow(id: windowID) } label: {
             Image(systemName: "rectangle.portrait.and.arrow.right")
                 .font(.system(size: 10))
                 .padding(3)
@@ -149,12 +165,13 @@ struct MainTrackerPlaceholderView: View {
     }
 
     /// The one-line "… is in a separate window / Bring back" shown in place of a
-    /// popped-out section (T-126).
-    private func slimBreakoutPlaceholder(_ area: String, windowID: String) -> some View {
+    /// popped-out section (T-126). "Bring back" clears this window's own flag.
+    private func slimBreakoutPlaceholder(_ area: String, windowID: String,
+                                         onBringBack: @escaping () -> Void) -> some View {
         HStack(spacing: 8) {
             Text("\(area) is in a separate window.")
                 .font(.system(size: 11)).foregroundStyle(.secondary)
-            Button("Bring back") { dismissWindow(id: windowID) }
+            Button("Bring back") { onBringBack(); dismissWindow(id: windowID) }
                 .font(.system(size: 11)).controlSize(.small)
             Spacer()
         }
@@ -194,8 +211,12 @@ struct MainTrackerPlaceholderView: View {
                     TopSectionGroup(title: "Flags") {
                         SeedFlagsView(model: model, options: options, playerState: model.playerComputedStateSummary, mapState: mapState, timer: timer, voice: voice)
                     }
-                    TopSectionGroup(title: "Info") {
-                        MapInfoView(model: model, playerState: model.playerComputedStateSummary, mapState: mapState, overlays: overlays, timer: timer, onResetApp: onResetApp)
+                    // The Info panel is suppressible (T-178) for a tighter layout /
+                    // cleaner broadcast; global, so the main window and the mirror agree.
+                    if options.showInfoPanel {
+                        TopSectionGroup(title: "Info") {
+                            MapInfoView(model: model, playerState: model.playerComputedStateSummary, mapState: mapState, overlays: overlays, timer: timer, onResetApp: onResetApp)
+                        }
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -205,11 +226,12 @@ struct MainTrackerPlaceholderView: View {
                 // stretches to the full window width.
                 Group {
                     if breakout.overworldPoppedOut {
-                        slimBreakoutPlaceholder("Overworld", windowID: OverworldWindowID)
+                        slimBreakoutPlaceholder("Overworld", windowID: OverworldWindowID,
+                                                onBringBack: { breakout.overworldPoppedOut = false })
                     } else {
                         OverworldSectionView(model: model, options: options, overlays: overlays,
                                              timer: timer, reminders: reminders, focus: focus)
-                            .overlay(alignment: .topTrailing) { cornerPopOutButton(windowID: OverworldWindowID) }
+                            .overlay(alignment: .topTrailing) { cornerPopOutButton(windowID: OverworldWindowID) { breakout.overworldPoppedOut = true } }
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -252,8 +274,10 @@ struct MainTrackerPlaceholderView: View {
                 .padding(.top, 8)
         }
         // Poll the reminder engine ~once a second (the reference's cadence)
-        // and speak/show the returned announcements.
+        // and speak/show the returned announcements. The mirror skips it — one poll
+        // loop only, on the primary (T-178).
         .task {
+            guard !isMirror else { return }
             while !Task.isCancelled {
                 reminders.handle(
                     model.pollReminders(bookForHelpfulHints: options.bookForHelpfulHints),
@@ -276,8 +300,11 @@ struct MainTrackerPlaceholderView: View {
                 try? await Task.sleep(for: .seconds(1))
             }
         }
-        // Global hotkey dispatch (T-132): live while the tracker is on screen.
+        // Global hotkey dispatch (T-132) + voice: live while the tracker is on screen,
+        // but only on the primary window — the mirror shares the same app-global
+        // dispatcher/voice, so installing a second would double-fire every key (T-178).
         .onAppear {
+            guard !isMirror else { return }
             let voiceController = voice ?? VoiceController(model: model, focus: focus, config: voiceConfig, options: options)
             voice = voiceController
             let dispatcher = GlobalHotkeyDispatcher(model: model, options: options, timer: timer, hotkeys: hotkeys, focus: focus, voice: voiceController)
@@ -285,6 +312,7 @@ struct MainTrackerPlaceholderView: View {
             globalHotkeys = dispatcher
         }
         .onDisappear {
+            guard !isMirror else { return }
             globalHotkeys?.uninstall()
             globalHotkeys = nil
             voice?.stop()

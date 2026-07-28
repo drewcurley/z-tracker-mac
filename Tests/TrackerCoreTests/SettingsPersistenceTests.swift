@@ -38,18 +38,18 @@ struct SettingsPersistenceTests {
         #expect(second.showBasementInfo)         // untouched → keeps default true
     }
 
-    @Test("the broadcast size (enum) and hidden-tiles map persist")
+    @Test("a bool setting and the hidden-tiles map persist")
     func enumAndDictPersist() {
         let (s, cleanup) = makeStore(); defer { cleanup() }
         let first = TrackerOptions()
         first.enableSettingsPersistence(store: s)
-        first.broadcastWindowSize = .twoThirds
+        first.showInfoPanel = false
         first.hiddenOverworldTiles[.sword3] = true
         first.saveSettings()
 
         let second = TrackerOptions()
         second.enableSettingsPersistence(store: s)
-        #expect(second.broadcastWindowSize == .twoThirds)
+        #expect(second.showInfoPanel == false)
         #expect(second.hiddenOverworldTiles[.sword3] == true)
         #expect(second.hiddenOverworldTiles[.sword2] == false)   // default kept
     }
