@@ -169,6 +169,8 @@ struct SettingsPanelView: View {
             // want a tighter layout / cleaner broadcast. The broadcast mirror window
             // itself is opened from the Window menu, not a persisted toggle.
             Toggle("Show Info panel", isOn: Bindable(options).showInfoPanel)
+            Toggle("Use simple app icon", isOn: Bindable(options).useSimpleAppIcon)
+                .help("Swap the dock icon to the simpler alternate design.")
 
             Toggle("Mouse magnifier window", isOn: Bindable(options).showMouseMagnifierWindow)
             Toggle("Hide timer", isOn: Bindable(options).hideTimer)

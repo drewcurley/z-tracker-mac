@@ -62,6 +62,9 @@ struct ContentView: View {
         // (coreaudiod) now, on the startup screen, so the first real spoken
         // reminder mid-game is instant. The synth speaks async — no UI hang.
         .task { SpeechEngine.warmUp(preferredVoiceIdentifier: options.preferredVoiceIdentifier) }
+        // Apply the chosen dock icon at launch and whenever the setting changes (T-178).
+        .onAppear { AppIconController.apply(useSimple: options.useSimpleAppIcon) }
+        .onChange(of: options.useSimpleAppIcon) { _, v in AppIconController.apply(useSimple: v) }
         // Gate app termination on the run-timer warning (T-109). Captures the
         // hoisted timer + options; `Reset App` resets the timer in place so this
         // closure stays valid across a reset.

@@ -183,6 +183,10 @@ public final class TrackerOptions {
     /// `PlaySoundWhenUseSpeech`, default `true`. Labeled "Confirmation sound"
     /// on-screen.
     public var confirmationSound: Bool
+    /// Use the alternate **simple** app icon instead of the original (more detailed)
+    /// one (T-178, default **false**) — a personal preference. Swaps the dock icon at
+    /// runtime; the bundle's `.icns` (the original) is the base.
+    public var useSimpleAppIcon: Bool
     /// Show the top **Info** panel (Spot Summary / Hint Decoder / overlay toggles /
     /// reset buttons) — T-178, default **true**. Off for players who don't use it and
     /// want a tighter layout (and a cleaner broadcast). Global: applies to the main
@@ -232,6 +236,7 @@ public final class TrackerOptions {
         displaySeedAndFlags: Bool = true,
         listenForSpeech: Bool = false,
         confirmationSound: Bool = true,
+        useSimpleAppIcon: Bool = false,
         showInfoPanel: Bool = true,
         showMouseMagnifierWindow: Bool = false,
         hideTimer: Bool = false,
@@ -266,6 +271,7 @@ public final class TrackerOptions {
         self.displaySeedAndFlags = displaySeedAndFlags
         self.listenForSpeech = listenForSpeech
         self.confirmationSound = confirmationSound
+        self.useSimpleAppIcon = useSimpleAppIcon
         self.showInfoPanel = showInfoPanel
         self.showMouseMagnifierWindow = showMouseMagnifierWindow
         self.hideTimer = hideTimer
@@ -422,6 +428,7 @@ public final class TrackerOptions {
         "displaySeedAndFlags": \.displaySeedAndFlags,
         "listenForSpeech": \.listenForSpeech,
         "confirmationSound": \.confirmationSound,
+        "useSimpleAppIcon": \.useSimpleAppIcon,
         "showInfoPanel": \.showInfoPanel,
         "showMouseMagnifierWindow": \.showMouseMagnifierWindow,
         "hideTimer": \.hideTimer,

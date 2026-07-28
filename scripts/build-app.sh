@@ -48,6 +48,13 @@ if [ -f Bundle/AppIcon.png ]; then
     rm -rf "$(dirname "$ICONSET")"
 fi
 
+# Alternate "simple" app icon (T-178): copied as a loadable resource so the
+# "Use simple app icon" setting can swap the dock icon at runtime (the .icns above
+# stays the original/default).
+if [ -f Bundle/simple.png ]; then
+    cp Bundle/simple.png "$APP/Contents/Resources/AppIcon-simple.png"
+fi
+
 # Sign with a STABLE identity so TCC (mic/speech permission) persists across rebuilds.
 # A self-signed "ZTracker Dev" code-signing cert gives a stable designated requirement
 # — unlike ad-hoc (--sign -), whose identity is the ever-changing binary hash, which
