@@ -26,6 +26,7 @@ struct BlockersView: View {
     private var located: Set<Int> { DungeonTrackerView.locatedDungeonIndices(in: model.overworldGrid) }
 
     var body: some View {
+        let _ = perfTrace()
         // A clean 3×3 of dungeons 1–9 (T-090). The old top-left "Blockers" label
         // cell is dropped — the group header already says "Blockers" — so every
         // dungeon shifts one column left and Level 9 fills the freed slot.
@@ -92,6 +93,7 @@ private struct BlockerBoxView: View {
     }
 
     var body: some View {
+        let _ = perfTrace()
         ZStack {
             RoundedRectangle(cornerRadius: 4).fill(.black.opacity(0.35))
             if let icon = BlockerIcons.icon(for: blocker) {
@@ -162,6 +164,7 @@ private struct BlockerKindPicker: View {
     private let columns = Array(repeating: GridItem(.fixed(40), spacing: 6), count: 4)
 
     var body: some View {
+        let _ = perfTrace()
         VStack(alignment: .leading, spacing: 8) {
             Text("Why did you leave?").font(.caption).foregroundStyle(.secondary)
             section("Need", kinds: Self.needKinds)
@@ -237,6 +240,7 @@ private struct BlockerAppliesToPanel: View {
     }
 
     var body: some View {
+        let _ = perfTrace()
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 6) {
                 if let icon = BlockerIcons.icon(for: blocker) {
@@ -283,6 +287,7 @@ struct BlockerChip: View {
     let resolved: Bool
 
     var body: some View {
+        let _ = perfTrace()
         ZStack {
             Rectangle().fill(resolved ? Color.green : Color.black)
                 .frame(width: 11, height: 11)
@@ -299,6 +304,7 @@ struct BlockerChipRow: View {
     let playerState: PlayerComputedStateSummary
 
     var body: some View {
+        let _ = perfTrace()
         if !blockers.isEmpty {
             HStack(spacing: 1) {
                 ForEach(Array(blockers.enumerated()), id: \.offset) { _, b in

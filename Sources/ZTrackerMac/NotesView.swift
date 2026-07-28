@@ -17,6 +17,7 @@ struct NotesView: View {
     @FocusState private var focused: Bool
 
     var body: some View {
+        let _ = perfTrace()
         ZStack(alignment: .topLeading) {
             TextEditor(text: $model.notes)
                 .font(.system(size: 13, design: .monospaced))

@@ -31,6 +31,10 @@
     <string>@@VERSION@@</string>
     <key>CFBundleVersion</key>
     <string>@@VERSION@@</string>
+    <!-- Build stamp (T-179): git short hash (+ "-dirty") and build time, so the
+         About window can confirm the running app matches the latest local build. -->
+    <key>ZTrackerBuildStamp</key>
+    <string>@@BUILD@@</string>
     <key>LSMinimumSystemVersion</key>
     <string>14.0</string>
     <key>LSApplicationCategoryType</key>

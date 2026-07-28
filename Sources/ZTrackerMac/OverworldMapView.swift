@@ -217,6 +217,7 @@ struct OverworldMapView: View {
     }
 
     var body: some View {
+        let _ = perfTrace()
         GeometryReader { geometry in
             let tileWidth = geometry.size.width / CGFloat(OverworldGrid.columnCount)
             let tileHeight = tileWidth / tileAspectRatio
@@ -440,6 +441,7 @@ struct OverworldMapView: View {
         // The keyboard cursor follows the mouse (T-134) — track the hovered tile
         // regardless of the routing/highlight options below.
         if case .active = phase, !screenIsDeadSpot(column, row) {
+            PerfLog.hover("HOVER overworld (\(column),\(row))")
             focus.hoverOverworld(col: column, row: row)
         } else if case .ended = phase {
             focus.endHover(.overworld)
@@ -848,6 +850,7 @@ private struct TileView: View {
     private static let shopBackground = Color(red: 0xEF / 255.0, green: 0x83 / 255.0, blue: 0)
 
     var body: some View {
+        let _ = perfTrace()
         ZStack(alignment: .topLeading) {
             backgroundView
             // Custom-map fog (T-167): cover undiscovered screens. Drawn over the
@@ -1245,6 +1248,7 @@ private struct OverworldRouteLinesOverlay: View {
     var tileHeight: CGFloat
 
     var body: some View {
+        let _ = perfTrace()
         Canvas { context, _ in
             for line in lines {
                 var path = Path()

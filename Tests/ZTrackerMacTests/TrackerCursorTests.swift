@@ -104,4 +104,20 @@ struct TrackerCursorTests {
         f.moveCursor(dcol: 1, drow: 0)                 // then a keyboard nudge
         #expect(f.overworldCursor == Cell(col: 9, row: 4))
     }
+
+    /// The guarded hover writes (T-179 perf fix) must still leave the state correct
+    /// after many hovers across cells — moving through a grid keeps region/shown set
+    /// and tracks the latest cell; the guard only skips *redundant* equal writes.
+    @Test func guardedHoverStillTracksAcrossCells() {
+        let f = TrackerFocusState()
+        for c in 0..<8 { f.hoverDungeon(col: c, row: 3) }   // sweep a row
+        #expect(f.cursorRegion == .dungeonMap)
+        #expect(f.cursorShown)
+        #expect(f.hoverRegion == .dungeonMap)
+        #expect(f.dungeonCursor == Cell(col: 7, row: 3))    // latest cell
+        // Re-hovering the exact same cell/region is a no-op on the values.
+        f.hoverDungeon(col: 7, row: 3)
+        #expect(f.dungeonCursor == Cell(col: 7, row: 3))
+        #expect(f.activeRegion == .dungeonMap)
+    }
 }

@@ -234,6 +234,9 @@ struct ZTrackerMacApp: App {
     /// with it the run timer. User settings (`options`) are intentionally kept,
     /// like reopening the app on the same machine.
     private func resetApp() {
+        // Offer to save the captured render-perf log before discarding the session
+        // (T-179.1); canceling the prompt aborts the reset.
+        guard PerfLog.confirmSaveOnExit() else { return }
         model = TrackerModel()
         // Reset the hoisted timer in place (T-101/T-109) rather than replacing the
         // instance, so the quit-warning closure captured in `ContentView` keeps

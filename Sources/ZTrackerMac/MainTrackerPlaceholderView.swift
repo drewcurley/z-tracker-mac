@@ -179,6 +179,7 @@ struct MainTrackerPlaceholderView: View {
     }
 
     var body: some View {
+        let _ = perfTrace()
         ScrollView {
             VStack(spacing: 14) {
                 // Top strip (T-035.11): the enlarged OW-spots readout in the open

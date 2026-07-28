@@ -30,7 +30,14 @@ cp "$BIN_DIR/$EXE" "$APP/Contents/MacOS/$EXE"
 # nested bundle, and where `Bundle.module` looks first (Bundle.main.resourceURL).
 cp -R "$BIN_DIR/$RES_BUNDLE" "$APP/Contents/Resources/$RES_BUNDLE"
 
-sed "s/@@VERSION@@/$VERSION/g" Bundle/Info.plist.template > "$APP/Contents/Info.plist"
+# Build stamp (T-179): git short hash (+ "-dirty" if the tree has uncommitted
+# changes) and the build time, so the About window can prove the running app is the
+# latest local build (a stale copy shows an older stamp).
+GIT_HASH="$(git rev-parse --short HEAD 2>/dev/null || echo nogit)"
+git diff --quiet 2>/dev/null && git diff --cached --quiet 2>/dev/null || GIT_HASH="${GIT_HASH}-dirty"
+BUILD_STAMP="${GIT_HASH} · $(date '+%b %d %H:%M')"
+sed -e "s/@@VERSION@@/$VERSION/g" -e "s/@@BUILD@@/$BUILD_STAMP/g" \
+    Bundle/Info.plist.template > "$APP/Contents/Info.plist"
 
 # App icon (T-161/T-178): the **simple** icon is the default/bundle icon now
 # (Bundle/AppIcon-simple.png, pre-rounded to the standard macOS shape via

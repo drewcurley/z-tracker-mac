@@ -16,6 +16,7 @@ struct RowLocatorWidget: View {
     private var totalH: CGFloat { rowH * 8 }
 
     var body: some View {
+        let _ = perfTrace()
         HStack(spacing: 3) {
             // The 8 row slots — normally empty; the hovered row's marker reveals.
             ZStack(alignment: .topLeading) {
