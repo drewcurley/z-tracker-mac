@@ -376,8 +376,7 @@ final class GlobalHotkeyDispatcher {
         OverworldMark.apply(mark, column: cell.col, row: cell.row, grid: model.overworldGrid,
                             releaseTakeAny: { c, r in model.releaseOverworldTakeAny(column: c, row: r) },
                             placeDungeon: { number, c, r in
-                                model.levelHints[HintTarget.dungeon(number)] =
-                                    HintZone.forZoneChar(OverworldZones.zone(column: c, row: r))
+                                OverworldMark.didPlaceDungeon(number, column: c, row: r, model: model, focus: focus)
                             })
         return true
     }

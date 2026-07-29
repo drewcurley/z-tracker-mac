@@ -25,6 +25,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-184](./T-184.md) | Auto-switch the dungeon tab when an overworld tile is marked a dungeon | frontend-engineer | — | feat/auto-switch-dungeon-tab | — | docs/reviews/feat-auto-switch-dungeon-tab/final.md |
 | [T-183](./T-183.md) | Spoiler-log dungeon room-map importer (the deferred .roomMaps section) | frontend-engineer | T-181 | feat/spoiler-room-maps | — | docs/reviews/feat-spoiler-room-maps/final.md |
 | [T-182](./T-182.md) | Dungeon drag-to-swap item boxes (floor ↔ basement) | frontend-engineer | — | feat/dungeon-drag-swap | — | docs/reviews/feat-dungeon-drag-swap/final.md |
 | [T-181](./T-181.md) | Spoiler-log importer — auto-mark the board from a Z1R randomizer spoiler log | frontend-engineer | — | feat/spoiler-importer | — | docs/reviews/feat-spoiler-importer/final.md |

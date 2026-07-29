@@ -83,9 +83,7 @@ struct OverworldSectionView: View {
                 }
             },
             onPlaceDungeon: { number, c, r in
-                guard (1...9).contains(number) else { return }
-                model.levelHints[HintTarget.dungeon(number)] =
-                    HintZone.forZoneChar(OverworldZones.zone(column: c, row: r))
+                OverworldMark.didPlaceDungeon(number, column: c, row: r, model: model, focus: focus)
             },
             onWoodSwordCaveUsedChanged: { used in
                 // Collecting the wood sword at its cave grants the sword (T-118).
