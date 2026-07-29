@@ -23,6 +23,35 @@ struct BoxTests {
         #expect(box.isEmptyRedBox == true)
     }
 
+    @Test("swapContents exchanges both item and possession state (T-182)")
+    func swapContents() {
+        let floor = Box(cellCurrent: ITEMS.heartContainer, playerHas: .no)   // fixed heart
+        let basement = Box(cellCurrent: ITEMS.boomerang, playerHas: .yes)     // taken item
+        floor.swapContents(with: basement)
+        #expect(floor.cellCurrent == ITEMS.boomerang)
+        #expect(floor.playerHas == .yes)
+        #expect(basement.cellCurrent == ITEMS.heartContainer)
+        #expect(basement.playerHas == .no)
+    }
+
+    @Test("swapContents with an empty box moves the item (and clears the source)")
+    func swapWithEmpty() {
+        let full = Box(cellCurrent: ITEMS.wand, playerHas: .no)
+        let empty = Box()
+        full.swapContents(with: empty)
+        #expect(full.cellCurrent == -1)
+        #expect(empty.cellCurrent == ITEMS.wand)
+        #expect(empty.playerHas == .no)
+    }
+
+    @Test("swapContents against itself is a no-op")
+    func swapSelf() {
+        let box = Box(cellCurrent: ITEMS.raft, playerHas: .yes)
+        box.swapContents(with: box)
+        #expect(box.cellCurrent == ITEMS.raft)
+        #expect(box.playerHas == .yes)
+    }
+
     @Test("isDone requires both a known item and playerHas != NO")
     func isDoneMatrix() {
         // known item, not obtained -> not done

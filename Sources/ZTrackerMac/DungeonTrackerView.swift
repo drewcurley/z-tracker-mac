@@ -1,6 +1,59 @@
 import AppKit
 import SwiftUI
 import TrackerCore
+import UniformTypeIdentifiers
+
+/// Drag payload identifying one dungeon item box, for the drag-to-swap gesture
+/// (T-182). Carries the owning dungeon's id so a drop can restrict swaps to the
+/// same dungeon (floor ↔ basement), the case the spoiler importer can't resolve.
+struct DungeonBoxRef: Codable, Transferable {
+    var dungeonId: Int
+    var boxIndex: Int
+    static var transferRepresentation: some TransferRepresentation {
+        CodableRepresentation(contentType: .ztrackerDungeonBox)
+    }
+}
+
+extension UTType {
+    static let ztrackerDungeonBox = UTType(exportedAs: "com.ztracker.dungeon-box")
+}
+
+/// Makes one dungeon item box a drag-to-swap source and drop target (T-182). A
+/// drop from a box in the *same* dungeon swaps the two boxes' contents; a drop
+/// from another dungeon (or onto itself) is rejected. The green ring highlights
+/// the box the drag is currently over.
+private struct DungeonBoxSwapModifier: ViewModifier {
+    let dungeon: Dungeon
+    let idx: Int
+    let enabled: Bool
+    @Binding var dropTargetBox: Int?
+
+    func body(content: Content) -> some View {
+        if enabled {
+            content
+                .draggable(DungeonBoxRef(dungeonId: dungeon.id, boxIndex: idx))
+                .dropDestination(for: DungeonBoxRef.self) { refs, _ in
+                    dropTargetBox = nil
+                    guard let src = refs.first,
+                          src.dungeonId == dungeon.id,
+                          src.boxIndex != idx,
+                          dungeon.boxes.indices.contains(src.boxIndex) else { return false }
+                    dungeon.boxes[src.boxIndex].swapContents(with: dungeon.boxes[idx])
+                    return true
+                } isTargeted: { over in
+                    dropTargetBox = over ? idx : (dropTargetBox == idx ? nil : dropTargetBox)
+                }
+                .overlay {
+                    if dropTargetBox == idx {
+                        RoundedRectangle(cornerRadius: 4)
+                            .strokeBorder(Color.green, lineWidth: 2)
+                    }
+                }
+        } else {
+            content
+        }
+    }
+}
 
 /// The dungeon item-tracker (T-013/T-016 model, rendered). Nine dungeon
 /// cards, each with its located triforce numeral and its item boxes.
@@ -77,6 +130,9 @@ struct DungeonCardView: View {
     /// are optional so the dungeon-map inset can omit them.
     var focus: TrackerFocusState? = nil
     var dungeonRow: Int? = nil
+
+    /// Which box index is currently under a drag-to-swap (T-182), for the drop highlight.
+    @State private var dropTargetBox: Int? = nil
 
     /// The slot label: A–H under HDN (1–8), else the number; Level 9 stays "9".
     private var slotLabel: String {
@@ -177,6 +233,13 @@ struct DungeonCardView: View {
                                  : focus.endHover(.dungeonItem)
                     }
                     .overlay { dungeonItemCursorRing(box: idx) }
+                    // Drag-to-swap (T-182): drag a box onto a sibling in the same
+                    // dungeon to exchange their contents — corrects floor↔basement
+                    // ordering the spoiler log can't express, and simple mis-marks.
+                    // Disabled boxes (identified two-boxer's third slot) don't drag.
+                    .modifier(DungeonBoxSwapModifier(
+                        dungeon: dungeon, idx: idx, enabled: !isDisabledThirdBox,
+                        dropTargetBox: $dropTargetBox))
             }
             // The "ghost" slot under whichever of L1/L4 doesn't hold the movable
             // extra floor item (1Q overworld ↔ 2Q dungeons). Clicking it moves

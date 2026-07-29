@@ -25,6 +25,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-182](./T-182.md) | Dungeon drag-to-swap item boxes (floor ↔ basement) | frontend-engineer | — | feat/dungeon-drag-swap | — | docs/reviews/feat-dungeon-drag-swap/final.md |
 | [T-181](./T-181.md) | Spoiler-log importer — auto-mark the board from a Z1R randomizer spoiler log | frontend-engineer | — | feat/spoiler-importer | — | docs/reviews/feat-spoiler-importer/final.md |
 | [T-180](./T-180.md) | Reconcile the reference-coverage audit against the task list (kills, re-scopes, spoiler importer) | analyst | — | chore/coverage-reconcile | — | docs/reviews/chore-coverage-reconcile/final.md |
 | [T-179](./T-179.md) | Dungeon-hover FPS fix (ViewThatFits removal) + file-based render-perf logging | frontend-engineer | — | fix/dungeon-hover-fps | — | docs/reviews/fix-dungeon-hover-fps/final.md |
