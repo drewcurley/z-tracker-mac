@@ -35,6 +35,7 @@ struct ResetButtonsView: View {
     @State private var confirmingResetApp = false
     @State private var confirmingResetTimer = false
     @State private var confirmingGroundhog = false
+    @State private var showSpoilerImport = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -53,9 +54,12 @@ struct ResetButtonsView: View {
                 Button("Load…") { GameSave.manualLoad(model: model, timer: timer) }
                     .help("Load a previously saved run, replacing the current tracker state")
             }
+            Button("Import Spoiler…") { showSpoilerImport = true }
+                .help("Auto-mark the board from a Z1R randomizer spoiler log (…_log.txt)")
         }
         .font(.system(size: 10))
         .controlSize(.small)
+        .sheet(isPresented: $showSpoilerImport) { SpoilerImportView(model: model) }
         .confirmationDialog("Reset the app?", isPresented: $confirmingResetApp, titleVisibility: .visible) {
             Button("Reset App (discard everything)", role: .destructive, action: onResetApp)
             Button("Cancel", role: .cancel) {}

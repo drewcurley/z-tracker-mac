@@ -20,6 +20,12 @@ extension OverworldTileMark {
         case .unmarked: -1
         case .dungeon(let n) where (1...9).contains(n): n - 1                // 0…8
         case .anyRoad(let n) where (1...4).contains(n): 9 + (n - 1)          // 9…12
+        // Any-road "?" (unknown order, T-181) — an app-specific extension beyond
+        // the reference's 0…35 domain. 36 is never an extraData key (any-roads
+        // aren't toggleable) and never an any-road *location* slot (not 9…12), so
+        // the recompute treats it as an interesting, uncategorized mark. `maxRawIndex`
+        // (35 = the reference's DARK_X sentinel) is deliberately left unchanged.
+        case .anyRoad(0): 36
         case .swordCave(3): 13
         case .swordCave(2): 14
         case .swordCave(1): 15
@@ -80,6 +86,7 @@ extension OverworldTileMark {
         case 33: .takeAny
         case 34: .potionShop
         case 35: .dontCare
+        case 36: .anyRoad(0)   // any-road "?" (unknown order, T-181)
         default: nil
         }
     }
