@@ -87,6 +87,19 @@ public enum OverworldHiddenTileKind: String, Codable, CaseIterable, Sendable {
 /// don't publish it on the options menu", `OptionsMenu.fs:400-419`), and
 /// `UseBlurEffects` does not appear anywhere in `OptionsMenu.fs` — it's
 /// controlled elsewhere in the reference app, not this component.
+/// The app's color theme (T-187, beyond the reference). `system` follows the OS.
+public enum AppTheme: String, Codable, CaseIterable, Sendable {
+    case dark, light, system
+
+    public var displayName: String {
+        switch self {
+        case .dark: "Dark"
+        case .light: "Light"
+        case .system: "OS (system)"
+        }
+    }
+}
+
 @Observable
 public final class TrackerOptions {
     // MARK: Overworld settings (TrackerModelOptions.fs Overworld module)
@@ -141,9 +154,10 @@ public final class TrackerOptions {
     /// `DefaultRoomPreferNonDescriptToMaybePushBlock`, default `false`.
     /// Labeled "Default to NonDescript" on-screen (`OptionsMenu.fs:60`).
     public var defaultToNonDescript: Bool
-    /// `GiveDungeonTrackerSunglasses`, default `true`. Labeled "Dungeon
-    /// 'sunglasses'" on-screen (`OptionsMenu.fs:61`).
-    public var dungeonSunglasses: Bool
+    /// The app's color theme (T-187, beyond the reference): dark (default), light, or
+    /// follow the OS. Replaces the reference's unimplemented "Dungeon 'sunglasses'"
+    /// toggle. Drives `NSApp.appearance`.
+    public var appTheme: AppTheme
 
     // MARK: "More settings…" — overworld tile hiding (OptionsMenu.fs:115-205)
 
@@ -235,7 +249,7 @@ public final class TrackerOptions {
         bookForHelpfulHints: Bool = false,
         leftDragAutoInverts: Bool = false,
         defaultToNonDescript: Bool = false,
-        dungeonSunglasses: Bool = true,
+        appTheme: AppTheme = .dark,
         hiddenOverworldTiles: [OverworldHiddenTileKind: Bool]? = nil,
         hideNoLongerRelevantShopItems: Bool = false,
         alwaysHideMeatShops: Bool = false,
@@ -272,7 +286,7 @@ public final class TrackerOptions {
         self.bookForHelpfulHints = bookForHelpfulHints
         self.leftDragAutoInverts = leftDragAutoInverts
         self.defaultToNonDescript = defaultToNonDescript
-        self.dungeonSunglasses = dungeonSunglasses
+        self.appTheme = appTheme
         self.hiddenOverworldTiles = hiddenOverworldTiles ?? Self.defaultHiddenOverworldTiles()
         self.hideNoLongerRelevantShopItems = hideNoLongerRelevantShopItems
         self.alwaysHideMeatShops = alwaysHideMeatShops
@@ -416,6 +430,7 @@ public final class TrackerOptions {
     private static let settingsBoolsKey = "ztracker.settings.bools"
     private static let hiddenTilesKey = "ztracker.settings.hiddenTiles"
     private static let customLevelPrefixKey = "ztracker.settings.customLevelPrefix"
+    private static let appThemeKey = "ztracker.settings.appTheme"
 
     /// Every persisted Bool setting, keyed by a stable name → its storage. This
     /// is the single source of truth for what persists — add a setting here and
@@ -436,7 +451,6 @@ public final class TrackerOptions {
         "bookForHelpfulHints": \.bookForHelpfulHints,
         "leftDragAutoInverts": \.leftDragAutoInverts,
         "defaultToNonDescript": \.defaultToNonDescript,
-        "dungeonSunglasses": \.dungeonSunglasses,
         "hideNoLongerRelevantShopItems": \.hideNoLongerRelevantShopItems,
         "alwaysHideMeatShops": \.alwaysHideMeatShops,
         "animateTileChanges": \.animateTileChanges,
@@ -474,6 +488,9 @@ public final class TrackerOptions {
         if let prefix = store.string(forKey: Self.customLevelPrefixKey) {
             customLevelPrefix = prefix
         }
+        if let raw = store.string(forKey: Self.appThemeKey), let theme = AppTheme(rawValue: raw) {
+            appTheme = theme
+        }
     }
 
     /// Write the current startup settings to the store (no-op if persistence is
@@ -486,6 +503,7 @@ public final class TrackerOptions {
         store.set(bools, forKey: Self.settingsBoolsKey)
         store.set(Self.encodeHiddenTiles(hiddenOverworldTiles), forKey: Self.hiddenTilesKey)
         store.set(customLevelPrefix, forKey: Self.customLevelPrefixKey)
+        store.set(appTheme.rawValue, forKey: Self.appThemeKey)
     }
 
     private static func encodeHiddenTiles(_ tiles: [OverworldHiddenTileKind: Bool]) -> [String: Bool] {

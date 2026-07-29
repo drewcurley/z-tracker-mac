@@ -112,7 +112,6 @@ struct SettingsPanelView: View {
             // section (T-092), not here.
             Toggle("Left-drag auto-inverts", isOn: Bindable(options).leftDragAutoInverts)
             Toggle("Default to NonDescript", isOn: Bindable(options).defaultToNonDescript)
-            Toggle("Dungeon 'sunglasses'", isOn: Bindable(options).dungeonSunglasses)
         }
         .toggleStyle(.checkbox)
     }
@@ -167,6 +166,14 @@ struct SettingsPanelView: View {
     private var otherColumn: some View {
         VStack(alignment: .leading, spacing: 10) {
             settingsHeader("Other")
+            Picker("Theme", selection: Bindable(options).appTheme) {
+                ForEach(AppTheme.allCases, id: \.self) { theme in
+                    Text(theme.displayName).tag(theme)
+                }
+            }
+            .pickerStyle(.menu)
+            .fixedSize()
+            .help("The app's color theme: Dark (default), Light, or follow the OS. The game board art stays dark; this mainly themes the panels and controls.")
             Toggle("Check for updates on launch", isOn: Bindable(options).checkForUpdatesOnLaunch)
                 .help("On launch, check GitHub for a newer release and show a notice. Sends no data.")
             Toggle("Animate tile changes", isOn: Bindable(options).animateTileChanges)

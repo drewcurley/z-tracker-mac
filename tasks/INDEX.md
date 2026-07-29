@@ -25,6 +25,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-187](./T-187.md) | App theme chooser (Dark / Light / OS) — replaces the dead sunglasses toggle | frontend-engineer | — | feat/theme-chooser | — | docs/reviews/feat-theme-chooser/final.md |
 | [T-186](./T-186.md) | Fix — the run timeline isn't restored on save/load | backend-engineer | — | fix/timeline-restore | — | docs/reviews/fix-timeline-restore/final.md |
 | [T-185](./T-185.md) | Graphical overworld tile chooser (option) + native double-left menu + shop/sword/enemy/reminder refinements | frontend-engineer | — | feat/graphical-tile-chooser | — | docs/reviews/feat-graphical-tile-chooser/final.md |
 | [T-184](./T-184.md) | Auto-switch the dungeon tab when an overworld tile is marked a dungeon | frontend-engineer | — | feat/auto-switch-dungeon-tab | — | docs/reviews/feat-auto-switch-dungeon-tab/final.md |
