@@ -145,6 +145,19 @@ public final class Box {
         self.playerHas = playerHas
     }
 
+    /// Exchanges the known item **and** possession state with another box. Backs
+    /// the dungeon UI's drag-to-swap (T-182): the spoiler log doesn't distinguish
+    /// a dungeon's floor item from its basement item (it fills boxes in listed
+    /// order), and a swap corrects that as well as ordinary mis-marks. Swapping
+    /// two boxes within the same item set preserves item uniqueness, so it's
+    /// always legal. No-op against itself.
+    public func swapContents(with other: Box) {
+        guard other !== self else { return }
+        let mineCell = cellCurrent, mineHas = playerHas
+        self.set(cellCurrent: other.cellCurrent, playerHas: other.playerHas)
+        other.set(cellCurrent: mineCell, playerHas: mineHas)
+    }
+
     /// Whether a known item is recorded here. When true, a plain left-click in
     /// the UI toggles taken/untaken (`toggleTaken`) rather than opening the item
     /// picker (T-044).

@@ -49,5 +49,22 @@
     <string>Z-Tracker listens for spoken commands so you can mark the map hands-free.</string>
     <key>NSSpeechRecognitionUsageDescription</key>
     <string>Z-Tracker turns your spoken commands into tracker marks using on-device speech recognition.</string>
+    <!-- Custom drag payload for the dungeon drag-to-swap gesture (T-182). Declared
+         so the in-app drag/drop type is registered and doesn't log at runtime. -->
+    <key>UTExportedTypeDeclarations</key>
+    <array>
+        <dict>
+            <key>UTTypeIdentifier</key>
+            <string>com.ztracker.dungeon-box</string>
+            <key>UTTypeDescription</key>
+            <string>Z-Tracker dungeon item box reference</string>
+            <key>UTTypeConformsTo</key>
+            <array>
+                <string>public.data</string>
+            </array>
+            <key>UTTypeTagSpecification</key>
+            <dict/>
+        </dict>
+    </array>
 </dict>
 </plist>
