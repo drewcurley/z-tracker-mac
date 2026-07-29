@@ -16,6 +16,48 @@ struct OverworldTileMarkTests {
         #expect(mark.displayName == "Any road \(number)")
     }
 
+    // MARK: - Any-road "?" (unknown order, T-181)
+
+    @Test("any-road ? has its own display name, icon, and is not toggleable")
+    func anyRoadUnknownBasics() {
+        let mark = OverworldTileMark.anyRoad(0)
+        #expect(mark.displayName == "Any road (?)")
+        #expect(mark.iconSource == .anyRoadUnknown)
+        #expect(mark.isUsedToggleable == false)
+        #expect(mark.placesUsedWhenMarked == false)
+    }
+
+    @Test("any-road ? round-trips through the raw-index bridge at 36, without colliding")
+    func anyRoadUnknownRawIndex() {
+        #expect(OverworldTileMark.anyRoad(0).rawIndex == 36)
+        #expect(OverworldTileMark.fromRawIndex(36) == .anyRoad(0))
+        // maxRawIndex stays the reference DARK_X sentinel (35), so extraData size is unchanged.
+        #expect(OverworldTileMark.maxRawIndex == 35)
+        // 36 is not a numbered any-road slot (9…12) and not an item shop (16…23).
+        #expect(!(9...12).contains(36))
+        #expect(!OverworldTileMark.isItem(rawIndex: 36))
+        // The recompute's "interesting" test passes (not -1, not DARK_X).
+        #expect(OverworldTileMark.anyRoad(0).rawIndex != -1)
+        #expect(OverworldTileMark.anyRoad(0).rawIndex != OverworldTileMark.maxRawIndex)
+    }
+
+    @Test("any-road ? survives a Codable round-trip (save schema)")
+    func anyRoadUnknownCodable() throws {
+        let data = try JSONEncoder().encode(OverworldTileMark.anyRoad(0))
+        #expect(try JSONDecoder().decode(OverworldTileMark.self, from: data) == .anyRoad(0))
+    }
+
+    @Test("any-road ? survives an OverworldGrid state save/restore")
+    func anyRoadUnknownGridRoundTrip() {
+        let grid = OverworldGrid()
+        grid.setMark(.anyRoad(0), column: 3, row: 2)
+        grid.setMark(.anyRoad(2), column: 4, row: 2)   // a numbered one, unaffected
+        let restored = OverworldGrid()
+        restored.restore(grid.state)
+        #expect(restored.mark(column: 3, row: 2) == .anyRoad(0))
+        #expect(restored.mark(column: 4, row: 2) == .anyRoad(2))
+    }
+
     @Test("sword cave marks are constructible for all 3 sword caves", arguments: 1...3)
     func swordCaveMarks(number: Int) {
         let mark = OverworldTileMark.swordCave(number)
@@ -115,8 +157,9 @@ struct OverworldTileMarkTests {
         #expect(OverworldTileMark.unmarked.iconSource == .none)
         #expect(OverworldTileMark.dungeon(0).iconSource == .none)
         #expect(OverworldTileMark.dungeon(10).iconSource == .none)
-        #expect(OverworldTileMark.anyRoad(0).iconSource == .none)
+        // anyRoad(0) is now the "?" state (T-181), not out-of-range; 5+ still is.
         #expect(OverworldTileMark.anyRoad(5).iconSource == .none)
+        #expect(OverworldTileMark.anyRoad(99).iconSource == .none)
         #expect(OverworldTileMark.swordCave(0).iconSource == .none)
         #expect(OverworldTileMark.swordCave(4).iconSource == .none)
     }

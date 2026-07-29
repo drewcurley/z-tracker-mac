@@ -658,8 +658,10 @@ struct OverworldMapView: View {
                 Button("Any road \(number)") { applyMark(.anyRoad(number), column: column, row: row) }
                     .disabled(isExhausted(.anyRoad(number), column: column, row: row, counts: counts))
             }
+            // "?" — a warp cave whose 1–4 order isn't known yet (T-181). Not
+            // exhaustion-limited: you may mark several before assigning numbers.
+            Button("Any road (?)") { applyMark(.anyRoad(0), column: column, row: row) }
         }
-        .disabled(allExhausted((1...4).map { .anyRoad($0) }, column: column, row: row, counts: counts))
         Menu("Sword cave") {
             ForEach(1...3, id: \.self) { number in
                 Button(Self.swordCaveLabel(number)) {
@@ -977,6 +979,8 @@ private struct TileView: View {
                       background: dungeonComplete ? Self.completeDungeonBackground : .yellow)
         case .anyRoadDigit(let number):
             digitIcon("\(number)", background: Self.anyRoadBackground)
+        case .anyRoadUnknown:
+            digitIcon("?", background: Self.anyRoadBackground)
         default:
             EmptyView()
         }

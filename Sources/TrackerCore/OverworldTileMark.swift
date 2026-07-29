@@ -66,7 +66,8 @@ public enum OverworldTileMark: Hashable, Codable, Sendable {
     case dontCare
     /// 1...9
     case dungeon(Int)
-    /// 1...4
+    /// 1...4 = a known warp position; **0 = "?"**, an any-road/warp cave whose
+    /// 1–4 order isn't known yet (T-181 — the spoiler log doesn't number them).
     case anyRoad(Int)
     /// 1...3
     case swordCave(Int)
@@ -149,6 +150,7 @@ public enum OverworldTileMark: Hashable, Codable, Sendable {
         case "AnyRoad2": return .anyRoad(2)
         case "AnyRoad3": return .anyRoad(3)
         case "AnyRoad4": return .anyRoad(4)
+        case "AnyRoadUnknown": return .anyRoad(0)
         case "Sword1": return .swordCave(1)
         case "Sword2": return .swordCave(2)
         case "Sword3": return .swordCave(3)
@@ -182,6 +184,7 @@ public enum OverworldTileMark: Hashable, Codable, Sendable {
         case .unmarked: "Unmarked"
         case .dontCare: "Don't care"
         case .dungeon(let number): "Dungeon \(number)"
+        case .anyRoad(0): "Any road (?)"
         case .anyRoad(let number): "Any road \(number)"
         case .swordCave(let number): "Sword cave \(number)"
         case .shop(let kind): kind.displayName
@@ -233,6 +236,8 @@ public enum OverworldTileMark: Hashable, Codable, Sendable {
             .dungeonDigit(number)
         case .anyRoad(let number) where (1...4).contains(number):
             .anyRoadDigit(number)
+        case .anyRoad(0):
+            .anyRoadUnknown
         // Sword caves render with the high-fidelity Items-area sword sprites
         // (wood / white / magical for levels 1 / 2 / 3), not the reference's
         // tiny number-stamped `ow_icons5x9` swords — the level is already
@@ -282,6 +287,9 @@ public enum OverworldTileIconSource: Hashable, Sendable {
     case dungeonDigit(Int)
     /// A painted digit 1...4 on an orchid background (any-roads).
     case anyRoadDigit(Int)
+    /// An any-road/warp cave of **unknown** 1–4 order — a "?" on the same orchid
+    /// background (T-181).
+    case anyRoadUnknown
     /// A 0-based index into `ow_icons5x9.png` (14 icons, 5×9px each,
     /// background baked into the sprite).
     case interiorSprite(Int)

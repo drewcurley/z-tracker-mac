@@ -27,6 +27,8 @@ struct OverworldMarkIcon: View {
             digit(DungeonLabeling.slotLabel(n, hideDungeonNumbers: hideDungeonNumbers), background: .yellow)
         case .anyRoadDigit(let n):
             digit("\(n)", background: Self.anyRoadBg)
+        case .anyRoadUnknown:
+            digit("?", background: Self.anyRoadBg)
         case .interiorSprite(let idx):
             sprite(OverworldInteriorIconAtlas.icon(at: idx), inset: size * 0.14)
         case .swordCaveItem(let level):

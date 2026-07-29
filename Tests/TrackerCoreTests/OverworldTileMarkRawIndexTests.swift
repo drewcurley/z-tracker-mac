@@ -46,7 +46,8 @@ struct OverworldTileMarkRawIndexTests {
     @Test("fromRawIndex returns nil outside the documented range")
     func fromRawIndexOutOfRange() {
         #expect(OverworldTileMark.fromRawIndex(-2) == nil)
-        #expect(OverworldTileMark.fromRawIndex(36) == nil)
+        // 36 is now the any-road "?" state (T-181); 37+ remains out of range.
+        #expect(OverworldTileMark.fromRawIndex(37) == nil)
         #expect(OverworldTileMark.fromRawIndex(999) == nil)
     }
 
