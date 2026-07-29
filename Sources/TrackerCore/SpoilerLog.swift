@@ -56,12 +56,48 @@ public struct SpoilerLog: Sendable, Equatable {
         public let raw: String
     }
 
+    // MARK: Dungeon room maps (the `LEVEL N MAP` ASCII blocks)
+
+    /// One cell of the spoiler's **raw** dungeon grid: column 0–15, row 0–7. The
+    /// canvas is 16 columns wide even though a tracker dungeon is 8×8 — a dungeon's
+    /// connected rooms always fit an 8-wide span, and only transport-staircase ends
+    /// (which teleport) sit outside it. Apply normalizes to the 8×8.
+    public struct MapCell: Hashable, Sendable {
+        public let col: Int
+        public let row: Int
+        public init(col: Int, row: Int) { self.col = col; self.row = row }
+    }
+
+    /// A room in a spoiler map: a plain room, or one end of transport pair 1–8
+    /// (the log labels the pairs A–H).
+    public enum MapRoomKind: Equatable, Sendable {
+        case plain
+        case transport(Int)   // 1…8
+    }
+
+    /// Which wall the dungeon entrance sits on (from the `< > v ^` arrow).
+    public enum EntranceDir: Equatable, Sendable { case north, south, east, west }
+
+    /// One dungeon's parsed map: rooms + open doors (`-`/`|`) + entrance, all in
+    /// raw 0–15 × 0–7 coordinates.
+    public struct DungeonMap: Equatable, Sendable {
+        public let level: Int                    // 1…9
+        public var rooms: [MapCell: MapRoomKind]
+        /// Open door between `(col,row)` and `(col+1,row)`.
+        public var hDoors: Set<MapCell>
+        /// Open door between `(col,row)` and `(col,row+1)`.
+        public var vDoors: Set<MapCell>
+        public var entranceCell: MapCell?
+        public var entranceDir: EntranceDir?
+    }
+
     public var seed: Int?
     public var level9Triforces: [Int]
     public var startScreen: Coord?
     public var caves: [CaveEntry]
     public var items: [ItemPlacement]
     public var unmappedCaves: [UnmappedCave]
+    public var maps: [DungeonMap]
 
     // MARK: - Parse
 
@@ -114,7 +150,100 @@ public struct SpoilerLog: Sendable, Equatable {
         }
 
         return SpoilerLog(seed: seed, level9Triforces: l9, startScreen: start,
-                          caves: caves, items: items, unmappedCaves: unmapped)
+                          caves: caves, items: items, unmappedCaves: unmapped,
+                          maps: parseMaps(text))
+    }
+
+    // MARK: - Room-map parsing (position-sensitive, so it works on raw lines)
+
+    /// The level number of a `LEVEL N MAP` header, else nil.
+    private static func mapHeaderLevel(_ line: String) -> Int? {
+        let t = line.trimmingCharacters(in: .whitespaces)
+        guard t.hasPrefix("LEVEL "), t.hasSuffix(" MAP") else { return nil }
+        return Int(t.dropFirst(6).dropLast(4).trimmingCharacters(in: .whitespaces))
+    }
+
+    /// A → 1 … H → 8, else nil.
+    private static func transportLetter(_ ch: Character) -> Int? {
+        guard let a = ch.asciiValue, (65...72).contains(a) else { return nil }
+        return Int(a) - 64
+    }
+
+    /// Parse every `LEVEL N MAP` block. Works on the raw text (column positions and
+    /// blank lines matter), stripping a trailing `\r` from CRLF logs.
+    static func parseMaps(_ text: String) -> [DungeonMap] {
+        let raw = text.components(separatedBy: "\n").map {
+            $0.hasSuffix("\r") ? String($0.dropLast()) : $0
+        }
+        var maps: [DungeonMap] = []
+        var i = 0
+        while i < raw.count {
+            guard let level = mapHeaderLevel(raw[i]) else { i += 1; continue }
+            var body: [String] = []
+            var j = i + 1
+            while j < raw.count, mapHeaderLevel(raw[j]) == nil {
+                let t = raw[j].trimmingCharacters(in: .whitespaces)
+                if t == "ITEMS" || t == "CAVES" || t == "SHOP INFO" { break }
+                body.append(raw[j]); j += 1
+            }
+            if let dm = parseOneMap(level: level, body: body) { maps.append(dm) }
+            i = j
+        }
+        return maps
+    }
+
+    /// The block after a `LEVEL N MAP` header is: one blank line, then 15 grid lines
+    /// (8 room rows interleaved with 7 door rows), then an optional 16th line for a
+    /// south/north entrance arrow below the bottom row. Rooms sit at even character
+    /// columns (`raw col = (charPos-2)/2`), `-`/`|` are open doors, `< > v ^` mark
+    /// the entrance, and letters A–H are the two ends of transport pairs 1–8.
+    private static func parseOneMap(level: Int, body: [String]) -> DungeonMap? {
+        guard body.count >= 16 else { return nil }
+        let grid = Array(body[1...15])
+        let extra = body.count > 16 ? body[16] : ""
+        func rawCol(_ charPos1: Int) -> Int { (charPos1 - 2) / 2 }   // 1-based char → 0-based col
+
+        var rooms: [MapCell: MapRoomKind] = [:]
+        var hDoors: Set<MapCell> = []
+        var vDoors: Set<MapCell> = []
+        var entranceCell: MapCell?
+        var entranceDir: EntranceDir?
+
+        for (g, line) in grid.enumerated() {
+            let chars = Array(line)
+            let row = g / 2
+            for (idx, ch) in chars.enumerated() where ch != " " {
+                let pos = idx + 1                        // 1-based char position
+                if g % 2 == 0 {                          // room row
+                    if pos % 2 == 0 {                    // even → a room cell
+                        let col = rawCol(pos)
+                        guard (0...15).contains(col) else { continue }
+                        if ch == "*" { rooms[MapCell(col: col, row: row)] = .plain }
+                        else if let t = transportLetter(ch) { rooms[MapCell(col: col, row: row)] = .transport(t) }
+                    } else {                             // odd → connector / side arrow
+                        if ch == "-" { hDoors.insert(MapCell(col: rawCol(pos - 1), row: row)) }
+                        else if ch == ">" { entranceCell = MapCell(col: rawCol(pos - 1), row: row); entranceDir = .east }
+                        else if ch == "<" { entranceCell = MapCell(col: rawCol(pos + 1), row: row); entranceDir = .west }
+                    }
+                } else if pos % 2 == 0 {                 // door row, even col
+                    let col = rawCol(pos)
+                    if ch == "|" { vDoors.insert(MapCell(col: col, row: row)) }   // between row & row+1
+                    else if ch == "v" { entranceCell = MapCell(col: col, row: row); entranceDir = .south }
+                    else if ch == "^" { entranceCell = MapCell(col: col, row: row + 1); entranceDir = .north }
+                }
+            }
+        }
+        // A bottom-row south/north entrance arrow (below the last room row).
+        for (idx, ch) in Array(extra).enumerated() where ch != " " {
+            let pos = idx + 1
+            guard pos % 2 == 0 else { continue }
+            if ch == "v" { entranceCell = MapCell(col: rawCol(pos), row: 7); entranceDir = .south }
+            else if ch == "^" { entranceCell = MapCell(col: rawCol(pos), row: 7); entranceDir = .north }
+        }
+
+        guard !rooms.isEmpty else { return nil }
+        return DungeonMap(level: level, rooms: rooms, hDoors: hDoors, vDoors: vDoors,
+                          entranceCell: entranceCell, entranceDir: entranceDir)
     }
 
     // MARK: - Line parsers

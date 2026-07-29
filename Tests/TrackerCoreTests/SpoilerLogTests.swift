@@ -227,11 +227,61 @@ struct SpoilerLogTests {
         #expect(r.heartsPlaced > 0)
     }
 
-    @Test("apply reports the still-deferred room-maps section")
-    func applyDeferred() {
+    // A crafted LEVEL 1 map: a 2-wide cluster in the bottom-left, transport pair A
+    // ((0,0) ↔ (1,6)), transport pair B with one end far off-window at raw col 14
+    // ((14,0), relocated) and its partner at (1,7), a south entrance below (0,7),
+    // and open doors. Exercises windowing, off-mapping, transports, relocation,
+    // entrance, and doors.
+    private var mapFixture: String {
+        let g0 = " A" + String(repeating: " ", count: 27) + "B"   // A@col0, B@col14 (char 30)
+        let lines = ["LEVEL 1 MAP", ""]
+            + [g0]                                   // row0
+            + Array(repeating: "", count: 11)        // rows 1–5 door/room blanks (g1…g11)
+            + [" *-A", " |", " *-B", " v"]           // row6, door, row7, entrance arrow
+        return lines.joined(separator: "\n") + "\n"
+    }
+
+    @Test("room map: parses rooms, transports, doors, entrance in raw coords")
+    func mapParse() {
+        let m = SpoilerLog.parse(mapFixture).maps
+        #expect(m.count == 1)
+        let dm = m[0]
+        #expect(dm.level == 1)
+        #expect(dm.rooms[.init(col: 0, row: 0)] == .transport(1))
+        #expect(dm.rooms[.init(col: 14, row: 0)] == .transport(2))
+        #expect(dm.rooms[.init(col: 1, row: 6)] == .transport(1))
+        #expect(dm.rooms[.init(col: 1, row: 7)] == .transport(2))
+        #expect(dm.rooms[.init(col: 0, row: 6)] == .plain)
+        #expect(dm.hDoors.contains(.init(col: 0, row: 6)))
+        #expect(dm.vDoors.contains(.init(col: 0, row: 6)))
+        #expect(dm.entranceCell == .init(col: 0, row: 7))
+        #expect(dm.entranceDir == .south)
+    }
+
+    @Test("room map apply: off-maps the shape, places transports/entrance/doors, relocates outliers")
+    func mapApply() {
         let model = TrackerModel()
-        let result = SpoilerLog.parse(fixture).apply(to: model, sections: .roomMaps)
-        #expect(result.deferredSections == ["Dungeon room maps"])
+        let result = SpoilerLog.parse(mapFixture).apply(to: model, sections: .roomMaps)
+        let map = model.dungeonRoomMaps[0]
+        // Window offset 0: the 2-wide cluster lands in-place; plain rooms stay unmarked.
+        #expect(map.room(col: 0, row: 6).roomType == .unmarked)
+        #expect(map.room(col: 0, row: 0).roomType == .transport1)
+        #expect(map.room(col: 1, row: 6).roomType == .transport1)
+        #expect(map.transportCount(1) == 2)
+        // Transport B's far end (raw col 14) relocated to a free cell near the east edge.
+        #expect(map.room(col: 1, row: 7).roomType == .transport2)
+        #expect(map.room(col: 7, row: 0).roomType == .transport2)
+        #expect(map.transportCount(2) == 2)
+        // Entrance placed on the arrowed room; empty cells off-mapped; doors opened.
+        #expect(map.room(col: 0, row: 7).roomType == .startEnterFromS)
+        #expect(map.room(col: 5, row: 5).roomType == .offTheMap)
+        #expect(map.horizontalDoor(col: 0, row: 6) == .yes)
+        #expect(map.verticalDoor(col: 0, row: 6) == .yes)
+        // Summary.
+        #expect(result.roomMapsApplied == 1)
+        #expect(result.roomMapRoomsPlaced == 6)
+        #expect(result.transportsRelocated == 1)
+        #expect(result.deferredSections.isEmpty)
     }
 
     @Test("unrecognized cave strings land in unmapped, not mis-marked")
