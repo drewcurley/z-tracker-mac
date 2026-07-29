@@ -4,7 +4,7 @@ import Observation
 /// take-any heart, or ganon/zelda. A subset of the reference's `TimelineID`
 /// (`Z1R_WPF/Timeline.fs:11-57`); box-location markers and custom user items are
 /// deferred to a later phase.
-public enum TimelineEvent: Hashable, Sendable {
+public enum TimelineEvent: Hashable, Sendable, Codable {
     case woodSword, whiteSword, magicalSword
     case boomerang, magicBoomerang
     case woodArrow, silverArrow
@@ -196,7 +196,7 @@ public final class TimelineModel {
     public private(set) var finishOwRemaining: Int?
 
     /// One (time, remaining) sample of the overworld-progress graph (T-099).
-    public struct OverworldRemainingSample: Sendable, Equatable {
+    public struct OverworldRemainingSample: Sendable, Equatable, Codable {
         public let seconds: Int
         public let remaining: Int
         public init(seconds: Int, remaining: Int) { self.seconds = seconds; self.remaining = remaining }
@@ -246,5 +246,31 @@ public final class TimelineModel {
         finishOwRemaining = nil
         owRemainingSamples = []
         latestSeconds = 0
+    }
+
+    /// A `Codable` snapshot of the timeline for save/load (fixes the timeline being lost
+    /// on restore — its acquisition times are historical and can't be re-derived).
+    public struct State: Codable, Sendable {
+        var acquiredAt: [TimelineEvent: Int]
+        var acquiredLocation: [TimelineEvent: String]
+        var finishSeconds: Int?
+        var finishOwRemaining: Int?
+        var owRemainingSamples: [OverworldRemainingSample]
+        var latestSeconds: Int
+    }
+
+    public var state: State {
+        State(acquiredAt: acquiredAt, acquiredLocation: acquiredLocation,
+              finishSeconds: finishSeconds, finishOwRemaining: finishOwRemaining,
+              owRemainingSamples: owRemainingSamples, latestSeconds: latestSeconds)
+    }
+
+    public func restore(_ s: State) {
+        acquiredAt = s.acquiredAt
+        acquiredLocation = s.acquiredLocation
+        finishSeconds = s.finishSeconds
+        finishOwRemaining = s.finishOwRemaining
+        owRemainingSamples = s.owRemainingSamples
+        latestSeconds = s.latestSeconds
     }
 }
