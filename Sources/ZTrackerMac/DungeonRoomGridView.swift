@@ -787,7 +787,7 @@ private struct MonsterPicker: View {
     let secondary: MonsterDetail
     let onToggle: (MonsterDetail) -> Void
     let onDone: () -> Void
-    private let columns = Array(repeating: GridItem(.fixed(30), spacing: 4), count: 8)
+    private let columns = Array(repeating: GridItem(.fixed(34), spacing: 4), count: 8)
 
     private func isSelected(_ md: MonsterDetail) -> Bool {
         !md.isNotMarked && (md == primary || md == secondary)
@@ -810,10 +810,10 @@ private struct MonsterPicker: View {
                             if md == .unmarked {
                                 Image(systemName: "xmark").font(.system(size: 11)).foregroundStyle(.secondary)
                             } else if let image = Image(atlasIcon: DungeonMonsterAtlas.sprite(md)) {
-                                image.interpolation(.none).resizable().frame(width: 22, height: 22)
+                                image.interpolation(.none).resizable().frame(width: 26, height: 26)
                             }
                         }
-                        .frame(width: 30, height: 30)
+                        .frame(width: 34, height: 34)
                         // Badge the selection order (1 = primary, 2 = secondary).
                         .overlay(alignment: .topTrailing) {
                             if md == primary && !md.isNotMarked {
@@ -830,7 +830,7 @@ private struct MonsterPicker: View {
             }
         }
         .padding(10)
-        .frame(width: 300)
+        .frame(width: 340)
     }
 
     private func selectionBadge(_ text: String) -> some View {
@@ -849,7 +849,7 @@ private struct MonsterPicker: View {
 private struct FloorDropPicker: View {
     let current: FloorDropDetail
     let onPick: (FloorDropDetail) -> Void
-    private let columns = Array(repeating: GridItem(.fixed(34), spacing: 6), count: 3)
+    private let columns = Array(repeating: GridItem(.fixed(38), spacing: 6), count: 3)
 
     var body: some View {
         let _ = perfTrace()
@@ -864,10 +864,10 @@ private struct FloorDropPicker: View {
                             if fd == .unmarked {
                                 Image(systemName: "xmark").font(.system(size: 12)).foregroundStyle(.secondary)
                             } else if let image = Image(atlasIcon: DungeonFloorDropAtlas.sprite(fd)) {
-                                image.interpolation(.none).resizable().frame(width: 24, height: 24)
+                                image.interpolation(.none).resizable().frame(width: 28, height: 28)
                             }
                         }
-                        .frame(width: 34, height: 34)
+                        .frame(width: 38, height: 38)
                     }
                     .buttonStyle(.plain)
                     .help(fd == .unmarked ? "None (clear)" : fd.displayName)
@@ -876,6 +876,6 @@ private struct FloorDropPicker: View {
             }
         }
         .padding(10)
-        .frame(width: 150)
+        .frame(width: 170)
     }
 }

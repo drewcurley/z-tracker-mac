@@ -6,11 +6,13 @@ import Testing
 @Suite("Dungeon room details (T-019.7)")
 struct DungeonRoomDetailsTests {
 
-    @Test("monster picker order covers every monster exactly once, ending in Unmarked")
+    @Test("dungeon monster picker order covers every dungeon monster exactly once, ending in Unmarked")
     func monsterOrderComplete() {
+        // The picker is dungeon-only; the 3 overworld-only enemies (octorok / peahat /
+        // leever, T-185) are intentionally not offered here.
+        let overworldOnly: Set<MonsterDetail> = [.octorok, .peahat, .leever]
         let order = MonsterDetail.allInPickerOrder
-        #expect(order.count == MonsterDetail.allCases.count)
-        #expect(Set(order) == Set(MonsterDetail.allCases))
+        #expect(Set(order) == Set(MonsterDetail.allCases).subtracting(overworldOnly))
         #expect(order.last == .unmarked)
         #expect(order.count == 32)
     }

@@ -175,7 +175,7 @@ struct ReminderEngineTests {
                 .contains(.considerBoomstickBook))
     }
 
-    @Test("consider-sword2 fires once when hearts hit 4-6 with a known white-sword cave")
+    @Test("consider-sword2 fires once when hearts hit 4-5 with a known white-sword cave")
     func considerSword2() {
         let grid = OverworldGrid()
         grid.setMark(.swordCave(2), column: safe.x, row: safe.y)
@@ -193,6 +193,47 @@ struct ReminderEngineTests {
         grid.setMark(.swordCave(2), column: safe.x, row: safe.y)
         let player = PlayerComputedStateSummary(haveWhiteSwordItem: true, playerHearts: 5)
         #expect(!poll(ReminderEngine(), grid: grid, playerState: player).contains(.considerSword2))
+    }
+
+    @Test("get-sword2 fires once at 6+ hearts (not 4-5), then stays quiet (T-185)")
+    func getSword2() {
+        let grid = OverworldGrid()
+        grid.setMark(.swordCave(2), column: safe.x, row: safe.y)
+        let e = ReminderEngine()
+        // 4-5 hearts → the soft "consider", not "get".
+        let at5 = poll(e, grid: grid, playerState: PlayerComputedStateSummary(playerHearts: 5))
+        #expect(at5.contains(.considerSword2))
+        #expect(!at5.contains(.getSword2))
+        // 6 hearts → the stronger "get it", once.
+        let at6 = poll(e, grid: grid, playerState: PlayerComputedStateSummary(playerHearts: 6))
+        #expect(at6.contains(.getSword2))
+        #expect(!at6.contains(.considerSword2))
+        // steady 6 → quiet.
+        #expect(!poll(e, grid: grid, playerState: PlayerComputedStateSummary(playerHearts: 6)).contains(.getSword2))
+    }
+
+    @Test("get-armos-item nudges periodically while located but unobtained, respecting cooldown (T-185)")
+    func getArmosItem() {
+        let grid = OverworldGrid()
+        grid.setMark(.armos, column: safe.x, row: safe.y)
+        let e = ReminderEngine()
+        let t0 = Date(timeIntervalSince1970: 0)
+        func fired(_ out: [ReminderAnnouncement]) -> Bool {
+            out.contains { if case .getArmosItem = $0 { return true }; return false }
+        }
+        #expect(fired(poll(e, grid: grid, now: t0)))                                  // first poll fires
+        #expect(!fired(poll(e, grid: grid, now: t0.addingTimeInterval(60))))          // within 3-min cooldown
+        #expect(fired(poll(e, grid: grid, now: t0.addingTimeInterval(200))))          // past cooldown → again
+    }
+
+    @Test("get-armos-item suppressed once the armos item is obtained (T-185)")
+    func getArmosItemSuppressed() {
+        let grid = OverworldGrid()
+        grid.setMark(.armos, column: safe.x, row: safe.y)
+        let dt = DungeonTrackerInstance()
+        dt.armosBox.set(cellCurrent: ITEMS.heartContainer, playerHas: .yes)   // obtained
+        let out = poll(ReminderEngine(), grid: grid, dungeonTracker: dt)
+        #expect(!out.contains { if case .getArmosItem = $0 { return true }; return false })
     }
 
     @Test("consider-sword3 fires at 10-14 hearts with a known magical-sword cave")

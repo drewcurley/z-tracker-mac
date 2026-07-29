@@ -15,6 +15,11 @@ public enum SpeechText {
         for (from, to) in [("triforces", "try forces"), ("triforce", "try force")] {
             s = s.replacingOccurrences(of: from, with: to, options: .caseInsensitive)
         }
+        // The weapon "bow" (/boʊ/) — voices otherwise read it as "bow" (/baʊ/, bending
+        // over), e.g. "get the bow off the coast". "beau" gets the right vowel. Whole
+        // word only, so "elbow"/"rainbow" are untouched.
+        s = s.replacingOccurrences(of: "\\bbow\\b", with: "beau",
+                                   options: [.regularExpression, .caseInsensitive])
         return s
     }
 }

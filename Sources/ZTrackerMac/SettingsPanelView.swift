@@ -96,6 +96,8 @@ struct SettingsPanelView: View {
             Toggle("Highlight nearby", isOn: Bindable(options).highlightNearby)
             Toggle("Show magnifier", isOn: Bindable(options).showMagnifier)
             Toggle("Shops before dungeons", isOn: Bindable(options).shopsBeforeDungeons)
+            Toggle("Graphical tile chooser", isOn: Bindable(options).graphicalOverworldChooser)
+                .help("Pick overworld marks from a grid of icons (faster to recognize) instead of the text menu. Scroll up on a tile to set its enemies.")
             // Opens the overworld-tile-hiding checklist (OptionsMenu.fs:115-205).
             Button("More settings…") { showMoreSettings = true }
                 .popover(isPresented: $showMoreSettings) {

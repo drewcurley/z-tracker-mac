@@ -7,9 +7,12 @@ import TrackerCore
 /// tile index). `unmarked` maps to no sprite by design.
 @Suite("Dungeon detail atlases (T-019.7)")
 struct DungeonDetailAtlasTests {
-    @Test("every monster (except Unmarked) resolves to a sprite")
+    @Test("every dungeon monster (except Unmarked) resolves to a dungeon-sheet sprite")
     func monstersLoad() {
-        for md in MonsterDetail.allCases {
+        // The 3 overworld-only enemies (octorok / peahat / leever, T-185) aren't on the
+        // dungeon sheet — they render from game-sprite GIFs via OverworldEnemyGlyph.
+        let overworldOnly: Set<MonsterDetail> = [.octorok, .peahat, .leever]
+        for md in MonsterDetail.allCases where !overworldOnly.contains(md) {
             if md == .unmarked {
                 #expect(DungeonMonsterAtlas.sprite(md) == nil)
             } else {

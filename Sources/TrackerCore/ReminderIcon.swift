@@ -27,7 +27,7 @@ public enum ReminderIcons {
                              ringLevel: Int = 0,
                              coastItemId: Int? = nil) -> [ReminderIcon] {
         switch a {
-        case .considerSword2: return [.rightArrow, .sword(level: 2)]
+        case .considerSword2, .getSword2: return [.rightArrow, .sword(level: 2)]
         case .considerSword3: return [.rightArrow, .sword(level: 3)]
         case .completedDungeon(let i): return [.dungeon(i + 1), .checkmark]
         case .foundDungeonCount(let n): return n == 9 ? [.checkmark] : []
@@ -55,6 +55,7 @@ public enum ReminderIcons {
             var icons: [ReminderIcon] = [.ladder, .rightArrow]
             if let id = coastItemId, id >= 0 { icons.append(.item(id)) }
             return icons
+        case .getArmosItem: return [.rightArrow]
         case .considerBoomstickBook: return [.rightArrow, .boomBook]
         case .remindVisitHints: return [.book]
         case .overworldOverwrite: return []
