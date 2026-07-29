@@ -43,6 +43,9 @@ struct SaveStateRoundTripTests {
         // dungeon item box
         m.dungeonTracker.dungeon(0).baseBoxes[0].set(cellCurrent: ITEMS.ladder, playerHas: .yes)
         m.dungeonTracker.dungeon(0).playerHasTriforce = true
+        // timeline (T-098) — historical acquisition times, which can't be re-derived.
+        m.timeline.record(elapsedSeconds: 125, acquired: [.ladder, .triforce(1)],
+                          owRemaining: 60, finished: false, locations: [.ladder: "LEVEL-1 Box 1"])
         return m
     }
 
@@ -88,6 +91,24 @@ struct SaveStateRoundTripTests {
         #expect(restored.dungeonTracker.dungeon(0).baseBoxes[0].cellCurrent == ITEMS.ladder)
         #expect(restored.dungeonTracker.dungeon(0).baseBoxes[0].playerHas == .yes)
         #expect(restored.dungeonTracker.dungeon(0).playerHasTriforce == true)
+        // Timeline (was previously lost on restore — the bug this fixes)
+        #expect(restored.timeline.acquiredAt[.ladder] == 125)
+        #expect(restored.timeline.acquiredAt[.triforce(1)] == 125)
+        #expect(restored.timeline.acquiredLocation[.ladder] == "LEVEL-1 Box 1")
+        #expect(restored.timeline.latestSeconds == 125)
+    }
+
+    @Test("a pre-timeline save (no timeline field) still decodes, with an empty timeline")
+    func preTimelineSaveDecodes() throws {
+        let snap = makeMutated().snapshot()
+        var json = try JSONSerialization.jsonObject(with: JSONEncoder().encode(snap)) as! [String: Any]
+        json.removeValue(forKey: "timeline")               // simulate an older save
+        let data = try JSONSerialization.data(withJSONObject: json)
+        let decoded = try JSONDecoder().decode(TrackerModel.State.self, from: data)  // must not throw
+        #expect(decoded.timeline == nil)
+        let restored = TrackerModel(quest: .first)
+        restored.restore(decoded)                          // no crash; timeline stays empty
+        #expect(restored.timeline.acquiredAt.isEmpty)
     }
 
     @Test("a corrupt (wrong-size) sub-array is ignored, not crashed on")

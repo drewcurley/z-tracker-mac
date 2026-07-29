@@ -177,6 +177,9 @@ public final class TrackerModel {
         var tracker: DungeonTrackerInstance.State
         var blockers: DungeonBlockersContainer.State
         var progress: PlayerProgressAndTakeAnyHearts.State
+        /// The run timeline (T-098). Optional so saves written before it was persisted
+        /// still decode (they restore with an empty timeline, as before).
+        var timeline: TimelineModel.State? = nil
     }
 
     public func snapshot() -> State {
@@ -188,7 +191,8 @@ public final class TrackerModel {
               recorderDestinationIndex: recorderDestinationIndex, recorderDestinationManual: recorderDestinationManual,
               levelHints: levelHints, notes: notes,
               overworld: overworldGrid.state, roomMaps: dungeonRoomMaps.map(\.state),
-              tracker: dungeonTracker.state, blockers: dungeonBlockers.state, progress: playerProgress.state)
+              tracker: dungeonTracker.state, blockers: dungeonBlockers.state, progress: playerProgress.state,
+              timeline: timeline.state)
     }
 
     /// Restore a saved snapshot into this model. Order matters: the HDN flag is applied
@@ -215,6 +219,7 @@ public final class TrackerModel {
         dungeonTracker.restore(s.tracker)
         dungeonBlockers.restore(s.blockers)
         playerProgress.restore(s.progress)
+        if let t = s.timeline { timeline.restore(t) }   // absent in pre-timeline saves
     }
 
     public init(
