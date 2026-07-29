@@ -41,6 +41,20 @@ enum OverworldMark {
         return ApplyResult(oldMark: oldMark, itemPromptIsArmos: isArmos)
     }
 
+    /// The side effects of placing a dungeon marker at `(number, c, r)`, shared by the
+    /// click, hotkey, and voice paths so all three behave identically (T-134 / T-184):
+    /// 1. set the dungeon's location hint to this screen's overworld region (T-039.1), and
+    /// 2. switch the dungeon tab to that level — you never find a dungeon without
+    ///    exploring it, so surface its room map immediately.
+    @MainActor
+    static func didPlaceDungeon(_ number: Int, column c: Int, row r: Int,
+                                model: TrackerModel, focus: TrackerFocusState) {
+        guard (1...9).contains(number) else { return }
+        model.levelHints[HintTarget.dungeon(number)] =
+            HintZone.forZoneChar(OverworldZones.zone(column: c, row: r))
+        focus.selectedDungeonTab = number - 1
+    }
+
     /// Voice (T-141): a second, distinct shop word on a tile that's already a shop
     /// sets the tile's **second** item (T-060) instead of overwriting the primary —
     /// you can't say "2nd item" by voice, so the additive reading is what's meant.

@@ -47,6 +47,25 @@ struct OverworldMarkApplyTests {
         #expect(placed?.0 == 5 && placed?.1 == 8 && placed?.2 == 3)
     }
 
+    @Test func didPlaceDungeonSwitchesTabAndSetsHint() {
+        let model = TrackerModel(quest: .first)
+        let focus = TrackerFocusState()
+        focus.selectedDungeonTab = 9        // start on the Summary tab
+        OverworldMark.didPlaceDungeon(6, column: 8, row: 3, model: model, focus: focus)
+        #expect(focus.selectedDungeonTab == 5)                       // level 6 → tab index 5
+        #expect(model.levelHints[HintTarget.dungeon(6)]
+                == HintZone.forZoneChar(OverworldZones.zone(column: 8, row: 3)))  // location hint set
+    }
+
+    @Test func didPlaceDungeonIgnoresOutOfRange() {
+        let model = TrackerModel(quest: .first)
+        let focus = TrackerFocusState()
+        focus.selectedDungeonTab = 2
+        OverworldMark.didPlaceDungeon(0, column: 1, row: 1, model: model, focus: focus)
+        OverworldMark.didPlaceDungeon(10, column: 1, row: 1, model: model, focus: focus)
+        #expect(focus.selectedDungeonTab == 2)   // unchanged
+    }
+
     @Test func shopCantHoldSameItemTwice() {
         let model = TrackerModel(quest: .first)
         model.overworldGrid.setMark(.shop(.arrow), column: 2, row: 2)
