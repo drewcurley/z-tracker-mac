@@ -13,6 +13,13 @@ struct SpeechTextTests {
         #expect(SpeechText.spoken("Triforce") == "try force")   // case-insensitive
     }
 
+    @Test("weapon 'bow' respelled 'beau' for the right vowel (/boʊ/), whole word only (T-185)")
+    func bow() {
+        #expect(SpeechText.spoken("Get the bow off the coast") == "Get the beau off the coast")
+        #expect(SpeechText.spoken("Bow") == "beau")                 // case-insensitive
+        #expect(SpeechText.spoken("elbow rainbow bowl") == "elbow rainbow bowl")  // not a whole word → untouched
+    }
+
     @Test("leaves other text untouched")
     func passthrough() {
         #expect(SpeechText.spoken("You can revisit dungeon 2 — Need ladder")

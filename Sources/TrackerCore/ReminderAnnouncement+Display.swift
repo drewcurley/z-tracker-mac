@@ -9,12 +9,13 @@ extension ReminderAnnouncement {
     /// is spoken/shown.
     public var category: ReminderCategory {
         switch self {
-        case .considerSword2, .considerSword3: .swordHearts
+        case .considerSword2, .getSword2, .considerSword3: .swordHearts
         case .completedDungeon, .foundDungeonCount, .triforceCount, .triforceAndGo: .dungeonFeedback
         case .remindUnblock: .blockers
         case .remindShortly: .haveKeyLadder
         case .doorRepairCount: .doorRepair
         case .getCoastItem: .coastItem
+        case .getArmosItem: .armosItem
         case .considerBoomstickBook: .recorderPBSpotsAndBoomstickBook
         case .remindVisitHints: .haveKeyLadder
         case .overworldOverwrite: .overworldOverwrites
@@ -45,6 +46,8 @@ extension ReminderAnnouncement {
         switch self {
         case .considerSword2:
             return "Consider getting the white sword item"
+        case .getSword2:
+            return "Get the white sword item"
         case .considerSword3:
             return "Consider the magical sword"
         case .completedDungeon(let i):
@@ -85,6 +88,9 @@ extension ReminderAnnouncement {
         case .getCoastItem(let itemName):
             return itemName.map { "Get the \($0) off the coast" }
                 ?? "Get the coast item with the ladder"
+        case .getArmosItem(let itemName):
+            return itemName.map { "Get the \($0) from the armos" }
+                ?? "Get the armos item"
         case .considerBoomstickBook:
             return "Consider buying the boomstick book"
         case .remindVisitHints:

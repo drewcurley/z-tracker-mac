@@ -1,6 +1,15 @@
+import AppKit
 import CoreGraphics
 import SwiftUI
 import TrackerCore
+
+/// Wraps a Swift closure as an `@objc` target so it can back an `NSMenuItem` (T-185).
+/// Retained via the item's `representedObject` (its `target` is weak).
+private final class ClosureMenuTarget: NSObject {
+    let run: () -> Void
+    init(_ run: @escaping () -> Void) { self.run = run; super.init() }
+    @objc func fire() { run() }
+}
 
 /// The overworld map (docs/domain.md § 4.5, T-006 core data model +
 /// interaction, T-007 tile-mark sprite rendering, T-008 terrain background).
@@ -149,8 +158,14 @@ struct OverworldMapView: View {
     @State private var routeHighlight: OverworldRouteHighlight?
     /// The tile awaiting an in-place item pick (Armos / White-Sword cave), T-106.
     @State private var itemPrompt: ItemPromptTarget?
+    /// The tile whose tile chooser popover is open (T-185) — opened by right-click
+    /// (graphical mode) or left-click on a Don't-Care tile (either mode).
+    @State private var chooserCell: TileCoord?
+    /// The tile whose overworld enemy picker is open — scroll-up in graphical mode (T-185).
+    @State private var enemyCell: TileCoord?
 
     struct ItemPromptTarget: Equatable { let column: Int; let row: Int; let isArmos: Bool }
+    struct TileCoord: Identifiable, Equatable { let column: Int; let row: Int; var id: Int { row * 100 + column } }
 
     /// Ladder and raft are live (`playerState.haveLadder`/`.haveRaft`, T-014)
     /// and any-roads are live (T-015.5). The mirror-overworld toggle
@@ -361,10 +376,7 @@ struct OverworldMapView: View {
                                         if !enemies.isEmpty {
                                             VStack(spacing: 1) {
                                                 ForEach(Array(enemies.enumerated()), id: \.offset) { _, enemy in
-                                                    if let img = Image(atlasIcon: DungeonMonsterAtlas.sprite(enemy)) {
-                                                        img.interpolation(.none).resizable()
-                                                            .frame(width: tileHeight * 0.30, height: tileHeight * 0.30)
-                                                    }
+                                                    OverworldEnemyGlyph(enemy: enemy, size: tileHeight * 0.30)
                                                 }
                                             }
                                             .padding(1)
@@ -385,7 +397,6 @@ struct OverworldMapView: View {
                                         }
                                     }
                                     .onTapGesture { handleLeftClick(column: column, row: row) }
-                                    .contextMenu { markMenu(column: column, row: row) }
                                     // In-place item prompt for Armos / White-Sword cave (T-106).
                                     .popover(isPresented: itemPromptBinding(column: column, row: row), arrowEdge: .trailing) {
                                         if let p = itemPrompt {
@@ -394,6 +405,9 @@ struct OverworldMapView: View {
                                                 .padding(4)
                                         }
                                     }
+                                    // The tile chooser + enemy picker (T-185), bundled into one
+                                    // modifier so the tile expression stays type-checkable.
+                                    .modifier(tileChooserModifiers(column: column, row: row))
                                     .onContinuousHover { phase in
                                         handleHover(column: column, row: row, phase: phase, tileWidth: tileWidth, tileHeight: tileHeight)
                                     }
@@ -501,6 +515,15 @@ struct OverworldMapView: View {
         let mark = grid.mark(column: column, row: row)
         if mark == .unmarked {
             grid.setMark(.dontCare, column: column, row: row)
+        } else if mark == .dontCare {
+            // "LC dark tile → popup" (docs/domain.md § 4.5): a second left-click on a
+            // Don't-Care tile opens the tile chooser (T-185). Graphical mode → the icon
+            // grid; menu mode → the **native** NSMenu (chrome-identical to right-click).
+            if options.graphicalOverworldChooser {
+                chooserCell = TileCoord(column: column, row: row)
+            } else {
+                showNativeMarkMenu(column: column, row: row)
+            }
         } else if mark == .takeAny {
             // A take-any tile cycles its claimed version (untaken → heart →
             // potion → candle), kept in sync with its Items-group slot (T-066).
@@ -551,10 +574,67 @@ struct OverworldMapView: View {
         )
     }
 
+    /// Per-cell presentation bindings for the tile chooser and enemy-picker popovers
+    /// (T-185): only the matching tile shows the popover (the state is one shared cell).
+    private func chooserPresented(column: Int, row: Int) -> Binding<Bool> {
+        Binding(get: { chooserCell == TileCoord(column: column, row: row) },
+                set: { if !$0 { chooserCell = nil } })
+    }
+    private func enemyPresented(column: Int, row: Int) -> Binding<Bool> {
+        Binding(get: { enemyCell == TileCoord(column: column, row: row) },
+                set: { if !$0 { enemyCell = nil } })
+    }
+
+    /// Bundles the tile's chooser + enemy-picker behavior (T-185) into a single
+    /// modifier, keeping the per-tile view expression small enough to type-check.
+    private func tileChooserModifiers(column: Int, row: Int) -> TileChooserModifiers {
+        TileChooserModifiers(
+            graphical: options.graphicalOverworldChooser,
+            onOpenChooser: { chooserCell = TileCoord(column: column, row: row) },
+            menu: { AnyView(markMenu(column: column, row: row)) },
+            chooserPresented: chooserPresented(column: column, row: row),
+            chooser: { AnyView(chooserPopover(column: column, row: row)) },
+            onScrollUp: { enemyCell = TileCoord(column: column, row: row) },
+            enemyPresented: enemyPresented(column: column, row: row),
+            enemy: {
+                AnyView(OverworldEnemyPicker(
+                    current: grid.enemies(column: column, row: row),
+                    onToggle: { grid.toggleEnemy($0, column: column, row: row) },
+                    onClear: { grid.toggleEnemy(.unmarked, column: column, row: row) },
+                    onDone: { enemyCell = nil }))
+            })
+    }
+
+    /// The tile chooser popover body — the graphical icon grid (T-185). Only presented
+    /// in graphical mode; menu mode opens the native `NSMenu` instead (`showNativeMarkMenu`).
+    private func chooserPopover(column: Int, row: Int) -> some View {
+        GraphicalTileChooser(
+            currentMark: grid.mark(column: column, row: row),
+            isStartSpot: startSpot == OverworldScreenCoordinate(x: column, y: row),
+            hideDungeonNumbers: hideDungeonNumbers,
+            isExhausted: { isExhausted($0, column: column, row: row, counts: markCounts) },
+            onPick: { action in
+                switch action {
+                case .mark(.shop(let kind))
+                    where OverworldMark.applyShopHotkeySmart(kind, column: column, row: row, grid: grid):
+                    // Already a shop → the second shop pick fills the 2nd-item slot,
+                    // a third replaces the primary (T-185, same smarts as the shop hotkey).
+                    break
+                case .mark(let m): applyMark(m, column: column, row: row)
+                case .takeAny(let s): applyTakeAny(s, column: column, row: row)
+                case .startSpot: onSetStartSpot(column, row)
+                }
+                chooserCell = nil
+            })
+    }
+
     /// Set a tile's mark from the picker. A claimable mark (secret / take-any /
     /// armos / letter / hint shop) defaults to **used** — you usually mark one
     /// right after collecting it; a left-click flips it back to unused (T-056).
     private func applyMark(_ mark: OverworldTileMark, column: Int, row: Int) {
+        // Selecting a mark closes the menu-mode chooser popover (T-185) — a picked
+        // mark should dismiss it, like the native context menu does on selection.
+        chooserCell = nil
         // Grid mechanics live in the shared apply (T-134) so a keyboard hotkey on
         // the cursor cell does identically the same thing as this click path.
         let result = OverworldMark.apply(mark, column: column, row: row, grid: grid,
@@ -577,6 +657,7 @@ struct OverworldMapView: View {
     /// to the model so the tile's linked Items-group heart slot stays in sync:
     /// the tile reuses its own slot when re-marked, and `.untaken` frees it.
     private func applyTakeAny(_ state: TakeAnyHeartState, column: Int, row: Int) {
+        chooserCell = nil   // dismiss the menu-mode chooser popover on selection (T-185)
         onSetTakeAny(state, column, row)
     }
 
@@ -752,6 +833,158 @@ struct OverworldMapView: View {
             }
         }
     }
+
+    // MARK: Native context menu (double-left-click on a Don't-Care tile, T-185)
+
+    /// A menu item backed by a Swift closure (see `ClosureMenuTarget`).
+    private func nsItem(_ title: String, enabled: Bool = true, checked: Bool = false,
+                        _ action: @escaping () -> Void) -> NSMenuItem {
+        let item = NSMenuItem(title: title, action: #selector(ClosureMenuTarget.fire), keyEquivalent: "")
+        let target = ClosureMenuTarget(action)
+        item.target = target
+        item.representedObject = target   // retain (item.target is weak)
+        item.isEnabled = enabled
+        item.state = checked ? .on : .off
+        return item
+    }
+
+    /// A submenu item; its child menu is built by `build`.
+    private func nsSubmenu(_ title: String, enabled: Bool = true, _ build: (NSMenu) -> Void) -> NSMenuItem {
+        let sub = NSMenu(title: title)
+        sub.autoenablesItems = false
+        build(sub)
+        let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
+        item.submenu = sub
+        item.isEnabled = enabled
+        return item
+    }
+
+    /// The AppKit twin of `markMenu` — a real `NSMenu`, so the double-left-click menu
+    /// is chrome-identical to the native right-click menu (T-185). **Keep in sync with
+    /// `markMenu`.**
+    private func makeMarkNSMenu(column: Int, row: Int) -> NSMenu {
+        let counts = markCounts
+        let menu = NSMenu()
+        menu.autoenablesItems = false
+
+        menu.addItem(nsItem("Clear (unmarked)") { applyMark(.unmarked, column: column, row: row) })
+        menu.addItem(nsItem("Don't care") { applyMark(.dontCare, column: column, row: row) })
+        menu.addItem(.separator())
+
+        func addShops() {
+            menu.addItem(nsSubmenu("Shop") { sub in
+                for kind in ShopKind.allCases {
+                    sub.addItem(nsItem(kind.shortName) { applyMark(.shop(kind), column: column, row: row) })
+                }
+            })
+            if case .shop(let item1) = grid.mark(column: column, row: row) {
+                menu.addItem(nsSubmenu("Shop — 2nd item") { sub in
+                    sub.addItem(nsItem("None") { grid.setShopSecondItem(nil, column: column, row: row) })
+                    for kind in ShopKind.allCases {
+                        sub.addItem(nsItem(kind.shortName, enabled: kind != item1) {
+                            grid.setShopSecondItem(kind, column: column, row: row)
+                        })
+                    }
+                })
+            }
+        }
+
+        if options.shopsBeforeDungeons { addShops() }
+
+        menu.addItem(nsSubmenu(DungeonLabeling.columnWord(prefix: options.levelPrefix).capitalized,
+                               enabled: !allExhausted((1...9).map { .dungeon($0) }, column: column, row: row, counts: counts)) { sub in
+            for number in 1...9 {
+                let label = DungeonLabeling.columnName(slot: number, prefix: options.levelPrefix,
+                                                       hideDungeonNumbers: hideDungeonNumbers)
+                sub.addItem(nsItem(label, enabled: !isExhausted(.dungeon(number), column: column, row: row, counts: counts)) {
+                    applyMark(.dungeon(number), column: column, row: row)
+                })
+            }
+        })
+        menu.addItem(nsSubmenu("Any road") { sub in
+            for number in 1...4 {
+                sub.addItem(nsItem("Any road \(number)", enabled: !isExhausted(.anyRoad(number), column: column, row: row, counts: counts)) {
+                    applyMark(.anyRoad(number), column: column, row: row)
+                })
+            }
+            sub.addItem(nsItem("Any road (?)") { applyMark(.anyRoad(0), column: column, row: row) })
+        })
+        menu.addItem(nsSubmenu("Sword cave",
+                               enabled: !allExhausted((1...3).map { .swordCave($0) }, column: column, row: row, counts: counts)) { sub in
+            for number in 1...3 {
+                sub.addItem(nsItem(Self.swordCaveLabel(number), enabled: !isExhausted(.swordCave(number), column: column, row: row, counts: counts)) {
+                    applyMark(.swordCave(number), column: column, row: row)
+                })
+            }
+        })
+        if !options.shopsBeforeDungeons { addShops() }
+        menu.addItem(nsSubmenu("Secret") { sub in
+            for size in SecretSize.allCases {
+                sub.addItem(nsItem(size.displayName, enabled: !isExhausted(.secret(size), column: column, row: row, counts: counts)) {
+                    applyMark(.secret(size), column: column, row: row)
+                })
+            }
+        })
+        menu.addItem(nsSubmenu("Take any", enabled: !isExhausted(.takeAny, column: column, row: row, counts: counts)) { sub in
+            sub.addItem(nsItem("Unclaimed") { applyTakeAny(.untaken, column: column, row: row) })
+            sub.addItem(nsItem("Potion") { applyTakeAny(.takenPotion, column: column, row: row) })
+            sub.addItem(nsItem("Blue candle") { applyTakeAny(.takenCandle, column: column, row: row) })
+            sub.addItem(nsItem("Heart") { applyTakeAny(.takenHeart, column: column, row: row) })
+        })
+        menu.addItem(.separator())
+
+        menu.addItem(nsItem("Door repair", enabled: !isExhausted(.doorRepair, column: column, row: row, counts: counts)) { applyMark(.doorRepair, column: column, row: row) })
+        menu.addItem(nsItem("Money making game", enabled: !isExhausted(.moneyMakingGame, column: column, row: row, counts: counts)) { applyMark(.moneyMakingGame, column: column, row: row) })
+        menu.addItem(nsItem("The letter", enabled: !isExhausted(.theLetter, column: column, row: row, counts: counts)) { applyMark(.theLetter, column: column, row: row) })
+        menu.addItem(nsItem("Armos", enabled: !isExhausted(.armos, column: column, row: row, counts: counts)) { applyMark(.armos, column: column, row: row) })
+        menu.addItem(nsItem("Hint shop", enabled: !isExhausted(.hintShop, column: column, row: row, counts: counts)) { applyMark(.hintShop, column: column, row: row) })
+        menu.addItem(nsItem("Potion shop", enabled: !isExhausted(.potionShop, column: column, row: row, counts: counts)) { applyMark(.potionShop, column: column, row: row) })
+        if customMapImagePath != nil {
+            let isFairy = grid.isCustomFairy(column: column, row: row)
+            menu.addItem(nsItem(isFairy ? "Remove fairy fountain" : "Place fairy fountain") { grid.toggleCustomFairy(column: column, row: row) })
+        }
+        menu.addItem(.separator())
+
+        let currentEnemies = grid.enemies(column: column, row: row)
+        menu.addItem(nsSubmenu("Enemies") { sub in
+            for enemy in MonsterDetail.overworldEnemies {
+                sub.addItem(nsItem(enemy.displayName, checked: currentEnemies.contains(enemy)) {
+                    grid.toggleEnemy(enemy, column: column, row: row)
+                })
+            }
+            if !currentEnemies.isEmpty {
+                sub.addItem(.separator())
+                sub.addItem(nsItem("Clear enemies") { grid.toggleEnemy(.unmarked, column: column, row: row) })
+            }
+        })
+        menu.addItem(.separator())
+
+        if startSpot == OverworldScreenCoordinate(x: column, y: row) {
+            menu.addItem(nsItem("Clear start spot") { onClearStartSpot() })
+        } else {
+            menu.addItem(nsItem("Set as start spot") { onSetStartSpot(column, row) })
+        }
+        if customWaypoint == OverworldScreenCoordinate(x: column, y: row) {
+            menu.addItem(nsItem("Clear waypoint") { onClearWaypoint() })
+        } else {
+            menu.addItem(nsItem("Set waypoint") { onSetWaypoint(column, row) })
+        }
+        if customMapImagePath != nil {
+            menu.addItem(.separator())
+            if grid.isCustomMapRevealed(column: column, row: row) {
+                menu.addItem(nsItem("Re-hide screen (fog)") { grid.setCustomMapRevealed(false, column: column, row: row) })
+            } else {
+                menu.addItem(nsItem("Reveal screen") { grid.setCustomMapRevealed(true, column: column, row: row) })
+            }
+        }
+        return menu
+    }
+
+    /// Pop up the native mark menu at the cursor (double-left-click on a Don't-Care
+    /// tile in menu mode, T-185).
+    private func showNativeMarkMenu(column: Int, row: Int) {
+        makeMarkNSMenu(column: column, row: row).popUp(positioning: nil, at: NSEvent.mouseLocation, in: nil)
+    }
 }
 
 /// A single tile's visual: the real terrain background (T-008) as the base
@@ -787,7 +1020,40 @@ enum FairyIconAtlas {
     static let image: CGImage? = AtlasLoader.load("icons8x16", blackIsTransparent: true)
 }
 
-private struct TileView: View {
+/// All of a tile's chooser + enemy-picker behavior (T-185) in one modifier, so the
+/// per-tile view expression in the grid stays small enough to type-check. Right-click
+/// keeps the native text menu in menu mode, or opens the graphical chooser popover in
+/// graphical mode; scroll-up (graphical only) opens the enemy picker.
+private struct TileChooserModifiers: ViewModifier {
+    let graphical: Bool
+    let onOpenChooser: () -> Void
+    let menu: () -> AnyView
+    let chooserPresented: Binding<Bool>
+    let chooser: () -> AnyView
+    let onScrollUp: () -> Void
+    let enemyPresented: Binding<Bool>
+    let enemy: () -> AnyView
+
+    func body(content: Content) -> some View {
+        rightClickLayer(content)
+            .popover(isPresented: chooserPresented, arrowEdge: .bottom) { chooser() }
+            .overlay { if graphical { ScrollUpCatcher(onScrollUp: onScrollUp) } }
+            .popover(isPresented: enemyPresented, arrowEdge: .top) { enemy() }
+    }
+
+    @ViewBuilder
+    private func rightClickLayer(_ content: Content) -> some View {
+        if graphical {
+            content.onRightClick { onOpenChooser() }
+        } else {
+            content.contextMenu { menu() }
+        }
+    }
+}
+
+/// Internal (not private) so the graphical tile chooser (T-185) can reuse the exact
+/// map glyph rendering for its option cells.
+struct TileView: View {
     var mark: OverworldTileMark
     var background: CGImage?
     var tileWidth: CGFloat

@@ -25,6 +25,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-185](./T-185.md) | Graphical overworld tile chooser (option) + native double-left menu + shop/sword/enemy/reminder refinements | frontend-engineer | — | feat/graphical-tile-chooser | — | docs/reviews/feat-graphical-tile-chooser/final.md |
 | [T-184](./T-184.md) | Auto-switch the dungeon tab when an overworld tile is marked a dungeon | frontend-engineer | — | feat/auto-switch-dungeon-tab | — | docs/reviews/feat-auto-switch-dungeon-tab/final.md |
 | [T-183](./T-183.md) | Spoiler-log dungeon room-map importer (the deferred .roomMaps section) | frontend-engineer | T-181 | feat/spoiler-room-maps | — | docs/reviews/feat-spoiler-room-maps/final.md |
 | [T-182](./T-182.md) | Dungeon drag-to-swap item boxes (floor ↔ basement) | frontend-engineer | — | feat/dungeon-drag-swap | — | docs/reviews/feat-dungeon-drag-swap/final.md |

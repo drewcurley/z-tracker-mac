@@ -6,9 +6,12 @@ import Foundation
 /// members of `ITrackerEvents`
 /// (`Zelda1RandoTools/Z1R_Tracker/Z1R_Tracker/TrackerModel.fs:1486-1508`).
 public enum ReminderAnnouncement: Equatable, Sendable {
-    /// Hearts crossed 4–6 and the white-sword cave is known but its item
-    /// unobtained.
+    /// Hearts reached 4–5 and the white-sword cave is known but its item
+    /// unobtained — a soft "you're getting close" nudge (T-185).
     case considerSword2
+    /// Hearts reached 6 (first time) and the white-sword cave is known but its item
+    /// unobtained — the stronger "go get it now" nudge (T-185, user request).
+    case getSword2
     /// Hearts crossed 10–14 and the magical-sword cave is known but the
     /// magical sword unobtained.
     case considerSword3
@@ -35,6 +38,9 @@ public enum ReminderAnnouncement: Equatable, Sendable {
     /// Periodic nudge to grab the coast item with the ladder. `itemName` is the
     /// known item's spoken name, or `nil` when the coast item is still unknown.
     case getCoastItem(itemName: String?)
+    /// Periodic nudge to grab the armos item while it's located but unobtained (T-185,
+    /// user request). `itemName` is the known item's spoken name, or `nil` if unknown.
+    case getArmosItem(itemName: String?)
     /// Periodic nudge to buy the boomstick book (have the wand, no book, a book
     /// shop is marked).
     case considerBoomstickBook
@@ -141,6 +147,7 @@ public final class ReminderEngine {
     // count* reminders were removed (T-095): they nagged every 5 min and the count
     // was wrong — replaced by one-shot "you have the recorder/power bracelet" nudges.
     private var lastCoastReminder: Date?
+    private var lastArmosReminder: Date?
     private var lastBoomstickReminder: Date?
 
     public init() {}
@@ -215,11 +222,17 @@ public final class ReminderEngine {
         // dropping then regaining hearts re-fires (T-095, unmark→remark).
         let playerHearts = playerState.playerHearts
         for n in haveAnnouncedHearts.indices where n > playerHearts { haveAnnouncedHearts[n] = false }
-        if playerHearts >= 4, playerHearts <= 6, !haveAnnouncedHearts[playerHearts] {
+        let needWhiteSwordItem = !playerState.haveWhiteSwordItem && mapState.sword2Location != nil
+        // Two-tier white-sword-item nudge (T-185, user request): "consider" at 4–5
+        // hearts, then a stronger "get it now" **once** on first reaching 6+. Slot 6 is
+        // the once-guard; the re-arm loop above clears it if hearts drop below 6.
+        if playerHearts >= 4, playerHearts <= 5, !haveAnnouncedHearts[playerHearts] {
             haveAnnouncedHearts[playerHearts] = true
-            if !playerState.haveWhiteSwordItem && mapState.sword2Location != nil {
-                out.append(.considerSword2)
-            }
+            if needWhiteSwordItem { out.append(.considerSword2) }
+        }
+        if playerHearts >= 6, !haveAnnouncedHearts[6] {
+            haveAnnouncedHearts[6] = true
+            if needWhiteSwordItem { out.append(.getSword2) }
         }
         if playerHearts >= 10, playerHearts <= 14, !haveAnnouncedHearts[playerHearts] {
             haveAnnouncedHearts[playerHearts] = true
@@ -417,6 +430,15 @@ public final class ReminderEngine {
                 out.append(.getCoastItem(itemName: ITEMS.spokenName(coastItemValue, isBook: isCurrentlyBook)))
             }
             lastCoastReminder = now
+        }
+
+        // armos item — every 3 min while it's located on the map but not yet obtained
+        // (T-185, user request). Derived from existing state (no new poll params).
+        if cooldownElapsed(now, lastArmosReminder, minutes: 3),
+           mapState.armosLocation != nil, !dungeonTracker.armosBox.isDone {
+            let v = dungeonTracker.armosBox.cellCurrent
+            out.append(.getArmosItem(itemName: v == -1 ? nil : ITEMS.spokenName(v, isBook: isCurrentlyBook)))
+            lastArmosReminder = now
         }
 
         // (Recorder / power-bracelet spot-count reminders removed in T-095 — they

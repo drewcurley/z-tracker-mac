@@ -9,7 +9,9 @@ struct DungeonRoomModelTests {
     @Test("enum case counts match the reference")
     func counts() {
         #expect(RoomType.allCases.count == 34)      // Unmarked + 33
-        #expect(MonsterDetail.allCases.count == 32) // Unmarked + 31
+        // Reference: Unmarked + 31 = 32. Beyond the reference we add 3 overworld-only
+        // enemies (octorok / peahat / leever, T-185) → 35.
+        #expect(MonsterDetail.allCases.count == 35)
         #expect(FloorDropDetail.allCases.count == 9)
         #expect(DoorState.allCases.count == 5)
     }

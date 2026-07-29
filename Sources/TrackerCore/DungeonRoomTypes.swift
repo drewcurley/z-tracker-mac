@@ -128,6 +128,10 @@ public enum MonsterDetail: CaseIterable, Sendable, Equatable, Codable {
     case redGoriya, rope, stalfos, wallmaster, gel, keese, likelike, gibdo
     case redLynel, blueMoblin, aquamentus, blueLanmola, moldorm, rupeeBoss
     case traps, other, other2
+    // Overworld-only enemies (T-185, user request) — offered on overworld tiles, not
+    // in the dungeon monster picker. No dungeon-sheet sprite; rendered from the game
+    // sprite GIFs (see the overworld enemy glyph helper).
+    case octorok, peahat, leever
 
     public var isNotMarked: Bool { self == .unmarked }
 
@@ -142,6 +146,7 @@ public enum MonsterDetail: CaseIterable, Sendable, Equatable, Codable {
     public static let overworldEnemies: [MonsterDetail] = [
         .blueWizzrobe, .blueDarknut, .redLynel, .polsVoice, .redGoriya,
         .gibdo, .rope, .stalfos, .redTektite, .blueMoblin,
+        .octorok, .peahat, .leever,
     ]
 
     /// Toggle `m` into a normalized up-to-two monster pair (T-116/T-117), shared
@@ -193,6 +198,9 @@ public enum MonsterDetail: CaseIterable, Sendable, Equatable, Codable {
         case .traps: "Traps"
         case .other: "Other"
         case .other2: "Other2"
+        case .octorok: "Octorok"
+        case .peahat: "Peahat"
+        case .leever: "Leever"
         }
     }
 }

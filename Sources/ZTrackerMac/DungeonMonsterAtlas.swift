@@ -56,6 +56,9 @@ enum DungeonMonsterAtlas {
         case .rupeeBoss: 29
         case .traps: 30
         case .other2: 31
+        // Overworld-only enemies (T-185) aren't on the dungeon sheet — they render
+        // from the game sprite GIFs via `OverworldEnemyGlyph`.
+        case .octorok, .peahat, .leever: nil
         }
     }
 }

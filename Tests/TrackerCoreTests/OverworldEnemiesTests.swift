@@ -3,13 +3,15 @@ import Testing
 
 @Suite("Overworld tile enemies (T-117)")
 struct OverworldEnemiesTests {
-    @Test("the reduced overworld enemy set is the 10 requested types")
+    @Test("the reduced overworld enemy set is the requested types (T-117 + octorok/peahat/leever, T-185)")
     func reducedSet() {
         #expect(MonsterDetail.overworldEnemies == [
             .blueWizzrobe, .blueDarknut, .redLynel, .polsVoice, .redGoriya,
             .gibdo, .rope, .stalfos, .redTektite, .blueMoblin,
+            .octorok, .peahat, .leever,
         ])
-        // Each is renderable via the shared monster atlas mapping (non-unmarked).
+        // All are real (non-unmarked) monsters; the last three are overworld-only and
+        // render from game-sprite GIFs rather than the dungeon atlas (T-185).
         for e in MonsterDetail.overworldEnemies { #expect(!e.isNotMarked) }
     }
 
