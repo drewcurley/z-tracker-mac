@@ -64,6 +64,12 @@ extension SpoilerLog {
         public var swordlessInferred = false
         public var startSpotSet = false
         public var l9NoteAdded = false
+        /// Dungeon room maps populated (levels), rooms placed, and transport ends
+        /// relocated because they sat outside the 8-wide window (cosmetic — they
+        /// teleport). Surfaced so the report can be honest about the relocation.
+        public var roomMapsApplied = 0
+        public var roomMapRoomsPlaced = 0
+        public var transportsRelocated = 0
         /// Sections requested but not yet implemented (dungeon items / room maps) — surfaced so the
         /// UI can be honest about what it did.
         public var deferredSections: [String] = []
@@ -169,9 +175,118 @@ extension SpoilerLog {
             }
         }
 
-        // Room-map ASCII → the 8×8 grids is the one remaining slice (T-181).
-        if sections.contains(.roomMaps) { result.deferredSections.append("Dungeon room maps") }
+        if sections.contains(.roomMaps) {
+            for dm in maps where (1...9).contains(dm.level) {
+                let (placed, relocated) = Self.applyRoomMap(dm, to: model.dungeonRoomMaps[dm.level - 1])
+                if placed > 0 {
+                    result.roomMapsApplied += 1
+                    result.roomMapRoomsPlaced += placed
+                    result.transportsRelocated += relocated
+                }
+            }
+        }
 
         return result
+    }
+
+    // MARK: - Room-map application
+
+    private static func transportType(_ n: Int) -> RoomType {
+        switch n {
+        case 1: .transport1; case 2: .transport2; case 3: .transport3; case 4: .transport4
+        case 5: .transport5; case 6: .transport6; case 7: .transport7; default: .transport8
+        }
+    }
+
+    private static func entranceType(_ dir: SpoilerLog.EntranceDir) -> RoomType {
+        switch dir {
+        case .north: .startEnterFromN; case .south: .startEnterFromS
+        case .east: .startEnterFromE; case .west: .startEnterFromW
+        }
+    }
+
+    /// Populate one dungeon's `DungeonRoomMap` from a parsed spoiler map (overwrites
+    /// it). Chooses the 8-wide column window that captures the most rooms (this always
+    /// captures the whole connected cluster — only teleporting transport ends fall
+    /// outside), off-maps every non-room cell so the shape reads, places transports +
+    /// the entrance, and opens the `-`/`|` doors. Outlier transport ends are relocated
+    /// to the nearest free cell (their exact column is cosmetic; the pair is what
+    /// matters). Returns (rooms placed, transports relocated).
+    static func applyRoomMap(_ dm: SpoilerLog.DungeonMap, to target: DungeonRoomMap) -> (Int, Int) {
+        let cols = dm.rooms.keys.map(\.col)
+        guard !cols.isEmpty else { return (0, 0) }
+
+        // Best 8-wide window (start column capturing the most rooms).
+        var offset = cols.min()!, best = -1
+        for w in Set(cols).sorted() {
+            let n = dm.rooms.keys.reduce(0) { $0 + ((w...w + 7).contains($1.col) ? 1 : 0) }
+            if n > best { best = n; offset = w }
+        }
+
+        func localIndex(_ c: Int, _ r: Int) -> Int { r * 8 + c }
+        var placement: [SpoilerLog.MapCell: (col: Int, row: Int)] = [:]
+        var occupied: Set<Int> = []
+        let ordered = dm.rooms.keys.sorted { ($0.row, $0.col) < ($1.row, $1.col) }
+
+        // In-window rooms map directly.
+        for cell in ordered where (offset...offset + 7).contains(cell.col) {
+            let lc = cell.col - offset
+            placement[cell] = (lc, cell.row)
+            occupied.insert(localIndex(lc, cell.row))
+        }
+        // Outlier transport ends → nearest free cell to their edge/row.
+        var relocated = 0
+        for cell in ordered where !(offset...offset + 7).contains(cell.col) {
+            let edge = cell.col < offset ? 0 : 7
+            guard let free = nearestFreeCell(preferredCol: edge, row: cell.row, occupied: occupied) else { continue }
+            placement[cell] = free
+            occupied.insert(localIndex(free.col, free.row))
+            relocated += 1
+        }
+
+        // Build a fresh map, then commit atomically (full overwrite).
+        let fresh = DungeonRoomMap()
+        for r in 0..<8 {
+            for c in 0..<8 where !occupied.contains(localIndex(c, r)) {
+                fresh.setRoom(DungeonRoom(roomType: .offTheMap), col: c, row: r)
+            }
+        }
+        // Transports (plain rooms stay unmarked = on-map, unexplored).
+        for (cell, kind) in dm.rooms {
+            guard let p = placement[cell], case .transport(let n) = kind else { continue }
+            fresh.setRoom(DungeonRoom(roomType: transportType(n)), col: p.col, row: p.row)
+        }
+        // Entrance.
+        if let ec = dm.entranceCell, let dir = dm.entranceDir, let p = placement[ec] {
+            fresh.setRoom(DungeonRoom(roomType: entranceType(dir)), col: p.col, row: p.row)
+        }
+        // Open doors (only between two placed, still-adjacent rooms).
+        for d in dm.hDoors {
+            guard let a = placement[SpoilerLog.MapCell(col: d.col, row: d.row)],
+                  let b = placement[SpoilerLog.MapCell(col: d.col + 1, row: d.row)],
+                  a.row == b.row, b.col == a.col + 1, a.col < 7 else { continue }
+            fresh.setHorizontalDoor(.yes, col: a.col, row: a.row)
+        }
+        for d in dm.vDoors {
+            guard let a = placement[SpoilerLog.MapCell(col: d.col, row: d.row)],
+                  let b = placement[SpoilerLog.MapCell(col: d.col, row: d.row + 1)],
+                  a.col == b.col, b.row == a.row + 1, a.row < 7 else { continue }
+            fresh.setVerticalDoor(.yes, col: a.col, row: a.row)
+        }
+        fresh.firstInteractionDone = true
+        target.restore(fresh.state)
+        return (dm.rooms.count, relocated)
+    }
+
+    /// The free cell nearest `(preferredCol, row)` — same row first (sweeping from the
+    /// preferred edge), then nearer rows. `nil` if the whole 8×8 is full.
+    private static func nearestFreeCell(preferredCol: Int, row: Int, occupied: Set<Int>) -> (col: Int, row: Int)? {
+        for dr in [0, 1, -1, 2, -2, 3, -3, 4, -4, 5, -5, 6, -6, 7, -7] {
+            let r = row + dr
+            guard (0..<8).contains(r) else { continue }
+            let sweep = preferredCol == 0 ? Array(0..<8) : Array((0..<8).reversed())
+            for c in sweep where !occupied.contains(r * 8 + c) { return (c, r) }
+        }
+        return nil
     }
 }

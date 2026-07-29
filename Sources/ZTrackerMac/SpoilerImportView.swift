@@ -86,6 +86,11 @@ struct SpoilerImportView: View {
         if result.swordlessInferred { parts.append("swordless inferred") }
         if result.unmappedItemCount > 0 { parts.append("\(result.unmappedItemCount) item(s) skipped") }
         if result.unmappedCaveCount > 0 { parts.append("\(result.unmappedCaveCount) unmapped caves") }
+        if result.roomMapsApplied > 0 {
+            var rm = "\(result.roomMapsApplied) room maps"
+            if result.transportsRelocated > 0 { rm += " (\(result.transportsRelocated) transports moved to fit)" }
+            parts.append(rm)
+        }
         if result.startSpotSet { parts.append("start spot") }
         if result.l9NoteAdded { parts.append("L9 → Notes") }
         if !result.deferredSections.isEmpty {
