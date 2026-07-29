@@ -1,8 +1,22 @@
+import Foundation
 import Testing
 @testable import TrackerCore
 
 @Suite("TrackerOptions")
 struct TrackerOptionsTests {
+
+    @Test("appTheme defaults to dark and persists across launches (T-187)")
+    func appThemePersists() {
+        #expect(TrackerOptions().appTheme == .dark)
+        let suite = "test.appTheme.\(UInt64.random(in: 0..<UInt64.max))"
+        let store = UserDefaults(suiteName: suite)!
+        defer { store.removePersistentDomain(forName: suite) }
+        let a = TrackerOptions(); a.enableSettingsPersistence(store: store)
+        a.appTheme = .light
+        a.saveSettings()
+        let b = TrackerOptions(); b.enableSettingsPersistence(store: store)
+        #expect(b.appTheme == .light)
+    }
     @Test("defaults match the reference app's TrackerModelOptions.fs field-for-field")
     func defaultsMatchReferenceApp() {
         let options = TrackerOptions()
@@ -28,7 +42,7 @@ struct TrackerOptionsTests {
         #expect(options.bookForHelpfulHints == false)
         #expect(options.leftDragAutoInverts == false)
         #expect(options.defaultToNonDescript == false)
-        #expect(options.dungeonSunglasses == true)
+        #expect(options.appTheme == .dark)   // T-187: theme picker replaced the sunglasses toggle
 
         // "More settings…" (overworld tile hiding)
         #expect(options.hideNoLongerRelevantShopItems == false)

@@ -65,6 +65,9 @@ struct ContentView: View {
         // Apply the chosen dock icon at launch and whenever the setting changes (T-178).
         .onAppear { AppIconController.apply(useDetailed: options.useDetailedAppIcon) }
         .onChange(of: options.useDetailedAppIcon) { _, v in AppIconController.apply(useDetailed: v) }
+        // Apply the color theme app-wide at launch and on change (T-187).
+        .onAppear { AppThemeController.apply(options.appTheme) }
+        .onChange(of: options.appTheme) { _, t in AppThemeController.apply(t) }
         // Wire the render-perf logging switch (T-179). Reclaim any crash-leftover logs
         // first, then honor the current setting (which redirects stdout/stderr to a temp
         // file while on). Runs once — Reset App reuses this ContentView, not a new one.
