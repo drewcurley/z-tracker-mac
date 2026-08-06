@@ -26,6 +26,33 @@ struct OverworldOverlaysTests {
     }
 
     @MainActor
+    @Test("open-caves is a 3-way cycle: off → open caves → all gettable → off (T-189)")
+    func openCavesThreeWay() {
+        let s = OverworldOverlayState()
+        #expect(s.openCavesMode == .off)
+        #expect(!s.isActive(.openCaves) && !s.isLocked(.openCaves))
+        // Click 1 → open caves only.
+        s.toggleLock(.openCaves)
+        #expect(s.openCavesMode == .openCaves)
+        #expect(s.isActive(.openCaves) && s.isLocked(.openCaves))
+        #expect(s.effectiveOpenCavesMode == .openCaves)
+        // Click 2 → all gettable.
+        s.toggleLock(.openCaves)
+        #expect(s.openCavesMode == .allGettable)
+        #expect(s.effectiveOpenCavesMode == .allGettable)
+        // Click 3 → off.
+        s.toggleLock(.openCaves)
+        #expect(s.openCavesMode == .off)
+        #expect(!s.isActive(.openCaves))
+        // Hover while off previews the first mode (open caves only), without locking.
+        s.setHover(.openCaves, true)
+        #expect(s.isActive(.openCaves) && !s.isLocked(.openCaves))
+        #expect(s.effectiveOpenCavesMode == .openCaves)
+        s.setHover(.openCaves, false)
+        #expect(s.effectiveOpenCavesMode == .off)
+    }
+
+    @MainActor
     @Test("hide-marks overlay: previews on hover, locks on click, independent of highlights")
     func hideMarksState() {
         let s = OverworldOverlayState()

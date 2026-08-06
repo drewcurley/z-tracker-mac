@@ -112,24 +112,34 @@ struct OverworldMapView: View {
     /// The magical-sword cave was clicked (T-119): take/untake the magical sword.
     var onMagicalSwordCaveUsedChanged: (Bool) -> Void = { _ in }
 
-    /// Whether any active top-section overlay highlights this tile (T-035.2).
-    private func overlayHighlights(column: Int, row: Int, mark: OverworldTileMark) -> Bool {
-        guard let overlays else { return false }
+    /// The border/fill color an active top-section overlay gives this tile, or nil for
+    /// none (T-035.2). Money + open-caves-only use green; the open-caves overlay's second
+    /// mode — **all currently-gettable locations** — uses a distinct color (T-189).
+    static let overlayGreen = Color.green
+    static let allGettableColor = Color.orange
+
+    private func overlayHighlight(column: Int, row: Int, mark: OverworldTileMark) -> Color? {
+        guard let overlays else { return nil }
         if overlays.isActive(.money),
            OverworldOverlays.isMoneyTile(mark, secretCollected: grid.isUsed(column: column, row: row)) {
-            return true
+            return Self.overlayGreen
         }
-        if overlays.isActive(.openCaves) {
+        switch overlays.effectiveOpenCavesMode {
+        case .openCaves:
             let pastEarly = OverworldOverlays.openCavesPastEarlyGame(
                 woodSwordCaveFound: mapState.woodSwordCaveFound,
                 swordLevel: playerState.swordLevel, candleLevel: playerState.candleLevel)
-            return OverworldOverlays.isOpenCaveTile(
+            let hit = OverworldOverlays.isOpenCaveTile(
                 mark: mark,
                 nothingable: overworldInstance.nothingable(x: column, y: row),
                 hasArmos: overworldInstance.hasArmos(x: column, y: row),
                 pastEarlyGame: pastEarly, armosClaimed: armosClaimed)
+            return hit ? Self.overlayGreen : nil
+        case .allGettable:
+            return mapState.owGettableLocations[column, row] ? Self.allGettableColor : nil
+        case .off:
+            return nil
         }
-        return false
     }
 
     /// The tile-selector label for a sword *cave* (a location). Relabeled from
@@ -302,10 +312,10 @@ struct OverworldMapView: View {
                                     .overlay {
                                         // Top-section overlay toggles (T-035.2): open-caves /
                                         // money highlights, previewed on hover / locked on click.
-                                        if !isAlwaysEmpty, overlayHighlights(column: column, row: row, mark: mark) {
+                                        if !isAlwaysEmpty, let color = overlayHighlight(column: column, row: row, mark: mark) {
                                             RoundedRectangle(cornerRadius: 2)
-                                                .strokeBorder(Color.green, lineWidth: 2)
-                                                .background(RoundedRectangle(cornerRadius: 2).fill(Color.green.opacity(0.18)))
+                                                .strokeBorder(color, lineWidth: 2)
+                                                .background(RoundedRectangle(cornerRadius: 2).fill(color.opacity(0.18)))
                                         }
                                     }
                                     .overlay {
