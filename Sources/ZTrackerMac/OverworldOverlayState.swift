@@ -16,19 +16,46 @@ final class OverworldOverlayState {
         case hideMarks   // suppress the tile-selection icons to reveal the terrain (T-062)
     }
 
-    /// Overlays the user has clicked to keep on.
+    /// The open-caves overlay is a **3-way** cycle (T-189, user request), unlike the
+    /// binary overlays: off → open caves only → all currently-gettable locations → off.
+    enum OpenCavesMode: CaseIterable, Sendable {
+        case off, openCaves, allGettable
+        /// The next mode in the click cycle.
+        var next: OpenCavesMode {
+            switch self {
+            case .off: .openCaves
+            case .openCaves: .allGettable
+            case .allGettable: .off
+            }
+        }
+    }
+
+    /// Binary overlays the user has clicked to keep on (open-caves is tracked separately).
     private(set) var locked: Set<Overlay> = []
+    /// The open-caves overlay's current locked mode.
+    private(set) var openCavesMode: OpenCavesMode = .off
     /// The overlay whose icon is currently hovered (transient preview).
     var hovered: Overlay?
 
     /// Whether an overlay should currently draw (locked or hovered).
     func isActive(_ overlay: Overlay) -> Bool {
-        locked.contains(overlay) || hovered == overlay
+        if overlay == .openCaves { return openCavesMode != .off || hovered == .openCaves }
+        return locked.contains(overlay) || hovered == overlay
     }
-    func isLocked(_ overlay: Overlay) -> Bool { locked.contains(overlay) }
+    func isLocked(_ overlay: Overlay) -> Bool {
+        overlay == .openCaves ? openCavesMode != .off : locked.contains(overlay)
+    }
 
-    /// Click toggles the persistent lock.
+    /// The effective open-caves mode to render, folding in the hover preview: hovering
+    /// the icon while off previews the first mode (open caves only).
+    var effectiveOpenCavesMode: OpenCavesMode {
+        openCavesMode != .off ? openCavesMode : (hovered == .openCaves ? .openCaves : .off)
+    }
+
+    /// Click toggles the persistent lock — a binary flip for most overlays, the 3-way
+    /// cycle for open caves.
     func toggleLock(_ overlay: Overlay) {
+        if overlay == .openCaves { openCavesMode = openCavesMode.next; return }
         if locked.contains(overlay) { locked.remove(overlay) } else { locked.insert(overlay) }
     }
 

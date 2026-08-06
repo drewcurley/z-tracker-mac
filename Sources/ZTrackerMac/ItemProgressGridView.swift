@@ -632,7 +632,7 @@ struct MapInfoView: View {
                 overlayToggle(.hideMarks, systemImage: "eye.slash",
                               help: "Temporarily hide the overworld map's tile marks to see the terrain. Hover to preview, click to keep it on.")
                 overlayToggle(.openCaves, systemImage: "mountain.2.fill",
-                              help: "Highlight open caves (unmarked spots that can hold a plain cave); late game, the Armos spots. Hover to preview, click to lock on.")
+                              help: "3-way (hover previews, then cycle by clicking): green = open caves only (late game, Armos spots); orange = ALL currently-gettable locations; third click = off.")
                 overlayToggle(.money, atlasIcon: .rupee,
                               help: "Highlight money spots: Money Making Game, Unknown Secret, and known money secrets. Hover to preview, click to lock on.")
             }
@@ -674,18 +674,30 @@ struct MapInfoView: View {
                                systemImage: String? = nil,
                                atlasIcon: ItemIconAtlas.Icon? = nil,
                                help: String) -> some View {
-        let locked = overlays.isLocked(overlay)
+        // The open-caves overlay is 3-way (T-189): green in "open caves" mode, orange in
+        // "all gettable" mode, off otherwise. Binary overlays are green-when-locked.
+        let tint: Color? = {
+            if overlay == .openCaves {
+                switch overlays.openCavesMode {
+                case .off: return nil
+                case .openCaves: return .green
+                case .allGettable: return .orange
+                }
+            }
+            return overlays.isLocked(overlay) ? .green : nil
+        }()
+        let on = tint != nil
         ZStack {
             if let systemImage {
                 Image(systemName: systemImage).font(.system(size: 18))
-                    .foregroundStyle(locked ? Color.green : Color(white: 0.75))
+                    .foregroundStyle(tint ?? Color(white: 0.75))
             } else if let atlasIcon {
                 ItemGlyph(atlasIcon).frame(width: 22, height: 22)
             }
         }
         .frame(width: itemGridCellSize, height: itemGridCellSize)
-        .background(RoundedRectangle(cornerRadius: 6).fill(locked ? Color.green.opacity(0.3) : Color.clear))
-        .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(locked ? Color.green : Color(white: 0.28), lineWidth: 1))
+        .background(RoundedRectangle(cornerRadius: 6).fill(on ? (tint ?? .green).opacity(0.3) : Color.clear))
+        .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(tint ?? Color(white: 0.28), lineWidth: 1))
         .contentShape(Rectangle())
         .onHover { overlays.setHover(overlay, $0) }
         .onTapGesture { overlays.toggleLock(overlay) }

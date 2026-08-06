@@ -25,6 +25,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-189](./T-189.md) | Open-caves overlay → 3-way toggle (off / open caves / all gettable) | frontend-engineer | — | feat/open-caves-3way | — | docs/reviews/feat-open-caves-3way/final.md |
 | [T-187](./T-187.md) | App theme chooser (Dark / Light / OS) — replaces the dead sunglasses toggle | frontend-engineer | — | feat/theme-chooser | — | docs/reviews/feat-theme-chooser/final.md |
 | [T-186](./T-186.md) | Fix — the run timeline isn't restored on save/load | backend-engineer | — | fix/timeline-restore | — | docs/reviews/fix-timeline-restore/final.md |
 | [T-185](./T-185.md) | Graphical overworld tile chooser (option) + native double-left menu + shop/sword/enemy/reminder refinements | frontend-engineer | — | feat/graphical-tile-chooser | — | docs/reviews/feat-graphical-tile-chooser/final.md |
