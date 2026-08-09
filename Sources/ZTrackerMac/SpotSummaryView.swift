@@ -14,11 +14,11 @@ struct OverworldMarkIcon: View {
 
     var body: some View {
         ZStack {
-            RoundedRectangle(cornerRadius: 4).fill(Color.black)
+            RoundedRectangle(cornerRadius: 4).fill(Theme.boxFill)
             content
         }
         .frame(width: size, height: size)
-        .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(Color(white: 0.25), lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(Theme.border, lineWidth: 1))
     }
 
     @ViewBuilder private var content: some View {

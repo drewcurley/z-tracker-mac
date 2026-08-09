@@ -143,9 +143,12 @@ struct DungeonMapView: View {
         }
         .buttonStyle(.plain)
         .foregroundStyle(.secondary)
-        .frame(width: Self.infoStripWidth)
+        // Track the *scaled* info-strip width (T-188 fix): the control overlays the
+        // scaled footprint, so scaling its width with the zoom keeps it filling the strip
+        // at 100/120% while shrinking to fit (not bleed over the corner box) at 80%.
+        .frame(width: Self.infoStripWidth * mapScale)
         .padding(.vertical, 3)
-        .background(.black.opacity(0.5), in: RoundedRectangle(cornerRadius: 5))
+        .background(Theme.panelFill, in: RoundedRectangle(cornerRadius: 5))
         .padding(2)
         .help("Zoom the dungeon map")
     }
@@ -192,7 +195,7 @@ struct DungeonMapView: View {
                 .foregroundStyle(grab.isGrabMode ? .white : .secondary)
                 .frame(width: 40, height: 20)
                 .background(RoundedRectangle(cornerRadius: 4)
-                    .fill(grab.isGrabMode ? Color.red.opacity(0.85) : Color(white: 0.16)))
+                    .fill(grab.isGrabMode ? Color.red.opacity(0.85) : Theme.panelFill))
         }
         .buttonStyle(.plain)
         .disabled(isSummary)
@@ -211,7 +214,7 @@ struct DungeonMapView: View {
                 .foregroundStyle(active ? .white : .secondary)
                 .frame(width: 26, height: 20)
                 .background(RoundedRectangle(cornerRadius: 4)
-                    .fill(active ? Color(red: 147/255, green: 112/255, blue: 219/255).opacity(0.7) : Color(white: 0.16)))
+                    .fill(active ? Color(red: 147/255, green: 112/255, blue: 219/255).opacity(0.7) : Theme.panelFill))
         }
         .buttonStyle(.plain)
         .disabled(isSummary)
@@ -229,7 +232,7 @@ struct DungeonMapView: View {
                 // to sit clear of the centered number without crowding.
                 .frame(width: 38, height: 24)
                 .background(RoundedRectangle(cornerRadius: 5)
-                    .fill(selected == i ? Color.accentColor.opacity(0.5) : Color(white: 0.16)))
+                    .fill(selected == i ? Color.accentColor.opacity(0.5) : Theme.panelFill))
                 .overlay { if i < 9 { tabNeedsMarkers(dungeon: i) } }
         }
         .buttonStyle(.plain)
@@ -292,6 +295,7 @@ struct DungeonMapView: View {
             // highlight reveals the hovered room's in-game-map row on hover.
             RowLocatorWidget(hoveredRow: hoveredRow)
             // Old-man count on its own single line (icon + X/Y), like the reference.
+            // Centered in the info strip (T-188, user request).
             HStack(spacing: 5) {
                 if let image = Image(atlasIcon: DungeonMonsterAtlas.oldMan) {
                     image.interpolation(.none).resizable().frame(width: 20, height: 20)
@@ -300,6 +304,7 @@ struct DungeonMapView: View {
                     .font(.system(size: 17, weight: .heavy, design: .rounded))
                     .foregroundStyle(.orange)
             }
+            .frame(maxWidth: .infinity, alignment: .center)
             .help("Old-man rooms (NPC hint / bomb-upgrade / hungry-goriya / life-or-money) marked vs. the number expected in this dungeon")
             Divider()
             Text("ITEMS").font(.system(size: 8, weight: .semibold)).foregroundStyle(.secondary)
@@ -398,7 +403,7 @@ struct DungeonRoomGridView: View {
             roomsAndDoors
         }
         .padding(4)
-        .background(RoundedRectangle(cornerRadius: 6).fill(.black.opacity(0.25)))
+        .background(RoundedRectangle(cornerRadius: 6).fill(Color(white: 0.09)))
     }
 
     /// Rooms and the door segments in the gaps between them, absolutely placed in
@@ -755,7 +760,7 @@ private struct RoomTypePicker: View {
                         Button { onPick(type) } label: {
                             ZStack {
                                 RoundedRectangle(cornerRadius: 4)
-                                    .fill(current == type ? Color.accentColor.opacity(0.5) : Color(white: 0.14))
+                                    .fill(current == type ? Color.accentColor.opacity(0.5) : Theme.panelFill)
                                 if let sprite = DungeonRoomSpriteAtlas.sprite(type, completed: false),
                                    let image = Image(atlasIcon: sprite) {
                                     image.interpolation(.none).resizable().frame(width: 39, height: 27)
@@ -806,7 +811,7 @@ private struct MonsterPicker: View {
                     Button { onToggle(md) } label: {
                         ZStack {
                             RoundedRectangle(cornerRadius: 4)
-                                .fill(isSelected(md) ? Color.accentColor.opacity(0.5) : Color(white: 0.14))
+                                .fill(isSelected(md) ? Color.accentColor.opacity(0.5) : Theme.panelFill)
                             if md == .unmarked {
                                 Image(systemName: "xmark").font(.system(size: 11)).foregroundStyle(.secondary)
                             } else if let image = Image(atlasIcon: DungeonMonsterAtlas.sprite(md)) {
@@ -860,7 +865,7 @@ private struct FloorDropPicker: View {
                     Button { onPick(fd) } label: {
                         ZStack {
                             RoundedRectangle(cornerRadius: 4)
-                                .fill(current == fd ? Color.accentColor.opacity(0.5) : Color(white: 0.14))
+                                .fill(current == fd ? Color.accentColor.opacity(0.5) : Theme.panelFill)
                             if fd == .unmarked {
                                 Image(systemName: "xmark").font(.system(size: 12)).foregroundStyle(.secondary)
                             } else if let image = Image(atlasIcon: DungeonFloorDropAtlas.sprite(fd)) {

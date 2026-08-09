@@ -96,7 +96,7 @@ struct GraphicalTileChooser: View {
     private func glyph(_ action: OverworldChooserAction) -> some View {
         switch action {
         case .mark(.unmarked):
-            Image(systemName: "xmark").font(.system(size: 12)).foregroundStyle(.secondary)
+            Image(systemName: "xmark").font(.system(size: 12)).foregroundStyle(.white)
         case .mark(let m):
             // Reuse the map's glyph on our black plate (sharedBackground = draw only the glyph).
             TileView(mark: m, background: nil, tileWidth: Self.cell, tileHeight: Self.cell,

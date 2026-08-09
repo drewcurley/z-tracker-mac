@@ -12,12 +12,14 @@ struct RowLocatorWidget: View {
 
     private let rowH: CGFloat = 10
     private let iconSize: CGFloat = 18
-    private let markerW: CGFloat = 14
+    // Wider hover marker (was 14) so it extends into the previously-empty gap toward the
+    // icons, and more spacing so the icons sit further right (T-188, user request).
+    private let markerW: CGFloat = 30
     private var totalH: CGFloat { rowH * 8 }
 
     var body: some View {
         let _ = perfTrace()
-        HStack(spacing: 3) {
+        HStack(spacing: 8) {
             // The 8 row slots — normally empty; the hovered row's marker reveals.
             ZStack(alignment: .topLeading) {
                 Color.clear.frame(width: markerW, height: totalH)

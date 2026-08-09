@@ -156,8 +156,9 @@ public final class TrackerOptions {
     public var defaultToNonDescript: Bool
     /// The app's color theme (T-187, beyond the reference): dark (default), light, or
     /// follow the OS. Replaces the reference's unimplemented "Dungeon 'sunglasses'"
-    /// toggle. Drives `NSApp.appearance`.
-    public var appTheme: AppTheme
+    /// toggle. Drives `NSApp.appearance`. Persists **immediately** on change (not just at
+    /// the quest-start commit) so a mid-session switch survives a quit (T-188).
+    public var appTheme: AppTheme { didSet { persistAppThemeIfNeeded() } }
 
     // MARK: "More settings…" — overworld tile hiding (OptionsMenu.fs:115-205)
 
@@ -503,6 +504,14 @@ public final class TrackerOptions {
         store.set(bools, forKey: Self.settingsBoolsKey)
         store.set(Self.encodeHiddenTiles(hiddenOverworldTiles), forKey: Self.hiddenTilesKey)
         store.set(customLevelPrefix, forKey: Self.customLevelPrefixKey)
+        store.set(appTheme.rawValue, forKey: Self.appThemeKey)
+    }
+
+    /// Persist the theme the moment it changes (T-188), so switching it in the mid-game
+    /// Settings window survives a quit even without starting a new run. No-op if
+    /// persistence is off or a saved snapshot is being applied.
+    private func persistAppThemeIfNeeded() {
+        guard let store = settingsStore, !isApplyingSettings else { return }
         store.set(appTheme.rawValue, forKey: Self.appThemeKey)
     }
 

@@ -9,7 +9,10 @@ import TrackerCore
 /// alternate-bomb tile 8).
 enum DungeonFloorDropAtlas {
     static let tile = 16
-    private static let sheet: CGImage? = AtlasLoader.load("zelda_items16x16", blackIsTransparent: true)
+    // threshold strips the near-black tile background these drops carry (T-188), so the
+    // row-locator's rupee/key/bomb read cleanly on a light background. Over-stripping on
+    // the dark room cells / picker boxes is invisible there.
+    private static let sheet: CGImage? = AtlasLoader.load("zelda_items16x16", blackIsTransparent: true, threshold: 24)
 
     static func sprite(_ fd: FloorDropDetail) -> CGImage? {
         guard let sheet, let idx = tileIndex(fd) else { return nil }

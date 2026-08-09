@@ -161,12 +161,12 @@ struct DungeonCardView: View {
             HStack(spacing: 3) {
                 Text(slotLabel)
                     .font(.system(size: 15, weight: .heavy, design: .rounded))
-                    .foregroundStyle(isLocated ? Color.white : Color(white: 0.42))
+                    .foregroundStyle(isLocated ? .primary : .secondary)
                 // Triforce pip (ignore for dungeon 9).
                 if dungeon.id != 8 {
                     Image(systemName: "triangle.fill")
                         .font(.system(size: 9))
-                        .foregroundStyle(dungeon.playerHasTriforce ? Color.yellow : Color(white: 0.3))
+                        .foregroundStyle(dungeon.playerHasTriforce ? Color.yellow : Color.secondary)
                 }
             }
             // Triforce "applies to" chips — only while the triforce is unobtained
@@ -251,11 +251,11 @@ struct DungeonCardView: View {
         .padding(6)
         .background(
             RoundedRectangle(cornerRadius: 6)
-                .fill(dungeon.isComplete ? Color.green.opacity(0.18) : Color(white: 0.11))
+                .fill(dungeon.isComplete ? Color.green.opacity(0.18) : Theme.cardFill)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 6)
-                .strokeBorder(dungeon.isComplete ? Color.green.opacity(0.8) : Color(white: 0.25), lineWidth: 1)
+                .strokeBorder(dungeon.isComplete ? Color.green.opacity(0.8) : Theme.border, lineWidth: 1)
         )
     }
 }
@@ -273,16 +273,16 @@ private struct GhostBoxView: View {
     var body: some View {
         let _ = perfTrace()
         RoundedRectangle(cornerRadius: 4)
-            .fill(Color(white: 0.14))
+            .fill(Theme.panelFill)
             .frame(width: Self.size, height: Self.size)
             .overlay(
                 RoundedRectangle(cornerRadius: 4)
-                    .strokeBorder(Color(white: 0.4), style: StrokeStyle(lineWidth: 1.5, dash: [3, 2]))
+                    .strokeBorder(Theme.border, style: StrokeStyle(lineWidth: 1.5, dash: [3, 2]))
             )
             .overlay(
                 Image(systemName: "arrow.down")
                     .font(.system(size: 12, weight: .bold))
-                    .foregroundStyle(Color(white: 0.5))
+                    .foregroundStyle(.secondary)
             )
             .contentShape(Rectangle())
             .onTapGesture(perform: onToggle)
@@ -344,13 +344,13 @@ struct BoxView: View {
     private var disabledBox: some View {
         VStack(spacing: 2) {
             RoundedRectangle(cornerRadius: 4)
-                .fill(Color(white: 0.07))
+                .fill(Theme.boxFill)
                 .frame(width: Self.size, height: Self.size)
                 .overlay(RoundedRectangle(cornerRadius: 4)
-                    .strokeBorder(Color(white: 0.22), style: StrokeStyle(lineWidth: 1.5, dash: [3, 2])))
+                    .strokeBorder(Theme.border, style: StrokeStyle(lineWidth: 1.5, dash: [3, 2])))
                 .overlay(Image(systemName: "nosign")
                     .font(.system(size: 12))
-                    .foregroundStyle(Color(white: 0.35)))
+                    .foregroundStyle(.secondary))
                 .help("No third item — this dungeon has only two items")
             if let label {
                 Text(label).font(.system(size: 8)).foregroundStyle(.secondary)
@@ -361,7 +361,7 @@ struct BoxView: View {
     private var interactiveBox: some View {
         VStack(spacing: 2) {
             ZStack {
-                RoundedRectangle(cornerRadius: 4).fill(Color.black)
+                RoundedRectangle(cornerRadius: 4).fill(Theme.boxFill)
                 if box.cellCurrent != -1,
                    let icon = ItemIconAtlas.icon(forItemIndex: box.cellCurrent, options: iconOptions) {
                     ItemGlyph(icon)
@@ -377,7 +377,7 @@ struct BoxView: View {
                 if box.playerHas == .skipped {
                     Image(systemName: "xmark")
                         .font(.system(size: 9, weight: .bold))
-                        .foregroundStyle(.white.opacity(0.8))
+                        .foregroundStyle(.primary.opacity(0.8))
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                         .padding(2)
                 }

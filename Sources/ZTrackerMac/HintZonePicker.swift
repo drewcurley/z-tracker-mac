@@ -13,14 +13,21 @@ struct HintLabel: View {
     /// This box's `HintTarget` index (dungeon 0…8, white-sword 9, magical-sword 10).
     var hintTarget: Int? = nil
     @State private var showPicker = false
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
-        Text(hint.twoChars)
+        // In Light mode the gold text shift is subtle, so a set hint also gets a gold
+        // outline to make "value changed" obvious (T-188, user request). Dark mode keeps
+        // just the gold text (already high-contrast on the dark chip).
+        let showGoldBorder = hint != .unknown && colorScheme == .light
+        return Text(hint.twoChars)
             .font(.system(size: 9, weight: .bold, design: .monospaced))
-            .foregroundStyle(hint == .unknown ? Color(white: 0.5) : .yellow)
+            .foregroundStyle(hint == .unknown ? Color.secondary : Theme.hint)
             .frame(minWidth: 18)
             .padding(.horizontal, 3).padding(.vertical, 1)
-            .background(RoundedRectangle(cornerRadius: 3).fill(Color(white: 0.16)))
+            .background(RoundedRectangle(cornerRadius: 3).fill(Theme.panelFill))
+            .overlay(RoundedRectangle(cornerRadius: 3)
+                .strokeBorder(Theme.hint, lineWidth: showGoldBorder ? 1 : 0))
             .contentShape(Rectangle())
             .onHover { hovering in
                 guard let focus, let hintTarget else { return }
@@ -66,10 +73,10 @@ struct HintZonePicker: View {
                     } label: {
                         Text(zone.twoChars)
                             .font(.system(size: 11, weight: .bold, design: .monospaced))
-                            .foregroundStyle(zone == .unknown ? Color(white: 0.6) : .yellow)
+                            .foregroundStyle(zone == .unknown ? Color.secondary : Theme.hint)
                             .frame(width: 36, height: 22)
                             .background(RoundedRectangle(cornerRadius: 4)
-                                .fill(zone == hint ? Color.accentColor.opacity(0.5) : Color(white: 0.18)))
+                                .fill(zone == hint ? Color.accentColor.opacity(0.5) : Theme.panelFill))
                     }
                     .buttonStyle(.plain)
                     .help(zone.displayName)

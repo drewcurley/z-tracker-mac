@@ -524,7 +524,7 @@ struct SeedFlagsView: View {
     @ViewBuilder
     private func flagTile(on: Bool,
                           systemImage: String? = nil,
-                          tint: Color = Color(white: 0.85),
+                          tint: Color = .secondary,
                           atlasIcon: ItemIconAtlas.Icon? = nil,
                           help: String,
                           action: @escaping () -> Void) -> some View {
@@ -537,7 +537,7 @@ struct SeedFlagsView: View {
         }
         .frame(width: itemGridCellSize, height: itemGridCellSize)
         .background(RoundedRectangle(cornerRadius: 6).fill(on ? Color.green.opacity(0.3) : Color.clear))
-        .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(on ? Color.green : Color(white: 0.28), lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(on ? Color.green : Theme.border, lineWidth: 1))
         .contentShape(Rectangle())
         .onTapGesture(perform: action)
         .help(help)
@@ -587,6 +587,7 @@ struct MapInfoView: View {
         }
         .font(.system(size: 10))
         .controlSize(.small)
+        .buttonStyle(.bordered)
         .help("Open Settings (also ⌘,) — draw routes, magnifier, animation, and other preferences, live")
     }
 
@@ -596,6 +597,7 @@ struct MapInfoView: View {
         Button("Hint Decoder…") { showingHintDecoder = true }
             .font(.system(size: 10))
             .controlSize(.small)
+            .buttonStyle(.bordered)
             .help("Record the hinted overworld region for each dungeon and sword cave")
             .popover(isPresented: $showingHintDecoder, arrowEdge: .bottom) {
                 HintDecoderView(model: model)
@@ -608,6 +610,7 @@ struct MapInfoView: View {
         Button("Spot Summary…") { showingSpotSummary = true }
             .font(.system(size: 10))
             .controlSize(.small)
+            .buttonStyle(.bordered)
             .help("What overworld locations and secrets you still have left to find")
             .popover(isPresented: $showingSpotSummary, arrowEdge: .bottom) {
                 SpotSummaryView(
@@ -654,11 +657,11 @@ struct MapInfoView: View {
         let on = model.showProgressWindow
         return ZStack {
             Image(systemName: "chart.bar.doc.horizontal").font(.system(size: 18))
-                .foregroundStyle(on ? Color.green : Color(white: 0.75))
+                .foregroundStyle(on ? Color.green : Color.secondary)
         }
         .frame(width: itemGridCellSize, height: itemGridCellSize)
         .background(RoundedRectangle(cornerRadius: 6).fill(on ? Color.green.opacity(0.3) : Color.clear))
-        .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(on ? Color.green : Color(white: 0.28), lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(on ? Color.green : Theme.border, lineWidth: 1))
         .contentShape(Rectangle())
         // A plain click toggles the standalone HUD window (no hover preview — a
         // popover just fought the click; user preference).
@@ -690,14 +693,14 @@ struct MapInfoView: View {
         ZStack {
             if let systemImage {
                 Image(systemName: systemImage).font(.system(size: 18))
-                    .foregroundStyle(tint ?? Color(white: 0.75))
+                    .foregroundStyle(tint ?? Color.secondary)
             } else if let atlasIcon {
                 ItemGlyph(atlasIcon).frame(width: 22, height: 22)
             }
         }
         .frame(width: itemGridCellSize, height: itemGridCellSize)
         .background(RoundedRectangle(cornerRadius: 6).fill(on ? (tint ?? .green).opacity(0.3) : Color.clear))
-        .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(tint ?? Color(white: 0.28), lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(tint ?? Theme.border, lineWidth: 1))
         .contentShape(Rectangle())
         .onHover { overlays.setHover(overlay, $0) }
         .onTapGesture { overlays.toggleLock(overlay) }
@@ -745,13 +748,13 @@ private struct ItemToggleBox: View {
         if has { return .green }
         if superseded { return Color(white: 0.5) }
         if located { return .yellow }
-        return Color(white: 0.3)
+        return Theme.border
     }
 
     var body: some View {
         let _ = perfTrace()
         ZStack {
-            RoundedRectangle(cornerRadius: 4).fill(Color.black)
+            RoundedRectangle(cornerRadius: 4).fill(Theme.boxFill)
             ItemGlyph(iconOverride ?? toggle.icon)
                 .frame(width: size - 10, height: size - 10)
                 .opacity(has ? 1 : 0.4)
@@ -760,7 +763,7 @@ private struct ItemToggleBox: View {
             if superseded && !has {
                 Image(systemName: "xmark")
                     .font(.system(size: size * 0.4, weight: .bold))
-                    .foregroundStyle(.white.opacity(0.75))
+                    .foregroundStyle(.primary.opacity(0.75))
             }
         }
         .frame(width: size, height: size)
@@ -792,7 +795,7 @@ private struct TakeAnyHeartBox: View {
     var body: some View {
         let _ = perfTrace()
         ZStack {
-            RoundedRectangle(cornerRadius: 4).fill(Color.black)
+            RoundedRectangle(cornerRadius: 4).fill(Theme.boxFill)
             // Background heart: full (pink) when a heart was taken, empty
             // otherwise (kept under the potion/candle overlays too).
             let sprite: OverworldHeartAtlas.Icon = state == .takenHeart ? .full : .empty
@@ -804,7 +807,7 @@ private struct TakeAnyHeartBox: View {
         }
         .frame(width: size, height: size)
         .overlay(
-            RoundedRectangle(cornerRadius: 4).strokeBorder(Color(white: 0.3), lineWidth: 1.5)
+            RoundedRectangle(cornerRadius: 4).strokeBorder(Theme.border, lineWidth: 1.5)
         )
         .onTapGesture { cycle(1) }
         .onRightClick { cycle(-1) }

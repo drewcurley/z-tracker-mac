@@ -86,7 +86,7 @@ struct GameTimelineView: View {
                     var path = Path()
                     path.move(to: CGPoint(x: px, y: gridTop))
                     path.addLine(to: CGPoint(x: px, y: gridBottom))
-                    ctx.stroke(path, with: .color(Color(white: m % 5 == 0 ? 0.32 : 0.16)),
+                    ctx.stroke(path, with: .color(Color.primary.opacity(m % 5 == 0 ? 0.45 : 0.22)),
                                lineWidth: m % 5 == 0 ? 1 : 0.5)
                 }
             }
