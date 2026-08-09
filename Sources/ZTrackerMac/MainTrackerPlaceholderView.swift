@@ -306,7 +306,7 @@ struct MainTrackerPlaceholderView: View {
         // dispatcher/voice, so installing a second would double-fire every key (T-178).
         .onAppear {
             guard !isMirror else { return }
-            let voiceController = voice ?? VoiceController(model: model, focus: focus, config: voiceConfig, options: options)
+            let voiceController = voice ?? VoiceController(model: model, focus: focus, config: voiceConfig, options: options, timer: timer)
             voice = voiceController
             let dispatcher = GlobalHotkeyDispatcher(model: model, options: options, timer: timer, hotkeys: hotkeys, focus: focus, voice: voiceController)
             dispatcher.install()

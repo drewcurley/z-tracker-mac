@@ -31,7 +31,31 @@ struct GameSaveTests {
 
         #expect(restoredModel.overworldGrid.mark(column: 4, row: 3) == .shop(.bomb))
         #expect(restoredModel.notes == "mid run")
-        #expect(restoredTimer.isRunning == false)   // restored paused
+        // T-192: a reopened session now auto-resumes (crash recovery) rather than
+        // staying paused, so long as the run had started.
+        #expect(restoredTimer.hasStarted)
+        #expect(restoredTimer.isRunning)
+    }
+
+    @Test("real-time restart mode counts the closed gap; active mode does not (T-192)")
+    func restartModeElapsed() throws {
+        let model = TrackerModel(quest: .first)
+        let began = Date(timeIntervalSince1970: 1_000_000)
+        let timer = TrackerTimer()
+        timer.start(asOf: began)
+        timer.pause(asOf: began.addingTimeInterval(10))   // 10s of active play, then paused
+
+        let file = GameSave.makeFile(model: model, timer: timer)
+        // Reopen an hour later.
+        let reopen = began.addingTimeInterval(3600)
+
+        let active = TrackerTimer()
+        active.restore(file.timer, resuming: true, realTimeSinceStart: false, asOf: reopen)
+        #expect(abs(active.mainElapsed(asOf: reopen) - 10) < 0.01)   // resumes at the saved 10s
+
+        let realTime = TrackerTimer()
+        realTime.restore(file.timer, resuming: true, realTimeSinceStart: true, asOf: reopen)
+        #expect(abs(realTime.mainElapsed(asOf: reopen) - 3600) < 0.01) // wall-clock since Go
     }
 
     @Test("completed flag tracks whether Zelda was rescued")

@@ -25,6 +25,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-192](./T-192.md) | Timer voice control + crash-recovery resume (auto-open, resume-on-restore, real-time mode) + voice non-descript clears | frontend-engineer | — | feat/timer-voice-crash-recovery | — | docs/reviews/feat-timer-voice-crash-recovery/final.md |
 | [T-191](./T-191.md) | Overworld icon refresh (ghost-rupee secret, gray "?" hint) + left-click reopen + picker order | frontend-engineer | T-185 | feat/overworld-icons-leftclick | — | docs/reviews/feat-overworld-icons-leftclick/final.md |
 | [T-190](./T-190.md) | Start-screen designation allowed on always-empty ("nothing here") screens | frontend-engineer | — | feat/deadspot-start-screen | — | docs/reviews/feat-deadspot-start-screen/final.md |
 | [T-188](./T-188.md) | Light theme — real light appearance (dark text on light surfaces) + theme persistence | frontend-engineer | T-187 | feat/light-theme | — | docs/reviews/feat-light-theme/final.md |

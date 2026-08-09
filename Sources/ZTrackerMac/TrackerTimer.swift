@@ -40,6 +40,10 @@ final class TrackerTimer {
     /// a Go button (the reference auto-starts, which the community dislikes —
     /// the tracker can be loaded/configured before starting).
     private(set) var hasStarted = false
+    /// Wall-clock instant the run first began (or last had its elapsed zeroed).
+    /// Persisted so a reopened session can, optionally, count *real* time since the
+    /// run began — including the gap while the app was closed (T-192).
+    private var runStart: Date?
 
     var isRunning: Bool { segmentStart != nil }
 
@@ -48,6 +52,7 @@ final class TrackerTimer {
         guard !hasStarted else { return }
         hasStarted = true
         segmentStart = now
+        runStart = now
     }
 
     /// Total elapsed on the main timer as of `now`.
@@ -93,24 +98,42 @@ final class TrackerTimer {
         if isRunning { segmentStart = now }
         lapOrigin = 0
         hasLap = false
+        // A reset restarts the "time since it began" clock too, so real-time restore
+        // measures from here rather than the original Go.
+        runStart = hasStarted ? now : nil
     }
 
-    /// A `Codable` snapshot of the timer for save/load (T-164): the total elapsed and
-    /// whether the run had started. On restore the timer is set **paused** at that
-    /// elapsed — resuming a saved run leaves the clock stopped until the user is ready.
+    /// A `Codable` snapshot of the timer for save/load (T-164): the total elapsed,
+    /// whether the run had started, and the wall-clock instant it began (`runStart`,
+    /// T-192 — optional for backward-compat with saves written before it existed).
     struct State: Codable, Sendable {
         var elapsed: TimeInterval
         var hasStarted: Bool
+        var runStart: Date?
     }
     func snapshot(asOf now: Date = Date()) -> State {
-        State(elapsed: mainElapsed(asOf: now), hasStarted: hasStarted)
+        State(elapsed: mainElapsed(asOf: now), hasStarted: hasStarted, runStart: runStart)
     }
-    func restore(_ s: State) {
-        accumulated = max(0, s.elapsed)
-        segmentStart = nil          // paused
+
+    /// Restore a saved timer (T-192). Crash-recovery default is to **resume** so a
+    /// reopened session keeps timing (the user forgot to un-pause after a crash once
+    /// too often). `realTimeSinceStart` picks the elapsed basis:
+    /// - `false` (default): pick up the saved *active* elapsed where it left off.
+    /// - `true`: count real wall-clock time since the run began, including the gap
+    ///   while the app was closed (falls back to the saved elapsed if no `runStart`).
+    func restore(_ s: State, resuming: Bool = false,
+                 realTimeSinceStart: Bool = false, asOf now: Date = Date()) {
         hasStarted = s.hasStarted
+        runStart = s.runStart
         lapOrigin = 0
         hasLap = false
+        if realTimeSinceStart, let rs = s.runStart {
+            accumulated = max(0, now.timeIntervalSince(rs))
+        } else {
+            accumulated = max(0, s.elapsed)
+        }
+        // Resume only makes sense once the run has actually started.
+        segmentStart = (resuming && hasStarted) ? now : nil
     }
 
     /// Reset to the pristine pre-"Go" state (T-109) — used by Reset App, which
@@ -122,5 +145,6 @@ final class TrackerTimer {
         lapOrigin = 0
         hasLap = false
         hasStarted = false
+        runStart = nil
     }
 }

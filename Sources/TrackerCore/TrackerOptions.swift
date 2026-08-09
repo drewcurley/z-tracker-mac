@@ -225,6 +225,13 @@ public final class TrackerOptions {
     /// Warn before quitting while the run timer is still running (T-109, beyond
     /// the reference). Default **true**.
     public var warnOnCloseWhileTimerRunning: Bool
+    /// When a saved session is reopened (T-192), how the run timer resumes:
+    /// - `true` (default): count real wall-clock time since the run first began,
+    ///   including the gap while the app was closed.
+    /// - `false`: continue the *active* elapsed where it left off.
+    /// Persists **immediately** on change (like the theme) so a mid-session toggle in
+    /// Settings survives a quit.
+    public var timerRealTimeSinceStart: Bool { didSet { persistSettingsBoolsIfNeeded() } }
     /// Show a small live FPS/main-thread-responsiveness readout (dev diagnostic,
     /// beyond the reference). Default **false**.
     public var showFPS: Bool
@@ -270,6 +277,7 @@ public final class TrackerOptions {
         showMouseMagnifierWindow: Bool = false,
         hideTimer: Bool = false,
         warnOnCloseWhileTimerRunning: Bool = true,
+        timerRealTimeSinceStart: Bool = true,
         showFPS: Bool = false,
         checkForUpdatesOnLaunch: Bool = true,
         logRenderPerf: Bool = false
@@ -307,6 +315,7 @@ public final class TrackerOptions {
         self.showMouseMagnifierWindow = showMouseMagnifierWindow
         self.hideTimer = hideTimer
         self.warnOnCloseWhileTimerRunning = warnOnCloseWhileTimerRunning
+        self.timerRealTimeSinceStart = timerRealTimeSinceStart
         self.showFPS = showFPS
         self.checkForUpdatesOnLaunch = checkForUpdatesOnLaunch
         self.logRenderPerf = logRenderPerf
@@ -466,6 +475,7 @@ public final class TrackerOptions {
         "showMouseMagnifierWindow": \.showMouseMagnifierWindow,
         "hideTimer": \.hideTimer,
         "warnOnCloseWhileTimerRunning": \.warnOnCloseWhileTimerRunning,
+        "timerRealTimeSinceStart": \.timerRealTimeSinceStart,
         "showFPS": \.showFPS,
         "checkForUpdatesOnLaunch": \.checkForUpdatesOnLaunch,
     ]
@@ -513,6 +523,16 @@ public final class TrackerOptions {
     private func persistAppThemeIfNeeded() {
         guard let store = settingsStore, !isApplyingSettings else { return }
         store.set(appTheme.rawValue, forKey: Self.appThemeKey)
+    }
+
+    /// Rewrite the whole persisted-Bool dictionary immediately (T-192), so a setting
+    /// flipped mid-session in the Settings window survives a quit without waiting for
+    /// the next quest-start commit. No-op if persistence is off or a snapshot is loading.
+    private func persistSettingsBoolsIfNeeded() {
+        guard let store = settingsStore, !isApplyingSettings else { return }
+        var bools: [String: Bool] = [:]
+        for (key, keyPath) in Self.persistedBoolKeyPaths { bools[key] = self[keyPath: keyPath] }
+        store.set(bools, forKey: Self.settingsBoolsKey)
     }
 
     private static func encodeHiddenTiles(_ tiles: [OverworldHiddenTileKind: Bool]) -> [String: Bool] {
