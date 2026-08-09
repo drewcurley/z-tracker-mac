@@ -62,6 +62,7 @@ final class VoiceController {
     private let model: TrackerModel
     private let focus: TrackerFocusState
     private let options: TrackerOptions
+    private let timer: TrackerTimer
 
     private(set) var isListening = false
     private(set) var auth: Auth = .unknown
@@ -88,11 +89,13 @@ final class VoiceController {
 
     private let config: VoiceConfig
 
-    init(model: TrackerModel, focus: TrackerFocusState, config: VoiceConfig, options: TrackerOptions) {
+    init(model: TrackerModel, focus: TrackerFocusState, config: VoiceConfig,
+         options: TrackerOptions, timer: TrackerTimer) {
         self.model = model
         self.focus = focus
         self.config = config
         self.options = options
+        self.timer = timer
     }
 
     func toggle() {
@@ -327,6 +330,11 @@ final class VoiceController {
         case .stopListening:
             vlog("stop listening (voice command)")
             stop()
+        case .startTimer:
+            // "start timer" before Go starts the run; afterward it resumes a paused clock.
+            if timer.hasStarted { timer.resume() } else { timer.start() }
+        case .pauseTimer:
+            timer.pause()
         case let .clearAtCursor(words):
             applyClear(words, cell: focus.cursorCell)
         case let .clearAt(column, row, words):
@@ -495,6 +503,14 @@ final class VoiceController {
             case .roomType(let type):
                 DungeonRoomMark.applyRoomType(type, col: cell.col, row: cell.row, map: map,
                                               inferDoors: options.doDoorInference)
+                // A non-descript room named by voice is treated as cleared/checked: you
+                // only call it out because you've been there and it held nothing. Matches
+                // the click gesture, which marks + completes a plain room in one action.
+                if type == .nonDescript {
+                    var r = map.room(col: cell.col, row: cell.row)
+                    r.isCompleted = true
+                    _ = map.setRoom(r, col: cell.col, row: cell.row)
+                }
             case .monster(let monster):
                 DungeonRoomMark.toggleMonster(monster, col: cell.col, row: cell.row, map: map)
             case .floorDrop(let drop):
@@ -538,6 +554,8 @@ final class VoiceController {
         case let .clearAtCursor(words): return words.isEmpty ? "clear" : "clear \(words.joined(separator: " "))"
         case let .clearAt(c, r, _): return "\(OverworldCoords.label(column: c, row: r)) clear"
         case .stopListening: return "⏸ voice"
+        case .startTimer: return "▶ timer"
+        case .pauseTimer: return "⏸ timer"
         }
     }
 }

@@ -44,6 +44,18 @@ struct VoiceGrammarTests {
         #expect(VoiceGrammar.parse("go to start", config: config) == .gotoStart)
     }
 
+    @Test func timerStartAndPause() {
+        // Timer commands (T-192). The two-word phrases beat the bare "start"/"pause"
+        // navigation phrases via longest-match, so timing controls don't hijack nav.
+        #expect(VoiceGrammar.parse("start timer", config: config) == .startTimer)
+        #expect(VoiceGrammar.parse("resume timer", config: config) == .startTimer)
+        #expect(VoiceGrammar.parse("pause timer", config: config) == .pauseTimer)
+        #expect(VoiceGrammar.parse("stop timer", config: config) == .pauseTimer)
+        // No regression: bare nav words still resolve to navigation, not the timer.
+        #expect(VoiceGrammar.parse("start", config: config) == .gotoStart)
+        #expect(VoiceGrammar.parse("pause voice", config: config) == .stopListening)
+    }
+
     @Test func dungeonEnterVsMark() {
         #expect(VoiceGrammar.parse("enter level 5", config: config) == .dungeonTab(5))
         #expect(VoiceGrammar.parse("level five", config: config) == .dungeonTab(5))

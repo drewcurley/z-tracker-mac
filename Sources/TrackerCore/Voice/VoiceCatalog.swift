@@ -84,6 +84,10 @@ public enum VoiceCatalog {
                     ["start", "restart", "home", "go to start"]),
         VoiceAction("Nav_StopVoice", "Stop listening", .navigation,
                     ["stop listening", "pause voice", "stop voice", "mute voice", "go to sleep", "stop recording"]),
+        VoiceAction("Timer_Start", "Start / resume the run timer", .navigation,
+                    ["start timer", "start the timer", "resume timer", "resume the timer", "timer start", "timer go"]),
+        VoiceAction("Timer_Pause", "Pause the run timer", .navigation,
+                    ["pause timer", "pause the timer", "stop timer", "stop the timer", "timer pause", "timer stop"]),
     ]
 
     private static let dungeon: [VoiceAction] = [

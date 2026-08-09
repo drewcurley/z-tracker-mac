@@ -194,6 +194,21 @@ struct SettingsPanelView: View {
             Toggle("Mouse magnifier window", isOn: Bindable(options).showMouseMagnifierWindow)
             Toggle("Hide timer", isOn: Bindable(options).hideTimer)
             Toggle("Warn when quitting while the timer is running", isOn: Bindable(options).warnOnCloseWhileTimerRunning)
+
+            // How the timer resumes when a saved session is reopened (T-192). A reopened
+            // run always resumes (crash recovery); this only picks the elapsed basis.
+            // Title on its own line, options stacked beneath (not inline).
+            VStack(alignment: .leading, spacing: 4) {
+                Text("On reopen, the run timer counts:")
+                Picker("", selection: Bindable(options).timerRealTimeSinceStart) {
+                    Text("Real time since the run began").tag(true)
+                    Text("Active time (continue where it left off)").tag(false)
+                }
+                .pickerStyle(.radioGroup)
+                .labelsHidden()
+                Text("“Real time” adds the time the app was closed; “Active time” resumes at the saved elapsed.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
             Toggle("Show FPS counter (diagnostic)", isOn: Bindable(options).showFPS)
             Toggle("Log render perf to file (diagnostic)", isOn: Bindable(options).logRenderPerf)
                 .help("Capture which views re-render on each hover, why, and how long the main thread is busy — for diagnosing frame-rate issues. Writes to a temp file; on Reset App or Quit you're asked where to save it (or to discard it).")

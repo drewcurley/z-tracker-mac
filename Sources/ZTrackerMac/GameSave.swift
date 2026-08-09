@@ -46,10 +46,15 @@ enum GameSave {
         SaveFile(savedAt: date, completed: model.playerProgress.hasRescuedZelda,
                  model: model.snapshot(), timer: timer.snapshot())
     }
-    /// Restore a decoded save into the live model + timer.
-    static func apply(_ file: SaveFile, to model: TrackerModel, timer: TrackerTimer) {
+    /// Restore a decoded save into the live model + timer. The timer **resumes** by
+    /// default (T-192, crash recovery — a reopened session keeps timing instead of
+    /// silently staying paused), honoring the real-time-vs-active restart mode when
+    /// `options` is supplied.
+    static func apply(_ file: SaveFile, to model: TrackerModel, timer: TrackerTimer,
+                      options: TrackerOptions? = nil) {
         model.restore(file.model)
-        timer.restore(file.timer)
+        timer.restore(file.timer, resuming: true,
+                      realTimeSinceStart: options?.timerRealTimeSinceStart ?? false)
     }
 
     // MARK: Disk I/O
@@ -131,7 +136,7 @@ enum GameSave {
 
     /// Manual Load button → pick a save file (confirming, since it replaces the current
     /// in-memory run).
-    static func manualLoad(model: TrackerModel, timer: TrackerTimer) {
+    static func manualLoad(model: TrackerModel, timer: TrackerTimer, options: TrackerOptions? = nil) {
         let panel = NSOpenPanel()
         panel.directoryURL = defaultDirectory
         panel.allowedContentTypes = [.json]
@@ -145,7 +150,7 @@ enum GameSave {
             confirm.addButton(withTitle: "Cancel")
             guard confirm.runModal() == .alertFirstButtonReturn else { return }
         }
-        apply(file, to: model, timer: timer)
+        apply(file, to: model, timer: timer, options: options)
     }
 
     private static func presentError(_ title: String, _ error: Error) {

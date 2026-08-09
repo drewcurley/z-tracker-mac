@@ -45,7 +45,7 @@ struct ContentView: View {
                 }, onLoadSavedState: {
                     // Load a saved run (T-177): the picker + apply live in GameSave;
                     // applying sets model.quest, which flips this view to the tracker.
-                    GameSave.manualLoad(model: model, timer: timer)
+                    GameSave.manualLoad(model: model, timer: timer, options: options)
                 })
             } else {
                 MainTrackerPlaceholderView(model: model, options: options, breakout: breakout, timer: timer, reminders: reminders, overlays: overlays, hotkeys: hotkeys, voiceConfig: voiceConfig, focus: focus, onResetApp: onResetApp)
@@ -94,26 +94,23 @@ struct ContentView: View {
                 pendingResume = GameSave.pendingResume()
             }
         }
-        // Startup "resume your last run?" — a SwiftUI dialog, so it displays reliably
-        // once the window is up (a raw NSAlert from onAppear at launch doesn't).
-        .confirmationDialog(
-            "Resume your last run?",
-            isPresented: Binding(get: { pendingResume != nil }, set: { if !$0 { pendingResume = nil } }),
-            titleVisibility: .visible
-        ) {
-            Button("Resume") {
-                if let file = pendingResume { GameSave.apply(file, to: model, timer: timer) }
-                pendingResume = nil
-            }
-            Button("Discard", role: .destructive) {
-                GameSave.clearLastSession()
-                pendingResume = nil
-            }
-            Button("Cancel", role: .cancel) { pendingResume = nil }
-        } message: {
+        // Startup "resume your last run?" — a custom overlay (not a confirmationDialog)
+        // so it can show a live countdown and auto-resume after 5s (T-192). Any button,
+        // or hovering the card, cancels the countdown.
+        .overlay {
             if let file = pendingResume {
-                let when = DateFormatter.localizedString(from: file.savedAt, dateStyle: .medium, timeStyle: .short)
-                Text("An unfinished run was auto-saved on \(when). The timer stays paused until you're ready.")
+                ResumeSessionPrompt(
+                    savedAt: file.savedAt,
+                    onResume: {
+                        GameSave.apply(file, to: model, timer: timer, options: options)
+                        pendingResume = nil
+                    },
+                    onDiscard: {
+                        GameSave.clearLastSession()
+                        pendingResume = nil
+                    },
+                    onCancel: { pendingResume = nil }
+                )
             }
         }
         // ~60s autosave of the last session while a run is active and unfinished.
