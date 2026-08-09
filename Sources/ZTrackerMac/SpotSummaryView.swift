@@ -11,6 +11,7 @@ struct OverworldMarkIcon: View {
 
     private static let anyRoadBg = Color(red: 218.0 / 255, green: 112.0 / 255, blue: 214.0 / 255)
     private static let shopBg = Color(red: 0xEF / 255.0, green: 0x83 / 255.0, blue: 0)
+    private static let hintBg = Color(white: 0.58)
 
     var body: some View {
         ZStack {
@@ -29,6 +30,16 @@ struct OverworldMarkIcon: View {
             digit("\(n)", background: Self.anyRoadBg)
         case .anyRoadUnknown:
             digit("?", background: Self.anyRoadBg)
+        case .hintTile:
+            digit("?", background: Self.hintBg)
+        case .ghostRupee:
+            // Pale-white ghost rupee (user request), matching the map/chooser glyph.
+            if let cg = GameSprite.image("Rupy") {
+                Image(decorative: cg, scale: 1, orientation: .up)
+                    .interpolation(.none).resizable().scaledToFit()
+                    .saturation(0).brightness(0.45).opacity(0.9)
+                    .padding(size * 0.14)
+            }
         case .interiorSprite(let idx):
             sprite(OverworldInteriorIconAtlas.icon(at: idx), inset: size * 0.14)
         case .swordCaveItem(let level):

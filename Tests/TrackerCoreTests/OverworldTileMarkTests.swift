@@ -113,8 +113,11 @@ struct OverworldTileMarkTests {
         // Sword caves now render via the Items-area sword sprites (T-063), so
         // they no longer occupy the ow interior-sprite indices 0...2 — those
         // three slots are intentionally unused by the live UI.
-        let otherMarks: [OverworldTileMark] = SecretSize.allCases.map { .secret($0) }
-            + [.doorRepair, .moneyMakingGame, .theLetter, .armos, .hintShop, .takeAny, .potionShop]
+        // The unknown secret (ghost rupee) and the hint spot (gray "?" tile) render
+        // via their own icon sources now (user request), not `interiorSprite`, so they
+        // are asserted separately below and excluded from the interior-index group.
+        let otherMarks: [OverworldTileMark] = [.secret(.large), .secret(.medium), .secret(.small)]
+            + [.doorRepair, .moneyMakingGame, .theLetter, .armos, .takeAny, .potionShop]
 
         let dungeonDigits = dungeonMarks.map { mark -> Int in
             guard case .dungeonDigit(let n) = mark.iconSource else { fatalError("expected dungeonDigit") }
@@ -138,7 +141,12 @@ struct OverworldTileMarkTests {
             guard case .interiorSprite(let i) = mark.iconSource else { fatalError("expected interiorSprite") }
             return i
         }
-        #expect(Set(interiorIndices) == Set(3...13))
+        // 3...13 minus the two moved off interior sprites: 3 (hint) and 11 (unknown secret).
+        #expect(Set(interiorIndices) == Set(4...13).subtracting([11]))
+
+        // The two user-requested custom glyphs.
+        #expect(OverworldTileMark.secret(.unknown).iconSource == .ghostRupee)
+        #expect(OverworldTileMark.hintShop.iconSource == .hintTile)
 
         let swordLevels = (1...3).map { level -> Int in
             guard case .swordCaveItem(let l) = OverworldTileMark.swordCave(level).iconSource else {

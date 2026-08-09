@@ -527,13 +527,16 @@ struct OverworldMapView: View {
             grid.setMark(.dontCare, column: column, row: row)
         } else if mark == .dontCare {
             // "LC dark tile → popup" (docs/domain.md § 4.5): a second left-click on a
-            // Don't-Care tile opens the tile chooser (T-185). Graphical mode → the icon
-            // grid; menu mode → the **native** NSMenu (chrome-identical to right-click).
-            if options.graphicalOverworldChooser {
-                chooserCell = TileCoord(column: column, row: row)
-            } else {
-                showNativeMarkMenu(column: column, row: row)
-            }
+            // Don't-Care tile opens the tile chooser (T-185).
+            openMarkChooser(column: column, row: row)
+        } else if case .secret(.unknown) = mark {
+            // Re-open the chooser on an unknown-secret tile so you can refine it to a
+            // sized secret (or another mark) once you learn what it holds (user request).
+            openMarkChooser(column: column, row: row)
+        } else if case .shop = mark {
+            // Re-open the chooser on a shop so you can change it or set/adjust its second
+            // item (T-060) without going through the right-click menu (user request).
+            openMarkChooser(column: column, row: row)
         } else if mark == .takeAny {
             // A take-any tile cycles its claimed version (untaken → heart →
             // potion → candle), kept in sync with its Items-group slot (T-066).
@@ -553,6 +556,16 @@ struct OverworldMapView: View {
             if case .swordCave(1) = mark {
                 onWoodSwordCaveUsedChanged(grid.isUsed(column: column, row: row))
             }
+        }
+    }
+
+    /// Open the tile's mark chooser (T-185): the graphical icon grid in graphical mode,
+    /// or the **native** NSMenu (chrome-identical to right-click) in menu mode.
+    private func openMarkChooser(column: Int, row: Int) {
+        if options.graphicalOverworldChooser {
+            chooserCell = TileCoord(column: column, row: row)
+        } else {
+            showNativeMarkMenu(column: column, row: row)
         }
     }
 
@@ -1150,6 +1163,9 @@ struct TileView: View {
     /// The completed-dungeon dark yellow (`RGB(153,153,0)`,
     /// `Graphics.fs:874-884`) — a 100%-complete dungeon's badge dims to this.
     private static let completeDungeonBackground = Color(red: 153.0 / 255, green: 153.0 / 255, blue: 0)
+    /// The hint "?" tile's neutral-gray background (user request — same digit-tile
+    /// style as levels/any-roads, but gray so it reads as distinct).
+    private static let hintBackground = Color(white: 0.58)
     /// Ported from `itemBackgroundColor` (`Z1R_WPF/Graphics.fs:830`, shop
     /// icon background).
     private static let shopBackground = Color(red: 0xEF / 255.0, green: 0x83 / 255.0, blue: 0)
@@ -1193,6 +1209,11 @@ struct TileView: View {
                     // fidelity — no longer confined to the tiny off-center reference
                     // interior region (T-064, same art, just bigger + centered).
                     interiorSpriteView
+                        .frame(width: tileWidth, height: tileHeight)
+                        .scaleEffect(x: mirrored ? -1 : 1, y: 1)
+                    // Unknown-secret ghost rupee (user request) — same enlarged/centered
+                    // slot as the interior sprites.
+                    ghostRupeeBadge
                         .frame(width: tileWidth, height: tileHeight)
                         .scaleEffect(x: mirrored ? -1 : 1, y: 1)
                     // Shops keep the orange-plate presentation in the reference
@@ -1284,8 +1305,26 @@ struct TileView: View {
             digitIcon("\(number)", background: Self.anyRoadBackground)
         case .anyRoadUnknown:
             digitIcon("?", background: Self.anyRoadBackground)
+        case .hintTile:
+            // Hint spot: a gray "?" tile in the same digit-tile style as levels/any-roads.
+            digitIcon("?", background: Self.hintBackground)
         default:
             EmptyView()
+        }
+    }
+
+    /// The unknown-secret "ghost rupee" (user request): the real rupee sprite desaturated
+    /// and brightened to a pale, faintly translucent white so it reads as ghostly.
+    @ViewBuilder
+    private var ghostRupeeBadge: some View {
+        if case .ghostRupee = mark.iconSource, let cg = GameSprite.image("Rupy") {
+            Image(decorative: cg, scale: 1, orientation: .up)
+                .resizable().interpolation(.none).aspectRatio(contentMode: .fit)
+                .saturation(0)         // drop the color
+                .brightness(0.45)      // push the greys toward white
+                .opacity(0.9)          // faintly ghostly
+                .frame(width: tileWidth, height: tileHeight * 0.9)
+                .shadow(color: .white.opacity(0.45), radius: 1.5)
         }
     }
 

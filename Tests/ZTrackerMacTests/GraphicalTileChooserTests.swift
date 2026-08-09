@@ -17,13 +17,14 @@ struct GraphicalTileChooserTests {
         let rows = OverworldChooserLayout.rows
         // Row 1: the 8 shops.
         #expect(rows[0] == ShopKind.allCases.map { .mark(.shop($0)) })
-        // Row 2: 4 secrets, door repair, money game, hint, potion.
+        // Row 2: 4 secrets, money game, door repair, hint, potion.
         #expect(rows[1] == [.mark(.secret(.small)), .mark(.secret(.medium)), .mark(.secret(.large)),
-                            .mark(.secret(.unknown)), .mark(.doorRepair), .mark(.moneyMakingGame),
+                            .mark(.secret(.unknown)), .mark(.moneyMakingGame), .mark(.doorRepair),
                             .mark(.hintShop), .mark(.potionShop)])
-        // Row 3: letter, armos, 3 take-anys, don't-care, unmarked, start.
+        // Row 3: letter, armos, take-anys in in-game order (potion/candle/heart),
+        // don't-care, unmarked, start.
         #expect(rows[2] == [.mark(.theLetter), .mark(.armos),
-                            .takeAny(.takenPotion), .takeAny(.takenHeart), .takeAny(.takenCandle),
+                            .takeAny(.takenPotion), .takeAny(.takenCandle), .takeAny(.takenHeart),
                             .mark(.dontCare), .mark(.unmarked), .startSpot])
         // Row 4: levels 1–8.
         #expect(rows[3] == (1...8).map { .mark(.dungeon($0)) })
