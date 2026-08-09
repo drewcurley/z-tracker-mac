@@ -421,10 +421,10 @@ struct OverworldMapView: View {
                                     .onContinuousHover { phase in
                                         handleHover(column: column, row: row, phase: phase, tileWidth: tileWidth, tileHeight: tileHeight)
                                     }
-                                    // Always-empty screens can never contain anything, so they
-                                    // are permanent "don't care" and take no input (the reference
-                                    // makes them a non-interactive opaque layer).
-                                    .allowsHitTesting(!isAlwaysEmpty)
+                                    // Always-empty screens can't hold a mark, but they CAN be the
+                                    // start screen (T-190) — so they stay hit-testable; the mark
+                                    // paths (left-click / mark menu / chooser) are suppressed for
+                                    // them, leaving only the start-spot/waypoint menu.
                                     // Custom-drawn tiles (Rectangle + onTapGesture) have NO
                                     // accessibility representation by default -- confirmed by
                                     // inspecting the accessibility tree while testing this view,
@@ -612,7 +612,25 @@ struct OverworldMapView: View {
                     onToggle: { grid.toggleEnemy($0, column: column, row: row) },
                     onClear: { grid.toggleEnemy(.unmarked, column: column, row: row) },
                     onDone: { enemyCell = nil }))
-            })
+            },
+            isDeadSpot: screenIsDeadSpot(column, row),
+            deadSpotMenu: { AnyView(startSpotMenuItems(column: column, row: row)) })
+    }
+
+    /// The start-spot + waypoint menu items, shared by the full mark menu and the
+    /// always-empty dead-spot menu (T-190 — a dead spot can still be the start screen).
+    @ViewBuilder
+    private func startSpotMenuItems(column: Int, row: Int) -> some View {
+        if startSpot == OverworldScreenCoordinate(x: column, y: row) {
+            Button("Clear start spot") { onClearStartSpot() }
+        } else {
+            Button("Set as start spot") { onSetStartSpot(column, row) }
+        }
+        if customWaypoint == OverworldScreenCoordinate(x: column, y: row) {
+            Button("Clear waypoint") { onClearWaypoint() }
+        } else {
+            Button("Set waypoint") { onSetWaypoint(column, row) }
+        }
     }
 
     /// The tile chooser popover body — the graphical icon grid (T-185). Only presented
@@ -1043,12 +1061,21 @@ private struct TileChooserModifiers: ViewModifier {
     let onScrollUp: () -> Void
     let enemyPresented: Binding<Bool>
     let enemy: () -> AnyView
+    /// An always-empty ("nothing ever goes here") screen: it can't hold a mark, but it
+    /// CAN be the start screen (T-190) — so it gets only a start-spot/waypoint menu, no
+    /// mark chooser or enemy picker.
+    let isDeadSpot: Bool
+    let deadSpotMenu: () -> AnyView
 
     func body(content: Content) -> some View {
-        rightClickLayer(content)
-            .popover(isPresented: chooserPresented, arrowEdge: .bottom) { chooser() }
-            .overlay { if graphical { ScrollUpCatcher(onScrollUp: onScrollUp) } }
-            .popover(isPresented: enemyPresented, arrowEdge: .top) { enemy() }
+        if isDeadSpot {
+            content.contextMenu { deadSpotMenu() }
+        } else {
+            rightClickLayer(content)
+                .popover(isPresented: chooserPresented, arrowEdge: .bottom) { chooser() }
+                .overlay { if graphical { ScrollUpCatcher(onScrollUp: onScrollUp) } }
+                .popover(isPresented: enemyPresented, arrowEdge: .top) { enemy() }
+        }
     }
 
     @ViewBuilder
