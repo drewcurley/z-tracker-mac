@@ -18,6 +18,8 @@ public enum VoiceCommand: Equatable, Sendable {
     case stopListening                                    // "pause voice" / "stop listening"
     case startTimer                                       // "start timer" / "resume timer"
     case pauseTimer                                       // "pause timer" / "stop timer"
+    case recorderDestPrev                                 // "recorder down" / "recorder previous"
+    case recorderDestNext                                 // "recorder up" / "recorder next"
 }
 
 /// A resolved overworld action — the app calls it once it knows the cursor is on the
@@ -63,6 +65,16 @@ public enum VoiceGrammar {
         // "white sword item bow" isn't grabbed by the "white sword" overworld cave mark.
         if let box = itemBoxCommand(words, config: config) {
             return .setItemBox(boxID: box.boxID, itemID: box.itemID)
+        }
+
+        // Recorder-destination stepper (user request): "recorder up / down / next /
+        // previous" steps the whistle destination, same as the ◀ ▶ arrows. Checked
+        // *before* the region/blocker match because "recorder" alone is a blocker/item
+        // word, which would otherwise swallow the phrase. Only the two recorder commands
+        // short-circuit here; every other structural word still resolves below.
+        if let m = config.match(words, scope: .structural), let cmd = structuralCommand(m),
+           cmd == .recorderDestPrev || cmd == .recorderDestNext {
+            return cmd
         }
 
         // Region actions win over structural, so a door command like "open left" isn't
@@ -311,6 +323,8 @@ public enum VoiceGrammar {
         case "Nav_StopVoice": return .stopListening
         case "Timer_Start":   return .startTimer
         case "Timer_Pause":   return .pauseTimer
+        case "Recorder_Prev": return .recorderDestPrev
+        case "Recorder_Next": return .recorderDestNext
         case "Dungeon_Enter":
             if let n = m.number, (1...9).contains(n) { return .dungeonTab(n) }
             return nil

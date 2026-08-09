@@ -335,6 +335,13 @@ final class VoiceController {
             if timer.hasStarted { timer.resume() } else { timer.start() }
         case .pauseTimer:
             timer.pause()
+        case .recorderDestPrev:
+            // Same as the ◀ arrow by the recorder: pin to a manual choice and step back.
+            model.recorderDestinationManual = true
+            model.recorderDestinationIndex -= 1
+        case .recorderDestNext:
+            model.recorderDestinationManual = true
+            model.recorderDestinationIndex += 1
         case let .clearAtCursor(words):
             applyClear(words, cell: focus.cursorCell)
         case let .clearAt(column, row, words):
@@ -556,6 +563,8 @@ final class VoiceController {
         case .stopListening: return "⏸ voice"
         case .startTimer: return "▶ timer"
         case .pauseTimer: return "⏸ timer"
+        case .recorderDestPrev: return "◀ recorder"
+        case .recorderDestNext: return "recorder ▶"
         }
     }
 }
