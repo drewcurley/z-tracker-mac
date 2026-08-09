@@ -56,6 +56,18 @@ struct VoiceGrammarTests {
         #expect(VoiceGrammar.parse("pause voice", config: config) == .stopListening)
     }
 
+    @Test func recorderDestinationStepper() {
+        // "recorder up/down/next/previous" steps the whistle destination (same as the
+        // ◀ ▶ arrows), parsed before the blocker "recorder" would swallow the phrase.
+        #expect(VoiceGrammar.parse("recorder up", config: config) == .recorderDestNext)
+        #expect(VoiceGrammar.parse("recorder next", config: config) == .recorderDestNext)
+        #expect(VoiceGrammar.parse("recorder down", config: config) == .recorderDestPrev)
+        #expect(VoiceGrammar.parse("recorder previous", config: config) == .recorderDestPrev)
+        // No regression: bare "recorder" still routes as an action (blocker/item), not a step.
+        let bare = VoiceGrammar.parse("recorder", config: config)
+        #expect(bare == .actionAtCursor(words: ["recorder"]))
+    }
+
     @Test func dungeonEnterVsMark() {
         #expect(VoiceGrammar.parse("enter level 5", config: config) == .dungeonTab(5))
         #expect(VoiceGrammar.parse("level five", config: config) == .dungeonTab(5))

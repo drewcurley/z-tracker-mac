@@ -25,6 +25,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-194](./T-194.md) | Voice commands to step the recorder destination ("recorder up/down") | frontend-engineer | T-135 | feat/voice-recorder-stepper | — | docs/reviews/feat-voice-recorder-stepper/final.md |
 | [T-193](./T-193.md) | Fix two display bugs — HUD letter slot reversed, boomstick nudge ignores the flag | backend-engineer | — | fix/reminder-hud-bugs | — | docs/reviews/fix-reminder-hud-bugs/final.md |
 | [T-192](./T-192.md) | Timer voice control + crash-recovery resume (auto-open, resume-on-restore, real-time mode) + voice non-descript clears | frontend-engineer | — | feat/timer-voice-crash-recovery | — | docs/reviews/feat-timer-voice-crash-recovery/final.md |
 | [T-191](./T-191.md) | Overworld icon refresh (ghost-rupee secret, gray "?" hint) + left-click reopen + picker order | frontend-engineer | T-185 | feat/overworld-icons-leftclick | — | docs/reviews/feat-overworld-icons-leftclick/final.md |
