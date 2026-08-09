@@ -254,7 +254,10 @@ public enum OverworldTileMark: Hashable, Codable, Sendable {
         case .shop(.meat): .shopSprite(5)
         case .shop(.key): .shopSprite(6)
         case .shop(.shield): .shopSprite(7)
-        case .secret(.unknown): .interiorSprite(11)
+        // Unknown secret: a pale-white "ghost" rupee (user request) rather than the
+        // reference's Goriya secret-giver — the reward (rupees) reads clearer than the
+        // enemy, and "ghost" distinguishes it from the sized money secrets.
+        case .secret(.unknown): .ghostRupee
         case .secret(.large): .interiorSprite(8)
         case .secret(.medium): .interiorSprite(6)
         case .secret(.small): .interiorSprite(9)
@@ -262,7 +265,9 @@ public enum OverworldTileMark: Hashable, Codable, Sendable {
         case .moneyMakingGame: .interiorSprite(10)
         case .theLetter: .interiorSprite(13)
         case .armos: .interiorSprite(7)
-        case .hintShop: .interiorSprite(3)
+        // Hint: a gray "?" tile in the level / any-road digit-tile style (user request)
+        // rather than the reference's Old Man sprite.
+        case .hintShop: .hintTile
         case .takeAny: .interiorSprite(4)
         case .potionShop: .interiorSprite(5)
         case .dontCare: .solidBlackTile
@@ -290,6 +295,12 @@ public enum OverworldTileIconSource: Hashable, Sendable {
     /// An any-road/warp cave of **unknown** 1–4 order — a "?" on the same orchid
     /// background (T-181).
     case anyRoadUnknown
+    /// The unknown-secret reward drawn as a pale-white "ghost" rupee (user request,
+    /// beyond the reference's Goriya sprite).
+    case ghostRupee
+    /// The hint spot drawn as a gray "?" tile in the digit-tile style (user request,
+    /// beyond the reference's Old Man sprite).
+    case hintTile
     /// A 0-based index into `ow_icons5x9.png` (14 icons, 5×9px each,
     /// background baked into the sprite).
     case interiorSprite(Int)

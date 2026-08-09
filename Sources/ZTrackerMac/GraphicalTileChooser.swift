@@ -15,8 +15,9 @@ enum OverworldChooserAction: Equatable {
 /// "shops before dungeons" ordering the text menu uses. Pure + testable.
 ///
 /// - Row 1: the 8 shop items
-/// - Row 2: the 4 secrets, door repair, money-making game, hint, potion
-/// - Row 3: letter, armos, take-any potion/heart/candle, don't-care, unmarked, start
+/// - Row 2: the 4 secrets, money-making game, door repair, hint, potion
+/// - Row 3: letter, armos, take-any potion/candle/heart (in-game order), don't-care,
+///   unmarked, start
 /// - Row 4: levels 1–8
 /// - Row 5: level 9, any-road 1–4, sword caves 1–3
 ///
@@ -26,9 +27,9 @@ enum OverworldChooserLayout {
     static let rows: [[OverworldChooserAction]] = [
         ShopKind.allCases.map { .mark(.shop($0)) },
         [.mark(.secret(.small)), .mark(.secret(.medium)), .mark(.secret(.large)), .mark(.secret(.unknown)),
-         .mark(.doorRepair), .mark(.moneyMakingGame), .mark(.hintShop), .mark(.potionShop)],
+         .mark(.moneyMakingGame), .mark(.doorRepair), .mark(.hintShop), .mark(.potionShop)],
         [.mark(.theLetter), .mark(.armos),
-         .takeAny(.takenPotion), .takeAny(.takenHeart), .takeAny(.takenCandle),
+         .takeAny(.takenPotion), .takeAny(.takenCandle), .takeAny(.takenHeart),
          .mark(.dontCare), .mark(.unmarked), .startSpot],
         (1...8).map { .mark(.dungeon($0)) },
         [.mark(.dungeon(9)), .mark(.anyRoad(1)), .mark(.anyRoad(2)), .mark(.anyRoad(3)), .mark(.anyRoad(4)),
