@@ -24,4 +24,14 @@ struct ProgressHUDTests {
         let img = try #require(FauxItemsHUD.render(state: s, progress: p, havePotionLetter: true, haveBook: true))
         #expect(img.width == 98 && img.height == 79)
     }
+
+    @Test("HUD letter slot tracks holding the letter (placed & not used), not the used state")
+    func letterHeldWhilePlacedAndNotUsed() {
+        let grid = OverworldGrid()
+        #expect(!ProgressHUDView.holdsPotionLetter(grid))          // none placed
+        grid.setMark(.theLetter, column: 5, row: 3)
+        #expect(ProgressHUDView.holdsPotionLetter(grid))           // placed → held → HUD shows
+        grid.toggleUsed(column: 5, row: 3)
+        #expect(!ProgressHUDView.holdsPotionLetter(grid))          // delivered → not held → HUD hides
+    }
 }
