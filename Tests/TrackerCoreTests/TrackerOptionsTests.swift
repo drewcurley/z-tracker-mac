@@ -12,8 +12,7 @@ struct TrackerOptionsTests {
         let store = UserDefaults(suiteName: suite)!
         defer { store.removePersistentDomain(forName: suite) }
         let a = TrackerOptions(); a.enableSettingsPersistence(store: store)
-        a.appTheme = .light
-        a.saveSettings()
+        a.appTheme = .light                 // persists immediately via didSet — no saveSettings()
         let b = TrackerOptions(); b.enableSettingsPersistence(store: store)
         #expect(b.appTheme == .light)
     }

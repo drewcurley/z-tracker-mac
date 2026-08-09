@@ -42,7 +42,7 @@ struct BlockersView: View {
         HStack(spacing: 4) {
             Text(DungeonLabeling.slotLabel(dungeonIndex + 1, hideDungeonNumbers: model.hideDungeonNumbers))
                 .font(.system(size: 11, weight: .bold, design: .rounded))
-                .foregroundStyle(located.contains(dungeonIndex) ? .white : .orange)
+                .foregroundStyle(located.contains(dungeonIndex) ? Color.primary : Color.orange)
                 .frame(width: 12)
             ForEach(0..<DungeonBlockersContainer.maxBlockersPerDungeon, id: \.self) { slot in
                 BlockerBoxView(
@@ -95,7 +95,7 @@ private struct BlockerBoxView: View {
     var body: some View {
         let _ = perfTrace()
         ZStack {
-            RoundedRectangle(cornerRadius: 4).fill(.black.opacity(0.35))
+            RoundedRectangle(cornerRadius: 4).fill(Theme.panelFill)
             if let icon = BlockerIcons.icon(for: blocker) {
                 ItemGlyph(icon).frame(width: 20, height: 20)
                     .opacity(blocker.isMaybe ? 0.85 : 1)
@@ -133,7 +133,7 @@ private struct BlockerBoxView: View {
     @ViewBuilder private var border: some View {
         let shape = RoundedRectangle(cornerRadius: 4)
         if blocker == .nothing {
-            shape.strokeBorder(Color(white: 0.4), lineWidth: 2)
+            shape.strokeBorder(Theme.border, lineWidth: 2)
         } else if blocker.isMaybe {
             shape.strokeBorder(
                 LinearGradient(colors: [Color(red: 0.24, green: 0.7, blue: 0.24),
@@ -141,7 +141,7 @@ private struct BlockerBoxView: View {
                                startPoint: .topLeading, endPoint: .bottomTrailing),
                 lineWidth: 2.5)
         } else {
-            shape.strokeBorder(Color(white: 0.8), lineWidth: 2.5)
+            shape.strokeBorder(Color.primary.opacity(0.7), lineWidth: 2.5)
         }
     }
 
@@ -191,7 +191,7 @@ private struct BlockerKindPicker: View {
                         }
                         .frame(width: 40, height: 34)
                         .background(RoundedRectangle(cornerRadius: 5)
-                            .fill(current == kind ? Color.accentColor.opacity(0.5) : Color(white: 0.16)))
+                            .fill(current == kind ? Color.accentColor.opacity(0.5) : Theme.panelFill))
                         // "Might need" kinds carry the green→red gradient edge, matching
                         // the box border, so the two states read the same everywhere.
                         .overlay(RoundedRectangle(cornerRadius: 5).strokeBorder(
@@ -289,7 +289,7 @@ struct BlockerChip: View {
     var body: some View {
         let _ = perfTrace()
         ZStack {
-            Rectangle().fill(resolved ? Color.green : Color.black)
+            Rectangle().fill(resolved ? Color.green : Theme.boxFill)
                 .frame(width: 11, height: 11)
             if let icon = BlockerIcons.icon(for: blocker) {
                 ItemGlyph(icon).frame(width: 9, height: 9)

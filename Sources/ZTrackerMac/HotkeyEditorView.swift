@@ -119,7 +119,7 @@ struct HotkeyEditorView: View {
                 Text(context.displayName).font(.caption.bold())
                 Text("\(count)").font(.caption2)
                     .padding(.horizontal, 5).padding(.vertical, 1)
-                    .background(Capsule().fill(Color(white: 0.25)))
+                    .background(Capsule().fill(Theme.panelFill))
                 Spacer()
             }
             .foregroundStyle(.secondary)
@@ -149,7 +149,7 @@ struct HotkeyEditorView: View {
                     .frame(minWidth: 74)
                     .padding(.horizontal, 8).padding(.vertical, 3)
                     .background(RoundedRectangle(cornerRadius: 5)
-                        .fill(capturing == selector.id ? Color.accentColor.opacity(0.3) : Color(white: 0.16)))
+                        .fill(capturing == selector.id ? Color.accentColor.opacity(0.3) : Theme.panelFill))
                     .overlay(RoundedRectangle(cornerRadius: 5)
                         .strokeBorder(capturing == selector.id ? Color.accentColor : .clear))
             }

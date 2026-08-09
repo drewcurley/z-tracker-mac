@@ -80,7 +80,7 @@ struct VoiceCommandEditorView: View {
                 Text(category.title.uppercased()).font(.system(size: 10, weight: .semibold))
                 Text("\(count)").font(.caption2)
                     .padding(.horizontal, 5).padding(.vertical, 1)
-                    .background(Capsule().fill(Color(white: 0.25)))
+                    .background(Capsule().fill(Theme.panelFill))
                 Spacer()
             }
             .foregroundStyle(.secondary)

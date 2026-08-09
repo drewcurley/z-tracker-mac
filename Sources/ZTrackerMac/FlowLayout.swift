@@ -83,7 +83,7 @@ struct TopSectionGroup<Content: View>: View {
             content
         }
         .padding(8)
-        .background(RoundedRectangle(cornerRadius: 8).fill(Color(white: 0.09)))
-        .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Color(white: 0.16), lineWidth: 1))
+        .background(RoundedRectangle(cornerRadius: 8).fill(Theme.cardFill))   // T-188 light theme
+        .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(Theme.border, lineWidth: 1))
     }
 }

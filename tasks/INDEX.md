@@ -25,6 +25,8 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-190](./T-190.md) | Start-screen designation allowed on always-empty ("nothing here") screens | frontend-engineer | — | feat/deadspot-start-screen | — | docs/reviews/feat-deadspot-start-screen/final.md |
+| [T-188](./T-188.md) | Light theme — real light appearance (dark text on light surfaces) + theme persistence | frontend-engineer | T-187 | feat/light-theme | — | docs/reviews/feat-light-theme/final.md |
 | [T-189](./T-189.md) | Open-caves overlay → 3-way toggle (off / open caves / all gettable) | frontend-engineer | — | feat/open-caves-3way | — | docs/reviews/feat-open-caves-3way/final.md |
 | [T-187](./T-187.md) | App theme chooser (Dark / Light / OS) — replaces the dead sunglasses toggle | frontend-engineer | — | feat/theme-chooser | — | docs/reviews/feat-theme-chooser/final.md |
 | [T-186](./T-186.md) | Fix — the run timeline isn't restored on save/load | backend-engineer | — | fix/timeline-restore | — | docs/reviews/fix-timeline-restore/final.md |

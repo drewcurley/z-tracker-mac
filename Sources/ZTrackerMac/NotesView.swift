@@ -21,7 +21,7 @@ struct NotesView: View {
         ZStack(alignment: .topLeading) {
             TextEditor(text: $model.notes)
                 .font(.system(size: 13, design: .monospaced))
-                .foregroundStyle(Color.green)
+                .foregroundStyle(Theme.notesText)
                 .scrollContentBackground(.hidden)
                 .padding(6)
                 .focused($focused)

@@ -159,7 +159,9 @@ enum DungeonCellIconAtlas {
 /// Shared PNG-atlas loader. Optionally maps pure black to transparent (the
 /// reference's sprite-sheet background convention) via a CGImage decode array.
 enum AtlasLoader {
-    static func load(_ resource: String, blackIsTransparent: Bool) -> CGImage? {
+    /// `threshold` widens the black-key to catch **near**-black backgrounds (0…threshold
+    /// per channel) — needed for sheets whose sprite background isn't pure black (T-188).
+    static func load(_ resource: String, blackIsTransparent: Bool, threshold: Int = 0) -> CGImage? {
         guard
             let url = Bundle.module.url(forResource: resource, withExtension: "png"),
             let provider = CGDataProvider(url: url as CFURL),
@@ -167,8 +169,9 @@ enum AtlasLoader {
                                 shouldInterpolate: false, intent: .defaultIntent)
         else { return nil }
         guard blackIsTransparent else { return image }
-        // Mask out pure black (RGB 0,0,0) so the sprite background is transparent.
-        return image.copy(maskingColorComponents: [0, 0, 0, 0, 0, 0]) ?? image
+        // Mask black (or near-black up to `threshold`) so the sprite background drops out.
+        let t = CGFloat(threshold)
+        return image.copy(maskingColorComponents: [0, t, 0, t, 0, t]) ?? image
     }
 }
 
