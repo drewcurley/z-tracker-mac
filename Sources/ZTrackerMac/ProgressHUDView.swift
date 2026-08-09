@@ -8,15 +8,19 @@ import TrackerCore
 struct ProgressHUDView: View {
     @Bindable var model: TrackerModel
 
-    /// The HUD's letter slot lights up once the overworld letter cave is
-    /// **used** (claimed) — the user's model, and simpler than the map-derived
-    /// `havePotionLetter` (which tracks *holding* the letter, i.e. placed but
-    /// not yet turned in).
-    private var haveLetter: Bool {
-        let grid = model.overworldGrid
+    /// The HUD's letter slot lights up while you **hold** the potion letter — the
+    /// overworld letter tile is placed but not yet used/delivered (`isUsed == false`).
+    /// This matches the map-derived `havePotionLetter` and the letter tile's own
+    /// *inverted* dim (T-118: a held letter renders dark, brightening once delivered).
+    /// The prior version keyed off `isUsed`, so the HUD showed the letter exactly
+    /// backwards (missing while held, present once delivered) — fixed here.
+    private var haveLetter: Bool { Self.holdsPotionLetter(model.overworldGrid) }
+
+    /// Pure, testable: is a potion letter currently *held* (placed and not used)?
+    static func holdsPotionLetter(_ grid: OverworldGrid) -> Bool {
         for c in 0..<OverworldGrid.columnCount {
             for r in 0..<OverworldGrid.rowCount where grid.mark(column: c, row: r) == .theLetter {
-                if grid.isUsed(column: c, row: r) { return true }
+                if !grid.isUsed(column: c, row: r) { return true }
             }
         }
         return false

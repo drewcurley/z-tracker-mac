@@ -41,8 +41,9 @@ public enum ReminderAnnouncement: Equatable, Sendable {
     /// Periodic nudge to grab the armos item while it's located but unobtained (T-185,
     /// user request). `itemName` is the known item's spoken name, or `nil` if unknown.
     case getArmosItem(itemName: String?)
-    /// Periodic nudge to buy the boomstick book (have the wand, no book, a book
-    /// shop is marked).
+    /// Periodic nudge to buy the boomstick book — only in a boomstick seed (the
+    /// Boomstick flag is on) when you have the wand, no book yet, and a book shop is
+    /// marked.
     case considerBoomstickBook
     /// One-shot: you just got the Book and this seed's Book grants hints, so go
     /// visit the hint NPCs (T-092, user request — fires only when the
@@ -445,10 +446,13 @@ public final class ReminderEngine {
         //  nagged every 5 min and the count was wrong; replaced by the one-shot
         //  "you have the recorder / power bracelet" nudges above.)
 
-        // boomstick book — every 5 min if you have the wand, no book, and a book
-        // shop is marked. Timer resets only when it actually fires.
+        // boomstick book — every 5 min in a boomstick seed (slot 0 is the shield, so
+        // the book is relocated to a shop: `!isCurrentlyBook`) if you have the wand, no
+        // book yet, and a book shop is marked. Gating on the boomstick flag means
+        // turning it off clears the nudge (T-193: it used to keep firing regardless of
+        // the flag). Timer resets only when it actually fires.
         if cooldownElapsed(now, lastBoomstickReminder, minutes: 5),
-           playerState.haveWand, !progress.hasBoomBook, bookShopMarked {
+           !isCurrentlyBook, playerState.haveWand, !progress.hasBoomBook, bookShopMarked {
             out.append(.considerBoomstickBook)
             lastBoomstickReminder = now
         }

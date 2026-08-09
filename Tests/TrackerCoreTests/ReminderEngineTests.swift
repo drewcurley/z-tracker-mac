@@ -163,15 +163,27 @@ struct ReminderEngineTests {
         #expect(poll(e, dungeonTracker: dt).contains(.triforceCount(1)))   // fires again
     }
 
-    @Test("boomstick book: fires with wand + no book + a marked book shop")
+    @Test("boomstick book: fires only in a boomstick seed with wand + no book + a marked book shop (T-193)")
     func boomstickBook() {
         let engine = ReminderEngine()
         let player = PlayerComputedStateSummary(haveWand: true)
-        #expect(poll(engine, playerState: player, now: Date(timeIntervalSince1970: 0), bookShopMarked: true)
+        // Boomstick seed (Boomstick flag on → slot 0 is the shield, so !isCurrentlyBook).
+        #expect(poll(engine, playerState: player, now: Date(timeIntervalSince1970: 0),
+                     isCurrentlyBook: false, bookShopMarked: true)
+                .contains(.considerBoomstickBook))
+        // Normal seed (flag off, isCurrentlyBook) → no nudge even with wand + book shop:
+        // turning the Boomstick flag off clears it (the reported bug, T-193).
+        #expect(!poll(ReminderEngine(), playerState: player, now: Date(timeIntervalSince1970: 0),
+                      isCurrentlyBook: true, bookShopMarked: true)
+                .contains(.considerBoomstickBook))
+        // Already bought the boom book → no nudge.
+        let bought = PlayerProgressAndTakeAnyHearts(); bought.hasBoomBook = true
+        #expect(!poll(ReminderEngine(), playerState: player, progress: bought,
+                      now: Date(timeIntervalSince1970: 0), isCurrentlyBook: false, bookShopMarked: true)
                 .contains(.considerBoomstickBook))
         // No book shop marked → nothing.
         #expect(!poll(ReminderEngine(), playerState: player,
-                      now: Date(timeIntervalSince1970: 0), bookShopMarked: false)
+                      now: Date(timeIntervalSince1970: 0), isCurrentlyBook: false, bookShopMarked: false)
                 .contains(.considerBoomstickBook))
     }
 
