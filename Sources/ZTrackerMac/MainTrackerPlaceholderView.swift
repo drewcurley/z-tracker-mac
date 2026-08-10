@@ -266,6 +266,8 @@ struct MainTrackerPlaceholderView: View {
                 if !model.notes.contains("Finished in ") {
                     model.notes += (model.notes.isEmpty ? "" : "\n") + line
                 }
+                // Auto-save the finished run if the option is on (T-196).
+                GameSave.saveOnCompletionIfEnabled(model: model, timer: timer, options: options)
             } else {
                 timer.resume()
             }

@@ -46,6 +46,11 @@ struct SaveStateRoundTripTests {
         // timeline (T-098) — historical acquisition times, which can't be re-derived.
         m.timeline.record(elapsedSeconds: 125, acquired: [.ladder, .triforce(1)],
                           owRemaining: 60, finished: false, locations: [.ladder: "LEVEL-1 Box 1"])
+        // starting items (T-196) — seed-configured inventory.
+        m.startingItemsAndExtras.hasWand = true
+        m.startingItemsAndExtras.hasRaft = true
+        m.startingItemsAndExtras.maxHeartsDifferential = 2
+        m.startingItemsAndExtras.hdnStartingTriforcePieces[3] = true
         return m
     }
 
@@ -82,6 +87,12 @@ struct SaveStateRoundTripTests {
         #expect(rm.monsterDetail == .gleeok)
         #expect(rm.floorDropDetail == .triforce)
         #expect(restored.dungeonRoomMaps[0].horizontalDoor(col: 1, row: 3) == .yes)
+        // Starting items (T-196)
+        #expect(restored.startingItemsAndExtras.hasWand == true)
+        #expect(restored.startingItemsAndExtras.hasRaft == true)
+        #expect(restored.startingItemsAndExtras.maxHeartsDifferential == 2)
+        #expect(restored.startingItemsAndExtras.hdnStartingTriforcePieces[3] == true)
+        #expect(restored.startingItemsAndExtras.hasBow == false)
         // Blockers
         #expect(restored.dungeonBlockers.dungeonBlocker(dungeon: 4, slot: 1) == .maybeLadder)
         // Progress
