@@ -42,6 +42,8 @@ struct ContentView: View {
                     // then start the run.
                     options.saveSettings()
                     model.selectQuest(quest)
+                    // Pre-fill Notes from a user Notes.txt template if present (T-195).
+                    GameSave.seedNotesFromTemplate(into: model)
                 }, onLoadSavedState: {
                     // Load a saved run (T-177): the picker + apply live in GameSave;
                     // applying sets model.quest, which flips this view to the tracker.

@@ -27,6 +27,18 @@ enum GameSave {
         return docs.appendingPathComponent("ztracker", isDirectory: true)
     }
     static var lastSessionURL: URL { defaultDirectory.appendingPathComponent("last-session.json") }
+    /// Optional user-provided template that pre-fills the Notes box at quest start
+    /// (reference `WPFUI.fs:1223`), living alongside the saves in `~/Documents/ztracker/`.
+    static var notesTemplateURL: URL { defaultDirectory.appendingPathComponent("Notes.txt") }
+
+    /// Seed the Notes box from `Notes.txt` at quest start (T-195, reference parity). No-op if
+    /// the template is absent or the notes already have content (e.g. a resumed save), so it
+    /// never clobbers real work. The `url` is injectable for tests.
+    static func seedNotesFromTemplate(into model: TrackerModel, at url: URL = notesTemplateURL) {
+        guard model.notes.isEmpty,
+              let text = try? String(contentsOf: url, encoding: .utf8) else { return }
+        model.notes = text
+    }
 
     /// A timestamped filename for a manual save, e.g. `ztracker-2026-07-20-1430.json`.
     static func timestampedName(date: Date = Date()) -> String {
