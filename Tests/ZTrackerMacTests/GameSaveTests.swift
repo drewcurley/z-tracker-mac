@@ -67,6 +67,31 @@ struct GameSaveTests {
         #expect(GameSave.makeFile(model: model, timer: timer).completed == true)
     }
 
+    @Test("Notes.txt template seeds empty notes at quest start, never clobbers real notes (T-195)")
+    func notesTemplateSeeding() throws {
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("ztracker-notes-\(UUID().uuidString).txt")
+        defer { try? FileManager.default.removeItem(at: url) }
+        try "Kill sword\nARROW: check bomb shop\n".write(to: url, atomically: true, encoding: .utf8)
+
+        // Empty notes → seeded from the template.
+        let fresh = TrackerModel(quest: .first)
+        GameSave.seedNotesFromTemplate(into: fresh, at: url)
+        #expect(fresh.notes == "Kill sword\nARROW: check bomb shop\n")
+
+        // Existing notes → left untouched (e.g. a resumed save).
+        let used = TrackerModel(quest: .first)
+        used.notes = "my run"
+        GameSave.seedNotesFromTemplate(into: used, at: url)
+        #expect(used.notes == "my run")
+
+        // Missing template → no-op, no crash.
+        let noFile = FileManager.default.temporaryDirectory.appendingPathComponent("nope-\(UUID().uuidString).txt")
+        let m = TrackerModel(quest: .first)
+        GameSave.seedNotesFromTemplate(into: m, at: noFile)
+        #expect(m.notes == "")
+    }
+
     @Test("timestamped name is well-formed and json")
     func timestampFormat() {
         let name = GameSave.timestampedName(date: Date(timeIntervalSince1970: 1_770_000_000))

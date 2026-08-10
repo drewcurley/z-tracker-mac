@@ -25,6 +25,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-195](./T-195.md) | Notes.txt auto-population at quest start (reference parity) | frontend-engineer | — | feat/notes-template | — | docs/reviews/feat-notes-template/final.md |
 | [T-194](./T-194.md) | Voice commands to step the recorder destination ("recorder up/down") | frontend-engineer | T-135 | feat/voice-recorder-stepper | — | docs/reviews/feat-voice-recorder-stepper/final.md |
 | [T-193](./T-193.md) | Fix two display bugs — HUD letter slot reversed, boomstick nudge ignores the flag | backend-engineer | — | fix/reminder-hud-bugs | — | docs/reviews/fix-reminder-hud-bugs/final.md |
 | [T-192](./T-192.md) | Timer voice control + crash-recovery resume (auto-open, resume-on-restore, real-time mode) + voice non-descript clears | frontend-engineer | — | feat/timer-voice-crash-recovery | — | docs/reviews/feat-timer-voice-crash-recovery/final.md |
