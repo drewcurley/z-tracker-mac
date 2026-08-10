@@ -48,6 +48,21 @@ enum GameSave {
         return "ztracker-\(f.string(from: date)).json"
     }
 
+    /// A timestamped filename for an auto-save written when a run finishes (T-196),
+    /// e.g. `ztracker-completed-2026-07-20-143055.json`. Seconds are included so back-to-back
+    /// finishes never collide. Mirrors the reference's `zt-save-completed-…` (SaveAndLoad.fs:382).
+    static func completedName(date: Date = Date()) -> String {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "yyyy-MM-dd-HHmmss"
+        return "ztracker-completed-\(f.string(from: date)).json"
+    }
+
+    /// True while a save is being applied, so the completion observer doesn't fire a
+    /// (redundant) completed-save when a *finished* run is loaded (T-196; the reference
+    /// guards the same case with `not isCurrentlyLoadingASave`).
+    @MainActor static private(set) var isApplyingSave = false
+
     @discardableResult
     static func ensureDirectory() -> Bool {
         (try? FileManager.default.createDirectory(at: defaultDirectory, withIntermediateDirectories: true)) != nil
@@ -64,9 +79,25 @@ enum GameSave {
     /// `options` is supplied.
     static func apply(_ file: SaveFile, to model: TrackerModel, timer: TrackerTimer,
                       options: TrackerOptions? = nil) {
+        // Suppress save-on-completion while a finished run is being loaded. The flag is
+        // cleared on the next runloop tick, after the `hasRescuedZelda` onChange (which
+        // SwiftUI defers to the following view update) has already seen it set.
+        isApplyingSave = true
+        defer { DispatchQueue.main.async { isApplyingSave = false } }
         model.restore(file.model)
         timer.restore(file.timer, resuming: true,
                       realTimeSinceStart: options?.timerRealTimeSinceStart ?? false)
+    }
+
+    /// Auto-save a finished run to a timestamped `ztracker-completed-…` file when the
+    /// "Save on completion" option is on (T-196). No-op while a save is being loaded, so
+    /// loading a finished run doesn't spawn a duplicate. Best-effort (errors swallowed).
+    @MainActor
+    static func saveOnCompletionIfEnabled(model: TrackerModel, timer: TrackerTimer,
+                                          options: TrackerOptions) {
+        guard options.saveOnCompletion, !isApplyingSave else { return }
+        try? write(makeFile(model: model, timer: timer),
+                   to: defaultDirectory.appendingPathComponent(completedName()))
     }
 
     // MARK: Disk I/O

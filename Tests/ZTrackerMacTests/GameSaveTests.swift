@@ -99,6 +99,13 @@ struct GameSaveTests {
         #expect(name.hasSuffix(".json"))
     }
 
+    @Test("completed-save name is well-formed, timestamped to the second (T-196)")
+    func completedNameFormat() {
+        let name = GameSave.completedName(date: Date(timeIntervalSince1970: 1_770_000_000))
+        #expect(name.hasPrefix("ztracker-completed-"))
+        #expect(name.hasSuffix(".json"))
+    }
+
     @Test("reading a missing / garbage file returns nil, not a crash")
     func toleratesBadInput() {
         let missing = FileManager.default.temporaryDirectory.appendingPathComponent("nope-\(UUID().uuidString).json")

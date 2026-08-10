@@ -180,6 +180,9 @@ public final class TrackerModel {
         /// The run timeline (T-098). Optional so saves written before it was persisted
         /// still decode (they restore with an empty timeline, as before).
         var timeline: TimelineModel.State? = nil
+        /// The seed's starting inventory (T-196). Optional so pre-T-196 saves still
+        /// decode (they restore with the default all-empty starting items).
+        var startingItems: StartingItemsAndExtras.State? = nil
     }
 
     public func snapshot() -> State {
@@ -192,7 +195,7 @@ public final class TrackerModel {
               levelHints: levelHints, notes: notes,
               overworld: overworldGrid.state, roomMaps: dungeonRoomMaps.map(\.state),
               tracker: dungeonTracker.state, blockers: dungeonBlockers.state, progress: playerProgress.state,
-              timeline: timeline.state)
+              timeline: timeline.state, startingItems: startingItemsAndExtras.state)
     }
 
     /// Restore a saved snapshot into this model. Order matters: the HDN flag is applied
@@ -220,6 +223,7 @@ public final class TrackerModel {
         dungeonBlockers.restore(s.blockers)
         playerProgress.restore(s.progress)
         if let t = s.timeline { timeline.restore(t) }   // absent in pre-timeline saves
+        if let si = s.startingItems { startingItemsAndExtras.restore(si) }  // absent in pre-T-196 saves
     }
 
     public init(

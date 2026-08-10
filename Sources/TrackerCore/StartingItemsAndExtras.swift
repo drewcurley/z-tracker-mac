@@ -78,4 +78,46 @@ public final class StartingItemsAndExtras {
         self.hasBook = hasBook
         self.maxHeartsDifferential = maxHeartsDifferential
     }
+
+    /// A `Codable` snapshot of the seed's starting inventory for save/load (T-196). The
+    /// reference persists these in `StartingItemsAndExtrasModel` (`SaveAndLoad.fs:94-151`).
+    public struct State: Codable, Sendable {
+        var hdnStartingTriforcePieces: [Bool]
+        var hasWhiteSword, hasMagicalSword, hasSilverArrow, hasBow, hasWand, hasRedCandle: Bool
+        var hasBoomerang, hasMagicBoomerang, hasRedRing, hasPowerBracelet, hasLadder: Bool
+        var hasRaft, hasRecorder, hasAnyKey, hasBook: Bool
+        var maxHeartsDifferential: Int
+    }
+
+    public var state: State {
+        State(hdnStartingTriforcePieces: hdnStartingTriforcePieces,
+              hasWhiteSword: hasWhiteSword, hasMagicalSword: hasMagicalSword,
+              hasSilverArrow: hasSilverArrow, hasBow: hasBow, hasWand: hasWand,
+              hasRedCandle: hasRedCandle, hasBoomerang: hasBoomerang,
+              hasMagicBoomerang: hasMagicBoomerang, hasRedRing: hasRedRing,
+              hasPowerBracelet: hasPowerBracelet, hasLadder: hasLadder, hasRaft: hasRaft,
+              hasRecorder: hasRecorder, hasAnyKey: hasAnyKey, hasBook: hasBook,
+              maxHeartsDifferential: maxHeartsDifferential)
+    }
+
+    public func restore(_ s: State) {
+        // Guard the fixed-size array so a malformed save can't trip the init precondition.
+        if s.hdnStartingTriforcePieces.count == 8 { hdnStartingTriforcePieces = s.hdnStartingTriforcePieces }
+        hasWhiteSword = s.hasWhiteSword
+        hasMagicalSword = s.hasMagicalSword
+        hasSilverArrow = s.hasSilverArrow
+        hasBow = s.hasBow
+        hasWand = s.hasWand
+        hasRedCandle = s.hasRedCandle
+        hasBoomerang = s.hasBoomerang
+        hasMagicBoomerang = s.hasMagicBoomerang
+        hasRedRing = s.hasRedRing
+        hasPowerBracelet = s.hasPowerBracelet
+        hasLadder = s.hasLadder
+        hasRaft = s.hasRaft
+        hasRecorder = s.hasRecorder
+        hasAnyKey = s.hasAnyKey
+        hasBook = s.hasBook
+        maxHeartsDifferential = s.maxHeartsDifferential
+    }
 }
