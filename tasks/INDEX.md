@@ -25,6 +25,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-197](./T-197.md) | In-menu hotkey hints — show the bound key in the tile & hint menus | frontend-engineer | T-170 | feat/in-menu-hotkey-hints | — | docs/reviews/feat-in-menu-hotkey-hints/final.md |
 | [T-196](./T-196.md) | Save/Load phase 3 — starting-items in the save + save-on-completion | backend-engineer | T-165 | feat/save-phase3 | — | docs/reviews/feat-save-phase3/final.md |
 | [T-195](./T-195.md) | Notes.txt auto-population at quest start (reference parity) | frontend-engineer | — | feat/notes-template | — | docs/reviews/feat-notes-template/final.md |
 | [T-194](./T-194.md) | Voice commands to step the recorder destination ("recorder up/down") | frontend-engineer | T-135 | feat/voice-recorder-stepper | — | docs/reviews/feat-voice-recorder-stepper/final.md |
