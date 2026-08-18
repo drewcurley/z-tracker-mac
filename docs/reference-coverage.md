@@ -2,52 +2,51 @@
 
 Cross-reference of the reference app's docs (`Zelda1RandoTools/doc/*`) against what
 `z-tracker-mac` has shipped. **Originally generated 2026-07-16 (~T-078); refreshed
-2026-07-21 (at T-165); reconciled 2026-07-28 against the task list through T-179.** This is
-the canonical "what's left" list for parity — pull items into `tasks/` as they're picked
-up, and update status here.
+2026-07-21 (at T-165); reconciled 2026-07-28 (through T-179) and again 2026-08-10 (through
+T-199).** This is the canonical "what's left" list for parity — pull items into `tasks/` as
+they're picked up, and update status here.
 
+> **2026-08-10 headline:** the §1/§2 polish list is now **closed** — everything was either
+> shipped (T-195 Notes.txt, T-196 Save phase 3, T-197 in-menu hotkey hints, T-199 Spot
+> Summary popout) or **descoped by the user** (Dungeon Summary modes, circle-overworld tiles,
+> continuation highlight, completion screenshots, seed/flags snoop). The app is at functional
+> parity; no parity items remain open. See §3 (done) and §4 (descoped). The one still-open
+> niche is the Specific-Blockers icon projection (§2), pending a decision on whether it's a
+> no-op.
+>
 > **2026-07-28 headline:** the three former "biggest pillars" — **HotKeys**, **Broadcast
-> window**, and the **Timeline graph** — have all shipped (HotKeys T-130–135/T-168/T-169/
-> T-170; Timeline OW-progress graph T-099; Broadcast as a re-scoped mirror window T-178).
-> The app is at functional parity. What remains is the smaller polish/niche list in §1–§2;
-> none of it is load-bearing.
+> window**, and the **Timeline graph** — all shipped (HotKeys T-130–135/T-168/T-169/T-170;
+> Timeline OW-progress graph T-099; Broadcast as a re-scoped mirror window T-178).
 
 Legend: **S/M/L** = rough size.
 
-## 1. Not started — genuinely absent (verified 0 code hits)
+## 1. Not started — **none open** (all resolved 2026-08-10)
 
-| # | Feature | Description | Doc | Size |
-|---|---------|-------------|-----|------|
-| 9 | **Circle overworld tiles** | Middle-click circle a tile; shift-left add label char; scroll/shift-right change color. | use §circle-overworld | M |
-| 17 | **Highlight potential dungeon continuations** | Hover BLOCKERS label → highlight bombable/boss-blocked/meat-block/unvisited-doorway rooms. | use §main-hpdc | M |
-| 20 | **Notes.txt auto-population** | Notes box pre-filled at startup from `~/Documents/ztracker/Notes.txt` (reuse `GameSave.defaultDirectory`, where `last-session.json` already lives). *(Kept 2026-07-28. Low urgency — Notes already persist (T-164/165) — but wanted for external note templates.)* | use §main-notes | S |
-| 22 | **Zelda-finish → completion screenshots** | Clicking Zelda saves completion screenshots. *(The finish-time → Notes half is done, T-107.)* | use §main-oia | S |
-| 3b | **In-menu hotkey hints** | Inline hotkey hints shown in menus. The only unshipped slice of HotKeys — the cheat-sheet window was dropped (§4). | use §hotkeys | S |
+The former "not started" list is now empty — every item was shipped or descoped:
 
-### Re-scoped 2026-07-28 — seed/flags + spoiler (moved up from "likely never"; research-gated)
+| # | Feature | Outcome |
+|---|---------|---------|
+| 20 | Notes.txt auto-population | **Shipped — T-195.** |
+| 3b | In-menu hotkey hints | **Shipped — T-197.** |
+| 9 | Circle overworld tiles | **Descoped (user, 2026-08-10)** — optional annotation layer; not wanted. See §4. |
+| 17 | Highlight potential dungeon continuations | **Descoped (user, 2026-08-10)** — not wanted. See §4. |
+| 22 | Zelda-finish → completion screenshots | **Descoped (user, 2026-08-10)** — the finish-time→Notes half (T-107) is enough; the auto-screenshot's Screen-Recording prompt isn't worth the niche value. See §4. |
 
-The user wants automatic seed knowledge, in two related-but-separable pieces. **Both need a research
-pass first** — do NOT invent formats; read the original `Zelda1RandoTools` source and the Z1R
-randomizer (and z1r.fandom.com) to nail down exact encodings ([[z1r-wiki]], [[z-tracker-conversion-goal]]).
+### Seed/flags + spoiler (was re-scoped 2026-07-28)
 
-- **Spoiler-file importer** *(the higher-value, macOS-friendly half — L).* Import the Z1R randomizer's
-  generated **spoiler file** and auto-mark everything (overworld caves/items, dungeon locations +
-  contents — "marks it all for you"). File-based, so no fragile OS snooping. **Research:** the
-  randomizer's spoiler-file format (structure + how entries map to this app's overworld/dungeon model).
-- **Seed/flags snoop** *(M).* Read the emulator **window title** to auto-detect the seed + flag string
-  (the reference's "snoop"). **Research:** how the original z-tracker parses the title + how the
-  randomizer encodes the flag string (title / ROM name). The window-title read is the macOS-fragile
-  part; the flag-string decode is the reusable, portable part — and could also drive auto-applying the
-  right startup flags.
+- **Spoiler-file importer** — **Shipped** (T-181 board import + T-183 room maps).
+- **Seed/flags snoop** — **Descoped (user, 2026-08-10):** there's no published documentation on how
+  the randomizer encodes the seed/flags in the title/ROM name; reverse-engineering it (or brute-forcing
+  seeds to diff reports) is a headache the user declined. See §4.
 
 ## 2. Partial — built, needs finishing
 
 | Feature | Shipped | Remaining | Size |
 |---------|---------|-----------|------|
-| **Dungeon Summary tab** | All-9 overview + click-select (T-019.9) | 3 modes (preview/detail/default) + hover-preview over Notes + per-dungeon monster-priority list | M |
-| **Progress popouts** | Inventory/Max-Hearts HUD (T-035.10) + Spot-Summary hover (T-053) | Click-to-popout for Spot Summary & Remaining Items + Max-Hearts hover trigger | S |
-| **Save/Load** | Manual Save/Load, ~60s autosave, startup resume, quit Save/Don't-Save/Cancel (T-164/T-165) | Optional Phase 3: wire save-on-completion; add starting-items config + timeline history to the save | — |
-| **Specific-Blockers** | Blocker UI + kinds (T-017/019.2/090) | *Decision needed:* only the "tiny-icon projection over the dungeon item boxes" is unbuilt — the **"applies to" half was deliberately dropped** (see §4). May be a no-op. | S |
+| **Dungeon Summary tab** | All-9 overview + click-select (T-019.9) = the reference "preview" mode | **Descoped (user, 2026-08-10):** the extra detail/default modes + hover-preview were reviewed and left as-is — today's preview tab is enough. See §4. | — |
+| **Progress popouts** | Inventory/Max-Hearts HUD (T-035.10) + Spot-Summary hover (T-053) | **Done — T-199** (Spot Summary click-to-popout). The Remaining-Items popout (no such view) and Max-Hearts hover were dropped per user. | — |
+| **Save/Load** | Manual Save/Load, ~60s autosave, startup resume, quit dialog (T-164/165), timeline restore (T-186) | **Done — T-196** (save-on-completion + starting-items in the save). | — |
+| **Specific-Blockers** | Blocker UI + kinds (T-017/019.2/090) | *Decision still needed:* only the "tiny-icon projection over the dungeon item boxes" is unbuilt — the **"applies to" half was deliberately dropped** (see §4). May be a no-op. | S |
 
 ## 3. Completed (since the original audit)
 
@@ -80,7 +79,14 @@ randomizer (and z1r.fandom.com) to nail down exact encodings ([[z1r-wiki]], [[z-
 - **Higher-fidelity game sprites + app icon** — T-161 (beyond parity).
 - **Dungeon-hover FPS + file-based render-perf logging** — T-179 (perf/diagnostics).
 
+**Completed 2026-08-10 (this reconcile):**
+- **Notes.txt auto-population** (#20) — T-195.
+- **Save/Load phase 3** — T-196 (save-on-completion + starting-items persisted; timeline was T-186).
+- **In-menu hotkey hints** (#3b) — T-197 (tile + hint-zone menus).
+- **Spot Summary popout** — T-199 (click-to-popout live window).
+
 **Beyond-reference product / infra (not parity gaps, logged for completeness):**
+- **First tester release** — T-198: app-focused README rewrite + unsigned DMG + GitHub Release v0.8.0.
 - **Custom dungeon-label rename** (LEVEL → any prefix) — T-171.
 - **Distribution** — update-on-launch notice + DMG packaging + notarization-ready build (T-174);
   app naming/credits/version (T-172/T-173/T-175); startup-button sizing + load wiring (T-177).
@@ -111,6 +117,15 @@ randomizer (and z1r.fandom.com) to nail down exact encodings ([[z1r-wiki]], [[z-
   know how to route the map." The GYR accessibility highlight (T-015.4) covers what's useful.
 - **Take-Any pie menu** (#8) — the clone edits take-any directly (deliberate deviation); the radial
   accelerator is niche and not planned.
+**Descoped 2026-08-10 (user reviewed each, declined):**
+- **Dungeon Summary detail/default modes** (§2) — the busy per-dungeon detail cards + hover-over-Notes
+  preview + monster-priority list. Today's "preview" summary tab is enough.
+- **Circle overworld tiles** (#9) — the middle-click annotation layer (label char + color). Not wanted.
+- **Highlight potential dungeon continuations** (#17) — hover-BLOCKERS room highlighting. Not wanted.
+- **Zelda-finish completion screenshots** (#22) — the finish-time already lands in Notes; the
+  auto-screenshot's Screen-Recording prompt isn't worth the niche value.
+- **Seed/flags snoop** — no published format; reverse-engineering the randomizer isn't worth it.
+
 **Deprioritized — may not do (user, 2026-07-28):** not formally killed, but unlikely to be built.
 - **Overworld magnifier** (#6) — hover → magnified nearby view + Lost Woods/Hills maze hints.
 - **Mouse magnifier window** (#7) — separate mouse-following magnifier window.
@@ -142,10 +157,11 @@ randomizer (and z1r.fandom.com) to nail down exact encodings ([[z1r-wiki]], [[z-
 
 ## What's actually left
 
-No pillars remain — the app is at functional parity. The newly **re-scoped** work is the headline:
-the **spoiler-file importer** (+ seed/flags snoop), research-gated (§1). Beyond that the **active
-candidate list** (§1) is short: circle-overworld-tiles (#9), dungeon-continuation highlight (#17),
-completion screenshots (#22), in-menu hotkey hints (#3b), and Notes.txt auto-population (#20) — plus
-the optional §2 finishing (Dungeon Summary modes, progress popouts, Save/Load Phase 3). Everything
-else is **deprioritized** or **descoped** (§4). Pick from §1/§2 for the next feature; check this file
-before scoping.
+**Nothing parity-related is open.** As of 2026-08-10 the whole §1/§2 polish list is resolved —
+shipped (T-195/196/197/199, plus the earlier pillars) or descoped by the user (§4). The app is at
+functional parity and has a first tester release (T-198).
+
+The only lingering niche is the **Specific-Blockers icon projection** (§2) — still pending a decision
+on whether it's even a no-op; not scheduled. Everything else worth doing next is **new** (beyond the
+reference) rather than parity: e.g. the **"make a note {X}" voice command** (§6). Check this file
+before scoping the next feature.

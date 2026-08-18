@@ -25,6 +25,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-200](./T-200.md) | Reconcile the reference-coverage audit — parity backlog closed | analyst | T-180 | chore/coverage-reconcile-closed | — | docs/reviews/chore-coverage-reconcile-closed/final.md |
 | [T-199](./T-199.md) | Spot Summary click-to-popout window | frontend-engineer | T-053 | feat/spot-summary-popout | — | docs/reviews/feat-spot-summary-popout/final.md |
 | [T-198](./T-198.md) | App-focused README rewrite + first tester DMG / GitHub Release | devops | — | chore/readme-and-release | — | docs/reviews/chore-readme-and-release/final.md |
 | [T-197](./T-197.md) | In-menu hotkey hints — show the bound key in the tile & hint menus | frontend-engineer | T-170 | feat/in-menu-hotkey-hints | — | docs/reviews/feat-in-menu-hotkey-hints/final.md |
