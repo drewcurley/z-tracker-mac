@@ -35,6 +35,31 @@ cp "$BIN_DIR/$EXE" "$APP/Contents/MacOS/$EXE"
 # nested bundle, and where `Bundle.module` looks first (Bundle.main.resourceURL).
 cp -R "$BIN_DIR/$RES_BUNDLE" "$APP/Contents/Resources/$RES_BUNDLE"
 
+# SwiftPM's resource bundle ships as a flat folder with NO Info.plist. macOS 26 loads it
+# anyway, but **macOS 15 (Sequoia) rejects a plist-less `.bundle` in `Bundle(url:)`**, so
+# `Bundle.module` fatalErrors "unable to find bundle" at launch → SIGILL on first sprite
+# load (T-202). Write a minimal old-style (flattened, resources-at-root) Info.plist so the
+# bundle validates on every supported OS. Done *before* signing so the signature seals it.
+RES_PLIST="$APP/Contents/Resources/$RES_BUNDLE/Info.plist"
+if [ ! -f "$RES_PLIST" ]; then
+    echo "==> adding Info.plist to the resource bundle (Sequoia Bundle(url:) fix)"
+    cat > "$RES_PLIST" <<PLIST
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleDevelopmentRegion</key><string>en</string>
+    <key>CFBundleIdentifier</key><string>com.drewcurley.ztracker-mac.resources</string>
+    <key>CFBundleInfoDictionaryVersion</key><string>6.0</string>
+    <key>CFBundleName</key><string>ZTrackerMac_ZTrackerMac</string>
+    <key>CFBundlePackageType</key><string>BNDL</string>
+    <key>CFBundleShortVersionString</key><string>$VERSION</string>
+    <key>CFBundleVersion</key><string>$VERSION</string>
+</dict>
+</plist>
+PLIST
+fi
+
 # Build stamp (T-179): git short hash (+ "-dirty" if the tree has uncommitted
 # changes) and the build time, so the About window can prove the running app is the
 # latest local build (a stale copy shows an older stamp).
