@@ -7,19 +7,24 @@
 # the usage-description strings, plus an (ad-hoc) code signature so TCC can attribute
 # and remember the grant. This wraps `swift build`'s product into that bundle.
 #
-# Usage: scripts/build-app.sh [release|debug]   (default: release)
+# Usage: scripts/build-app.sh [release|debug] [arm64|x86_64]
+#   config: default release
+#   arch:   default = the host arch (uname -m). Pass x86_64 to cross-build a dedicated
+#           Intel binary from an Apple-Silicon machine (or arm64 the other way). Each build
+#           is a *native* single-arch binary — no universal/fat binary, no perf compromise.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 CONFIG="${1:-release}"
+ARCH="${2:-$(uname -m)}"
 VERSION="$(tr -d '[:space:]' < VERSION)"
 APP="ZTrackerMac.app"
 EXE="ZTrackerMac"
 RES_BUNDLE="ZTrackerMac_ZTrackerMac.bundle"
 
-echo "==> swift build -c $CONFIG"
-swift build -c "$CONFIG"
-BIN_DIR="$(swift build -c "$CONFIG" --show-bin-path)"
+echo "==> swift build -c $CONFIG --arch $ARCH"
+swift build -c "$CONFIG" --arch "$ARCH"
+BIN_DIR="$(swift build -c "$CONFIG" --arch "$ARCH" --show-bin-path)"
 
 echo "==> assembling $APP (v$VERSION)"
 rm -rf "$APP"
@@ -89,5 +94,5 @@ else
     codesign --force --sign - "$APP"
 fi
 
-echo "==> done: $APP (v$VERSION)"
+echo "==> done: $APP (v$VERSION, $ARCH)"
 echo "    run: open $APP    (or: $APP/Contents/MacOS/$EXE for console output)"
