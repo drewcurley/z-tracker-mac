@@ -25,6 +25,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-202](./T-202.md) | Fix launch crash on macOS 15 (Sequoia) — resource bundle missing Info.plist | devops | T-201 | fix/resource-bundle-infoplist | — | docs/reviews/fix-resource-bundle-infoplist/final.md |
 | [T-201](./T-201.md) | Dual-architecture builds — dedicated native Apple Silicon + Intel DMGs | devops | T-174 | chore/dual-arch-builds | — | docs/reviews/chore-dual-arch-builds/final.md |
 | [T-200](./T-200.md) | Reconcile the reference-coverage audit — parity backlog closed | analyst | T-180 | chore/coverage-reconcile-closed | — | docs/reviews/chore-coverage-reconcile-closed/final.md |
 | [T-199](./T-199.md) | Spot Summary click-to-popout window | frontend-engineer | T-053 | feat/spot-summary-popout | — | docs/reviews/feat-spot-summary-popout/final.md |
