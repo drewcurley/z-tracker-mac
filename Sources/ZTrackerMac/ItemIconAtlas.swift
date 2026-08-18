@@ -163,7 +163,7 @@ enum AtlasLoader {
     /// per channel) — needed for sheets whose sprite background isn't pure black (T-188).
     static func load(_ resource: String, blackIsTransparent: Bool, threshold: Int = 0) -> CGImage? {
         guard
-            let url = Bundle.module.url(forResource: resource, withExtension: "png"),
+            let url = AppResources.url(forResource: resource, withExtension: "png"),
             let provider = CGDataProvider(url: url as CFURL),
             let image = CGImage(pngDataProviderSource: provider, decode: nil,
                                 shouldInterpolate: false, intent: .defaultIntent)

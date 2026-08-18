@@ -16,7 +16,7 @@ enum GameSprite {
     static func image(_ name: String) -> CGImage? {
         if let hit = cache[name] { return hit }
         let img: CGImage? = {
-            guard let url = Bundle.module.url(forResource: name, withExtension: "gif"),
+            guard let url = AppResources.url(forResource: name, withExtension: "gif"),
                   let src = CGImageSourceCreateWithURL(url as CFURL, nil),
                   let cg = CGImageSourceCreateImageAtIndex(src, 0, nil) else { return nil }
             return cg

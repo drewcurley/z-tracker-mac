@@ -1492,7 +1492,7 @@ enum OverworldInteriorIconAtlas {
 
     private static let fullImage: CGImage? = {
         guard
-            let url = Bundle.module.url(forResource: "ow_icons5x9", withExtension: "png"),
+            let url = AppResources.url(forResource: "ow_icons5x9", withExtension: "png"),
             let dataProvider = CGDataProvider(url: url as CFURL),
             let image = CGImage(
                 pngDataProviderSource: dataProvider,
@@ -1522,7 +1522,7 @@ enum OverworldShopIconAtlas {
 
     private static let fullImage: CGImage? = {
         guard
-            let url = Bundle.module.url(forResource: "icons3x7", withExtension: "png"),
+            let url = AppResources.url(forResource: "icons3x7", withExtension: "png"),
             let dataProvider = CGDataProvider(url: url as CFURL),
             let image = CGImage(
                 pngDataProviderSource: dataProvider,
@@ -1560,7 +1560,7 @@ enum OverworldBackgroundAtlas {
 
     private static let fullImage: CGImage? = {
         guard
-            let url = Bundle.module.url(forResource: "s_map_overworld_vanilla_strip8", withExtension: "png"),
+            let url = AppResources.url(forResource: "s_map_overworld_vanilla_strip8", withExtension: "png"),
             let dataProvider = CGDataProvider(url: url as CFURL),
             let image = CGImage(
                 pngDataProviderSource: dataProvider,
