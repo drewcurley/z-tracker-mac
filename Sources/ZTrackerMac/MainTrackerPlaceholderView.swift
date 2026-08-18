@@ -254,6 +254,9 @@ struct MainTrackerPlaceholderView: View {
             .frame(maxWidth: .infinity)
         }
         .frame(minWidth: 420, minHeight: 320)
+        // Make the hotkey bindings available to leaf menus/pickers for inline hotkey
+        // hints (T-197) without threading them through every intermediate view.
+        .environment(hotkeys)
         // Rescuing Zelda ends the run — pause the timer (both main and lap);
         // un-rescuing resumes it (the reference's PlayerHasRescuedZelda →
         // Pause/Resume, OverworldItemGridUI.fs:428-440).

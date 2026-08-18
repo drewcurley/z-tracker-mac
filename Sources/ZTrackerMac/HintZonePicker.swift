@@ -57,6 +57,9 @@ struct HintZonePicker: View {
     @Binding var hint: HintZone
     var title: String
     var dismiss: () -> Void
+    /// Bound hotkeys, for the inline hotkey hint on each zone (T-197). Optional so previews
+    /// and non-tracker use sites (which don't inject it) render without hints.
+    @Environment(HotkeyConfig.self) private var hotkeys: HotkeyConfig?
 
     private let columns = Array(repeating: GridItem(.fixed(36), spacing: 4), count: 4)
 
@@ -67,19 +70,29 @@ struct HintZonePicker: View {
             Divider()
             LazyVGrid(columns: columns, spacing: 4) {
                 ForEach(HintZone.allCases, id: \.self) { zone in
+                    let key = hotkeys.map { HotkeyHints.keyLabel(for: zone, config: $0) } ?? ""
                     Button {
                         hint = zone
                         dismiss()
                     } label: {
-                        Text(zone.twoChars)
-                            .font(.system(size: 11, weight: .bold, design: .monospaced))
-                            .foregroundStyle(zone == .unknown ? Color.secondary : Theme.hint)
-                            .frame(width: 36, height: 22)
-                            .background(RoundedRectangle(cornerRadius: 4)
-                                .fill(zone == hint ? Color.accentColor.opacity(0.5) : Theme.panelFill))
+                        VStack(spacing: 0) {
+                            Text(zone.twoChars)
+                                .font(.system(size: 11, weight: .bold, design: .monospaced))
+                                .foregroundStyle(zone == .unknown ? Color.secondary : Theme.hint)
+                            // Inline hotkey hint (T-197): the key that picks this zone while the
+                            // picker is open. Only shown when the zone has a bound key.
+                            if !key.isEmpty {
+                                Text(key)
+                                    .font(.system(size: 7, weight: .semibold, design: .rounded))
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        .frame(width: 36, height: 22)
+                        .background(RoundedRectangle(cornerRadius: 4)
+                            .fill(zone == hint ? Color.accentColor.opacity(0.5) : Theme.panelFill))
                     }
                     .buttonStyle(.plain)
-                    .help(zone.displayName)
+                    .help(zone.displayName + (hotkeys.map { HotkeyHints.suffix(for: zone, config: $0) } ?? ""))
                 }
             }
         }

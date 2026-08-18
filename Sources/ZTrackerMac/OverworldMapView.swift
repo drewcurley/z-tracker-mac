@@ -29,6 +29,9 @@ struct OverworldMapView: View {
     var grid: OverworldGrid
     var quest: OverworldQuest
     var options: TrackerOptions
+    /// Bound hotkeys, for the inline hover-hotkey hint appended to each mark-menu item
+    /// (T-197). Optional so previews/non-tracker sites render without hints.
+    @Environment(HotkeyConfig.self) private var hotkeys: HotkeyConfig?
     /// Shared focus state (T-134) — the keyboard cursor follows hover here and is
     /// drawn on the cursor tile when the cursor is on the overworld.
     @Bindable var focus: TrackerFocusState
@@ -736,7 +739,7 @@ struct OverworldMapView: View {
     private func shopMenus(column: Int, row: Int) -> some View {
         Menu("Shop") {
             ForEach(ShopKind.allCases, id: \.self) { kind in
-                Button(kind.shortName) { applyMark(.shop(kind), column: column, row: row) }
+                Button(kind.shortName + hk(.shop(kind))) { applyMark(.shop(kind), column: column, row: row) }
             }
         }
         // A shop tile carries two items (T-060) — its second item is set here.
@@ -749,6 +752,12 @@ struct OverworldMapView: View {
                 }
             }
         }
+    }
+
+    /// The inline hover-hotkey hint appended to a mark-menu item, e.g. `" (B)"`, or `""`
+    /// when the mark has no bound key (T-197). Teaches the overworld hover-hotkey.
+    private func hk(_ mark: OverworldTileMark) -> String {
+        hotkeys.map { HotkeyHints.suffix(for: mark, config: $0) } ?? ""
     }
 
     @ViewBuilder
@@ -768,7 +777,7 @@ struct OverworldMapView: View {
                 let label = DungeonLabeling.columnName(
                     slot: number, prefix: options.levelPrefix,
                     hideDungeonNumbers: hideDungeonNumbers)
-                Button(label) {
+                Button(label + hk(.dungeon(number))) {
                     applyMark(.dungeon(number), column: column, row: row)
                 }
                 .disabled(isExhausted(.dungeon(number), column: column, row: row, counts: counts))
@@ -777,7 +786,7 @@ struct OverworldMapView: View {
         .disabled(allExhausted((1...9).map { .dungeon($0) }, column: column, row: row, counts: counts))
         Menu("Any road") {
             ForEach(1...4, id: \.self) { number in
-                Button("Any road \(number)") { applyMark(.anyRoad(number), column: column, row: row) }
+                Button("Any road \(number)" + hk(.anyRoad(number))) { applyMark(.anyRoad(number), column: column, row: row) }
                     .disabled(isExhausted(.anyRoad(number), column: column, row: row, counts: counts))
             }
             // "?" — a warp cave whose 1–4 order isn't known yet (T-181). Not
@@ -786,7 +795,7 @@ struct OverworldMapView: View {
         }
         Menu("Sword cave") {
             ForEach(1...3, id: \.self) { number in
-                Button(Self.swordCaveLabel(number)) {
+                Button(Self.swordCaveLabel(number) + hk(.swordCave(number))) {
                     applyMark(.swordCave(number), column: column, row: row)
                 }
                 .disabled(isExhausted(.swordCave(number), column: column, row: row, counts: counts))
@@ -796,14 +805,14 @@ struct OverworldMapView: View {
         if !options.shopsBeforeDungeons { shopMenus(column: column, row: row) }
         Menu("Secret") {
             ForEach(SecretSize.allCases, id: \.self) { size in
-                Button(size.displayName) { applyMark(.secret(size), column: column, row: row) }
+                Button(size.displayName + hk(.secret(size))) { applyMark(.secret(size), column: column, row: row) }
                     .disabled(isExhausted(.secret(size), column: column, row: row, counts: counts))
             }
         }
         // Take-any is a submenu (Unclaimed / Potion / Blue candle / Heart since
         // T-057), so it belongs with the other submenus rather than down among
         // the one-shot marks where it used to live as a plain button (T-063).
-        Menu("Take any") {
+        Menu("Take any" + hk(.takeAny)) {
             Button("Unclaimed") { applyTakeAny(.untaken, column: column, row: row) }
             Button("Potion") { applyTakeAny(.takenPotion, column: column, row: row) }
             Button("Blue candle") { applyTakeAny(.takenCandle, column: column, row: row) }
@@ -811,17 +820,17 @@ struct OverworldMapView: View {
         }
         .disabled(isExhausted(.takeAny, column: column, row: row, counts: counts))
         Divider()
-        Button("Door repair") { applyMark(.doorRepair, column: column, row: row) }
+        Button("Door repair" + hk(.doorRepair)) { applyMark(.doorRepair, column: column, row: row) }
             .disabled(isExhausted(.doorRepair, column: column, row: row, counts: counts))
-        Button("Money making game") { applyMark(.moneyMakingGame, column: column, row: row) }
+        Button("Money making game" + hk(.moneyMakingGame)) { applyMark(.moneyMakingGame, column: column, row: row) }
             .disabled(isExhausted(.moneyMakingGame, column: column, row: row, counts: counts))
-        Button("The letter") { applyMark(.theLetter, column: column, row: row) }
+        Button("The letter" + hk(.theLetter)) { applyMark(.theLetter, column: column, row: row) }
             .disabled(isExhausted(.theLetter, column: column, row: row, counts: counts))
-        Button("Armos") { applyMark(.armos, column: column, row: row) }
+        Button("Armos" + hk(.armos)) { applyMark(.armos, column: column, row: row) }
             .disabled(isExhausted(.armos, column: column, row: row, counts: counts))
-        Button("Hint shop") { applyMark(.hintShop, column: column, row: row) }
+        Button("Hint shop" + hk(.hintShop)) { applyMark(.hintShop, column: column, row: row) }
             .disabled(isExhausted(.hintShop, column: column, row: row, counts: counts))
-        Button("Potion shop") { applyMark(.potionShop, column: column, row: row) }
+        Button("Potion shop" + hk(.potionShop)) { applyMark(.potionShop, column: column, row: row) }
             .disabled(isExhausted(.potionShop, column: column, row: row, counts: counts))
         // Custom-map fairy fountains (T-167): vanilla fairy spots are fixed map truth,
         // but a custom map has none, so they're hand-placed. It belongs with the other
@@ -915,7 +924,7 @@ struct OverworldMapView: View {
         func addShops() {
             menu.addItem(nsSubmenu("Shop") { sub in
                 for kind in ShopKind.allCases {
-                    sub.addItem(nsItem(kind.shortName) { applyMark(.shop(kind), column: column, row: row) })
+                    sub.addItem(nsItem(kind.shortName + hk(.shop(kind))) { applyMark(.shop(kind), column: column, row: row) })
                 }
             })
             if case .shop(let item1) = grid.mark(column: column, row: row) {
@@ -937,14 +946,14 @@ struct OverworldMapView: View {
             for number in 1...9 {
                 let label = DungeonLabeling.columnName(slot: number, prefix: options.levelPrefix,
                                                        hideDungeonNumbers: hideDungeonNumbers)
-                sub.addItem(nsItem(label, enabled: !isExhausted(.dungeon(number), column: column, row: row, counts: counts)) {
+                sub.addItem(nsItem(label + hk(.dungeon(number)), enabled: !isExhausted(.dungeon(number), column: column, row: row, counts: counts)) {
                     applyMark(.dungeon(number), column: column, row: row)
                 })
             }
         })
         menu.addItem(nsSubmenu("Any road") { sub in
             for number in 1...4 {
-                sub.addItem(nsItem("Any road \(number)", enabled: !isExhausted(.anyRoad(number), column: column, row: row, counts: counts)) {
+                sub.addItem(nsItem("Any road \(number)" + hk(.anyRoad(number)), enabled: !isExhausted(.anyRoad(number), column: column, row: row, counts: counts)) {
                     applyMark(.anyRoad(number), column: column, row: row)
                 })
             }
@@ -953,7 +962,7 @@ struct OverworldMapView: View {
         menu.addItem(nsSubmenu("Sword cave",
                                enabled: !allExhausted((1...3).map { .swordCave($0) }, column: column, row: row, counts: counts)) { sub in
             for number in 1...3 {
-                sub.addItem(nsItem(Self.swordCaveLabel(number), enabled: !isExhausted(.swordCave(number), column: column, row: row, counts: counts)) {
+                sub.addItem(nsItem(Self.swordCaveLabel(number) + hk(.swordCave(number)), enabled: !isExhausted(.swordCave(number), column: column, row: row, counts: counts)) {
                     applyMark(.swordCave(number), column: column, row: row)
                 })
             }
@@ -961,12 +970,12 @@ struct OverworldMapView: View {
         if !options.shopsBeforeDungeons { addShops() }
         menu.addItem(nsSubmenu("Secret") { sub in
             for size in SecretSize.allCases {
-                sub.addItem(nsItem(size.displayName, enabled: !isExhausted(.secret(size), column: column, row: row, counts: counts)) {
+                sub.addItem(nsItem(size.displayName + hk(.secret(size)), enabled: !isExhausted(.secret(size), column: column, row: row, counts: counts)) {
                     applyMark(.secret(size), column: column, row: row)
                 })
             }
         })
-        menu.addItem(nsSubmenu("Take any", enabled: !isExhausted(.takeAny, column: column, row: row, counts: counts)) { sub in
+        menu.addItem(nsSubmenu("Take any" + hk(.takeAny), enabled: !isExhausted(.takeAny, column: column, row: row, counts: counts)) { sub in
             sub.addItem(nsItem("Unclaimed") { applyTakeAny(.untaken, column: column, row: row) })
             sub.addItem(nsItem("Potion") { applyTakeAny(.takenPotion, column: column, row: row) })
             sub.addItem(nsItem("Blue candle") { applyTakeAny(.takenCandle, column: column, row: row) })
@@ -974,12 +983,12 @@ struct OverworldMapView: View {
         })
         menu.addItem(.separator())
 
-        menu.addItem(nsItem("Door repair", enabled: !isExhausted(.doorRepair, column: column, row: row, counts: counts)) { applyMark(.doorRepair, column: column, row: row) })
-        menu.addItem(nsItem("Money making game", enabled: !isExhausted(.moneyMakingGame, column: column, row: row, counts: counts)) { applyMark(.moneyMakingGame, column: column, row: row) })
-        menu.addItem(nsItem("The letter", enabled: !isExhausted(.theLetter, column: column, row: row, counts: counts)) { applyMark(.theLetter, column: column, row: row) })
-        menu.addItem(nsItem("Armos", enabled: !isExhausted(.armos, column: column, row: row, counts: counts)) { applyMark(.armos, column: column, row: row) })
-        menu.addItem(nsItem("Hint shop", enabled: !isExhausted(.hintShop, column: column, row: row, counts: counts)) { applyMark(.hintShop, column: column, row: row) })
-        menu.addItem(nsItem("Potion shop", enabled: !isExhausted(.potionShop, column: column, row: row, counts: counts)) { applyMark(.potionShop, column: column, row: row) })
+        menu.addItem(nsItem("Door repair" + hk(.doorRepair), enabled: !isExhausted(.doorRepair, column: column, row: row, counts: counts)) { applyMark(.doorRepair, column: column, row: row) })
+        menu.addItem(nsItem("Money making game" + hk(.moneyMakingGame), enabled: !isExhausted(.moneyMakingGame, column: column, row: row, counts: counts)) { applyMark(.moneyMakingGame, column: column, row: row) })
+        menu.addItem(nsItem("The letter" + hk(.theLetter), enabled: !isExhausted(.theLetter, column: column, row: row, counts: counts)) { applyMark(.theLetter, column: column, row: row) })
+        menu.addItem(nsItem("Armos" + hk(.armos), enabled: !isExhausted(.armos, column: column, row: row, counts: counts)) { applyMark(.armos, column: column, row: row) })
+        menu.addItem(nsItem("Hint shop" + hk(.hintShop), enabled: !isExhausted(.hintShop, column: column, row: row, counts: counts)) { applyMark(.hintShop, column: column, row: row) })
+        menu.addItem(nsItem("Potion shop" + hk(.potionShop), enabled: !isExhausted(.potionShop, column: column, row: row, counts: counts)) { applyMark(.potionShop, column: column, row: row) })
         if customMapImagePath != nil {
             let isFairy = grid.isCustomFairy(column: column, row: row)
             menu.addItem(nsItem(isFairy ? "Remove fairy fountain" : "Place fairy fountain") { grid.toggleCustomFairy(column: column, row: row) })
