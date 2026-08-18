@@ -14,13 +14,17 @@ so you can keep your hands on the controller.
 
 ## Requirements
 
-- An **Apple-Silicon Mac** (M1 or newer)
-- **macOS 14 (Sonoma) or later**
+- A Mac running **macOS 14 (Sonoma) or later**
+- **Apple Silicon (M-series) or Intel** — there's a dedicated native build for each.
 
 ## Install
 
-1. Download the latest `ZTrackerMac-<version>.dmg` from the
-   [Releases page](https://github.com/drewcurley/z-tracker-mac/releases).
+1. On the [Releases page](https://github.com/drewcurley/z-tracker-mac/releases), download the
+   DMG for your Mac:
+   - **Apple Silicon (M1/M2/M3/…):** `ZTrackerMac-<version>-AppleSilicon.dmg`
+   - **Intel:** `ZTrackerMac-<version>-Intel.dmg`
+
+   Not sure which you have?  → Apple menu → About This Mac. "Chip" = Apple Silicon; "Processor" = Intel.
 2. Open the DMG and drag **ZTrackerMac** into your **Applications** folder.
 3. **First launch:** the app isn't signed with an Apple Developer ID yet, so macOS
    Gatekeeper will block a plain double-click. To open it the first time:

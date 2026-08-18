@@ -9,15 +9,23 @@ frictionless (notarized, auto-updating) build when you're ready.
    `CFBundleShortVersionString` via `scripts/build-app.sh` and is what the update
    check compares against.
 2. **Commit** the bump on a branch and merge it (governance flow as usual).
-3. **Build the disk image:**
+3. **Build the disk images (both architectures):**
    ```bash
    scripts/make-dmg.sh
    ```
-   Produces `dist/ZTrackerMac-<version>.dmg` (git-ignored).
-4. **Tag and publish a GitHub Release** whose tag is the version. The tag may be
-   `v0.9.0` or `0.9.0` — the update check tolerates a leading `v`.
+   Builds a **dedicated native binary per arch** (no universal/fat binary) and produces
+   two git-ignored images:
+   - `dist/ZTrackerMac-<version>-AppleSilicon.dmg` (arm64)
+   - `dist/ZTrackerMac-<version>-Intel.dmg` (x86_64)
+
+   Pass an arch to build just one (`scripts/make-dmg.sh arm64` / `x86_64`). The Intel
+   slice cross-builds fine from an Apple-Silicon Mac, but can only be *runtime-tested* on
+   actual Intel hardware (Rosetta runs the other direction).
+4. **Tag and publish a GitHub Release** whose tag is the version, attaching **both** DMGs.
+   The tag may be `v0.9.0` or `0.9.0` — the update check tolerates a leading `v`.
    ```bash
-   gh release create v0.9.0 dist/ZTrackerMac-0.9.0.dmg \
+   gh release create v0.9.0 \
+     dist/ZTrackerMac-0.9.0-AppleSilicon.dmg dist/ZTrackerMac-0.9.0-Intel.dmg \
      --title "Z-Tracker 0.9.0" --notes "…"
    ```
 
