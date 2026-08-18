@@ -25,7 +25,7 @@ enum FauxItemsHUD {
 
     private static func load(_ name: String) -> CGImage? {
         guard
-            let url = Bundle.module.url(forResource: name, withExtension: "png"),
+            let url = AppResources.url(forResource: name, withExtension: "png"),
             let provider = CGDataProvider(url: url as CFURL)
         else { return nil }
         return CGImage(pngDataProviderSource: provider, decode: nil,

@@ -20,7 +20,7 @@ enum OverworldHeartAtlas {
 
     private static let fullImage: CGImage? = {
         guard
-            let url = Bundle.module.url(forResource: "icons10x10", withExtension: "png"),
+            let url = AppResources.url(forResource: "icons10x10", withExtension: "png"),
             let provider = CGDataProvider(url: url as CFURL),
             let image = CGImage(pngDataProviderSource: provider, decode: nil,
                                 shouldInterpolate: false, intent: .defaultIntent)
