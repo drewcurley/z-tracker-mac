@@ -25,6 +25,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-199](./T-199.md) | Spot Summary click-to-popout window | frontend-engineer | T-053 | feat/spot-summary-popout | — | docs/reviews/feat-spot-summary-popout/final.md |
 | [T-198](./T-198.md) | App-focused README rewrite + first tester DMG / GitHub Release | devops | — | chore/readme-and-release | — | docs/reviews/chore-readme-and-release/final.md |
 | [T-197](./T-197.md) | In-menu hotkey hints — show the bound key in the tile & hint menus | frontend-engineer | T-170 | feat/in-menu-hotkey-hints | — | docs/reviews/feat-in-menu-hotkey-hints/final.md |
 | [T-196](./T-196.md) | Save/Load phase 3 — starting-items in the save + save-on-completion | backend-engineer | T-165 | feat/save-phase3 | — | docs/reviews/feat-save-phase3/final.md |

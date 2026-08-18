@@ -198,3 +198,24 @@ struct SpotSummaryView: View {
         }
     }
 }
+
+/// The broken-out Spot Summary window body (T-199): recomputes the summary live from the
+/// model each render (the model is `@Observable`, so it stays current as marks change) and
+/// shows it scrollably. The inline popover computes the same value; this just keeps it up.
+struct SpotSummaryWindowView: View {
+    let model: TrackerModel
+
+    var body: some View {
+        ScrollView {
+            SpotSummaryView(
+                summary: SpotSummary.compute(
+                    grid: model.overworldGrid, quest: model.quest ?? .first,
+                    armosDone: model.dungeonTracker.armosBox.isDone,
+                    whiteSwordItemDone: model.dungeonTracker.sword2Box.isDone,
+                    hasMagicalSword: model.playerComputedStateSummary.swordLevel >= 3),
+                hideDungeonNumbers: model.hideDungeonNumbers)
+            .padding(14)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+}

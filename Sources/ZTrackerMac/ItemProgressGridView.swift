@@ -613,14 +613,27 @@ struct MapInfoView: View {
             .buttonStyle(.bordered)
             .help("What overworld locations and secrets you still have left to find")
             .popover(isPresented: $showingSpotSummary, arrowEdge: .bottom) {
-                SpotSummaryView(
-                    summary: SpotSummary.compute(
-                        grid: model.overworldGrid, quest: model.quest ?? .first,
-                        armosDone: model.dungeonTracker.armosBox.isDone,
-                        whiteSwordItemDone: model.dungeonTracker.sword2Box.isDone,
-                        hasMagicalSword: model.playerComputedStateSummary.swordLevel >= 3),
-                    hideDungeonNumbers: model.hideDungeonNumbers
-                )
+                VStack(alignment: .trailing, spacing: 6) {
+                    // Pop the summary out into its own window so it can stay up (T-199).
+                    Button {
+                        showingSpotSummary = false
+                        openWindow(id: SpotSummaryWindowID)
+                    } label: {
+                        Label("Open in window", systemImage: "macwindow.on.rectangle")
+                    }
+                    .font(.system(size: 10)).controlSize(.small).buttonStyle(.bordered)
+                    .help("Keep the Spot Summary open in its own window")
+
+                    SpotSummaryView(
+                        summary: SpotSummary.compute(
+                            grid: model.overworldGrid, quest: model.quest ?? .first,
+                            armosDone: model.dungeonTracker.armosBox.isDone,
+                            whiteSwordItemDone: model.dungeonTracker.sword2Box.isDone,
+                            hasMagicalSword: model.playerComputedStateSummary.swordLevel >= 3),
+                        hideDungeonNumbers: model.hideDungeonNumbers
+                    )
+                }
+                .padding(10)
             }
     }
 

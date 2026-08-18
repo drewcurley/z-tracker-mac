@@ -32,6 +32,9 @@ let DungeonBandWindowID = "z-dungeon-band"
 
 /// The id of the broken-out overworld map window (T-124).
 let OverworldWindowID = "z-overworld"
+/// The broken-out Spot Summary window (T-199) — remaining locations/secrets, popped out
+/// so it can stay up (e.g. on a second monitor) instead of a hover/click popover.
+let SpotSummaryWindowID = "z-spot-summary"
 
 /// The id of the broadcast **mirror** window (T-178) — a synced full-tracker clone.
 let BroadcastWindowID = "z-broadcast"
@@ -215,6 +218,14 @@ struct ZTrackerMacApp: App {
                 .frame(minWidth: 220, minHeight: 90)
         }
         .defaultSize(width: 340, height: 130)
+
+        // The broken-out Spot Summary window (T-199) — remaining unique locations + money
+        // secrets, recomputed live from the model so it stays current while it's up.
+        Window("Spot Summary", id: SpotSummaryWindowID) {
+            SpotSummaryWindowView(model: model)
+                .frame(minWidth: 240, minHeight: 200)
+        }
+        .defaultSize(width: 320, height: 460)
 
         // The break-out Progress HUD (T-035.10) — opened on demand by the
         // "Progress" toggle (a secondary WindowGroup doesn't open at launch).
