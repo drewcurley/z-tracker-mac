@@ -61,7 +61,7 @@ struct SettingsPanelView: View {
                     Link("Original Z-Tracker ↗", destination: Self.originalProjectURL)
                         .font(.caption)
                 }
-                Text("A native macOS port of the original Windows Z-Tracker (F#) by Brian McNamara.")
+                Text("Mac version by procnoviach — a native port of the original Windows Z-Tracker (F#) by Brian McNamara.")
                     .font(.caption2).foregroundStyle(.secondary)
                 // Build stamp (T-179): git hash + build time, to confirm you're running
                 // the latest local build. "dev" when unbundled.
