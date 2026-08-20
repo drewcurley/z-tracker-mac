@@ -55,10 +55,15 @@ struct GraphicalTileChooser: View {
     private static let cell: CGFloat = 30
     private static let gap: CGFloat = 4
 
+    /// The label of the icon the pointer is currently over, shown live in the header so you
+    /// don't have to wait out the system tooltip delay (T-205).
+    @State private var hoverLabel: String?
+
     var body: some View {
         VStack(spacing: Self.gap) {
-            Text(currentMark == .unmarked ? "Unmarked" : currentMark.displayName)
-                .font(.caption).foregroundStyle(.secondary)
+            Text(hoverLabel ?? (currentMark == .unmarked ? "Unmarked" : currentMark.displayName))
+                .font(.caption).foregroundStyle(hoverLabel == nil ? Color.secondary : Color.primary)
+                .lineLimit(1)
             ForEach(Array(OverworldChooserLayout.rows.enumerated()), id: \.offset) { _, row in
                 HStack(spacing: Self.gap) {
                     ForEach(Array(row.enumerated()), id: \.offset) { _, action in
@@ -91,6 +96,14 @@ struct GraphicalTileChooser: View {
         .buttonStyle(.plain)
         .disabled(disabled)
         .help(tooltip(action))
+        // Live header label on hover (T-205) — instant, unlike the delayed system tooltip.
+        // Clear only if *this* cell's label is still showing, so moving between cells (whose
+        // enter/exit events can arrive in either order) doesn't wrongly blank the header.
+        .onHover { inside in
+            let label = tooltip(action)
+            if inside { hoverLabel = label }
+            else if hoverLabel == label { hoverLabel = nil }
+        }
     }
 
     @ViewBuilder

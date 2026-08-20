@@ -177,7 +177,14 @@ struct OverworldMapView: View {
     /// The tile whose overworld enemy picker is open — scroll-up in graphical mode (T-185).
     @State private var enemyCell: TileCoord?
 
-    struct ItemPromptTarget: Equatable { let column: Int; let row: Int; let isArmos: Bool }
+    /// Which off-map item box an in-place prompt fills (T-106; coast added T-205).
+    enum PromptBox: Equatable { case armos, whiteSword, coast }
+    struct ItemPromptTarget: Equatable { let column: Int; let row: Int; let box: PromptBox }
+
+    /// The coast item's fixed overworld screen ("F16" = column 15, row 5) — the ladder
+    /// always drops you here, so a left-click opens the coast-item picker directly (T-205).
+    static let coastColumn = 15
+    static let coastRow = 5
     struct TileCoord: Identifiable, Equatable { let column: Int; let row: Int; var id: Int { row * 100 + column } }
 
     /// Ladder and raft are live (`playerState.haveLadder`/`.haveRaft`, T-014)
@@ -413,8 +420,13 @@ struct OverworldMapView: View {
                                     // In-place item prompt for Armos / White-Sword cave (T-106).
                                     .popover(isPresented: itemPromptBinding(column: column, row: row), arrowEdge: .trailing) {
                                         if let p = itemPrompt {
-                                            BoxItemPicker(box: p.isArmos ? dungeonTracker.armosBox : dungeonTracker.sword2Box,
-                                                          instance: dungeonTracker, iconOptions: iconOptions) { itemPrompt = nil }
+                                            let box = switch p.box {
+                                            case .armos: dungeonTracker.armosBox
+                                            case .whiteSword: dungeonTracker.sword2Box
+                                            case .coast: dungeonTracker.ladderBox
+                                            }
+                                            BoxItemPicker(box: box, instance: dungeonTracker,
+                                                          iconOptions: iconOptions) { itemPrompt = nil }
                                                 .padding(4)
                                         }
                                     }
@@ -517,6 +529,17 @@ struct OverworldMapView: View {
     }
 
     private func handleLeftClick(column: Int, row: Int) {
+        // The coast item's screen (F16) always holds the coast item, so a left-click opens
+        // the coast-item picker directly (T-205). Checked before the dead-spot guard so it
+        // works regardless of that screen's status; right-click still gives the normal menu.
+        if column == Self.coastColumn, row == Self.coastRow {
+            // Defer a runloop tick (like the Armos/White-Sword prompt) — presenting a
+            // popover synchronously inside the tap gesture no-ops.
+            DispatchQueue.main.async {
+                presentPopoverWithoutAnimation { itemPrompt = .init(column: column, row: row, box: .coast) }
+            }
+            return
+        }
         // Always-empty screens are permanent "don't care" and never editable
         // (defensive — the tile also sets `.allowsHitTesting(false)`).
         if screenIsDeadSpot(column, row) { return }
@@ -692,7 +715,7 @@ struct OverworldMapView: View {
         // menu finish dismissing before the popover opens.
         if let isArmos = result.itemPromptIsArmos {
             DispatchQueue.main.async {
-                presentPopoverWithoutAnimation { itemPrompt = .init(column: column, row: row, isArmos: isArmos) }
+                presentPopoverWithoutAnimation { itemPrompt = .init(column: column, row: row, box: isArmos ? .armos : .whiteSword) }
             }
         }
     }
