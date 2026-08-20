@@ -35,10 +35,14 @@ struct ZonesAndCoordsTests {
     }
 
     @Test("coord format = row letter (A–H) + column number (1–16); coast = F16")
-    func coordFormat() {
+    @MainActor func coordFormat() {
         #expect(OverworldCoords.label(column: 0, row: 0) == "A1")
         #expect(OverworldCoords.label(column: 15, row: 7) == "H16")
         // The coast item screen (col 15, row 5) — the reference's "F16".
         #expect(OverworldCoords.label(column: 15, row: 5) == "F16")
+        // The coast-picker trigger (T-205) is wired to exactly that screen.
+        #expect(OverworldMapView.coastColumn == 15 && OverworldMapView.coastRow == 5)
+        #expect(OverworldCoords.label(column: OverworldMapView.coastColumn,
+                                      row: OverworldMapView.coastRow) == "F16")
     }
 }

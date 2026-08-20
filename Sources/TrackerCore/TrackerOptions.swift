@@ -117,8 +117,9 @@ public final class TrackerOptions {
     /// Use the **graphical** overworld tile chooser — a grid of icons — instead of the
     /// text menu (T-185, beyond the reference; the Windows app is graphical-only). A
     /// user preference: graphics are faster to recognize than reading menu text.
-    /// Default **false** (keep the text menu). When on, the picker opens as an icon
-    /// grid, and scrolling up on a tile opens the overworld enemy picker.
+    /// Default **true** (T-205 — the graphical icon grid; the Windows app is graphical-only
+    /// and graphics read faster). When on, scrolling up on a tile opens the enemy picker.
+    /// (Existing installs keep their saved choice; this default only applies to fresh installs.)
     public var graphicalOverworldChooser: Bool
 
     // MARK: Dungeon settings (top-level fields in TrackerModelOptions.fs)
@@ -249,7 +250,7 @@ public final class TrackerOptions {
         highlightNearby: Bool = true,
         showMagnifier: Bool = true,
         shopsBeforeDungeons: Bool = true,
-        graphicalOverworldChooser: Bool = false,
+        graphicalOverworldChooser: Bool = true,
         renameLevelsEnabled: Bool = false,
         customLevelPrefix: String = TrackerOptions.defaultLevelPrefix,
         showBasementInfo: Bool = true,

@@ -25,6 +25,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-205](./T-205.md) | Overworld chooser UX — F16 coast-item picker, live hover label, graphical chooser on by default | frontend-engineer | T-185 | feat/overworld-chooser-ux | — | docs/reviews/feat-overworld-chooser-ux/final.md |
 | [T-204](./T-204.md) | Credit the Mac version to procnoviach in the app About/credits | frontend-engineer | T-172 | chore/credit-procnoviach | — | docs/reviews/chore-credit-procnoviach/final.md |
 | [T-203](./T-203.md) | Fix Sequoia launch crash for real — stop using Bundle.module (direct-path resource loader) | backend-engineer | T-202 | fix/appresources-direct-path | — | docs/reviews/fix-appresources-direct-path/final.md |
 | [T-202](./T-202.md) | Fix launch crash on macOS 15 (Sequoia) — resource bundle missing Info.plist | devops | T-201 | fix/resource-bundle-infoplist | — | docs/reviews/fix-resource-bundle-infoplist/final.md |
