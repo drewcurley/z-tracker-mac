@@ -279,6 +279,7 @@ final class VoiceController {
         if let command = VoiceGrammar.parse(phrase, config: config) {
             vlog("utterance=\"\(phrase)\" → \(command)")
             execute(command)
+            ConfirmationSound.voice(options)   // audible "command recognized" cue (T-208)
             lastCommand = describe(command)
         } else {
             vlog("utterance=\"\(phrase)\" → (no command)")

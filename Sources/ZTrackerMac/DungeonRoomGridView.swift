@@ -94,6 +94,8 @@ struct DungeonMapView: View {
                                         headerText: headerText,
                                         inferDoors: options.doDoorInference,
                                         preferNonDescript: options.defaultToNonDescript,
+                                        confirmInputSound: options.inputConfirmationSound,
+                                        confirmInputVolume: options.inputConfirmationVolume,
                                         outlineQuest: outlineMode,
                                         hoveredRow: $hoveredRow,
                                         grab: grab,
@@ -356,6 +358,9 @@ struct DungeonRoomGridView: View {
     var inferDoors: Bool = false
     /// "Default to NonDescript" (T-206) — left-click marks unmarked rooms empty, not push-block.
     var preferNonDescript: Bool = false
+    /// Play the mouse/keyboard confirmation tick on a room edit (T-208), and its volume (0…100).
+    var confirmInputSound: Bool = false
+    var confirmInputVolume: Int = 100
     /// When set, overlays this vanilla quest's footprint for this dungeon (FQ/SQ).
     var outlineQuest: VanillaQuest? = nil
 
@@ -420,6 +425,8 @@ struct DungeonRoomGridView: View {
                                  width: Self.cellW, height: Self.cellH,
                                  pitchX: Self.pitchX, pitchY: Self.pitchY, inferDoors: inferDoors,
                                  preferNonDescript: preferNonDescript,
+                                 confirmInputSound: confirmInputSound,
+                                 confirmInputVolume: confirmInputVolume,
                                  grab: grab,
                                  onHover: { hovering in
                                      if hovering {
@@ -589,6 +596,8 @@ private struct RoomCellView: View {
     var inferDoors: Bool = false
     var preferNonDescript: Bool = false
     /// The GRAB tool state (T-083) â routes clicks and paints the preview.
+    var confirmInputSound: Bool = false   // mouse confirmation tick on a room edit (T-208)
+    var confirmInputVolume: Int = 100
     var grab: DungeonGrabController
     /// Reports hover enter/leave for the row-locator (T-078).
     var onHover: (Bool) -> Void = { _ in }
@@ -719,6 +728,7 @@ private struct RoomCellView: View {
     /// Primary left-click: mark the room, then (if enabled) infer its entry door.
     /// Shared by the mouse gesture and the VoiceOver default action.
     private func markWithInference() {
+        ConfirmationSound.input(enabled: confirmInputSound, volume: confirmInputVolume)   // mouse-edit tick (T-208)
         let wasUnmarked = room.roomType.isNotMarked
         // "Default to NonDescript" (T-206): the left-click accelerator marks an unmarked
         // room as NonDescript (empty) instead of MaybePushBlock when the option is on.
