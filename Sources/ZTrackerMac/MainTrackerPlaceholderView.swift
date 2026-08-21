@@ -188,7 +188,8 @@ struct MainTrackerPlaceholderView: View {
                 HStack(alignment: .center, spacing: 16) {
                     StatusReadoutView(mapState: mapState, customMapActive: model.customMapImagePath != nil)
                     Spacer()
-                    TimerView(timer: timer)
+                    // "Hide timer" (T-206) — suppress the inline run-timer readout when set.
+                    if !options.hideTimer { TimerView(timer: timer) }
                     // Duplicate the timer into its own window (T-101), e.g. for a
                     // stream overlay; the inline timer stays.
                     Button { openWindow(id: TimerWindowID) } label: {
@@ -311,8 +312,13 @@ struct MainTrackerPlaceholderView: View {
         // dispatcher/voice, so installing a second would double-fire every key (T-178).
         .onAppear {
             guard !isMirror else { return }
+            let isNewVoice = (voice == nil)
             let voiceController = voice ?? VoiceController(model: model, focus: focus, config: voiceConfig, options: options, timer: timer)
             voice = voiceController
+            // "Listen for speech" (T-206): auto-start voice recognition at launch (once),
+            // so the mic is live without clicking the FLAGS mic icon. Prompts for mic
+            // permission the first time; a no-op if already listening.
+            if isNewVoice, options.listenForSpeech, !voiceController.isListening { voiceController.toggle() }
             let dispatcher = GlobalHotkeyDispatcher(model: model, options: options, timer: timer, hotkeys: hotkeys, focus: focus, voice: voiceController)
             dispatcher.install()
             globalHotkeys = dispatcher

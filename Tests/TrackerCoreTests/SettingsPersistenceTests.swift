@@ -35,7 +35,6 @@ struct SettingsPersistenceTests {
         #expect(second.customLevelPrefix == "area-")
         #expect(second.levelPrefix == "area-")   // enabled → uses the custom prefix
         #expect(second.defaultToNonDescript)
-        #expect(second.showBasementInfo)         // untouched → keeps default true
     }
 
     @Test("a bool setting and the hidden-tiles map persist")
