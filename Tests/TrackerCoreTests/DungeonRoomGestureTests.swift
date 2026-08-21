@@ -34,6 +34,14 @@ struct DungeonRoomGestureTests {
         #expect(!out.clearsFirstInteraction)
     }
 
+    @Test("'Default to NonDescript' (T-206) makes the accelerator mark NonDescript instead")
+    func acceleratorHonorsDefaultRoomOverride() {
+        let out = DungeonRoomGesture.leftClick(on: DungeonRoom(), isFirstInteraction: false,
+                                               defaultRoom: .nonDescript)
+        #expect(out.room.roomType == .nonDescript)
+        #expect(out.room.isCompleted)
+    }
+
     @Test("entrance rooms cycle S→W→N→E→S")
     func entranceCycles() {
         var type = RoomType.startEnterFromS

@@ -94,7 +94,8 @@ struct SettingsPanelView: View {
             Toggle("Draw routes", isOn: Bindable(options).drawRoutes)
             Toggle("Show screen scrolls", isOn: Bindable(options).showScreenScrolls)
             Toggle("Highlight nearby", isOn: Bindable(options).highlightNearby)
-            Toggle("Show magnifier", isOn: Bindable(options).showMagnifier)
+            // Back-burnered until the overworld magnifier is built (T-206): hidden, option kept.
+            // Toggle("Show magnifier", isOn: Bindable(options).showMagnifier)
             Toggle("Shops before dungeons", isOn: Bindable(options).shopsBeforeDungeons)
             Toggle("Graphical tile chooser", isOn: Bindable(options).graphicalOverworldChooser)
                 .help("Pick overworld marks from a grid of icons (faster to recognize) instead of the text menu. Scroll up on a tile to set its enemies.")
@@ -106,11 +107,11 @@ struct SettingsPanelView: View {
 
             settingsHeader("Dungeon settings")
             renameLevelsRow
-            Toggle("Show basement info", isOn: Bindable(options).showBasementInfo)
             Toggle("Do door inference", isOn: Bindable(options).doDoorInference)
             // "Book for Helpful Hints" is a seed flag now — it lives in the Flags
             // section (T-092), not here.
-            Toggle("Left-drag auto-inverts", isOn: Bindable(options).leftDragAutoInverts)
+            // Back-burnered until drag-to-paint rooms exist (T-206): hidden, option kept.
+            // Toggle("Left-drag auto-inverts", isOn: Bindable(options).leftDragAutoInverts)
             Toggle("Default to NonDescript", isOn: Bindable(options).defaultToNonDescript)
         }
         .toggleStyle(.checkbox)
@@ -177,11 +178,9 @@ struct SettingsPanelView: View {
             Toggle("Check for updates on launch", isOn: Bindable(options).checkForUpdatesOnLaunch)
                 .help("On launch, check GitHub for a newer release and show a notice. Sends no data.")
             Toggle("Animate tile changes", isOn: Bindable(options).animateTileChanges)
-            Toggle("Animate shop highlights", isOn: Bindable(options).animateShopHighlights)
             Toggle("Save on completion", isOn: Bindable(options).saveOnCompletion)
-            Toggle("Snoop for seed&flags", isOn: Bindable(options).snoopSeedAndFlags)
-            Toggle("Display seed&flags", isOn: Bindable(options).displaySeedAndFlags)
             Toggle("Listen for speech", isOn: Bindable(options).listenForSpeech)
+                .help("Start listening for voice commands automatically at launch (asks for mic permission the first time).")
             Toggle("Confirmation sound", isOn: Bindable(options).confirmationSound)
 
             // Show/hide the top Info panel (T-178) — for players who don't use it and
@@ -191,7 +190,8 @@ struct SettingsPanelView: View {
             Toggle("Use detailed app icon", isOn: Bindable(options).useDetailedAppIcon)
                 .help("Swap the dock icon to the original, more detailed design (while the app is open).")
 
-            Toggle("Mouse magnifier window", isOn: Bindable(options).showMouseMagnifierWindow)
+            // Back-burnered until the mouse-magnifier window is built (T-206): hidden, option kept.
+            // Toggle("Mouse magnifier window", isOn: Bindable(options).showMouseMagnifierWindow)
             Toggle("Hide timer", isOn: Bindable(options).hideTimer)
             Toggle("Warn when quitting while the timer is running", isOn: Bindable(options).warnOnCloseWhileTimerRunning)
 

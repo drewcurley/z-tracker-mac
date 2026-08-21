@@ -142,8 +142,6 @@ public final class TrackerOptions {
     /// The built-in dungeon label prefix and the editor's character cap.
     public static let defaultLevelPrefix = "LEVEL-"
     public static let maxLevelPrefixLength = 7
-    /// `ShowBasementInfo`, default `true`.
-    public var showBasementInfo: Bool
     /// `DoDoorInference` — default **true** (T-156): auto-open the inferred entry
     /// door when a room is newly marked. It's a helpful default (and what makes
     /// voice "mark, move, mark" draw the connecting doors); toggle off in Settings.
@@ -192,14 +190,8 @@ public final class TrackerOptions {
 
     /// `AnimateTileChanges`, default `true`.
     public var animateTileChanges: Bool
-    /// `AnimateShopHighlights`, default `true`.
-    public var animateShopHighlights: Bool
     /// `SaveOnCompletion`, default `false`.
     public var saveOnCompletion: Bool
-    /// `SnoopSeedAndFlags`, default `false`.
-    public var snoopSeedAndFlags: Bool
-    /// `DisplaySeedAndFlags`, default `true`.
-    public var displaySeedAndFlags: Bool
     /// `ListenForSpeech`, default `false`. Startup-screen-only per the
     /// reference app (docs/domain.md § 4.1) — this project carries that
     /// constraint forward by only exposing it here, not in a later settings
@@ -253,7 +245,6 @@ public final class TrackerOptions {
         graphicalOverworldChooser: Bool = true,
         renameLevelsEnabled: Bool = false,
         customLevelPrefix: String = TrackerOptions.defaultLevelPrefix,
-        showBasementInfo: Bool = true,
         doDoorInference: Bool = true,
         bookForHelpfulHints: Bool = false,
         leftDragAutoInverts: Bool = false,
@@ -267,10 +258,7 @@ public final class TrackerOptions {
         visualReminders: [ReminderCategory: Bool]? = nil,
         preferredVoiceIdentifier: String? = nil,
         animateTileChanges: Bool = true,
-        animateShopHighlights: Bool = true,
         saveOnCompletion: Bool = false,
-        snoopSeedAndFlags: Bool = false,
-        displaySeedAndFlags: Bool = true,
         listenForSpeech: Bool = false,
         confirmationSound: Bool = true,
         useDetailedAppIcon: Bool = false,
@@ -291,7 +279,6 @@ public final class TrackerOptions {
         self.graphicalOverworldChooser = graphicalOverworldChooser
         self.renameLevelsEnabled = renameLevelsEnabled
         self.customLevelPrefix = customLevelPrefix
-        self.showBasementInfo = showBasementInfo
         self.doDoorInference = doDoorInference
         self.bookForHelpfulHints = bookForHelpfulHints
         self.leftDragAutoInverts = leftDragAutoInverts
@@ -305,10 +292,7 @@ public final class TrackerOptions {
         self.visualReminders = visualReminders ?? Self.defaultReminderToggles()
         self.preferredVoiceIdentifier = preferredVoiceIdentifier
         self.animateTileChanges = animateTileChanges
-        self.animateShopHighlights = animateShopHighlights
         self.saveOnCompletion = saveOnCompletion
-        self.snoopSeedAndFlags = snoopSeedAndFlags
-        self.displaySeedAndFlags = displaySeedAndFlags
         self.listenForSpeech = listenForSpeech
         self.confirmationSound = confirmationSound
         self.useDetailedAppIcon = useDetailedAppIcon
@@ -457,7 +441,6 @@ public final class TrackerOptions {
         "shopsBeforeDungeons": \.shopsBeforeDungeons,
         "graphicalOverworldChooser": \.graphicalOverworldChooser,
         "renameLevelsEnabled": \.renameLevelsEnabled,
-        "showBasementInfo": \.showBasementInfo,
         "doDoorInference": \.doDoorInference,
         "bookForHelpfulHints": \.bookForHelpfulHints,
         "leftDragAutoInverts": \.leftDragAutoInverts,
@@ -465,10 +448,7 @@ public final class TrackerOptions {
         "hideNoLongerRelevantShopItems": \.hideNoLongerRelevantShopItems,
         "alwaysHideMeatShops": \.alwaysHideMeatShops,
         "animateTileChanges": \.animateTileChanges,
-        "animateShopHighlights": \.animateShopHighlights,
         "saveOnCompletion": \.saveOnCompletion,
-        "snoopSeedAndFlags": \.snoopSeedAndFlags,
-        "displaySeedAndFlags": \.displaySeedAndFlags,
         "listenForSpeech": \.listenForSpeech,
         "confirmationSound": \.confirmationSound,
         "useDetailedAppIcon": \.useDetailedAppIcon,

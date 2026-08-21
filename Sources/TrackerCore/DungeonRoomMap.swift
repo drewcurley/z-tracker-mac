@@ -162,9 +162,11 @@ public final class DungeonRoomMap {
     /// the first-interaction flag as the reference does on any interaction.
     /// Returns the committed room.
     @discardableResult
-    public func leftClick(col: Int, row: Int) -> DungeonRoom {
+    public func leftClick(col: Int, row: Int,
+                          defaultRoom: RoomType = DungeonRoomGesture.defaultRoom) -> DungeonRoom {
         let outcome = DungeonRoomGesture.leftClick(on: room(col: col, row: row),
-                                                   isFirstInteraction: !firstInteractionDone)
+                                                   isFirstInteraction: !firstInteractionDone,
+                                                   defaultRoom: defaultRoom)
         setRoom(outcome.room, col: col, row: row)
         firstInteractionDone = true
         return room(col: col, row: row)

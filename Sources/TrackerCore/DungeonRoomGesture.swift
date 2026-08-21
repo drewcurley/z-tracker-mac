@@ -28,7 +28,8 @@ public enum DungeonRoomGesture {
     /// 3. Entrance room → cycle its arrow S→W→N→E→S.
     /// 4. Off-the-map → paint back to unmarked (recover an accidental toggle).
     /// 5. Otherwise → toggle completedness.
-    public static func leftClick(on room: DungeonRoom, isFirstInteraction: Bool) -> LeftClickOutcome {
+    public static func leftClick(on room: DungeonRoom, isFirstInteraction: Bool,
+                                 defaultRoom: RoomType = defaultRoom) -> LeftClickOutcome {
         var wc = room
         if !isFirstInteraction && room.roomType.isNotMarked {
             wc.roomType = defaultRoom

@@ -1,14 +1,14 @@
 import SwiftUI
 import TrackerCore
 
-/// The dungeon room-map area (T-019.5, "D1"): a tab strip for dungeons 1–9 and
-/// the selected dungeon's 8×8 room grid. First render slice — room-type sprites
+/// The dungeon room-map area (T-019.5, "D1"): a tab strip for dungeons 1â9 and
+/// the selected dungeon's 8Ã8 room grid. First render slice â room-type sprites
 /// + a room-type picker to set them; monsters, floor drops, doors, and the rest
 /// of the editing gestures are later slices.
 struct DungeonMapView: View {
     @Bindable var model: TrackerModel
     var options: TrackerOptions
-    /// The visible tab (0…8 = dungeons 1–9, 9 = Summary), owned by the shared focus
+    /// The visible tab (0â¦8 = dungeons 1â9, 9 = Summary), owned by the shared focus
     /// state (T-133) so Global `DungeonTab*` hotkeys can switch it and it survives
     /// the band's reflow.
     @Bindable var focus: TrackerFocusState
@@ -16,21 +16,21 @@ struct DungeonMapView: View {
         get { focus.selectedDungeonTab }
         nonmutating set { focus.selectedDungeonTab = newValue }
     }
-    /// The FQ/SQ vanilla-outline overlay mode (nil = off) — global across all
+    /// The FQ/SQ vanilla-outline overlay mode (nil = off) â global across all
     /// dungeons: toggling it shows each dungeon's own vanilla footprint (T-071).
     @State private var outlineMode: VanillaQuest? = nil
-    /// The grid row the pointer is over (T-078) — set by the grid's room cells,
+    /// The grid row the pointer is over (T-078) â set by the grid's room cells,
     /// read by the info strip's row-locator widget.
     @State private var hoveredRow: Int?
     /// The GRAB cut-and-paste tool's transient state (T-083).
     @State private var grab = DungeonGrabController()
-    /// Room-grid zoom (T-127) — shrinks the map to reclaim vertical space; the tab
+    /// Room-grid zoom (T-127) â shrinks the map to reclaim vertical space; the tab
     /// bar and controls stay full size. Owned by `DungeonBandView` (T-129) so it
     /// survives the band's reflow (a `ViewThatFits`/layout swap would otherwise
     /// recreate this view and reset the zoom). Discrete levels 60/80/100/120%.
     @Binding var mapScale: CGFloat
     static let zoomLevels: [CGFloat] = [0.6, 0.8, 1.0, 1.2]
-    /// Step to the adjacent zoom level (dir −1/+1), clamped to the ends.
+    /// Step to the adjacent zoom level (dir â1/+1), clamped to the ends.
     private func stepZoom(_ dir: Int) {
         let i = Self.zoomLevels.firstIndex(of: mapScale) ?? Self.zoomLevels.firstIndex(of: 1.0)!
         mapScale = Self.zoomLevels[min(Self.zoomLevels.count - 1, max(0, i + dir))]
@@ -93,6 +93,7 @@ struct DungeonMapView: View {
                                         dungeonNumber: selected + 1,
                                         headerText: headerText,
                                         inferDoors: options.doDoorInference,
+                                        preferNonDescript: options.defaultToNonDescript,
                                         outlineQuest: outlineMode,
                                         hoveredRow: $hoveredRow,
                                         grab: grab,
@@ -104,7 +105,7 @@ struct DungeonMapView: View {
         // Cap the whole card at its natural content width; a wider window flows
         // the extra space to Blockers/Notes, not here.
         .frame(width: Self.contentWidth, alignment: .leading)
-        // Zoom the whole card to reclaim vertical space (T-127) — the Summary tab is
+        // Zoom the whole card to reclaim vertical space (T-127) â the Summary tab is
         // not scaled. Passing the known natural width keeps the dungeon band's
         // side-by-side reflow deterministic while zoomed. The zoom control overlays
         // at full size (bottom-trailing, where the card has empty space).
@@ -120,7 +121,7 @@ struct DungeonMapView: View {
         }
     }
 
-    /// The map-zoom control (T-127/T-129) — two larger −/+ buttons spanning the
+    /// The map-zoom control (T-127/T-129) â two larger â/+ buttons spanning the
     /// info-strip width, with the current % (tap to reset to 100). Overlaid in the
     /// card's bottom-trailing corner (the info strip's empty space) at full size.
     private var zoomControl: some View {
@@ -166,7 +167,7 @@ struct DungeonMapView: View {
     }
 
 
-    /// Level tabs 1–9 + Summary evenly spread across the map width, with the
+    /// Level tabs 1â9 + Summary evenly spread across the map width, with the
     /// FQ/SQ vanilla-outline buttons pinned to the right edge.
     private var tabBar: some View {
         HStack(spacing: 0) {
@@ -176,7 +177,7 @@ struct DungeonMapView: View {
                 Spacer(minLength: 6)   // even inter-tab distribution; the last
                                        // one pushes FQ/SQ to the right edge
             }
-            // FQ / SQ — toggle the vanilla footprint overlay for this dungeon.
+            // FQ / SQ â toggle the vanilla footprint overlay for this dungeon.
             HStack(spacing: 4) {
                 grabButton
                 outlineButton("FQ", quest: .first)
@@ -227,8 +228,8 @@ struct DungeonMapView: View {
         Button { selected = i } label: {
             Text(label)
                 .font(.system(size: 14, weight: .bold, design: .rounded))
-                // Wider than the label needs (T-087) so the "needs" markers — the
-                // bait icon at the leading edge and the dots trailing — have room
+                // Wider than the label needs (T-087) so the "needs" markers â the
+                // bait icon at the leading edge and the dots trailing â have room
                 // to sit clear of the centered number without crowding.
                 .frame(width: 38, height: 24)
                 .background(RoundedRectangle(cornerRadius: 5)
@@ -244,7 +245,7 @@ struct DungeonMapView: View {
     /// The "what this dungeon needs" markers overlaid on a dungeon tab (T-084):
     /// a bait-meat icon (Hungry-Goriya, lime-checked once fed) at the leading edge,
     /// a DodgerBlue dot (unbought Bomb-Upgrade) top-trailing, and a red dot (unread
-    /// NPC hint — only with the "book for hints" option) bottom-trailing.
+    /// NPC hint â only with the "book for hints" option) bottom-trailing.
     @ViewBuilder
     private func tabNeedsMarkers(dungeon i: Int) -> some View {
         let map = model.dungeonRoomMaps[i]
@@ -286,7 +287,7 @@ struct DungeonMapView: View {
     }
 
     /// Quick per-dungeon reference beside the grid: the old-man count and the
-    /// local triforce/item inset — the selected dungeon's card (triforce + item
+    /// local triforce/item inset â the selected dungeon's card (triforce + item
     /// boxes), mirroring the top row so items can be marked without scrolling up
     /// (the reference's local dungeon-tracker panel).
     private var dungeonInfoStrip: some View {
@@ -336,7 +337,7 @@ enum RoomPickerKind: Equatable { case roomType, monster, floorDrop }
 
 /// A request to open a detail picker anchored at a specific room cell. Lifted to
 /// the grid (T-145) so all 64 cells share **one** popover per kind (3 total)
-/// instead of each carrying its own three (192 popover anchors) — that
+/// instead of each carrying its own three (192 popover anchors) â that
 /// proliferation was slow to present (~500 ms) and crash-prone on macOS 27.
 private struct RoomPickerRequest: Identifiable, Equatable {
     let col: Int
@@ -345,18 +346,20 @@ private struct RoomPickerRequest: Identifiable, Equatable {
     var id: String { "\(col).\(row).\(kind)" }
 }
 
-/// One dungeon's 8×8 room grid.
+/// One dungeon's 8Ã8 room grid.
 struct DungeonRoomGridView: View {
     @Bindable var map: DungeonRoomMap
     var dungeonNumber: Int
     /// The "LEVEL-N" / "BOARD-N" header, one character centered per column.
     var headerText: String = ""
-    /// Forwarded to each room cell — auto-open an inferred entry door on marking.
+    /// Forwarded to each room cell â auto-open an inferred entry door on marking.
     var inferDoors: Bool = false
+    /// "Default to NonDescript" (T-206) — left-click marks unmarked rooms empty, not push-block.
+    var preferNonDescript: Bool = false
     /// When set, overlays this vanilla quest's footprint for this dungeon (FQ/SQ).
     var outlineQuest: VanillaQuest? = nil
 
-    /// Cell size (T-127 — trimmed ~12% from the original 52×36×16 so the dungeon
+    /// Cell size (T-127 â trimmed ~12% from the original 52Ã36Ã16 so the dungeon
     /// map + blockers + notes fit side-by-side at a narrower window; the map's zoom
     /// control grows it back for detail). The `gap` is the door channel between
     /// rooms; doors render there in D3.
@@ -369,14 +372,14 @@ struct DungeonRoomGridView: View {
     private static let hDoorLen: CGFloat = 20
     private static let vDoorLen: CGFloat = 25
 
-    /// Which grid row the pointer is over (nil = not hovering) — drives the
+    /// Which grid row the pointer is over (nil = not hovering) â drives the
     /// row-locator widget in the info strip (T-078). Owned by `DungeonMapView`
     /// so the grid (hover source) and the info-strip widget share it.
     @Binding var hoveredRow: Int?
-    /// The GRAB tool state (T-083) — when armed, cells route clicks/hover to it
+    /// The GRAB tool state (T-083) â when armed, cells route clicks/hover to it
     /// and paint the pick-up / drop preview.
     var grab: DungeonGrabController
-    /// Shared focus state (T-134) — the keyboard cursor follows hover here and is
+    /// Shared focus state (T-134) â the keyboard cursor follows hover here and is
     /// drawn on the cursor room when the cursor is on the dungeon grid.
     @Bindable var focus: TrackerFocusState
 
@@ -407,7 +410,7 @@ struct DungeonRoomGridView: View {
     }
 
     /// Rooms and the door segments in the gaps between them, absolutely placed in
-    /// one coordinate system (D3) — doors need to live in the gaps, which a plain
+    /// one coordinate system (D3) â doors need to live in the gaps, which a plain
     /// stack layout can't address.
     private var roomsAndDoors: some View {
         ZStack(alignment: .topLeading) {
@@ -416,6 +419,7 @@ struct DungeonRoomGridView: View {
                     RoomCellView(map: map, col: col, row: row,
                                  width: Self.cellW, height: Self.cellH,
                                  pitchX: Self.pitchX, pitchY: Self.pitchY, inferDoors: inferDoors,
+                                 preferNonDescript: preferNonDescript,
                                  grab: grab,
                                  onHover: { hovering in
                                      if hovering {
@@ -431,7 +435,7 @@ struct DungeonRoomGridView: View {
                                  },
                                  onPick: { kind in
                                      // Present without the popover's fade/expand animation so it
-                                     // snaps in immediately (T-145) — the animation is the bulk of
+                                     // snaps in immediately (T-145) â the animation is the bulk of
                                      // the perceived open delay.
                                      presentPopoverWithoutAnimation {
                                          activePicker = RoomPickerRequest(col: col, row: row, kind: kind)
@@ -440,7 +444,7 @@ struct DungeonRoomGridView: View {
                         .offset(x: CGFloat(col) * Self.pitchX, y: CGFloat(row) * Self.pitchY)
                 }
             }
-            // Horizontal-axis doors (vertical walls) — between columns i and i+1.
+            // Horizontal-axis doors (vertical walls) â between columns i and i+1.
             ForEach(0..<(DungeonRoomMap.cols - 1), id: \.self) { i in
                 ForEach(0..<DungeonRoomMap.rows, id: \.self) { j in
                     DungeonDoorView(map: map, axis: .horizontal, col: i, row: j,
@@ -450,7 +454,7 @@ struct DungeonRoomGridView: View {
                                 y: CGFloat(j) * Self.pitchY + (Self.cellH - Self.hDoorLen) / 2)
                 }
             }
-            // Vertical-axis doors (horizontal walls) — between rows j and j+1.
+            // Vertical-axis doors (horizontal walls) â between rows j and j+1.
             ForEach(0..<DungeonRoomMap.cols, id: \.self) { i in
                 ForEach(0..<(DungeonRoomMap.rows - 1), id: \.self) { j in
                     DungeonDoorView(map: map, axis: .vertical, col: i, row: j,
@@ -467,14 +471,14 @@ struct DungeonRoomGridView: View {
             }
             // The keyboard/hover cursor ring (T-134) as a single isolated view (T-179):
             // it reads `focus.dungeonCursor`, so that observable dependency lives here,
-            // NOT inside the 64-cell ForEach — moving the cursor re-evaluates only this
+            // NOT inside the 64-cell ForEach â moving the cursor re-evaluates only this
             // tiny overlay instead of rebuilding the whole grid every mouse-move.
             DungeonCursorRing(focus: focus, cellW: Self.cellW, cellH: Self.cellH,
                               pitchX: Self.pitchX, pitchY: Self.pitchY)
         }
         .frame(width: Self.roomsW, height: Self.roomsH, alignment: .topLeading)
         // Three grid-level popovers (T-145), each anchored to whichever cell is
-        // active — replacing 3-per-cell (192 total). Same behaviour: right =
+        // active â replacing 3-per-cell (192 total). Same behaviour: right =
         // room type, shift+left/scroll-up = monster (stays open to add a 2nd),
         // shift+right/scroll-down = floor drop.
         .popover(isPresented: pickerPresented(.roomType),
@@ -525,7 +529,7 @@ struct DungeonRoomGridView: View {
                       width: Self.cellW, height: Self.cellH)
     }
 
-    /// The header letters spread one-per-column (`LEVEL-1` over columns 0…6), so
+    /// The header letters spread one-per-column (`LEVEL-1` over columns 0â¦6), so
     /// the text lines up with the room columns as in the reference.
     private var headerRow: some View {
         let chars = Array(headerText)
@@ -544,7 +548,7 @@ struct DungeonRoomGridView: View {
 
 /// The cyan cursor ring on the dungeon grid's active cell (T-134), isolated into its
 /// own view (T-179) so it's the *only* thing that re-evaluates when the cursor moves.
-/// It reads `focus.dungeonCursor` — keeping that observable read out of the 64-cell
+/// It reads `focus.dungeonCursor` â keeping that observable read out of the 64-cell
 /// grid body, so a mouse-move no longer rebuilds the whole grid. Positioned in the
 /// grid's top-leading coordinate space by the same pitch as the cells.
 private struct DungeonCursorRing: View {
@@ -577,21 +581,22 @@ private struct RoomCellView: View {
     let row: Int
     let width: CGFloat
     let height: CGFloat
-    /// Column/row pitch (cell + gap) — lets a drag map the cursor to a room.
+    /// Column/row pitch (cell + gap) â lets a drag map the cursor to a room.
     let pitchX: CGFloat
     let pitchY: CGFloat
     /// Door inference (T-019.12): auto-open the inferred entry door when this room
     /// is newly marked. Gated by the `doDoorInference` option upstream.
     var inferDoors: Bool = false
-    /// The GRAB tool state (T-083) — routes clicks and paints the preview.
+    var preferNonDescript: Bool = false
+    /// The GRAB tool state (T-083) â routes clicks and paints the preview.
     var grab: DungeonGrabController
     /// Reports hover enter/leave for the row-locator (T-078).
     var onHover: (Bool) -> Void = { _ in }
-    /// Requests a detail picker for this cell — the grid owns the (shared) popover
+    /// Requests a detail picker for this cell â the grid owns the (shared) popover
     /// state and anchors it here (T-145).
     var onPick: (RoomPickerKind) -> Void = { _ in }
 
-    /// Dim factor for a "handled" detail (completed monster / collected drop) —
+    /// Dim factor for a "handled" detail (completed monster / collected drop) â
     /// the reference's `DARKEN = 0.5` black overlay, as an opacity here.
     private static let dim: Double = 0.4
     private static let detailIcon: CGFloat = 20
@@ -657,7 +662,7 @@ private struct RoomCellView: View {
                     .allowsHitTesting(false)
             }
         }
-        // The "circled" ring — a yellow dashed ellipse overhanging the cell
+        // The "circled" ring â a yellow dashed ellipse overhanging the cell
         // (reference `Brushes.Yellow`, dashed, slightly larger than the room).
         .overlay {
             if map.isCircled(col: col, row: row) {
@@ -686,19 +691,19 @@ private struct RoomCellView: View {
                 // up/Shift-left = monster, down/Shift-right = floor drop.
                 case .shiftLeft, .scrollUp: onPick(.monster)
                 case .shiftRight, .scrollDown: onPick(.floorDrop)
-                // ⌥-click stands in for the reference middle-click (no middle button).
+                // â¥-click stands in for the reference middle-click (no middle button).
                 case .middle, .optionLeft: map.middleClick(col: col, row: row)
                 }
             },
-            // Drag-paint (T-072): left over off-map → unmarked, right over unmarked
-            // → off-map, ⌥/middle over unmarked → default. Clicks fire on release.
+            // Drag-paint (T-072): left over off-map â unmarked, right over unmarked
+            // â off-map, â¥/middle over unmarked â default. Clicks fire on release.
             // Disabled in grab mode (a drag there would fight the grab click).
             dragContext: .init(col: col, row: row, pitchX: pitchX, pitchY: pitchY),
             onDragPaint: { button, c, r in if !grab.isGrabMode { map.dragPaint(button, col: c, row: r) } }
         ))
-        // The detail-picker popovers live at the grid level now (T-145) — the cell
+        // The detail-picker popovers live at the grid level now (T-145) â the cell
         // only requests them via `onPick`.
-        // VoiceOver (docs/ux.md § Accessibility). Default action = the primary
+        // VoiceOver (docs/ux.md Â§ Accessibility). Default action = the primary
         // left-click; named actions open each detail picker.
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Room column \(col + 1), row \(row + 1)")
@@ -715,7 +720,9 @@ private struct RoomCellView: View {
     /// Shared by the mouse gesture and the VoiceOver default action.
     private func markWithInference() {
         let wasUnmarked = room.roomType.isNotMarked
-        map.leftClick(col: col, row: row)
+        // "Default to NonDescript" (T-206): the left-click accelerator marks an unmarked
+        // room as NonDescript (empty) instead of MaybePushBlock when the option is on.
+        map.leftClick(col: col, row: row, defaultRoom: preferNonDescript ? .nonDescript : .maybePushBlock)
         if inferDoors, wasUnmarked { map.inferEntryDoor(col: col, row: row) }
     }
 
@@ -732,14 +739,14 @@ private struct RoomCellView: View {
     }
 }
 
-/// The room-type picker — the reference's exact 7×5 grid order
+/// The room-type picker â the reference's exact 7Ã5 grid order
 /// (`DungeonPopups.fs:254-261`). `unmarked` (the empty room / "clear") sits in
 /// the grid; the trailing cell is empty padding.
 private struct RoomTypePicker: View {
     let current: RoomType
     let onPick: (RoomType) -> Void
 
-    /// The reference `grid` array, row-major (7 wide × 5 tall). `nil` = the
+    /// The reference `grid` array, row-major (7 wide Ã 5 tall). `nil` = the
     /// trailing padding cell.
     private static let order: [RoomType?] = [
         .doubleMoat, .circleMoat, .lifeOrMoney, .bombUpgrade, .hungryGoriyaMeatBlock, .startEnterFromE, .gannon,
@@ -782,7 +789,7 @@ private struct RoomTypePicker: View {
     }
 }
 
-/// The monster-detail picker (Shift+left-click) — the reference's 8×4 grid order
+/// The monster-detail picker (Shift+left-click) â the reference's 8Ã4 grid order
 /// (`MonsterDetail.All()`, `DungeonRoomState.fs:164-167`); `unmarked` (clear) is
 /// the last cell. Supports **up to two** monsters (T-116): tapping toggles a
 /// monster into the room's pair; the popover stays open so a second can be added,
@@ -848,7 +855,7 @@ private struct MonsterPicker: View {
     }
 }
 
-/// The floor-drop picker (Shift+right-click) — the reference's 3×3 grid order
+/// The floor-drop picker (Shift+right-click) â the reference's 3Ã3 grid order
 /// (`FloorDropDetail.All()`, `DungeonRoomState.fs:221-222`); `unmarked` (clear)
 /// is the last cell.
 private struct FloorDropPicker: View {

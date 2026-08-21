@@ -36,7 +36,6 @@ struct TrackerOptionsTests {
         #expect(options.levelPrefix == "LEVEL-")
         options.renameLevelsEnabled = true
         #expect(options.levelPrefix == "area-")
-        #expect(options.showBasementInfo == true)
         #expect(options.doDoorInference == true)   // helpful default (T-156)
         #expect(options.bookForHelpfulHints == false)
         #expect(options.leftDragAutoInverts == false)
@@ -53,10 +52,7 @@ struct TrackerOptionsTests {
 
         // Other
         #expect(options.animateTileChanges == true)
-        #expect(options.animateShopHighlights == true)
         #expect(options.saveOnCompletion == false)
-        #expect(options.snoopSeedAndFlags == false)
-        #expect(options.displaySeedAndFlags == true)
         #expect(options.listenForSpeech == false)
         #expect(options.confirmationSound == true)
         #expect(options.useDetailedAppIcon == false)
