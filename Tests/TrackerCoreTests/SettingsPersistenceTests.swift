@@ -53,17 +53,33 @@ struct SettingsPersistenceTests {
         #expect(second.hiddenOverworldTiles[.sword2] == false)   // default kept
     }
 
-    @Test("without saveSettings, nothing is written")
-    func noSaveNoPersist() {
+    @Test("a setting change persists immediately, without saveSettings (T-207)")
+    func settingChangePersistsImmediately() {
+        // T-207: settings now persist the moment they change (via each bool's didSet), not
+        // only at quest-start `saveSettings()` — so a preference toggled on the startup/settings
+        // screen survives a relaunch even without starting a run.
         let (s, cleanup) = makeStore(); defer { cleanup() }
         let first = TrackerOptions()
         first.enableSettingsPersistence(store: s)
-        first.renameLevelsEnabled = true      // changed but not committed (default false)
-        // no saveSettings()
+        first.renameLevelsEnabled = true      // changed, NOT committed via saveSettings()
 
         let second = TrackerOptions()
         second.enableSettingsPersistence(store: s)
-        #expect(!second.renameLevelsEnabled)  // stays default
+        #expect(second.renameLevelsEnabled)   // persisted immediately
+    }
+
+    @Test("confirmation-sound volumes persist immediately (T-208)")
+    func confirmationVolumesPersist() {
+        let (s, cleanup) = makeStore(); defer { cleanup() }
+        let first = TrackerOptions()
+        first.enableSettingsPersistence(store: s)
+        first.voiceConfirmationVolume = 40    // changed via slider didSet, no saveSettings()
+        first.inputConfirmationVolume = 15
+
+        let second = TrackerOptions()
+        second.enableSettingsPersistence(store: s)
+        #expect(second.voiceConfirmationVolume == 40)
+        #expect(second.inputConfirmationVolume == 15)
     }
 
     @Test("plain TrackerOptions never touches the store")

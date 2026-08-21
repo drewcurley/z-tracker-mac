@@ -136,9 +136,16 @@ enum GameSave {
     /// is finished) → allow the quit and clear the resume session. Otherwise the
     /// standard Save / Don't Save / Cancel: Save flushes `last-session.json`, Don't Save
     /// discards it (choice A), Cancel aborts the quit. Returns whether to proceed.
-    static func confirmQuitSaving(model: TrackerModel, timer: TrackerTimer) -> Bool {
+    static func confirmQuitSaving(model: TrackerModel, timer: TrackerTimer,
+                                  options: TrackerOptions? = nil) -> Bool {
         guard model.quest != nil, !model.playerProgress.hasRescuedZelda else {
             clearLastSession()       // finished or not started → no run to resume
+            return true
+        }
+        // "Auto-save and quit" (T-207): skip the dialog entirely — autosave the run and quit.
+        // (Resume on next launch still offers it.)
+        if options?.autoSaveOnQuit == true {
+            autosave(model: model, timer: timer)
             return true
         }
         let alert = NSAlert()

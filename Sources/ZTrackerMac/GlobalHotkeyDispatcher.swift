@@ -62,7 +62,10 @@ final class GlobalHotkeyDispatcher {
         // keeps firing, so an ordinary letter starts a note instead of marking.
         if let selectorID = hotkeys.selectorID(boundTo: chord, in: .global) {
             if !focus.notesParked || Self.isNavigation(selectorID) {
-                return perform(selectorID)
+                let ok = perform(selectorID)
+                // Tick on a performed *edit* — not pure cursor navigation (T-208).
+                if ok, !Self.isNavigation(selectorID) { ConfirmationSound.input(options) }
+                return ok
             }
         }
         // Parked on Notes: the first alphanumeric starts typing. The field isn't first
@@ -77,7 +80,7 @@ final class GlobalHotkeyDispatcher {
         // (T-168), so `HintZone_*` can reuse letters bound in the grid contexts.
         if let target = focus.hoveredHintTarget,
            let selectorID = hotkeys.selectorID(boundTo: chord, in: .hintZones) {
-            return performHintZone(selectorID, target: target)
+            return ticked(performHintZone(selectorID, target: target))
         }
         // Region keys act on whatever the mouse is over, falling back to the keyboard
         // cursor's region (T-168 — see `TrackerFocusState.activeRegion`).
@@ -85,23 +88,23 @@ final class GlobalHotkeyDispatcher {
         switch region {
         case .overworld:
             if let selectorID = hotkeys.selectorID(boundTo: chord, in: .overworld) {
-                return performOverworld(selectorID)
+                return ticked(performOverworld(selectorID))
             }
         case .dungeonMap:
             if let selectorID = hotkeys.selectorID(boundTo: chord, in: .dungeonRoom) {
-                return performDungeonRoom(selectorID)
+                return ticked(performDungeonRoom(selectorID))
             }
         case .items:
             if let selectorID = hotkeys.selectorID(boundTo: chord, in: .items) {
-                return performItems(selectorID)
+                return ticked(performItems(selectorID))
             }
         case .blockers:
             if let selectorID = hotkeys.selectorID(boundTo: chord, in: .blockers) {
-                return performBlockers(selectorID)
+                return ticked(performBlockers(selectorID))
             }
         case .dungeonItem:
             if let selectorID = hotkeys.selectorID(boundTo: chord, in: .items) {
-                return performDungeonItem(selectorID)
+                return ticked(performDungeonItem(selectorID))
             }
         case .notes:
             // Notes has no marks. In practice the field is the first responder here,
@@ -110,6 +113,13 @@ final class GlobalHotkeyDispatcher {
             break
         }
         return false
+    }
+
+    /// Play the mouse/keyboard confirmation tick (T-208) when a region hotkey performed an
+    /// edit, then pass the result through so the monitor still consumes the key.
+    private func ticked(_ performed: Bool) -> Bool {
+        if performed { ConfirmationSound.input(options) }
+        return performed
     }
 
     /// Cursor-navigation globals, which stay live even while parked on Notes so you

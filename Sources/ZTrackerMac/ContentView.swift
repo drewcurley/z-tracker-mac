@@ -64,6 +64,8 @@ struct ContentView: View {
         // (coreaudiod) now, on the startup screen, so the first real spoken
         // reminder mid-game is instant. The synth speaks async — no UI hang.
         .task { SpeechEngine.warmUp(preferredVoiceIdentifier: options.preferredVoiceIdentifier) }
+        // Prime the confirmation sounds too (T-208) — the reference notes the first play lags.
+        .task { ConfirmationSound.warmUp() }
         // Apply the chosen dock icon at launch and whenever the setting changes (T-178).
         .onAppear { AppIconController.apply(useDetailed: options.useDetailedAppIcon) }
         .onChange(of: options.useDetailedAppIcon) { _, v in AppIconController.apply(useDetailed: v) }
@@ -88,7 +90,7 @@ struct ContentView: View {
             // run first, then offer to keep the captured render-perf log. Either canceling
             // aborts the quit.
             AppDelegate.confirmQuit = {
-                GameSave.confirmQuitSaving(model: model, timer: timer) && PerfLog.confirmSaveOnExit()
+                GameSave.confirmQuitSaving(model: model, timer: timer, options: options) && PerfLog.confirmSaveOnExit()
             }
             // One-time startup resume check; the dialog below presents it.
             if !resumeChecked {

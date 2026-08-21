@@ -105,29 +105,29 @@ public final class TrackerOptions {
     // MARK: Overworld settings (TrackerModelOptions.fs Overworld module)
 
     /// `Overworld.DrawRoutes`, default `true`.
-    public var drawRoutes: Bool
+    public var drawRoutes: Bool { didSet { persistSettingsBoolsIfNeeded() } }
     /// `Overworld.RoutesCanScreenScroll`, default `false`.
-    public var showScreenScrolls: Bool
+    public var showScreenScrolls: Bool { didSet { persistSettingsBoolsIfNeeded() } }
     /// `Overworld.HighlightNearby`, default `true`.
-    public var highlightNearby: Bool
+    public var highlightNearby: Bool { didSet { persistSettingsBoolsIfNeeded() } }
     /// `Overworld.ShowMagnifier`, default `true`.
-    public var showMagnifier: Bool
+    public var showMagnifier: Bool { didSet { persistSettingsBoolsIfNeeded() } }
     /// `Overworld.ShopsFirst`, default `true`.
-    public var shopsBeforeDungeons: Bool
+    public var shopsBeforeDungeons: Bool { didSet { persistSettingsBoolsIfNeeded() } }
     /// Use the **graphical** overworld tile chooser — a grid of icons — instead of the
     /// text menu (T-185, beyond the reference; the Windows app is graphical-only). A
     /// user preference: graphics are faster to recognize than reading menu text.
     /// Default **true** (T-205 — the graphical icon grid; the Windows app is graphical-only
     /// and graphics read faster). When on, scrolling up on a tile opens the enemy picker.
     /// (Existing installs keep their saved choice; this default only applies to fresh installs.)
-    public var graphicalOverworldChooser: Bool
+    public var graphicalOverworldChooser: Bool { didSet { persistSettingsBoolsIfNeeded() } }
 
     // MARK: Dungeon settings (top-level fields in TrackerModelOptions.fs)
 
     /// Rename the dungeon column label (T-171, generalizing the reference's
     /// `BOARDInsteadOfLEVEL`): when on, `customLevelPrefix` replaces the default
     /// `LEVEL-` word, so dungeons read `area-1`, `DUNGEON1`, `BOARD-1`, etc.
-    public var renameLevelsEnabled: Bool
+    public var renameLevelsEnabled: Bool { didSet { persistSettingsBoolsIfNeeded() } }
     /// The custom dungeon label **prefix** — everything before the slot digit, so it
     /// carries its own separator (`"area-"` → `area-1`, `"DUNGEON"` → `DUNGEON1`).
     /// Capped to 7 characters (prefix + 1 digit fills the 8-cell header). Only used
@@ -145,14 +145,14 @@ public final class TrackerOptions {
     /// `DoDoorInference` — default **true** (T-156): auto-open the inferred entry
     /// door when a room is newly marked. It's a helpful default (and what makes
     /// voice "mark, move, mark" draw the connecting doors); toggle off in Settings.
-    public var doDoorInference: Bool
+    public var doDoorInference: Bool { didSet { persistSettingsBoolsIfNeeded() } }
     /// `BookForHelpfulHints`, default `false`.
-    public var bookForHelpfulHints: Bool
+    public var bookForHelpfulHints: Bool { didSet { persistSettingsBoolsIfNeeded() } }
     /// `LeftClickDragAutoInverts`, default `false`.
-    public var leftDragAutoInverts: Bool
+    public var leftDragAutoInverts: Bool { didSet { persistSettingsBoolsIfNeeded() } }
     /// `DefaultRoomPreferNonDescriptToMaybePushBlock`, default `false`.
     /// Labeled "Default to NonDescript" on-screen (`OptionsMenu.fs:60`).
-    public var defaultToNonDescript: Bool
+    public var defaultToNonDescript: Bool { didSet { persistSettingsBoolsIfNeeded() } }
     /// The app's color theme (T-187, beyond the reference): dark (default), light, or
     /// follow the OS. Replaces the reference's unimplemented "Dungeon 'sunglasses'"
     /// toggle. Drives `NSApp.appearance`. Persists **immediately** on change (not just at
@@ -166,11 +166,11 @@ public final class TrackerOptions {
     public var hiddenOverworldTiles: [OverworldHiddenTileKind: Bool]
     /// `OverworldTilesToHide.Shop`, default `false`. Labeled "Hide
     /// no-longer-relevant shop items" in the "More settings…" popup.
-    public var hideNoLongerRelevantShopItems: Bool
+    public var hideNoLongerRelevantShopItems: Bool { didSet { persistSettingsBoolsIfNeeded() } }
     /// `OverworldTilesToHide.AlwaysHideMeatShops`, default `false`. Only
     /// meaningful when `hideNoLongerRelevantShopItems` is on
     /// (`OptionsMenu.fs:179-189`).
-    public var alwaysHideMeatShops: Bool
+    public var alwaysHideMeatShops: Bool { didSet { persistSettingsBoolsIfNeeded() } }
 
     // MARK: Reminders
 
@@ -189,35 +189,48 @@ public final class TrackerOptions {
     // MARK: Other
 
     /// `AnimateTileChanges`, default `true`.
-    public var animateTileChanges: Bool
+    public var animateTileChanges: Bool { didSet { persistSettingsBoolsIfNeeded() } }
     /// `SaveOnCompletion`, default `false`.
-    public var saveOnCompletion: Bool
+    public var saveOnCompletion: Bool { didSet { persistSettingsBoolsIfNeeded() } }
     /// `ListenForSpeech`, default `false`. Startup-screen-only per the
     /// reference app (docs/domain.md § 4.1) — this project carries that
     /// constraint forward by only exposing it here, not in a later settings
     /// surface (not yet enforced anywhere else, since no other surface exists).
-    public var listenForSpeech: Bool
-    /// `PlaySoundWhenUseSpeech`, default `true`. Labeled "Confirmation sound"
-    /// on-screen.
-    public var confirmationSound: Bool
+    public var listenForSpeech: Bool { didSet { persistSettingsBoolsIfNeeded() } }
+    /// Play a short confirmation chime when a **voice** command is recognized (T-208, the
+    /// reference's `PlaySoundWhenUseSpeech`, default `true`) — you can't see the mic register,
+    /// so the audible cue confirms the command landed.
+    public var voiceConfirmationSound: Bool { didSet { persistSettingsBoolsIfNeeded() } }
+    /// Play a short tick when a tracker edit is made by **mouse or keyboard** (T-208,
+    /// default `false`) — opt-in, since the map already gives visual feedback and a tick on
+    /// every click can be noisy.
+    public var inputConfirmationSound: Bool { didSet { persistSettingsBoolsIfNeeded() } }
+    /// Playback volume (0…100) for the **voice** confirmation cue (T-208), independent of the
+    /// input tick and of the reminder volume. Persists immediately.
+    public var voiceConfirmationVolume: Int { didSet { persistConfirmationVolumesIfNeeded() } }
+    /// Playback volume (0…100) for the **input** (mouse/keyboard) confirmation tick (T-208).
+    public var inputConfirmationVolume: Int { didSet { persistConfirmationVolumesIfNeeded() } }
     /// Use the alternate **detailed** (original, more complex) app icon instead of the
     /// default simple one (T-178, default **false**). The simple icon is the bundle
     /// icon; this swaps the *running* app's dock icon to the detailed design for people
     /// who prefer it (when closed, the Dock shows the default simple icon).
-    public var useDetailedAppIcon: Bool
+    public var useDetailedAppIcon: Bool { didSet { persistSettingsBoolsIfNeeded() } }
     /// Show the top **Info** panel (Spot Summary / Hint Decoder / overlay toggles /
     /// reset buttons) — T-178, default **true**. Off for players who don't use it and
     /// want a tighter layout (and a cleaner broadcast). Global: applies to the main
     /// window and the broadcast mirror alike.
-    public var showInfoPanel: Bool
+    public var showInfoPanel: Bool { didSet { persistSettingsBoolsIfNeeded() } }
     /// `ShowMouseMagnifierWindow`, default `false`.
-    public var showMouseMagnifierWindow: Bool
+    public var showMouseMagnifierWindow: Bool { didSet { persistSettingsBoolsIfNeeded() } }
     /// `HideTimer`, default `false`. Labeled "Hide timer" on-screen
     /// (`OptionsMenu.fs:460-466`).
-    public var hideTimer: Bool
+    public var hideTimer: Bool { didSet { persistSettingsBoolsIfNeeded() } }
     /// Warn before quitting while the run timer is still running (T-109, beyond
     /// the reference). Default **true**.
-    public var warnOnCloseWhileTimerRunning: Bool
+    public var warnOnCloseWhileTimerRunning: Bool { didSet { persistSettingsBoolsIfNeeded() } }
+    /// Skip the Save/Don't-Save/Cancel prompt on quit — autosave the run and quit (T-207).
+    /// Default **false** (keep the prompt).
+    public var autoSaveOnQuit: Bool { didSet { persistSettingsBoolsIfNeeded() } }
     /// When a saved session is reopened (T-192), how the run timer resumes:
     /// - `true` (default): count real wall-clock time since the run first began,
     ///   including the gap while the app was closed.
@@ -227,14 +240,14 @@ public final class TrackerOptions {
     public var timerRealTimeSinceStart: Bool { didSet { persistSettingsBoolsIfNeeded() } }
     /// Show a small live FPS/main-thread-responsiveness readout (dev diagnostic,
     /// beyond the reference). Default **false**.
-    public var showFPS: Bool
+    public var showFPS: Bool { didSet { persistSettingsBoolsIfNeeded() } }
     /// Log render-path perf to the console for hover diagnosis (T-179). Session-only
     /// (not persisted — a debugging switch you don't want stuck on). Default **false**.
     public var logRenderPerf: Bool
     /// On launch, check GitHub for a newer release and show a dismissible notice
     /// (T-174, beyond the reference). Default **true**; it's an unauthenticated GET
     /// to the project's releases and sends no data, but stays user-toggleable.
-    public var checkForUpdatesOnLaunch: Bool
+    public var checkForUpdatesOnLaunch: Bool { didSet { persistSettingsBoolsIfNeeded() } }
 
     public init(
         drawRoutes: Bool = true,
@@ -260,12 +273,16 @@ public final class TrackerOptions {
         animateTileChanges: Bool = true,
         saveOnCompletion: Bool = false,
         listenForSpeech: Bool = false,
-        confirmationSound: Bool = true,
+        voiceConfirmationSound: Bool = true,
+        inputConfirmationSound: Bool = false,
+        voiceConfirmationVolume: Int = 100,
+        inputConfirmationVolume: Int = 100,
         useDetailedAppIcon: Bool = false,
         showInfoPanel: Bool = true,
         showMouseMagnifierWindow: Bool = false,
         hideTimer: Bool = false,
         warnOnCloseWhileTimerRunning: Bool = true,
+        autoSaveOnQuit: Bool = false,
         timerRealTimeSinceStart: Bool = true,
         showFPS: Bool = false,
         checkForUpdatesOnLaunch: Bool = true,
@@ -294,12 +311,16 @@ public final class TrackerOptions {
         self.animateTileChanges = animateTileChanges
         self.saveOnCompletion = saveOnCompletion
         self.listenForSpeech = listenForSpeech
-        self.confirmationSound = confirmationSound
+        self.voiceConfirmationSound = voiceConfirmationSound
+        self.inputConfirmationSound = inputConfirmationSound
+        self.voiceConfirmationVolume = voiceConfirmationVolume
+        self.inputConfirmationVolume = inputConfirmationVolume
         self.useDetailedAppIcon = useDetailedAppIcon
         self.showInfoPanel = showInfoPanel
         self.showMouseMagnifierWindow = showMouseMagnifierWindow
         self.hideTimer = hideTimer
         self.warnOnCloseWhileTimerRunning = warnOnCloseWhileTimerRunning
+        self.autoSaveOnQuit = autoSaveOnQuit
         self.timerRealTimeSinceStart = timerRealTimeSinceStart
         self.showFPS = showFPS
         self.checkForUpdatesOnLaunch = checkForUpdatesOnLaunch
@@ -426,6 +447,8 @@ public final class TrackerOptions {
     private static let hiddenTilesKey = "ztracker.settings.hiddenTiles"
     private static let customLevelPrefixKey = "ztracker.settings.customLevelPrefix"
     private static let appThemeKey = "ztracker.settings.appTheme"
+    private static let voiceConfirmVolumeKey = "ztracker.settings.voiceConfirmVolume"
+    private static let inputConfirmVolumeKey = "ztracker.settings.inputConfirmVolume"
 
     /// Every persisted Bool setting, keyed by a stable name → its storage. This
     /// is the single source of truth for what persists — add a setting here and
@@ -450,12 +473,14 @@ public final class TrackerOptions {
         "animateTileChanges": \.animateTileChanges,
         "saveOnCompletion": \.saveOnCompletion,
         "listenForSpeech": \.listenForSpeech,
-        "confirmationSound": \.confirmationSound,
+        "voiceConfirmationSound": \.voiceConfirmationSound,
+        "inputConfirmationSound": \.inputConfirmationSound,
         "useDetailedAppIcon": \.useDetailedAppIcon,
         "showInfoPanel": \.showInfoPanel,
         "showMouseMagnifierWindow": \.showMouseMagnifierWindow,
         "hideTimer": \.hideTimer,
         "warnOnCloseWhileTimerRunning": \.warnOnCloseWhileTimerRunning,
+        "autoSaveOnQuit": \.autoSaveOnQuit,
         "timerRealTimeSinceStart": \.timerRealTimeSinceStart,
         "showFPS": \.showFPS,
         "checkForUpdatesOnLaunch": \.checkForUpdatesOnLaunch,
@@ -483,6 +508,12 @@ public final class TrackerOptions {
         if let raw = store.string(forKey: Self.appThemeKey), let theme = AppTheme(rawValue: raw) {
             appTheme = theme
         }
+        if store.object(forKey: Self.voiceConfirmVolumeKey) != nil {
+            voiceConfirmationVolume = max(0, min(100, store.integer(forKey: Self.voiceConfirmVolumeKey)))
+        }
+        if store.object(forKey: Self.inputConfirmVolumeKey) != nil {
+            inputConfirmationVolume = max(0, min(100, store.integer(forKey: Self.inputConfirmVolumeKey)))
+        }
     }
 
     /// Write the current startup settings to the store (no-op if persistence is
@@ -496,6 +527,8 @@ public final class TrackerOptions {
         store.set(Self.encodeHiddenTiles(hiddenOverworldTiles), forKey: Self.hiddenTilesKey)
         store.set(customLevelPrefix, forKey: Self.customLevelPrefixKey)
         store.set(appTheme.rawValue, forKey: Self.appThemeKey)
+        store.set(voiceConfirmationVolume, forKey: Self.voiceConfirmVolumeKey)
+        store.set(inputConfirmationVolume, forKey: Self.inputConfirmVolumeKey)
     }
 
     /// Persist the theme the moment it changes (T-188), so switching it in the mid-game
@@ -504,6 +537,15 @@ public final class TrackerOptions {
     private func persistAppThemeIfNeeded() {
         guard let store = settingsStore, !isApplyingSettings else { return }
         store.set(appTheme.rawValue, forKey: Self.appThemeKey)
+    }
+
+    /// Persist the confirmation-sound volumes the moment a slider moves (T-208), so an
+    /// adjustment in the mid-game Settings window survives a quit. No-op if persistence is off
+    /// or a snapshot is loading.
+    private func persistConfirmationVolumesIfNeeded() {
+        guard let store = settingsStore, !isApplyingSettings else { return }
+        store.set(voiceConfirmationVolume, forKey: Self.voiceConfirmVolumeKey)
+        store.set(inputConfirmationVolume, forKey: Self.inputConfirmVolumeKey)
     }
 
     /// Rewrite the whole persisted-Bool dictionary immediately (T-192), so a setting

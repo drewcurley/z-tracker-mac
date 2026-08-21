@@ -51,6 +51,7 @@ struct OverworldSectionView: View {
             options: options,
             focus: focus,
             playerState: model.playerComputedStateSummary,
+            haveBook: (model.playerComputedStateSummary.haveBookOrShield && model.isCurrentlyBook) || model.playerProgress.hasBoomBook,
             mapState: mapState,
             overlays: overlays,
             armosClaimed: model.dungeonTracker.armosBox.isDone,

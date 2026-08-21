@@ -181,7 +181,24 @@ struct SettingsPanelView: View {
             Toggle("Save on completion", isOn: Bindable(options).saveOnCompletion)
             Toggle("Listen for speech", isOn: Bindable(options).listenForSpeech)
                 .help("Start listening for voice commands automatically at launch (asks for mic permission the first time).")
-            Toggle("Confirmation sound", isOn: Bindable(options).confirmationSound)
+            Toggle("Voice confirmation sound", isOn: Bindable(options).voiceConfirmationSound)
+                .help("Play a short chime when a spoken command is recognized, so you know it landed.")
+            HStack {
+                Text("Volume").foregroundStyle(.secondary)
+                Slider(value: Bindable(options).voiceConfirmationVolume.doubleBinding, in: 0...100)
+                    .accessibilityLabel("Voice confirmation volume")
+            }
+            .padding(.leading, 18)
+            .disabled(!options.voiceConfirmationSound)
+            Toggle("Input confirmation sound", isOn: Bindable(options).inputConfirmationSound)
+                .help("Play a short tick when you make a tracker edit by mouse or keyboard.")
+            HStack {
+                Text("Volume").foregroundStyle(.secondary)
+                Slider(value: Bindable(options).inputConfirmationVolume.doubleBinding, in: 0...100)
+                    .accessibilityLabel("Input confirmation volume")
+            }
+            .padding(.leading, 18)
+            .disabled(!options.inputConfirmationSound)
 
             // Show/hide the top Info panel (T-178) — for players who don't use it and
             // want a tighter layout / cleaner broadcast. The broadcast mirror window
@@ -194,6 +211,8 @@ struct SettingsPanelView: View {
             // Toggle("Mouse magnifier window", isOn: Bindable(options).showMouseMagnifierWindow)
             Toggle("Hide timer", isOn: Bindable(options).hideTimer)
             Toggle("Warn when quitting while the timer is running", isOn: Bindable(options).warnOnCloseWhileTimerRunning)
+            Toggle("Auto-save and quit (skip the save prompt)", isOn: Bindable(options).autoSaveOnQuit)
+                .help("On quit, silently autosave the run and close — no Save/Don't-Save dialog. Resume on next launch still works.")
 
             // How the timer resumes when a saved session is reopened (T-192). A reopened
             // run always resumes (crash recovery); this only picks the elapsed basis.

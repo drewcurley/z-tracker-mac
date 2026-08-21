@@ -25,6 +25,8 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-208](./T-208.md) | Confirmation sounds — voice + input (original Windows sound files), per-sound volume | frontend-engineer | T-206 | feat/shop-hiding-and-confirmation-sounds | — | docs/reviews/feat-shop-hiding-and-confirmation-sounds/final.md |
+| [T-207](./T-207.md) | Animate tile changes + overworld shop per-item hiding + settings persistence/auto-save + hint hover | frontend-engineer | T-206 | feat/shop-hiding-and-confirmation-sounds | — | docs/reviews/feat-shop-hiding-and-confirmation-sounds/final.md |
 | [T-206](./T-206.md) | Settings screen audit — nix dead options, hide back-burnered, wire buildable | frontend-engineer | — | chore/settings-audit | — | docs/reviews/chore-settings-audit/final.md |
 | [T-205](./T-205.md) | Overworld chooser UX — F16 coast-item picker, live hover label, graphical chooser on by default | frontend-engineer | T-185 | feat/overworld-chooser-ux | — | docs/reviews/feat-overworld-chooser-ux/final.md |
 | [T-204](./T-204.md) | Credit the Mac version to procnoviach in the app About/credits | frontend-engineer | T-172 | chore/credit-procnoviach | — | docs/reviews/chore-credit-procnoviach/final.md |

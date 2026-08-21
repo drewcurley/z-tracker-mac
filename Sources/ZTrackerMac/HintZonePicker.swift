@@ -60,13 +60,17 @@ struct HintZonePicker: View {
     /// Bound hotkeys, for the inline hotkey hint on each zone (T-197). Optional so previews
     /// and non-tracker use sites (which don't inject it) render without hints.
     @Environment(HotkeyConfig.self) private var hotkeys: HotkeyConfig?
+    /// The zone the pointer is currently over — drives the live header label (T-207), so the
+    /// name updates on hover instead of waiting for the slow tooltip. Falls back to the current
+    /// hint when nothing is hovered.
+    @State private var hoveredZone: HintZone?
 
     private let columns = Array(repeating: GridItem(.fixed(36), spacing: 4), count: 4)
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(title).font(.caption).bold()
-            Text(hint.displayName).font(.caption).foregroundStyle(.orange)
+            Text((hoveredZone ?? hint).displayName).font(.caption).foregroundStyle(.orange)
             Divider()
             LazyVGrid(columns: columns, spacing: 4) {
                 ForEach(HintZone.allCases, id: \.self) { zone in
@@ -92,6 +96,7 @@ struct HintZonePicker: View {
                             .fill(zone == hint ? Color.accentColor.opacity(0.5) : Theme.panelFill))
                     }
                     .buttonStyle(.plain)
+                    .onHover { hoveredZone = $0 ? zone : (hoveredZone == zone ? nil : hoveredZone) }
                     .help(zone.displayName + (hotkeys.map { HotkeyHints.suffix(for: zone, config: $0) } ?? ""))
                 }
             }

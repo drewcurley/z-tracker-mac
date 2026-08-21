@@ -41,6 +41,11 @@ struct OverworldMapView: View {
     /// placeholders.
     var playerState: PlayerComputedStateSummary
 
+    /// Whether the player has the Book of Magic (in any form: the normal book, or the
+    /// relocated "boomstick" book) — gates hiding a *book* shop item as no-longer-relevant
+    /// (T-207). Matches the reminder engine's `hasTheBook`.
+    var haveBook: Bool = false
+
     /// Live derived overworld map state (T-015.3). Supplies
     /// `owGettableLocations` for the true green/yellow/red highlight cascade
     /// (T-015.4), replacing T-011's flat single-color "reachable" overlay.
@@ -307,8 +312,15 @@ struct OverworldMapView: View {
                                 let used = tileIsCollected(mark: mark, column: column, row: row)
                                 let shopSecondItem = grid.shopSecondItem(column: column, row: row)
                                 let dungeonDone: Bool = { if case .dungeon(let n) = mark { return dungeonComplete(n) } else { return false } }()
-                                let kindHidden = OverworldTileHiding.isKindHidden(mark: mark, options: options, hasRescuedZelda: hasRescuedZelda)
-                                TileView(mark: mark, background: background, tileWidth: tileWidth, tileHeight: tileHeight, isAlwaysEmpty: isAlwaysEmpty, showsFairy: showsFairy, mirrored: mirrored, hideDungeonNumbers: hideDungeonNumbers, used: used, shopSecondItem: shopSecondItem, hideMarks: overlays?.isActive(.hideMarks) ?? false, dungeonComplete: dungeonDone, kindHidden: kindHidden, fog: fog, sharedBackground: customActive)
+                                let kindHidden = OverworldTileHiding.isKindHidden(mark: mark, options: options, hasRescuedZelda: hasRescuedZelda, playerState: playerState, shopSecondItem: shopSecondItem, haveBook: haveBook)
+                                // Per-item shop hiding (T-207): the owned/irrelevant items to drop from
+                                // this shop's icon (a combo bomb/ring shop with the ring owned shows just
+                                // the bomb). Empty once Zelda is rescued (the endgame reveal).
+                                let hiddenShopItems: Set<ShopKind> = {
+                                    guard !hasRescuedZelda, case .shop(let primary) = mark else { return [] }
+                                    return OverworldTileHiding.hiddenShopItems(primary: primary, second: shopSecondItem, options: options, playerState: playerState, haveBook: haveBook)
+                                }()
+                                TileView(mark: mark, background: background, tileWidth: tileWidth, tileHeight: tileHeight, isAlwaysEmpty: isAlwaysEmpty, showsFairy: showsFairy, mirrored: mirrored, hideDungeonNumbers: hideDungeonNumbers, used: used, shopSecondItem: shopSecondItem, hiddenShopItems: hiddenShopItems, hideMarks: overlays?.isActive(.hideMarks) ?? false, dungeonComplete: dungeonDone, kindHidden: kindHidden, fog: fog, sharedBackground: customActive, animateChanges: options.animateTileChanges)
                                     .overlay {
                                         if options.highlightNearby, !customActive, !isAlwaysEmpty,
                                            let isBold = highlights[OverworldScreenCoordinate(x: column, y: row)] {
@@ -323,9 +335,16 @@ struct OverworldMapView: View {
                                         // Top-section overlay toggles (T-035.2): open-caves /
                                         // money highlights, previewed on hover / locked on click.
                                         if !isAlwaysEmpty, let color = overlayHighlight(column: column, row: row, mark: mark) {
-                                            RoundedRectangle(cornerRadius: 2)
-                                                .strokeBorder(color, lineWidth: 2)
-                                                .background(RoundedRectangle(cornerRadius: 2).fill(color.opacity(0.18)))
+                                            // "still gettable / open caves / money" highlight. When
+                                            // "Animate tile changes" is on it slowly breathes (T-207).
+                                            // The two are distinct view types, so toggling the flag
+                                            // cleanly swaps them — the pulse lives inside its own view's
+                                            // @State (no shared bool, no leaking global animation).
+                                            if options.animateTileChanges {
+                                                PulsingHighlight(color: color)
+                                            } else {
+                                                HighlightBox(color: color, border: 0.85, fill: 0.18)
+                                            }
                                         }
                                     }
                                     .overlay {
@@ -699,6 +718,7 @@ struct OverworldMapView: View {
     /// armos / letter / hint shop) defaults to **used** — you usually mark one
     /// right after collecting it; a left-click flips it back to unused (T-056).
     private func applyMark(_ mark: OverworldTileMark, column: Int, row: Int) {
+        ConfirmationSound.input(options)   // mouse-edit tick (T-208); keyboard ticks in the dispatcher
         // Selecting a mark closes the menu-mode chooser popover (T-185) — a picked
         // mark should dismiss it, like the native context menu does on selection.
         chooserCell = nil
@@ -724,6 +744,7 @@ struct OverworldMapView: View {
     /// to the model so the tile's linked Items-group heart slot stays in sync:
     /// the tile reuses its own slot when re-marked, and `.untaken` frees it.
     private func applyTakeAny(_ state: TakeAnyHeartState, column: Int, row: Int) {
+        ConfirmationSound.input(options)   // mouse-edit tick (T-208)
         chooserCell = nil   // dismiss the menu-mode chooser popover on selection (T-185)
         onSetTakeAny(state, column, row)
     }
@@ -1159,6 +1180,9 @@ struct TileView: View {
     var used: Bool = false
     /// A shop tile's second item (T-060); both are drawn in `ShopKind` order.
     var shopSecondItem: ShopKind? = nil
+    /// Owned/irrelevant shop items to drop from this shop's icon (T-207 per-item hiding).
+    /// A combo bomb/ring shop with the ring owned passes `[.blueRing]` and shows just the bomb.
+    var hiddenShopItems: Set<ShopKind> = []
     /// The "Hide tile icons" view control is active (T-062): suppress every
     /// user-placed mark layer (digit badge, interior/shop icon, dark/used
     /// shading) so only the raw terrain (plus always-empty / fairy truth) shows.
@@ -1175,6 +1199,9 @@ struct TileView: View {
     /// The terrain is painted by one image behind the whole grid (custom maps, T-167),
     /// so this tile must stay transparent instead of drawing its own background.
     var sharedBackground: Bool = false
+    /// Pop the mark glyph in with a slight overshoot when it changes (T-207, "Animate tile
+    /// changes"). Off in the chooser (which reuses this view for its icon grid).
+    var animateChanges: Bool = false
 
     /// Reveals a `kindHidden` tile's icon while the pointer is over it (the
     /// reference's `temporarilyDisplayHiddenOverworldTileMarks` peek).
@@ -1259,6 +1286,15 @@ struct TileView: View {
                 // when its kind is hidden, unless the pointer is over it (peek).
                 .opacity(kindHidden && !revealHovered ? Self.hiddenIconOpacity : 1)
                 .onHover { revealHovered = $0 }
+                // Overshoot "pop" when the mark changes (T-207). `.id(mark)` gives the glyph a
+                // new identity on change so the scale/opacity transition fires; the spring's low
+                // damping overshoots slightly past full size, then settles. The id stays keyed on
+                // `mark` (not the flag) so toggling "Animate tile changes" doesn't re-pop every
+                // tile; only the transition/animation are gated, so with the flag off the swap is
+                // instant (.identity transition, nil animation).
+                .id(mark)
+                .transition(animateChanges ? .scale(scale: 0.5).combined(with: .opacity) : .identity)
+                .animation(animateChanges ? .spring(response: 0.3, dampingFraction: 0.5) : nil, value: mark)
             }
             // Permanent "always empty" screens are simply darkened (same as a
             // user `.dontCare` mark) — a darkened tile already reads as
@@ -1291,10 +1327,26 @@ struct TileView: View {
                 Rectangle().fill(.black.opacity(0.55))
                     .frame(width: tileWidth, height: tileHeight)
             }
+            // A shop whose every item is now owned (T-207) gets the full "don't care"
+            // darkening — the same overlay a dark tile gets — so it reads as "nothing to
+            // buy here", not just a dimmed icon. Revealed on hover (like the per-kind
+            // hidden dim), and suppressed under "Hide tile icons".
+            if isShopFullyHidden, !revealHovered, !hideMarks {
+                Rectangle().fill(.black.opacity(0.62))
+                    .frame(width: tileWidth, height: tileHeight)
+                    .allowsHitTesting(false)   // don't swallow the glyph's reveal-on-hover
+            }
         }
         .frame(width: tileWidth, height: tileHeight)
         .clipped()
         .overlay(Rectangle().stroke(.black.opacity(0.3), lineWidth: 0.5))
+    }
+
+    /// A shop tile with every item owned (`kindHidden` set for a `.shop` mark) — T-207. Drives
+    /// the full-tile "don't care" darkening so an all-owned shop reads as done.
+    private var isShopFullyHidden: Bool {
+        if case .shop = mark { return kindHidden }
+        return false
     }
 
     @ViewBuilder
@@ -1449,7 +1501,7 @@ struct TileView: View {
                 // Shops carry up to two items (T-060), drawn side by side in
                 // `ShopKind` order for a stable layout.
                 HStack(spacing: 0) {
-                    ForEach(orderedShopItems, id: \.self) { kind in
+                    ForEach(visibleShopItems, id: \.self) { kind in
                         // Real game sprite (T-161) at its natural aspect; the crude
                         // 3×7 atlas glyph only if a sprite is somehow missing.
                         if let file = GameSprite.shopFile(kind), let cg = GameSprite.image(file) {
@@ -1467,6 +1519,16 @@ struct TileView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
         }
+    }
+
+    /// The shop items to actually draw (T-207 per-item hiding): the ordered items minus the
+    /// owned/irrelevant ones. When *every* item is owned, the whole tile dims via `kindHidden`
+    /// and hover reveals it — so keep the full icon there (an empty plate would be nothing to
+    /// reveal) rather than filtering to nothing.
+    private var visibleShopItems: [ShopKind] {
+        let all = orderedShopItems
+        let visible = all.filter { !hiddenShopItems.contains($0) }
+        return visible.isEmpty ? all : visible
     }
 
     /// This shop's items in `ShopKind` display order (primary from the mark +
@@ -1698,4 +1760,38 @@ private enum OverworldRouteGeometry {
     )
     .frame(width: 800)
     .padding()
+}
+
+/// A static overworld highlight box (open-caves / money / gettable) — a colored border with
+/// a faint fill (T-035.2). `PulsingHighlight` reuses it for the animated variant.
+struct HighlightBox: View {
+    let color: Color
+    var border: Double
+    var fill: Double
+    var body: some View {
+        RoundedRectangle(cornerRadius: 2)
+            .strokeBorder(color.opacity(border), lineWidth: 2)
+            .background(RoundedRectangle(cornerRadius: 2).fill(color.opacity(fill)))
+    }
+}
+
+/// The animated highlight (T-207): a slow "breathing" pulse driven by a **`TimelineView`
+/// clock**, not `withAnimation`. The opacity is a pure function of the current time, so there
+/// is no animation transaction that could leak into other views (the earlier
+/// `withAnimation(.repeatForever)` did exactly that — the forever animation bled into every
+/// tile's `.animation(value:)` and pulsed the darkening overlays too). Removing this view
+/// (flag off, or the highlight cleared) simply stops the clock.
+struct PulsingHighlight: View {
+    let color: Color
+    /// Seconds per full breathe.
+    private let period = 2.0
+    var body: some View {
+        TimelineView(.periodic(from: .now, by: 1.0 / 24.0)) { context in
+            let t = context.date.timeIntervalSinceReferenceDate
+            let phase = 0.5 + 0.5 * sin(2 * .pi * t / period)   // 0…1
+            HighlightBox(color: color,
+                         border: 0.45 + 0.55 * phase,   // 0.45 … 1.0
+                         fill: 0.08 + 0.22 * phase)     // 0.08 … 0.30
+        }
+    }
 }
