@@ -9,7 +9,12 @@ import TrackerCore
 struct GameTimelineView: View {
     @Bindable var timeline: TimelineModel
 
-    private let pxPerMinute: CGFloat = 26
+    /// The natural scale for a short run: full 26 px/min, left-aligned (never stretched
+    /// wider than this). Long runs compress below it to fit the pane, down to `minPxPerMinute`.
+    private let idealPxPerMinute: CGFloat = 26
+    /// The floor: below this the run is too long to fit, so the pane scrolls instead of
+    /// compressing into an illegible smear.
+    private let minPxPerMinute: CGFloat = 6
     private let iconSize: CGFloat = 18
     private let rowHeight: CGFloat = 21
     private let axisHeight: CGFloat = 16
@@ -17,17 +22,32 @@ struct GameTimelineView: View {
 
     /// The index (into `placed`) of the icon under the cursor, for the hover label.
     @State private var hovered: Int?
+    /// The pane's width, measured by the background `GeometryReader`, so a long run's timeline
+    /// scales to fit instead of overflowing a scroll view the player never scrolls (T-209).
+    @State private var availableWidth: CGFloat = 0
 
-    /// Events sorted by time, each with a stacking row within its minute bucket.
+    /// Minutes-per-pixel chosen to fit the whole run in the pane: capped at `idealPxPerMinute`
+    /// (short runs stay full-scale, left-aligned), floored at `minPxPerMinute` (very long runs
+    /// scroll). Falls back to ideal until the width is measured.
+    private var pxPerMinute: CGFloat {
+        guard availableWidth > 0 else { return idealPxPerMinute }
+        let fit = (availableWidth - 60) / CGFloat(maxMinute + 1)
+        return min(idealPxPerMinute, max(minPxPerMinute, fit))
+    }
+
+    /// Events sorted by time, each with a stacking row so overlapping icons stack vertically.
+    /// Bucketed by *pixel proximity* (an icon-width's worth of run-time at the current scale),
+    /// not a fixed minute — so a compressed long run stacks nearby pickups instead of overlapping.
     private var placed: [(event: TimelineEvent, seconds: Int, row: Int)] {
         let sorted = timeline.acquiredAt.sorted {
             $0.value != $1.value ? $0.value < $1.value : $0.key.displayName < $1.key.displayName
         }
-        var perMinute: [Int: Int] = [:]
+        let bucketSeconds = max(60, Int((Double(iconSize) / Double(pxPerMinute) * 60).rounded(.up)))
+        var perBucket: [Int: Int] = [:]
         return sorted.map { (event, seconds) in
-            let minute = seconds / 60
-            let row = perMinute[minute, default: 0]
-            perMinute[minute] = row + 1
+            let bucket = seconds / bucketSeconds
+            let row = perBucket[bucket, default: 0]
+            perBucket[bucket] = row + 1
             return (event, seconds, row)
         }
     }
@@ -43,7 +63,20 @@ struct GameTimelineView: View {
         max(1, placed.map(\.row).max().map { $0 + 1 } ?? 1)
     }
 
-    private var contentWidth: CGFloat { CGFloat(maxMinute + 1) * pxPerMinute + 60 }
+    // Fill the pane at minimum, so a short run left-aligns in the full width and a fitted long
+    // run spans it exactly (only a run past the px/min floor grows wider and scrolls).
+    private var contentWidth: CGFloat { max(CGFloat(maxMinute + 1) * pxPerMinute + 60, availableWidth) }
+
+    /// Minutes between minor gridlines, grown so lines stay ≥ ~14px apart at the current scale.
+    private var gridStep: Int { niceStep(minPx: 14) }
+    /// Minutes between labeled/major gridlines, grown so labels (~"NNNm") don't collide.
+    private var labelStep: Int { niceStep(minPx: 48) }
+    /// The smallest "nice" step (1,2,3,5,10,15,…) giving at least `minPx` between marks.
+    private func niceStep(minPx: CGFloat) -> Int {
+        let raw = Int((minPx / pxPerMinute).rounded(.up))
+        for n in [1, 2, 3, 5, 10, 15, 20, 30, 60, 120, 240] where n >= raw { return n }
+        return 480
+    }
     // +45 (was +20): the freed space from moving the recorder widget gives the
     // timeline ~25px more height (T-107), mostly for the OW-progress graph.
     private var contentHeight: CGFloat { topPad + CGFloat(maxRows) * rowHeight + axisHeight + 45 }
@@ -73,24 +106,35 @@ struct GameTimelineView: View {
             .frame(width: contentWidth, height: contentHeight, alignment: .topLeading)
         }
         .frame(height: contentHeight)
+        // Measure the pane width (T-209) so `pxPerMinute` can fit the whole run. Measured on
+        // the outer frame, not the content, so there's no layout feedback loop.
+        .background(GeometryReader { geo in
+            Color.clear
+                .onAppear { availableWidth = geo.size.width }
+                .onChange(of: geo.size.width) { _, w in availableWidth = w }
+        })
     }
 
     /// Vertical minute gridlines + labels along the bottom.
     private var minuteGrid: some View {
         let gridTop = topPad
         let gridBottom = contentHeight - axisHeight - 4
+        let minor = gridStep, major = labelStep
         return ZStack(alignment: .topLeading) {
             Canvas { ctx, _ in
-                for m in 0...maxMinute {
+                func line(_ m: Int, opacity: Double, width: CGFloat) {
                     let px = CGFloat(m) * pxPerMinute + iconSize / 2
                     var path = Path()
                     path.move(to: CGPoint(x: px, y: gridTop))
                     path.addLine(to: CGPoint(x: px, y: gridBottom))
-                    ctx.stroke(path, with: .color(Color.primary.opacity(m % 5 == 0 ? 0.45 : 0.22)),
-                               lineWidth: m % 5 == 0 ? 1 : 0.5)
+                    ctx.stroke(path, with: .color(Color.primary.opacity(opacity)), lineWidth: width)
                 }
+                for m in stride(from: 0, through: maxMinute, by: minor) { line(m, opacity: 0.22, width: 0.5) }
+                // Bold lines exactly at the labeled minutes (drawn second so they read as major
+                // regardless of whether `major` is a multiple of `minor`).
+                for m in stride(from: 0, through: maxMinute, by: major) { line(m, opacity: 0.45, width: 1) }
             }
-            ForEach(Array(stride(from: 0, through: maxMinute, by: 5)), id: \.self) { m in
+            ForEach(Array(stride(from: 0, through: maxMinute, by: major)), id: \.self) { m in
                 Text("\(m)m")
                     .font(.system(size: 9, design: .monospaced))
                     .foregroundStyle(.secondary)

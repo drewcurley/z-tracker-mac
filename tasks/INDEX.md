@@ -25,6 +25,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-209](./T-209.md) | Timeline fits the whole run to the pane (long games ran off-screen at fixed 26px/min) | frontend-engineer | T-098 | fix/timeline-fit-long-runs | — | docs/reviews/fix-timeline-fit-long-runs/final.md |
 | [T-208](./T-208.md) | Confirmation sounds — voice + input (original Windows sound files), per-sound volume | frontend-engineer | T-206 | feat/shop-hiding-and-confirmation-sounds | — | docs/reviews/feat-shop-hiding-and-confirmation-sounds/final.md |
 | [T-207](./T-207.md) | Animate tile changes + overworld shop per-item hiding + settings persistence/auto-save + hint hover | frontend-engineer | T-206 | feat/shop-hiding-and-confirmation-sounds | — | docs/reviews/feat-shop-hiding-and-confirmation-sounds/final.md |
 | [T-206](./T-206.md) | Settings screen audit — nix dead options, hide back-burnered, wire buildable | frontend-engineer | — | chore/settings-audit | — | docs/reviews/chore-settings-audit/final.md |
