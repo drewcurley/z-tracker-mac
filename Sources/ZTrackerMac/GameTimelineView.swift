@@ -9,12 +9,10 @@ import TrackerCore
 struct GameTimelineView: View {
     @Bindable var timeline: TimelineModel
 
-    /// The natural scale for a short run: full 26 px/min, left-aligned (never stretched
-    /// wider than this). Long runs compress below it to fit the pane, down to `minPxPerMinute`.
-    private let idealPxPerMinute: CGFloat = 26
-    /// The floor: below this the run is too long to fit, so the pane scrolls instead of
-    /// compressing into an illegible smear.
-    private let minPxPerMinute: CGFloat = 6
+    /// Fallback px/min used only before the pane width is measured.
+    private let fallbackPxPerMinute: CGFloat = 26
+    /// Right-edge margin reserved for the finish label / last icon so they don't clip.
+    private let rightMargin: CGFloat = 60
     private let iconSize: CGFloat = 18
     private let rowHeight: CGFloat = 21
     private let axisHeight: CGFloat = 16
@@ -22,17 +20,17 @@ struct GameTimelineView: View {
 
     /// The index (into `placed`) of the icon under the cursor, for the hover label.
     @State private var hovered: Int?
-    /// The pane's width, measured by the background `GeometryReader`, so a long run's timeline
-    /// scales to fit instead of overflowing a scroll view the player never scrolls (T-209).
+    /// The pane's width, measured by the background `GeometryReader`, so the timeline always
+    /// fits the whole run to the window (T-209).
     @State private var availableWidth: CGFloat = 0
 
-    /// Minutes-per-pixel chosen to fit the whole run in the pane: capped at `idealPxPerMinute`
-    /// (short runs stay full-scale, left-aligned), floored at `minPxPerMinute` (very long runs
-    /// scroll). Falls back to ideal until the width is measured.
+    /// Minutes-per-pixel that makes the **whole run always fill the pane width** — never capped,
+    /// so a short run spans the full width and each pixel simply represents more time as the run
+    /// grows (time-compressed, entire duration always in view; no scrolling). Falls back until
+    /// the width is measured.
     private var pxPerMinute: CGFloat {
-        guard availableWidth > 0 else { return idealPxPerMinute }
-        let fit = (availableWidth - 60) / CGFloat(maxMinute + 1)
-        return min(idealPxPerMinute, max(minPxPerMinute, fit))
+        guard availableWidth > rightMargin else { return fallbackPxPerMinute }
+        return (availableWidth - rightMargin) / CGFloat(maxMinute + 1)
     }
 
     /// Events sorted by time, each with a stacking row so overlapping icons stack vertically.
@@ -63,9 +61,10 @@ struct GameTimelineView: View {
         max(1, placed.map(\.row).max().map { $0 + 1 } ?? 1)
     }
 
-    // Fill the pane at minimum, so a short run left-aligns in the full width and a fitted long
-    // run spans it exactly (only a run past the px/min floor grows wider and scrolls).
-    private var contentWidth: CGFloat { max(CGFloat(maxMinute + 1) * pxPerMinute + 60, availableWidth) }
+    // The whole run always fits the pane, so the content is exactly the pane width (never scrolls).
+    private var contentWidth: CGFloat {
+        availableWidth > rightMargin ? availableWidth : CGFloat(maxMinute + 1) * fallbackPxPerMinute + rightMargin
+    }
 
     /// Minutes between minor gridlines, grown so lines stay ≥ ~14px apart at the current scale.
     private var gridStep: Int { niceStep(minPx: 14) }
