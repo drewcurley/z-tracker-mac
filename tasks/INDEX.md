@@ -25,6 +25,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-210](./T-210.md) | Timeline always fills the full pane width (short runs no longer sit in a corner) | frontend-engineer | T-209 | fix/timeline-always-fill-width | — | docs/reviews/fix-timeline-always-fill-width/final.md |
 | [T-209](./T-209.md) | Timeline fits the whole run to the pane (long games ran off-screen at fixed 26px/min) | frontend-engineer | T-098 | fix/timeline-fit-long-runs | — | docs/reviews/fix-timeline-fit-long-runs/final.md |
 | [T-208](./T-208.md) | Confirmation sounds — voice + input (original Windows sound files), per-sound volume | frontend-engineer | T-206 | feat/shop-hiding-and-confirmation-sounds | — | docs/reviews/feat-shop-hiding-and-confirmation-sounds/final.md |
 | [T-207](./T-207.md) | Animate tile changes + overworld shop per-item hiding + settings persistence/auto-save + hint hover | frontend-engineer | T-206 | feat/shop-hiding-and-confirmation-sounds | — | docs/reviews/feat-shop-hiding-and-confirmation-sounds/final.md |
