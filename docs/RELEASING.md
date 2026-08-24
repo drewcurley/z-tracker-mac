@@ -21,16 +21,25 @@ frictionless (notarized, auto-updating) build when you're ready.
    Pass an arch to build just one (`scripts/make-dmg.sh arm64` / `x86_64`). The Intel
    slice cross-builds fine from an Apple-Silicon Mac, but can only be *runtime-tested* on
    actual Intel hardware (Rosetta runs the other direction).
-4. **Tag and publish a GitHub Release** whose tag is the version, attaching **both** DMGs.
-   The tag may be `v0.9.0` or `0.9.0` — the update check tolerates a leading `v`.
+   `make-dmg.sh` also **EdDSA-signs each `.dmg` and writes the Sparkle appcast** for that
+   arch (`dist/appcast-arm64.xml`, `dist/appcast-x86_64.xml`) using the private key in your
+   login Keychain (see Sparkle section). These MUST be attached to the release so installed
+   apps can find the update.
+4. **Tag and publish a GitHub Release** whose tag is the version, attaching **both** DMGs
+   **and both appcasts**. The tag may be `v1.0.0` or `1.0.0` — the update check tolerates a
+   leading `v`.
    ```bash
-   gh release create v0.9.0 \
-     dist/ZTrackerMac-0.9.0-AppleSilicon.dmg dist/ZTrackerMac-0.9.0-Intel.dmg \
-     --title "Z-Tracker 0.9.0" --notes "…"
+   gh release create v1.0.0 \
+     dist/ZTrackerMac-1.0.0-AppleSilicon.dmg dist/ZTrackerMac-1.0.0-Intel.dmg \
+     dist/appcast-arm64.xml dist/appcast-x86_64.xml \
+     --title "Z-Tracker 1.0.0" --notes "…"
    ```
+   The appcast enclosure points at this release's versioned DMG URL, and installed apps
+   fetch `releases/latest/download/appcast-<arch>.xml` (a stable redirect to the newest
+   release) — so **every** release must carry its appcasts.
 
-That's it. The next time anyone launches an older copy, they'll see the update
-notice (below).
+That's it. Installed apps (v1.0.0+) auto-update in place via Sparkle; older copies show the
+GitHub banner (below).
 
 ## The in-app update notice (T-174)
 
@@ -41,8 +50,9 @@ shows a dismissible banner with a **Download** link to the release page. It send
 data, fails silently when offline, and is gated on the **"Check for updates on
 launch"** setting (Settings → Other, default on).
 
-It does **not** auto-install — it points people at the new `.dmg`. Auto-install is the
-Sparkle step below.
+When Sparkle is present (v1.0.0+), the banner's **Update now** button runs Sparkle's
+in-place update instead of just linking out; the GitHub link stays as a fallback. On an
+older copy without Sparkle it still just links to the `.dmg`.
 
 ## Installing an unsigned build (what to tell users)
 
@@ -83,15 +93,35 @@ Application* certificate.
    the `.dmg` to the notary service and staples the ticket, so it opens with no
    warnings even offline.
 
-### Sparkle (one-click auto-update)
+## Sparkle in-place auto-update (T-211) — IMPLEMENTED
 
-Once builds are notarized, add [Sparkle 2](https://sparkle-project.org) for
-download-install-relaunch updates:
+[Sparkle 2](https://sparkle-project.org) does download → verify → replace-in-place →
+relaunch. It works on the **free/self-signed path today** (updates are authenticated by an
+EdDSA signature, independent of Apple notarization); notarization, when it lands, only
+removes the one-time Gatekeeper prompt on the *first* manual install and is a drop-in (above).
 
-- Add the Sparkle SwiftPM package and an `SPUStandardUpdaterController`.
-- Generate an EdDSA key; publish an **appcast** XML feed (e.g. on GitHub Pages or in
-  the repo) listing each release's `.dmg`, version, and signature.
-- The check-on-launch notice (T-174) can then be retired or kept as a fallback.
+**How it's wired**
+- `Sparkle` is a SwiftPM dependency; `SparkleUpdaterController` wraps `SPUStandardUpdaterController`.
+- The app menu has **Check for Updates…**, and the startup banner's **Update now** triggers it.
+- `Bundle/Info.plist.template` carries `SUPublicEDKey` (the public half of the signing key) and
+  `SUFeedURL` = `@@SUFEEDURL@@`, which `build-app.sh` fills per-arch with
+  `…/releases/latest/download/appcast-<arch>.xml`. Automatic checks are off — the app drives them.
+- `build-app.sh` embeds + signs `Sparkle.framework` (Contents/Frameworks) and adds the rpath.
+- `make-dmg.sh` EdDSA-signs each `.dmg` and writes `dist/appcast-<arch>.xml`. **Attach both
+  appcasts to every release** (see "Cutting a release").
 
-This is a clean addition on top of the current setup — the version/`VERSION` plumbing
-and the notarized `.dmg` output are exactly what Sparkle's appcast needs.
+**Per-architecture feeds** keep the dedicated arm64 / Intel builds: each build points at its own
+appcast, so it only ever updates to its own native binary.
+
+**The signing key**
+- The **private** EdDSA key lives in this machine's **login Keychain** (created once via Sparkle's
+  `generate_keys`). It never enters the repo. Releases must be cut on a machine that has it, so
+  `make-dmg.sh`'s `sign_update` can sign the `.dmg`.
+- The **public** key is committed in `Info.plist.template` (`SUPublicEDKey`). If the private key is
+  ever lost, generate a new pair and update the public key — but then only builds carrying the new
+  public key can verify future updates. Back it up:
+  `generate_keys -x sparkle_private_key.pem` (store the file somewhere safe, offline).
+
+**First release note:** users on a pre-Sparkle build (≤ v0.9.2) can't auto-update *to* the first
+Sparkle release — they take the GitHub banner and install it manually once. From then on it's
+one-click.

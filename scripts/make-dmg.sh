@@ -69,5 +69,35 @@ for ARCH in "${ARCHES[@]}"; do
         echo "==> skipping notarization (set ZTRACKER_NOTARY_PROFILE to enable)"
     fi
 
+    # Sparkle appcast (T-211): EdDSA-sign the finished .dmg and emit a one-item per-arch feed.
+    # The enclosure points at this version's GitHub release asset; the running app fetches the
+    # appcast from `releases/latest/download/appcast-<arch>.xml` (see build-app.sh SUFEEDURL).
+    # `sign_update` uses the private key stored in this machine's Keychain (generate_keys).
+    SIGN_UPDATE="$(find .build -type f -name sign_update -path '*/artifacts/*' 2>/dev/null | head -1)"
+    if [[ -n "$SIGN_UPDATE" ]]; then
+        echo "==> signing the .dmg + writing the appcast"
+        SIG_ATTRS="$("$SIGN_UPDATE" "$DMG")"    # → sparkle:edSignature="…" length="…"
+        ENCLOSURE_URL="https://github.com/drewcurley/z-tracker-mac/releases/download/v${VERSION}/ZTrackerMac-${VERSION}-${LABEL}.dmg"
+        APPCAST="dist/appcast-${ARCH}.xml"
+        cat > "$APPCAST" <<APPCASTXML
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle" xmlns:dc="http://purl.org/dc/elements/1.1/">
+  <channel>
+    <title>Z-Tracker ($LABEL)</title>
+    <item>
+      <title>Version $VERSION</title>
+      <sparkle:version>$VERSION</sparkle:version>
+      <sparkle:shortVersionString>$VERSION</sparkle:shortVersionString>
+      <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
+      <enclosure url="$ENCLOSURE_URL" $SIG_ATTRS type="application/octet-stream" />
+    </item>
+  </channel>
+</rss>
+APPCASTXML
+        echo "==> wrote $APPCAST"
+    else
+        echo "==> WARNING: sign_update not found — appcast not generated (run 'swift build' first)"
+    fi
+
     echo "==> done: $DMG"
 done

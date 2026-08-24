@@ -21,6 +21,10 @@ VERSION="$(tr -d '[:space:]' < VERSION)"
 APP="ZTrackerMac.app"
 EXE="ZTrackerMac"
 RES_BUNDLE="ZTrackerMac_ZTrackerMac.bundle"
+# Sparkle per-architecture appcast (T-211): each dedicated build updates to its own native
+# binary. The `releases/latest/download/…` URL is a stable GitHub redirect to the newest
+# release's asset, so no GitHub Pages / separate host is needed.
+SUFEEDURL="https://github.com/drewcurley/z-tracker-mac/releases/latest/download/appcast-${ARCH}.xml"
 
 echo "==> swift build -c $CONFIG --arch $ARCH"
 swift build -c "$CONFIG" --arch "$ARCH"
@@ -67,7 +71,21 @@ GIT_HASH="$(git rev-parse --short HEAD 2>/dev/null || echo nogit)"
 git diff --quiet 2>/dev/null && git diff --cached --quiet 2>/dev/null || GIT_HASH="${GIT_HASH}-dirty"
 BUILD_STAMP="${GIT_HASH} · $(date '+%b %d %H:%M')"
 sed -e "s/@@VERSION@@/$VERSION/g" -e "s/@@BUILD@@/$BUILD_STAMP/g" \
+    -e "s|@@SUFEEDURL@@|$SUFEEDURL|g" \
     Bundle/Info.plist.template > "$APP/Contents/Info.plist"
+
+# Embed Sparkle.framework (T-211): the SwiftPM build drops a universal (arm64+x86_64) copy in
+# the bin dir; the standard home for it is Contents/Frameworks. Add an rpath there so the
+# executable resolves it at runtime inside the bundle (the linker's build-dir rpath won't).
+FW_SRC="$BIN_DIR/Sparkle.framework"
+if [ -d "$FW_SRC" ]; then
+    echo "==> embedding Sparkle.framework"
+    mkdir -p "$APP/Contents/Frameworks"
+    cp -R "$FW_SRC" "$APP/Contents/Frameworks/Sparkle.framework"
+    install_name_tool -add_rpath "@executable_path/../Frameworks" "$APP/Contents/MacOS/$EXE" 2>/dev/null || true
+else
+    echo "==> WARNING: Sparkle.framework not found at $FW_SRC — auto-update will be unavailable"
+fi
 
 # App icon (T-161/T-178): the **simple** icon is the default/bundle icon now
 # (Bundle/AppIcon-simple.png, pre-rounded to the standard macOS shape via
@@ -105,18 +123,32 @@ fi
 # signs without the hardened runtime, which is what local dev + TCC want.
 SIGN_ID="${ZTRACKER_SIGN_ID:-ZTracker Dev}"
 if security find-identity -p codesigning 2>/dev/null | grep -q "$SIGN_ID"; then
-    if [[ "$SIGN_ID" == Developer\ ID\ Application* ]]; then
-        echo "==> code signing (hardened runtime) as '$SIGN_ID'"
-        codesign --force --options runtime \
-            --entitlements Bundle/ZTrackerMac.entitlements \
-            --timestamp --sign "$SIGN_ID" "$APP"
-    else
-        echo "==> code signing as '$SIGN_ID'"
-        codesign --force --sign "$SIGN_ID" "$APP"
-    fi
+    ACTUAL_ID="$SIGN_ID"
 else
     echo "==> '$SIGN_ID' not found; ad-hoc signing (TCC will re-prompt on each rebuild)"
-    codesign --force --sign - "$APP"
+    ACTUAL_ID="-"
+fi
+# Sign nested code (Sparkle.framework and its helpers) BEFORE the app, so the app's signature
+# seals an already-valid framework (Apple discourages --deep on the app; --deep here just
+# re-signs the vendored framework's own helpers with our identity). Hardened runtime only on a
+# Developer ID (notarized) build.
+FW="$APP/Contents/Frameworks/Sparkle.framework"
+if [ -d "$FW" ]; then
+    echo "==> signing Sparkle.framework as '$ACTUAL_ID'"
+    if [[ "$ACTUAL_ID" == Developer\ ID\ Application* ]]; then
+        codesign --force --deep --options runtime --timestamp --sign "$ACTUAL_ID" "$FW"
+    else
+        codesign --force --deep --sign "$ACTUAL_ID" "$FW"
+    fi
+fi
+if [[ "$ACTUAL_ID" == Developer\ ID\ Application* ]]; then
+    echo "==> code signing (hardened runtime) as '$ACTUAL_ID'"
+    codesign --force --options runtime \
+        --entitlements Bundle/ZTrackerMac.entitlements \
+        --timestamp --sign "$ACTUAL_ID" "$APP"
+else
+    echo "==> code signing as '$ACTUAL_ID'"
+    codesign --force --sign "$ACTUAL_ID" "$APP"
 fi
 
 echo "==> done: $APP (v$VERSION, $ARCH)"

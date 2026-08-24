@@ -112,6 +112,9 @@ struct ZTrackerMacApp: App {
     /// Shared UI focus state (T-133) — the selected dungeon tab (and, later, the
     /// keyboard cursor), so Global hotkeys can drive them.
     @State private var focus = TrackerFocusState()
+    /// Sparkle in-place auto-updater (T-211) — drives the "Check for Updates…" command and the
+    /// startup update banner's "Update now" action.
+    @StateObject private var updater = SparkleUpdaterController()
 
     var body: some Scene {
         // A single-instance `Window` (not `WindowGroup`) — the tracker is one
@@ -119,7 +122,7 @@ struct ZTrackerMacApp: App {
         // trackers as tabs / new windows (⌘N), which only share the game state and
         // drift on view-local state; that was an unintended default, not a feature.
         Window("Z-Tracker", id: MainWindowID) {
-            ContentView(model: model, options: options, breakout: breakout, timer: timer, reminders: reminders, overlays: overlays, hotkeys: hotkeys, voiceConfig: voiceConfig, focus: focus, onResetApp: resetApp)
+            ContentView(model: model, options: options, breakout: breakout, timer: timer, reminders: reminders, overlays: overlays, hotkeys: hotkeys, voiceConfig: voiceConfig, focus: focus, onResetApp: resetApp, updater: updater)
         }
         .commands {
             // ⌘, opens the mid-game Settings window (T-091) instead of a native
@@ -127,6 +130,12 @@ struct ZTrackerMacApp: App {
             CommandGroup(replacing: .appSettings) { OpenSettingsButton() }
             // No "New Window" for a single-window app.
             CommandGroup(replacing: .newItem) {}
+            // "Check for Updates…" (T-211) in the app menu, next to About — runs Sparkle's
+            // in-place update flow; disabled while a check is already in progress.
+            CommandGroup(after: .appInfo) {
+                Button("Check for Updates…") { updater.checkForUpdates() }
+                    .disabled(!updater.canCheckForUpdates)
+            }
         }
 
         // The mid-game Settings window (T-091): a single, resizable window sharing

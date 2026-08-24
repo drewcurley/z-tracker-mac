@@ -23,6 +23,9 @@ struct ContentView: View {
     /// "Reset App" — discard everything and return here to the startup screen
     /// (T-046). Owned by the app (it replaces the model instance).
     var onResetApp: () -> Void
+    /// Sparkle in-place updater (T-211), for the startup banner's "Update now". Optional so
+    /// previews render without starting an updater.
+    var updater: SparkleUpdaterController? = nil
 
     /// Live FPS readout monitor (dev diagnostic) — only sampled while the readout
     /// is on screen (i.e. when `options.showFPS` is on).
@@ -48,7 +51,7 @@ struct ContentView: View {
                     // Load a saved run (T-177): the picker + apply live in GameSave;
                     // applying sets model.quest, which flips this view to the tracker.
                     GameSave.manualLoad(model: model, timer: timer, options: options)
-                })
+                }, updater: updater)
             } else {
                 MainTrackerPlaceholderView(model: model, options: options, breakout: breakout, timer: timer, reminders: reminders, overlays: overlays, hotkeys: hotkeys, voiceConfig: voiceConfig, focus: focus, onResetApp: onResetApp)
             }
