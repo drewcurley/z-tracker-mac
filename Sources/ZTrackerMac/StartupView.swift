@@ -20,6 +20,9 @@ struct StartupView: View {
     /// Load a saved run from a file picker (T-177). Provided by ContentView, which
     /// holds the timer; applying a save sets `model.quest`, which flips to the tracker.
     var onLoadSavedState: () -> Void = {}
+    /// Sparkle in-place updater (T-211) — when present, the update banner offers "Update now"
+    /// (download + install in place). Optional so previews render without an updater.
+    var updater: SparkleUpdaterController? = nil
 
     @State private var tip: Tip = TipProvider.random()
     /// A picked custom-map image awaiting the overworld-type choice (T-167).
@@ -57,16 +60,24 @@ struct StartupView: View {
         .task { await updateChecker.checkIfEnabled(options) }
     }
 
-    /// A dismissible "newer version available" banner (T-174). "Download" opens the
-    /// release page in the browser — we don't auto-install (that's a later Sparkle
-    /// step); this just makes sure people know a new version exists.
+    /// A dismissible "newer version available" banner (T-174, T-211). When Sparkle is wired
+    /// (it is in the shipping app), **Update now** runs the in-place download → verify →
+    /// replace → relaunch flow; the GitHub link stays as a manual fallback. In previews (no
+    /// `updater`) only the link shows.
     private func updateBanner(_ update: UpdateChecker.Available) -> some View {
         HStack(spacing: 12) {
             Image(systemName: "arrow.down.circle.fill").foregroundStyle(.green)
             Text("Z-Tracker \(update.version) is available.")
                 .fontWeight(.semibold)
             Spacer()
-            Link("Download ↗", destination: update.url)
+            if let updater {
+                Button("Update now") { updater.checkForUpdates() }
+                    .buttonStyle(.borderedProminent)
+                Link("View on GitHub ↗", destination: update.url)
+                    .font(.caption)
+            } else {
+                Link("Download ↗", destination: update.url)
+            }
             Button {
                 updateChecker.dismiss()
             } label: {

@@ -37,6 +37,17 @@
     <string>@@BUILD@@</string>
     <key>LSMinimumSystemVersion</key>
     <string>14.0</string>
+    <!-- Sparkle in-place auto-update (T-211). SUFeedURL is the per-architecture appcast,
+         injected by build-app.sh (@@SUFEEDURL@@) so the dedicated arm64 / Intel builds each
+         update to their own native binary. SUPublicEDKey is the EdDSA public key that verifies
+         each signed update (private key lives in the release machine's Keychain).
+         Automatic/scheduled checks are OFF — the app drives checks from its banner + menu. -->
+    <key>SUFeedURL</key>
+    <string>@@SUFEEDURL@@</string>
+    <key>SUPublicEDKey</key>
+    <string>1Tcav8R26rzEcIgZVUOwvwW4FoJhXO97U32G6G/4gcQ=</string>
+    <key>SUEnableAutomaticChecks</key>
+    <false/>
     <key>LSApplicationCategoryType</key>
     <string>public.app-category.utilities</string>
     <key>NSHighResolutionCapable</key>
