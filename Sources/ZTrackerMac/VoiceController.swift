@@ -477,6 +477,9 @@ final class VoiceController {
                                     releaseTakeAny: { c, r in model.releaseOverworldTakeAny(column: c, row: r) },
                                     placeDungeon: { number, c, r in
                                         OverworldMark.didPlaceDungeon(number, column: c, row: r, model: model, focus: focus)
+                                    },
+                                    placeSwordCave: { level, c, r in
+                                        OverworldMark.didPlaceSwordCave(level, column: c, row: r, model: model)
                                     })
             case .takeAny(let state):
                 model.setOverworldTakeAny(state, column: cell.col, row: cell.row)

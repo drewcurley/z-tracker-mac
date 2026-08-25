@@ -129,7 +129,9 @@ extension SpoilerLog {
             }
             // Seed the fixed dungeon hearts per Heart Shuffle (off → L1–8 box[0] = heart; on → empty),
             // and record the flag so the tracker matches the seed.
-            model.setHeartShuffle(heartShuffle)
+            // The spoiler flag is on/off; a log has exact heart placements, so it maps to the
+            // global `.full`/`.off` modes (intra is a live-deduction convenience, not a log input).
+            model.setHeartShuffle(heartShuffle ? .full : .off)
 
             // The three named caves (present, uncollected).
             func setNamed(_ box: Box, _ name: String) {

@@ -205,10 +205,10 @@ struct MainTrackerPlaceholderView: View {
                 // narrowed (T-043): dungeons · obtainables · flags · info.
                 FlowLayout(spacing: 12, lineSpacing: 12) {
                     TopSectionGroup(title: "Dungeons") {
-                        DungeonTrackerView(model: model, focus: focus)
+                        DungeonTrackerView(model: model, options: options, focus: focus)
                     }
                     TopSectionGroup(title: "Items") {
-                        ObtainableItemsView(model: model, playerState: model.playerComputedStateSummary, mapState: mapState, focus: focus)
+                        ObtainableItemsView(model: model, options: options, playerState: model.playerComputedStateSummary, mapState: mapState, focus: focus)
                     }
                     TopSectionGroup(title: "Flags") {
                         SeedFlagsView(model: model, options: options, playerState: model.playerComputedStateSummary, mapState: mapState, timer: timer, voice: voice)
@@ -333,5 +333,5 @@ struct MainTrackerPlaceholderView: View {
 }
 
 #Preview {
-    MainTrackerPlaceholderView(model: TrackerModel(quest: .first, heartShuffle: true), options: TrackerOptions(), breakout: BreakoutWindows(), timer: TrackerTimer(), reminders: ReminderController(), overlays: OverworldOverlayState(), hotkeys: HotkeyConfig(), voiceConfig: VoiceConfig(), focus: TrackerFocusState())
+    MainTrackerPlaceholderView(model: TrackerModel(quest: .first, heartShuffle: .full), options: TrackerOptions(), breakout: BreakoutWindows(), timer: TrackerTimer(), reminders: ReminderController(), overlays: OverworldOverlayState(), hotkeys: HotkeyConfig(), voiceConfig: VoiceConfig(), focus: TrackerFocusState())
 }

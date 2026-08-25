@@ -20,7 +20,8 @@ enum OverworldMark {
     static func apply(_ mark: OverworldTileMark, column: Int, row: Int,
                       grid: OverworldGrid,
                       releaseTakeAny: (Int, Int) -> Void,
-                      placeDungeon: (Int, Int, Int) -> Void) -> ApplyResult {
+                      placeDungeon: (Int, Int, Int) -> Void,
+                      placeSwordCave: (Int, Int, Int) -> Void = { _, _, _ in }) -> ApplyResult {
         let oldMark = grid.mark(column: column, row: row)
         // Changing a take-any to anything else frees its linked heart slot (T-066).
         if oldMark == .takeAny { releaseTakeAny(column, row) }
@@ -33,6 +34,11 @@ enum OverworldMark {
         }
         // Placing a dungeon auto-sets its location hint to this screen's region (T-039.1).
         if case .dungeon(let number) = mark { placeDungeon(number, column, row) }
+        // Same idea for the White-Sword-Item (level 2) and Magical-Sword (level 3) caves —
+        // marking the cave on the map fills its location-hint chip to this screen's zone (T-212).
+        if case .swordCave(let level) = mark, level == 2 || level == 3 {
+            placeSwordCave(level, column, row)
+        }
         // Armos / White-Sword-cave prompt for the item that was there (T-106).
         let isArmos: Bool?
         if mark == .armos { isArmos = true }
@@ -53,6 +59,20 @@ enum OverworldMark {
         model.levelHints[HintTarget.dungeon(number)] =
             HintZone.forZoneChar(OverworldZones.zone(column: c, row: r))
         focus.selectedDungeonTab = number - 1
+    }
+
+    /// Placing a White-Sword-Item cave (level 2) or Magical-Sword cave (level 3) auto-fills its
+    /// location-hint chip to this screen's overworld region (T-212), mirroring `didPlaceDungeon`.
+    /// Shared by the click, hotkey, and voice paths so all three behave identically.
+    @MainActor
+    static func didPlaceSwordCave(_ level: Int, column c: Int, row r: Int, model: TrackerModel) {
+        let target: Int
+        switch level {
+        case 2: target = HintTarget.whiteSwordCave
+        case 3: target = HintTarget.magicalSwordCave
+        default: return
+        }
+        model.levelHints[target] = HintZone.forZoneChar(OverworldZones.zone(column: c, row: r))
     }
 
     /// Voice (T-141): a second, distinct shop word on a tile that's already a shop

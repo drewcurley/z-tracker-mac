@@ -57,6 +57,35 @@ struct OverworldMarkApplyTests {
                 == HintZone.forZoneChar(OverworldZones.zone(column: 8, row: 3)))  // location hint set
     }
 
+    @Test func placingASwordCaveFiresPlaceCallback() {
+        let model = TrackerModel(quest: .first)
+        var placed: (Int, Int, Int)?
+        OverworldMark.apply(.swordCave(2), column: 4, row: 2, grid: model.overworldGrid,
+                            releaseTakeAny: noop, placeDungeon: noopPlace,
+                            placeSwordCave: { lvl, c, r in placed = (lvl, c, r) })
+        #expect(placed?.0 == 2 && placed?.1 == 4 && placed?.2 == 2)
+        // The wood-sword cave (level 1) has no hint target, so it must NOT fire.
+        placed = nil
+        OverworldMark.apply(.swordCave(1), column: 1, row: 1, grid: model.overworldGrid,
+                            releaseTakeAny: noop, placeDungeon: noopPlace,
+                            placeSwordCave: { lvl, c, r in placed = (lvl, c, r) })
+        #expect(placed == nil)
+    }
+
+    @Test func didPlaceSwordCaveSetsHint() {
+        let model = TrackerModel(quest: .first)
+        OverworldMark.didPlaceSwordCave(2, column: 8, row: 3, model: model)   // white-sword item cave
+        #expect(model.levelHints[HintTarget.whiteSwordCave]
+                == HintZone.forZoneChar(OverworldZones.zone(column: 8, row: 3)))
+        OverworldMark.didPlaceSwordCave(3, column: 2, row: 6, model: model)   // magical-sword cave
+        #expect(model.levelHints[HintTarget.magicalSwordCave]
+                == HintZone.forZoneChar(OverworldZones.zone(column: 2, row: 6)))
+        // Level 1 (wood sword) has no hint target → no-op, leaves both untouched.
+        let before = model.levelHints
+        OverworldMark.didPlaceSwordCave(1, column: 0, row: 0, model: model)
+        #expect(model.levelHints == before)
+    }
+
     @Test func didPlaceDungeonIgnoresOutOfRange() {
         let model = TrackerModel(quest: .first)
         let focus = TrackerFocusState()

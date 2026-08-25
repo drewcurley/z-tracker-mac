@@ -184,7 +184,7 @@ struct SpoilerLogTests {
         let model = TrackerModel()
         let result = SpoilerLog.parse(fixture).apply(to: model, sections: .dungeonItems, heartShuffle: false)
         let t = model.dungeonTracker
-        #expect(model.heartShuffle == false)
+        #expect(model.heartShuffle == .off)
         // L1–8: box[0] is the fixed heart, the floor item goes in box[1].
         #expect(t.dungeons[5].boxes[0].cellCurrent == ITEMS.heartContainer)  // Level 6 heart row
         #expect(t.dungeons[5].boxes[1].cellCurrent == ITEMS.boomerang)       // Level 1-6 item
@@ -215,7 +215,7 @@ struct SpoilerLogTests {
         let model = TrackerModel()
         let r = SpoilerLog.parse(fixture).apply(to: model, sections: .dungeonItems, heartShuffle: true)
         let t = model.dungeonTracker
-        #expect(model.heartShuffle == true)
+        #expect(model.heartShuffle == .full)
         // L6: one listed item → box[0]; its other box is a shuffled heart.
         #expect(t.dungeons[5].boxes[0].cellCurrent == ITEMS.boomerang)
         #expect(t.dungeons[5].boxes[1].cellCurrent == ITEMS.heartContainer)

@@ -25,6 +25,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-212](./T-212.md) | Tracker UX batch — sword-cave hint, bigger indicators, shop redraw, large-X option, Heart Shuffle 3-state + intra deduction | frontend-engineer | — | feat/tracker-ux-and-heart-shuffle | — | docs/reviews/feat-tracker-ux-and-heart-shuffle/final.md |
 | [T-211](./T-211.md) | Sparkle in-place auto-update (free/self-signed path) — one-click update, per-arch appcast | frontend-engineer | T-174 | feat/sparkle-auto-update | — | docs/reviews/feat-sparkle-auto-update/final.md |
 | [T-210](./T-210.md) | Timeline always fills the full pane width (short runs no longer sit in a corner) | frontend-engineer | T-209 | fix/timeline-always-fill-width | — | docs/reviews/fix-timeline-always-fill-width/final.md |
 | [T-209](./T-209.md) | Timeline fits the whole run to the pane (long games ran off-screen at fixed 26px/min) | frontend-engineer | T-098 | fix/timeline-fit-long-runs | — | docs/reviews/fix-timeline-fit-long-runs/final.md |

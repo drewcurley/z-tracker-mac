@@ -14,7 +14,7 @@ struct SaveStateRoundTripTests {
         let m = TrackerModel(quest: .first)
         m.selectQuest(.first)
         // scalars / flags
-        m.heartShuffle = true
+        m.heartShuffle = .full
         m.isWSMSReplacedByBU = true
         m.isCurrentlyBook = false
         m.mirrorOverworld = true
@@ -66,7 +66,7 @@ struct SaveStateRoundTripTests {
         restored.restore(decoded)
 
         // Flags / scalars
-        #expect(restored.heartShuffle == true)
+        #expect(restored.heartShuffle == .full)
         #expect(restored.hideDungeonNumbers == true)
         #expect(restored.isWSMSReplacedByBU == true)
         #expect(restored.isCurrentlyBook == false)

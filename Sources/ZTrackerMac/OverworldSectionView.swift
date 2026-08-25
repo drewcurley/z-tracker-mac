@@ -86,6 +86,9 @@ struct OverworldSectionView: View {
             onPlaceDungeon: { number, c, r in
                 OverworldMark.didPlaceDungeon(number, column: c, row: r, model: model, focus: focus)
             },
+            onPlaceSwordCave: { level, c, r in
+                OverworldMark.didPlaceSwordCave(level, column: c, row: r, model: model)
+            },
             onWoodSwordCaveUsedChanged: { used in
                 // Collecting the wood sword at its cave grants the sword (T-118).
                 model.playerProgress.hasWoodSword = used

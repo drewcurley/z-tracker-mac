@@ -113,6 +113,8 @@ struct SettingsPanelView: View {
             // Back-burnered until drag-to-paint rooms exist (T-206): hidden, option kept.
             // Toggle("Left-drag auto-inverts", isOn: Bindable(options).leftDragAutoInverts)
             Toggle("Default to NonDescript", isOn: Bindable(options).defaultToNonDescript)
+            Toggle("Large X on unwanted items", isOn: Bindable(options).largeUnwantedX)
+                .help("Mark a 'don't want it' item box with a big X across the whole box (on) or a small X in the corner (off).")
         }
         .toggleStyle(.checkbox)
     }
