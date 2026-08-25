@@ -1257,9 +1257,8 @@ struct TileView: View {
                     digitBadge
                         .frame(width: tileWidth, height: tileHeight)
                         .scaleEffect(x: mirrored ? -1 : 1, y: 1)
-                    // Sword caves use the high-fidelity Items-area sword sprite on a
-                    // dark plate (like the item boxes), sized like the digit badge
-                    // so it reads at map scale — T-063.
+                    // Sword caves use the real game sword sprite filling the tile (T-213), like
+                    // the shops / interior sprites — no plate.
                     swordCaveBadge
                         .frame(width: tileWidth, height: tileHeight)
                         .scaleEffect(x: mirrored ? -1 : 1, y: 1)
@@ -1428,21 +1427,22 @@ struct TileView: View {
     @ViewBuilder
     private var swordCaveBadge: some View {
         if case .swordCaveItem(let level) = mark.iconSource,
-           let icon = Self.swordIcon(forCaveLevel: level),
-           let image = Image(atlasIcon: ItemIconAtlas.cgImage(icon)) {
-            let badge = min(tileWidth, tileHeight) * 0.82
-            RoundedRectangle(cornerRadius: badge * 0.18)
-                .fill(.black.opacity(0.82))
-                .overlay(
-                    image.interpolation(.none).resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .padding(badge * 0.14)
-                )
-                .overlay(
-                    RoundedRectangle(cornerRadius: badge * 0.18)
-                        .strokeBorder(.black.opacity(0.55), lineWidth: 1)
-                )
-                .frame(width: badge, height: badge)
+           let icon = Self.swordIcon(forCaveLevel: level) {
+            // Prefer the real game sword sprite (T-213), drawn straight on the terrain filling the
+            // tile like the shops / interior sprites, with a drop-shadow for contrast — no plate.
+            // Falls back to the small atlas glyph only if the sprite is somehow missing.
+            Group {
+                if let file = GameSprite.itemFile(icon), let cg = GameSprite.image(file) {
+                    Image(decorative: cg, scale: 1, orientation: .up)
+                        .resizable().interpolation(.none).aspectRatio(contentMode: .fit)
+                        .shadow(color: .black, radius: 1)
+                        .shadow(color: .black, radius: 1)
+                } else if let image = Image(atlasIcon: ItemIconAtlas.cgImage(icon)) {
+                    image.interpolation(.none).resizable().aspectRatio(contentMode: .fit)
+                        .shadow(color: .black, radius: 1)
+                }
+            }
+            .frame(width: tileWidth, height: tileHeight * 0.9)
         }
     }
 
