@@ -67,6 +67,8 @@ private struct DungeonBoxSwapModifier: ViewModifier {
 /// re-laid-out as clean cards; the Zelda item sprites are kept.
 struct DungeonTrackerView: View {
     @Bindable var model: TrackerModel
+    /// User prefs that affect the item boxes (currently the large-vs-corner unwanted X, T-212).
+    var options: TrackerOptions
     /// Hover tracking for the dungeon-item + hint-zone hotkey contexts (T-168).
     var focus: TrackerFocusState? = nil
 
@@ -86,6 +88,12 @@ struct DungeonTrackerView: View {
         return s
     }
 
+    /// A signature of every dungeon box's identified item, so an edit anywhere re-runs the
+    /// intra heart deduction (T-212). Cheap (72 ints); only its *value* drives `.onChange`.
+    private var boxItemSignature: [Int] {
+        (0..<9).flatMap { model.dungeonTracker.dungeon($0).boxes.map(\.cellCurrent) }
+    }
+
     var body: some View {
         let _ = perfTrace()
         let dt = model.dungeonTracker
@@ -94,7 +102,7 @@ struct DungeonTrackerView: View {
             HStack(alignment: .top, spacing: 6) {
                 ForEach(0..<9, id: \.self) { i in
                     DungeonCardView(dungeon: dt.dungeon(i), instance: dt, isLocated: loc.contains(i),
-                                    iconOptions: model.iconOptions,
+                                    iconOptions: model.iconOptions.with(largeUnwantedX: options.largeUnwantedX),
                                     hideDungeonNumbers: model.hideDungeonNumbers,
                                     blockers: model.dungeonBlockers,
                                     chipPlayerState: model.playerComputedStateSummary,
@@ -103,6 +111,10 @@ struct DungeonTrackerView: View {
                 }
             }
         }
+        // Intra heart shuffle (T-212): re-derive the deduced heart whenever a box item changes
+        // (idempotent — placing the heart makes the next pass a no-op, so it converges).
+        .onAppear { model.applyIntraHeartDeduction() }
+        .onChange(of: boxItemSignature) { _, _ in model.applyIntraHeartDeduction() }
     }
 }
 
@@ -165,7 +177,7 @@ struct DungeonCardView: View {
                 // Triforce pip (ignore for dungeon 9).
                 if dungeon.id != 8 {
                     Image(systemName: "triangle.fill")
-                        .font(.system(size: 9))
+                        .font(.system(size: 15))
                         .foregroundStyle(dungeon.playerHasTriforce ? Color.yellow : Color.secondary)
                 }
             }
@@ -366,7 +378,9 @@ struct BoxView: View {
                    let icon = ItemIconAtlas.icon(forItemIndex: box.cellCurrent, options: iconOptions) {
                     ItemGlyph(icon)
                         .frame(width: Self.size - 10, height: Self.size - 10)
-                        .opacity(box.playerHas == .no ? 0.45 : 1)
+                        // Full colour only when actually obtained; not-obtained (.no) AND
+                        // "don't want it" (.skipped) both read dimmed/untaken (T-212).
+                        .opacity(box.playerHas == .yes ? 1 : 0.45)
                 }
                 if instance.currentlyHasBasementStair(box) {
                     ItemGlyph(.basementStair)
@@ -375,11 +389,18 @@ struct BoxView: View {
                         .padding(1)
                 }
                 if box.playerHas == .skipped {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 9, weight: .bold))
-                        .foregroundStyle(.primary.opacity(0.8))
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                        .padding(2)
+                    if iconOptions.largeUnwantedX {
+                        // A big X through the whole box — the default (T-212), easier to see.
+                        Image(systemName: "xmark")
+                            .font(.system(size: Self.size * 0.72, weight: .bold))
+                            .foregroundStyle(.primary.opacity(0.85))
+                    } else {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 9, weight: .bold))
+                            .foregroundStyle(.primary.opacity(0.8))
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                            .padding(2)
+                    }
                 }
             }
             .frame(width: Self.size, height: Self.size)

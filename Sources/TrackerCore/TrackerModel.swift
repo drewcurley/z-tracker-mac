@@ -13,9 +13,10 @@ import Observation
 public final class TrackerModel {
     public private(set) var quest: OverworldQuest?
 
-    /// Pre-fills each dungeon's first item box with a Heart Container
-    /// (docs/domain.md § 4.1). Off by default, matching the reference app.
-    public var heartShuffle: Bool
+    /// Heart Shuffle seed option (T-212): `.off` pre-fills each dungeon's first item box with a
+    /// Heart Container; `.intra` shuffles the heart within its own dungeon (deduced); `.full`
+    /// shuffles hearts into the global pool. Off by default, matching the reference app.
+    public var heartShuffle: HeartShuffle
 
     /// Hides which numbered dungeon is which, changing several UI behaviors
     /// elsewhere (docs/domain.md § 4.1–4.2). Off by default.
@@ -157,7 +158,7 @@ public final class TrackerModel {
     public struct State: Codable, Sendable {
         public var version = 1
         var quest: OverworldQuest?
-        var heartShuffle: Bool
+        var heartShuffle: HeartShuffle
         var hideDungeonNumbers: Bool
         var isWSMSReplacedByBU: Bool
         var isCurrentlyBook: Bool
@@ -224,11 +225,12 @@ public final class TrackerModel {
         playerProgress.restore(s.progress)
         if let t = s.timeline { timeline.restore(t) }   // absent in pre-timeline saves
         if let si = s.startingItems { startingItemsAndExtras.restore(si) }  // absent in pre-T-196 saves
+        applyIntraHeartDeduction()   // re-derive any intra-shuffle heart (T-212)
     }
 
     public init(
         quest: OverworldQuest? = nil,
-        heartShuffle: Bool = false,
+        heartShuffle: HeartShuffle = .off,
         hideDungeonNumbers: Bool = false,
         overworldGrid: OverworldGrid = OverworldGrid(),
         startingItemsAndExtras: StartingItemsAndExtras = StartingItemsAndExtras(),
@@ -474,16 +476,55 @@ public final class TrackerModel {
         // At session start, seed the dungeon floor-item hearts per Heart
         // Shuffle (the reference's `makeAll` does this once the quest is
         // chosen — `UI.fs:142-144`).
-        dungeonTracker.applyFloorItemHearts(heartShuffle: heartShuffle)
+        dungeonTracker.applyFloorItemHearts(mode: heartShuffle)
     }
 
     /// Toggle Heart Shuffle live (T-049 — the flag now lives in the in-app Flags
     /// group, not just the startup screen). Re-seeds the dungeon floor-item
     /// hearts: **off** puts a known Heart Container in dungeons 1–8's first box,
     /// **on** empties them (hearts shuffled into the pool).
-    public func setHeartShuffle(_ on: Bool) {
-        heartShuffle = on
-        dungeonTracker.applyFloorItemHearts(heartShuffle: on)
+    public func setHeartShuffle(_ mode: HeartShuffle) {
+        heartShuffle = mode
+        dungeonTracker.applyFloorItemHearts(mode: mode)
+        applyIntraHeartDeduction()
+    }
+
+    /// Intra-dungeon heart shuffle (T-212): the heart is guaranteed somewhere in its own
+    /// dungeon, so once every *other* slot in a dungeon is identified as a non-heart, the last
+    /// unknown slot must be the heart — fill it in as a dimmed, untaken Heart Container. Safe to
+    /// call after any dungeon-box edit; a no-op unless the mode is `.intra`. Only *adds* a
+    /// deduced heart (never removes one), so a later manual change can still be corrected by hand.
+    public func applyIntraHeartDeduction() {
+        guard heartShuffle == .intra else { return }
+        for i in 0..<8 {                                  // dungeon 9 (index 8) has no heart
+            let boxes = dungeonTracker.dungeon(i).boxes
+            // Heart already known/placed here → nothing to deduce.
+            if boxes.contains(where: { $0.cellCurrent == ITEMS.heartContainer }) { continue }
+
+            // Split the slots by stair category (floor vs basement). The heart is guaranteed
+            // somewhere in this dungeon, so if one **non-empty** category is entirely identified
+            // as non-hearts, the heart must be in the **other** category — mark one of that
+            // category's still-unknown slots (e.g. D8 / SQ-L4: found the floor item ⇒ the heart
+            // is one of the two basements; FQ-L1: found the basement ⇒ it's one of the floors).
+            // Same-category slots are interchangeable to the player, so which one is arbitrary.
+            let basement = boxes.filter { dungeonTracker.currentlyHasBasementStair($0) }
+            let floor = boxes.filter { !dungeonTracker.currentlyHasBasementStair($0) }
+            func deduce(categoryKnown known: [Box], other: [Box]) -> Bool {
+                guard !known.isEmpty, known.allSatisfy({ $0.cellCurrent != -1 }),
+                      let target = other.first(where: { $0.cellCurrent == -1 }) else { return false }
+                target.set(cellCurrent: ITEMS.heartContainer, playerHas: .no)
+                return true
+            }
+            if deduce(categoryKnown: floor, other: basement) { continue }
+            if deduce(categoryKnown: basement, other: floor) { continue }
+
+            // Degenerate single-category case (e.g. a dungeon with only floor slots): exactly one
+            // slot unknown overall ⇒ it's the heart.
+            let unknown = boxes.filter { $0.cellCurrent == -1 }
+            if unknown.count == 1 {
+                unknown[0].set(cellCurrent: ITEMS.heartContainer, playerHas: .no)
+            }
+        }
     }
 
     /// Toggle Hidden Dungeon Numbers live (T-049). HDN changes the dungeon
@@ -498,6 +539,6 @@ public final class TrackerModel {
             kind: on ? .hideDungeonNumbers : .default,
             isSecondQuestDungeons: dungeonTracker.isSecondQuestDungeons
         )
-        dungeonTracker.applyFloorItemHearts(heartShuffle: heartShuffle)
+        dungeonTracker.applyFloorItemHearts(mode: heartShuffle)
     }
 }

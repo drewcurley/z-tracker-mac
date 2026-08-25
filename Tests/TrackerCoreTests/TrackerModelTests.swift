@@ -26,7 +26,7 @@ struct TrackerModelTests {
     @Test("heartShuffle and hideDungeonNumbers default to off")
     func togglesDefaultOff() {
         let model = TrackerModel()
-        #expect(model.heartShuffle == false)
+        #expect(model.heartShuffle == .off)
         #expect(model.hideDungeonNumbers == false)
     }
 
@@ -43,19 +43,19 @@ struct TrackerModelTests {
     @Test("heartShuffle and hideDungeonNumbers can be set independently")
     func togglesAreIndependent() {
         let model = TrackerModel()
-        model.heartShuffle = true
-        #expect(model.heartShuffle == true)
+        model.heartShuffle = .full
+        #expect(model.heartShuffle == .full)
         #expect(model.hideDungeonNumbers == false)
         model.hideDungeonNumbers = true
-        #expect(model.heartShuffle == true)
+        #expect(model.heartShuffle == .full)
         #expect(model.hideDungeonNumbers == true)
     }
 
     @Test("initializer accepts explicit toggle values")
     func initializerAcceptsToggles() {
-        let model = TrackerModel(quest: .second, heartShuffle: true, hideDungeonNumbers: true)
+        let model = TrackerModel(quest: .second, heartShuffle: .full, hideDungeonNumbers: true)
         #expect(model.quest == .second)
-        #expect(model.heartShuffle == true)
+        #expect(model.heartShuffle == .full)
         #expect(model.hideDungeonNumbers == true)
     }
 

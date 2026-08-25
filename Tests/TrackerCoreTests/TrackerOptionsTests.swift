@@ -40,6 +40,7 @@ struct TrackerOptionsTests {
         #expect(options.bookForHelpfulHints == false)
         #expect(options.leftDragAutoInverts == false)
         #expect(options.defaultToNonDescript == false)
+        #expect(options.largeUnwantedX == true)
         #expect(options.appTheme == .dark)   // T-187: theme picker replaced the sunglasses toggle
 
         // "More settings…" (overworld tile hiding)

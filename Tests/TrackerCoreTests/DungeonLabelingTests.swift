@@ -98,10 +98,10 @@ struct DungeonLabelingTests {
         // Shuffle off (default): dungeon 1's floor box knows a Heart Container.
         #expect(model.dungeonTracker.dungeon(0).baseBoxes[0].cellCurrent == ITEMS.heartContainer)
         // Turn shuffle on: that box empties (heart shuffled into the pool).
-        model.setHeartShuffle(true)
+        model.setHeartShuffle(.full)
         #expect(model.dungeonTracker.dungeon(0).baseBoxes[0].cellCurrent == -1)
         // Back off: the known heart returns.
-        model.setHeartShuffle(false)
+        model.setHeartShuffle(.off)
         #expect(model.dungeonTracker.dungeon(0).baseBoxes[0].cellCurrent == ITEMS.heartContainer)
     }
 }

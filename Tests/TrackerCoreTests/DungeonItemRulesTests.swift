@@ -71,7 +71,7 @@ struct DungeonItemRulesTests {
     @Test("floor hearts: Heart Shuffle off seeds L1-8 box[0] with an unobtained heart; L9 excluded")
     func floorHeartsOff() {
         let inst = DungeonTrackerInstance()
-        inst.applyFloorItemHearts(heartShuffle: false)
+        inst.applyFloorItemHearts(mode: .off)
         for i in 0..<8 {
             let floor = inst.dungeon(i).baseBoxes[0]
             #expect(floor.cellCurrent == ITEMS.heartContainer)
@@ -86,8 +86,8 @@ struct DungeonItemRulesTests {
     @Test("floor hearts: Heart Shuffle on leaves the floor boxes empty")
     func floorHeartsOn() {
         let inst = DungeonTrackerInstance()
-        inst.applyFloorItemHearts(heartShuffle: false) // seed first
-        inst.applyFloorItemHearts(heartShuffle: true)  // then shuffle on
+        inst.applyFloorItemHearts(mode: .off) // seed first
+        inst.applyFloorItemHearts(mode: .full)  // then shuffle on
         for i in 0..<8 {
             #expect(inst.dungeon(i).baseBoxes[0].cellCurrent == -1)
         }
@@ -96,11 +96,11 @@ struct DungeonItemRulesTests {
 
     @Test("selectQuest seeds floor hearts from the model's heartShuffle flag")
     func selectQuestSeedsHearts() {
-        let noShuffle = TrackerModel(heartShuffle: false)
+        let noShuffle = TrackerModel(heartShuffle: .off)
         noShuffle.selectQuest(.first)
         #expect(noShuffle.dungeonTracker.dungeon(0).baseBoxes[0].cellCurrent == ITEMS.heartContainer)
 
-        let shuffle = TrackerModel(heartShuffle: true)
+        let shuffle = TrackerModel(heartShuffle: .full)
         shuffle.selectQuest(.first)
         #expect(shuffle.dungeonTracker.dungeon(0).baseBoxes[0].cellCurrent == -1)
     }

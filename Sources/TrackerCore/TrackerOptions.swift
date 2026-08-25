@@ -153,6 +153,9 @@ public final class TrackerOptions {
     /// `DefaultRoomPreferNonDescriptToMaybePushBlock`, default `false`.
     /// Labeled "Default to NonDescript" on-screen (`OptionsMenu.fs:60`).
     public var defaultToNonDescript: Bool { didSet { persistSettingsBoolsIfNeeded() } }
+    /// Mark an unwanted ("skipped") item box with a **large X across the whole box** (default
+    /// `true`, T-212) instead of a small X in the corner — easier to see at a glance.
+    public var largeUnwantedX: Bool { didSet { persistSettingsBoolsIfNeeded() } }
     /// The app's color theme (T-187, beyond the reference): dark (default), light, or
     /// follow the OS. Replaces the reference's unimplemented "Dungeon 'sunglasses'"
     /// toggle. Drives `NSApp.appearance`. Persists **immediately** on change (not just at
@@ -262,6 +265,7 @@ public final class TrackerOptions {
         bookForHelpfulHints: Bool = false,
         leftDragAutoInverts: Bool = false,
         defaultToNonDescript: Bool = false,
+        largeUnwantedX: Bool = true,
         appTheme: AppTheme = .dark,
         hiddenOverworldTiles: [OverworldHiddenTileKind: Bool]? = nil,
         hideNoLongerRelevantShopItems: Bool = false,
@@ -300,6 +304,7 @@ public final class TrackerOptions {
         self.bookForHelpfulHints = bookForHelpfulHints
         self.leftDragAutoInverts = leftDragAutoInverts
         self.defaultToNonDescript = defaultToNonDescript
+        self.largeUnwantedX = largeUnwantedX
         self.appTheme = appTheme
         self.hiddenOverworldTiles = hiddenOverworldTiles ?? Self.defaultHiddenOverworldTiles()
         self.hideNoLongerRelevantShopItems = hideNoLongerRelevantShopItems
@@ -468,6 +473,7 @@ public final class TrackerOptions {
         "bookForHelpfulHints": \.bookForHelpfulHints,
         "leftDragAutoInverts": \.leftDragAutoInverts,
         "defaultToNonDescript": \.defaultToNonDescript,
+        "largeUnwantedX": \.largeUnwantedX,
         "hideNoLongerRelevantShopItems": \.hideNoLongerRelevantShopItems,
         "alwaysHideMeatShops": \.alwaysHideMeatShops,
         "animateTileChanges": \.animateTileChanges,

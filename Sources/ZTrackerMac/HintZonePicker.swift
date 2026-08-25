@@ -21,10 +21,10 @@ struct HintLabel: View {
         // just the gold text (already high-contrast on the dark chip).
         let showGoldBorder = hint != .unknown && colorScheme == .light
         return Text(hint.twoChars)
-            .font(.system(size: 9, weight: .bold, design: .monospaced))
+            .font(.system(size: 12, weight: .bold, design: .monospaced))
             .foregroundStyle(hint == .unknown ? Color.secondary : Theme.hint)
-            .frame(minWidth: 18)
-            .padding(.horizontal, 3).padding(.vertical, 1)
+            .frame(minWidth: 22)
+            .padding(.horizontal, 4).padding(.vertical, 2)
             .background(RoundedRectangle(cornerRadius: 3).fill(Theme.panelFill))
             .overlay(RoundedRectangle(cornerRadius: 3)
                 .strokeBorder(Theme.hint, lineWidth: showGoldBorder ? 1 : 0))

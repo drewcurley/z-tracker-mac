@@ -115,6 +115,9 @@ struct OverworldMapView: View {
     /// A dungeon marker was placed (T-039.1) — the parent auto-sets that
     /// dungeon's location hint to the screen's region. `(number, column, row)`.
     var onPlaceDungeon: (Int, Int, Int) -> Void = { _, _, _ in }
+    /// Placing a White-Sword/Magical-Sword cave auto-fills its location hint (T-212); wired by
+    /// the section view to `OverworldMark.didPlaceSwordCave`.
+    var onPlaceSwordCave: (Int, Int, Int) -> Void = { _, _, _ in }
     /// The wood-sword cave was toggled used/unused (T-118): grant/ungrant the sword.
     var onWoodSwordCaveUsedChanged: (Bool) -> Void = { _ in }
     /// The magical-sword cave was clicked (T-119): take/untake the magical sword.
@@ -726,7 +729,8 @@ struct OverworldMapView: View {
         // the cursor cell does identically the same thing as this click path.
         let result = OverworldMark.apply(mark, column: column, row: row, grid: grid,
                                          releaseTakeAny: onReleaseTakeAny,
-                                         placeDungeon: onPlaceDungeon)
+                                         placeDungeon: onPlaceDungeon,
+                                         placeSwordCave: onPlaceSwordCave)
         // Overworld-overwrite reminder (T-096): warn on a destructive change of a
         // real mark, in case it was accidental.
         onOverwrite(result.oldMark, mark, column, row)
@@ -1225,9 +1229,6 @@ struct TileView: View {
     /// The hint "?" tile's neutral-gray background (user request — same digit-tile
     /// style as levels/any-roads, but gray so it reads as distinct).
     private static let hintBackground = Color(white: 0.58)
-    /// Ported from `itemBackgroundColor` (`Z1R_WPF/Graphics.fs:830`, shop
-    /// icon background).
-    private static let shopBackground = Color(red: 0xEF / 255.0, green: 0x83 / 255.0, blue: 0)
 
     var body: some View {
         let _ = perfTrace()
@@ -1276,11 +1277,12 @@ struct TileView: View {
                         .frame(width: tileWidth, height: tileHeight)
                         .scaleEffect(x: mirrored ? -1 : 1, y: 1)
                     // Shops keep the orange-plate presentation in the reference
-                    // interior region (their two 3×7 item icons already read well).
+                    // Shops fill the whole tile now (T-212) — no orange interior plate — so the
+                    // item sprites are large and legible, like the sword-cave / interior sprites.
                     shopIconView
-                        .frame(width: tileWidth * Self.interiorWidthFraction, height: tileHeight * Self.interiorHeightFraction)
+                        .frame(width: tileWidth, height: tileHeight * 0.9)
+                        .frame(width: tileWidth, height: tileHeight)
                         .scaleEffect(x: mirrored ? -1 : 1, y: 1)
-                        .offset(x: tileWidth * Self.interiorOffsetXFraction, y: tileHeight * Self.interiorOffsetYFraction)
                 }
                 // "More settings" per-kind hiding (T-004.3): dim this tile's mark
                 // when its kind is hidden, unless the pointer is over it (peek).
@@ -1495,29 +1497,29 @@ struct TileView: View {
     @ViewBuilder
     private var shopIconView: some View {
         if case .shopSprite = mark.iconSource {
-            let interiorBoxHeight = tileHeight * Self.interiorHeightFraction
-            ZStack {
-                Self.shopBackground
-                // Shops carry up to two items (T-060), drawn side by side in
-                // `ShopKind` order for a stable layout.
-                HStack(spacing: 0) {
-                    ForEach(visibleShopItems, id: \.self) { kind in
-                        // Real game sprite (T-161) at its natural aspect; the crude
-                        // 3×7 atlas glyph only if a sprite is somehow missing.
-                        if let file = GameSprite.shopFile(kind), let cg = GameSprite.image(file) {
-                            Image(decorative: cg, scale: 1, orientation: .up)
-                                .resizable().interpolation(.none).aspectRatio(contentMode: .fit)
-                        } else if let icon = OverworldShopIconAtlas.icon(at: ShopKind.allCases.firstIndex(of: kind) ?? 0) {
-                            Image(decorative: icon, scale: 1, orientation: .up)
-                                .resizable()
-                                .interpolation(.none)
-                                .aspectRatio(3.0 / 7.0, contentMode: .fit)
-                        }
+            // No orange plate (T-212): draw the real item sprites straight on the terrain like
+            // the other overworld interior icons, filling the tile so arrows / keys / shields
+            // read clearly. A black drop-shadow gives contrast on any terrain colour.
+            HStack(spacing: 1) {
+                ForEach(visibleShopItems, id: \.self) { kind in
+                    // Real game sprite (T-161) at its natural aspect; the crude 3×7 atlas glyph
+                    // only if a sprite is somehow missing.
+                    if let file = GameSprite.shopFile(kind), let cg = GameSprite.image(file) {
+                        Image(decorative: cg, scale: 1, orientation: .up)
+                            .resizable().interpolation(.none).aspectRatio(contentMode: .fit)
+                            .shadow(color: .black, radius: 1)
+                            .shadow(color: .black, radius: 1)
+                    } else if let icon = OverworldShopIconAtlas.icon(at: ShopKind.allCases.firstIndex(of: kind) ?? 0) {
+                        Image(decorative: icon, scale: 1, orientation: .up)
+                            .resizable()
+                            .interpolation(.none)
+                            .aspectRatio(3.0 / 7.0, contentMode: .fit)
+                            .shadow(color: .black, radius: 1)
                     }
                 }
-                .padding(.vertical, interiorBoxHeight / 9.0)
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
             }
+            .padding(2)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
 

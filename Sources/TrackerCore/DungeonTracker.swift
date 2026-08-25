@@ -306,12 +306,14 @@ public final class DungeonTrackerInstance {
     /// Shuffle is **off**, dungeons 1–8 (indices 0–7) have a Heart Container as
     /// their known-but-unobtained floor item; when **on**, those boxes are
     /// empty (hearts shuffled into the pool). Dungeon 9 has no floor heart.
-    public func applyFloorItemHearts(heartShuffle: Bool) {
+    public func applyFloorItemHearts(mode: HeartShuffle) {
         for i in 0..<8 {
-            if heartShuffle {
-                dungeons[i].baseBoxes[0].set(cellCurrent: -1, playerHas: .no)
-            } else {
+            if mode.preplacesDungeonHearts {
                 dungeons[i].baseBoxes[0].set(cellCurrent: ITEMS.heartContainer, playerHas: .no)
+            } else {
+                // `.intra` and `.full` both leave the box empty — for `.full` the heart is in the
+                // global pool; for `.intra` it's deduced into a box by `applyIntraHeartDeduction`.
+                dungeons[i].baseBoxes[0].set(cellCurrent: -1, playerHas: .no)
             }
         }
     }

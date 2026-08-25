@@ -17,7 +17,7 @@ struct DoorRepairDimTests {
 
     @Test("a groundhog reset keeps the door-repair mark (so its dim persists)")
     func survivesGroundhog() {
-        let model = TrackerModel(quest: .first, heartShuffle: false)
+        let model = TrackerModel(quest: .first, heartShuffle: .off)
         model.overworldGrid.setMark(.doorRepair, column: 3, row: 3)
         model.resetForGroundhogOrRouters()
         #expect(model.overworldGrid.mark(column: 3, row: 3) == .doorRepair)

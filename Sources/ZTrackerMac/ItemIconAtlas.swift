@@ -14,6 +14,16 @@ struct ItemIconOptions: Equatable {
     var wsmsReplacedByBU = false
     /// Item slot 0 is the Book (true, default) or the Magic Shield (false).
     var isCurrentlyBook = true
+    /// Draw an unwanted ("skipped") box's X large across the whole box vs a small corner X
+    /// (T-212). Rides along with the seed-display flags so it reaches the item boxes without
+    /// threading a separate parameter.
+    var largeUnwantedX = true
+
+    /// A copy with `largeUnwantedX` overridden — lets a view fold in the user preference on top
+    /// of the model-derived `iconOptions`.
+    func with(largeUnwantedX: Bool) -> ItemIconOptions {
+        var copy = self; copy.largeUnwantedX = largeUnwantedX; return copy
+    }
 }
 
 extension TrackerModel {

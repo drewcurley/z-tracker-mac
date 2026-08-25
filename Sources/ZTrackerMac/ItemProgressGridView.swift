@@ -264,6 +264,8 @@ private let itemGridCellSize: CGFloat = 34
 /// live state (T-025.3).
 struct ObtainableItemsView: View {
     @Bindable var model: TrackerModel
+    /// User prefs affecting the item boxes (the large-vs-corner unwanted X, T-212).
+    var options: TrackerOptions
     var playerState: PlayerComputedStateSummary
     var mapState: MapStateSummary
     /// Shared keyboard-cursor state (T-135) — this is the "items" cursor region.
@@ -323,7 +325,7 @@ struct ObtainableItemsView: View {
                         Color.clear
                     }
                 }
-                .frame(width: itemGridCellSize, height: 15)
+                .frame(width: itemGridCellSize, height: 20)
             }
         }
     }
@@ -342,7 +344,7 @@ struct ObtainableItemsView: View {
             IndicatorCell(icon: coast.indicator, help: coast.help, size: itemGridCellSize)
         case .pickerBox(let coast):
             BoxView(box: coast.box(in: model.dungeonTracker), instance: model.dungeonTracker,
-                    label: nil, iconOptions: model.iconOptions)
+                    label: nil, iconOptions: model.iconOptions.with(largeUnwantedX: options.largeUnwantedX))
                 .help(coast.help)
         case .toggle(let toggle):
             ItemToggleBox(
@@ -450,9 +452,28 @@ struct SeedFlagsView: View {
     /// setter so the dungeon floor-item hearts re-seed on change. Confirms once
     /// the run has started (T-051/T-052), since it overwrites the floor boxes.
     private var heartShuffleTile: some View {
-        flagTile(on: model.heartShuffle, systemImage: "suit.heart.fill", tint: .red,
-                 help: "Heart Shuffle: dungeon floor hearts are shuffled into the item pool instead of being known") {
-            let newValue = !model.heartShuffle
+        let mode = model.heartShuffle
+        let on = mode != .off
+        let badge: String? = mode == .intra ? "I" : (mode == .full ? "F" : nil)
+        return ZStack {
+            Image(systemName: "suit.heart.fill").font(.system(size: 18)).foregroundStyle(.red)
+            if let badge {
+                // A corner letter distinguishes Intra vs Full at a glance.
+                Text(badge)
+                    .font(.system(size: 9, weight: .heavy, design: .rounded))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 3).padding(.vertical, 1)
+                    .background(Capsule().fill(.black.opacity(0.8)))
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottomTrailing)
+                    .padding(1)
+            }
+        }
+        .frame(width: itemGridCellSize, height: itemGridCellSize)
+        .background(RoundedRectangle(cornerRadius: 6).fill(on ? Color.green.opacity(0.3) : Color.clear))
+        .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(on ? Color.green : Theme.border, lineWidth: 1))
+        .contentShape(Rectangle())
+        .onTapGesture {
+            let newValue = mode.next   // Off → Intra → Full → Off
             runOrConfirm(confirmFirst: timer.hasStarted, into: &pending,
                          title: "Change Heart Shuffle mid-run?",
                          message: "This re-seeds every dungeon's floor-item box, discarding what you've marked there. This can't be undone.",
@@ -460,6 +481,7 @@ struct SeedFlagsView: View {
                 model.setHeartShuffle(newValue)
             }
         }
+        .help("Heart Shuffle (click to cycle): Off → Intra (I) → Full (F). Intra deduces each dungeon's heart once its other items are known; Full shuffles hearts into the global item pool.")
     }
 
     /// Hidden Dungeon Numbers (T-049) — moved off the startup screen. Rebuilds
