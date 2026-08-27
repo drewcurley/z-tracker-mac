@@ -320,6 +320,10 @@ struct BoxView: View {
     /// The box carries no item (an identified HDN two-boxer's third box, T-050):
     /// rendered dimmed + non-interactive so it can't be filled.
     var disabled: Bool = false
+    /// Whether identifying an item here defaults to **taken** (T-214). `false` for a gated box
+    /// the player can't have reached yet (coast without the ladder, white-sword item below the
+    /// heart minimum) — then the picker marks it untaken. Forwarded to `BoxItemPicker`.
+    var defaultAcquired: Bool = true
     /// Blocker "applies to" chips for this box + the player state that decides
     /// whether each is resolved (T-082). Empty → no chips.
     var chips: [DungeonBlocker] = []
@@ -423,7 +427,8 @@ struct BoxView: View {
             }
             .onRightClick { presentPopoverWithoutAnimation { showPicker = true } }
             .popover(isPresented: $showPicker, arrowEdge: .bottom) {
-                BoxItemPicker(box: box, instance: instance, iconOptions: iconOptions) { showPicker = false }
+                BoxItemPicker(box: box, instance: instance, iconOptions: iconOptions,
+                              defaultAcquired: defaultAcquired) { showPicker = false }
             }
             // Custom-gesture control → expose to VoiceOver (T-067): reads the
             // box's state, primary action toggles taken / opens the picker.
@@ -455,14 +460,24 @@ struct BoxItemPicker: View {
     @Bindable var box: Box
     var instance: DungeonTrackerInstance
     var iconOptions = ItemIconOptions()
+    /// Whether a left-click ("have it") defaults to **taken** (T-214). `false` for a gated item
+    /// the player can't have reached yet (coast without the ladder, white-sword item below the
+    /// heart minimum) — then a left-click marks it *untaken* instead, since you can't hold it yet.
+    var defaultAcquired: Bool = true
     var dismiss: () -> Void
+
+    /// The possession state a left-click assigns: normally `.yes`, but `.no` when the item is
+    /// gated out of reach (T-214).
+    private var leftClickState: PlayerHas { defaultAcquired ? .yes : .no }
 
     private let columns = Array(repeating: GridItem(.fixed(30), spacing: 4), count: 8)
 
     var body: some View {
         let _ = perfTrace()
         VStack(alignment: .leading, spacing: 8) {
-            Text("Set item — left-click = have it, right-click = don't have it")
+            Text(defaultAcquired
+                 ? "Set item — left-click = have it, right-click = don't have it"
+                 : "Set item — can't be reached yet, so both clicks mark it not-yet-collected")
                 .font(.caption).foregroundStyle(.secondary)
             LazyVGrid(columns: columns, spacing: 4) {
                 ForEach(0..<Box.itemCount, id: \.self) { item in
@@ -482,7 +497,7 @@ struct BoxItemPicker: View {
                     .background(RoundedRectangle(cornerRadius: 4).fill(isCurrent ? Color.accentColor.opacity(0.4) : Color(white: 0.15)))
                     .onTapGesture {
                         guard available else { return }
-                        box.set(cellCurrent: item, playerHas: .yes)
+                        box.set(cellCurrent: item, playerHas: leftClickState)
                         dismiss()
                     }
                     .onRightClick {
@@ -498,7 +513,7 @@ struct BoxItemPicker: View {
                     .accessibilityAddTraits(available ? .isButton : [])
                     .accessibilityAction {
                         guard available else { return }
-                        box.set(cellCurrent: item, playerHas: .yes); dismiss()
+                        box.set(cellCurrent: item, playerHas: leftClickState); dismiss()
                     }
                     .accessibilityAction(named: "Mark as not having it") {
                         guard available else { return }

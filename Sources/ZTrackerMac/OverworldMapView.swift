@@ -447,8 +447,16 @@ struct OverworldMapView: View {
                                             case .whiteSword: dungeonTracker.sword2Box
                                             case .coast: dungeonTracker.ladderBox
                                             }
+                                            // Gated items default to untaken when unreachable (T-214):
+                                            // coast needs the ladder, white-sword item needs ≥4 hearts.
+                                            let acquirable = switch p.box {
+                                            case .armos: true
+                                            case .whiteSword: ItemAcquisitionGate.whiteSwordItemReachable(playerState)
+                                            case .coast: ItemAcquisitionGate.coastReachable(playerState)
+                                            }
                                             BoxItemPicker(box: box, instance: dungeonTracker,
-                                                          iconOptions: iconOptions) { itemPrompt = nil }
+                                                          iconOptions: iconOptions,
+                                                          defaultAcquired: acquirable) { itemPrompt = nil }
                                                 .padding(4)
                                         }
                                     }
@@ -594,7 +602,11 @@ struct OverworldMapView: View {
             // from whether the player has the magical sword. Clicking it "takes" the
             // magical sword (or un-takes it), which in turn dims/brightens the tile
             // (T-119, user request).
-            onMagicalSwordCaveUsedChanged(playerState.swordLevel < 3)
+            let taking = playerState.swordLevel < 3
+            // Block taking it below the 10-heart minimum — you can't have it yet (T-214).
+            if !(taking && !ItemAcquisitionGate.magicalSwordReachable(playerState)) {
+                onMagicalSwordCaveUsedChanged(taking)
+            }
         } else if mark.isUsedToggleable {
             // A claimable tile (secret / letter / hint shop / wood-sword cave):
             // left-click toggles it used ⇄ unused (T-054).
