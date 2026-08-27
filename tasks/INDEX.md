@@ -25,6 +25,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-214](./T-214.md) | Gated items default to untaken when unreachable (coast/ladder, white-sword/4♥, magical-sword/10♥) | frontend-engineer | — | feat/gated-item-defaults | — | docs/reviews/feat-gated-item-defaults/final.md |
 | [T-213](./T-213.md) | Overworld sword-cave markers use real game sprites; first NOTARIZED release | frontend-engineer | T-212 | feat/sword-cave-sprites | — | docs/reviews/feat-sword-cave-sprites/final.md |
 | [T-212](./T-212.md) | Tracker UX batch — sword-cave hint, bigger indicators, shop redraw, large-X option, Heart Shuffle 3-state + intra deduction | frontend-engineer | — | feat/tracker-ux-and-heart-shuffle | — | docs/reviews/feat-tracker-ux-and-heart-shuffle/final.md |
 | [T-211](./T-211.md) | Sparkle in-place auto-update (free/self-signed path) — one-click update, per-arch appcast | frontend-engineer | T-174 | feat/sparkle-auto-update | — | docs/reviews/feat-sparkle-auto-update/final.md |

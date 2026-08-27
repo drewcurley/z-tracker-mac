@@ -198,6 +198,17 @@ enum ItemProgressGrid {
             case .whiteSword: dt.sword2Box
             }
         }
+
+        /// Whether identifying this box's item defaults to **taken** (T-214): the coast item needs
+        /// the ladder and the white-sword item needs the heart minimum, so below those the mark
+        /// defaults to untaken. Armos has no such gate.
+        func defaultAcquired(_ s: PlayerComputedStateSummary) -> Bool {
+            switch self {
+            case .coast: ItemAcquisitionGate.coastReachable(s)
+            case .whiteSword: ItemAcquisitionGate.whiteSwordItemReachable(s)
+            case .armos: true
+            }
+        }
     }
 
     /// Semantic content of a grid cell.
@@ -344,7 +355,8 @@ struct ObtainableItemsView: View {
             IndicatorCell(icon: coast.indicator, help: coast.help, size: itemGridCellSize)
         case .pickerBox(let coast):
             BoxView(box: coast.box(in: model.dungeonTracker), instance: model.dungeonTracker,
-                    label: nil, iconOptions: model.iconOptions.with(largeUnwantedX: options.largeUnwantedX))
+                    label: nil, iconOptions: model.iconOptions.with(largeUnwantedX: options.largeUnwantedX),
+                    defaultAcquired: coast.defaultAcquired(playerState))
                 .help(coast.help)
         case .toggle(let toggle):
             ItemToggleBox(
@@ -353,6 +365,8 @@ struct ObtainableItemsView: View {
                 iconOverride: iconOverride(for: toggle),
                 located: toggle.located(playerState: playerState, mapState: mapState),
                 superseded: toggle.superseded(playerState: playerState),
+                // Magical sword can't be marked held below its 10-heart minimum (T-214).
+                canAcquire: toggle == .magicalSword ? ItemAcquisitionGate.magicalSwordReachable(playerState) : true,
                 size: itemGridCellSize
             )
         case .takeAnyHeart(let i):
@@ -773,6 +787,10 @@ private struct ItemToggleBox: View {
     var located: Bool = false
     /// A better item makes this one moot → gray + X.
     var superseded: Bool = false
+    /// Whether the item can be acquired yet (T-214). `false` blocks turning the toggle **on**
+    /// (used for the magical sword below its 10-heart minimum — you can't have it yet); turning it
+    /// back off is always allowed.
+    var canAcquire: Bool = true
     let size: CGFloat
 
     private var has: Bool { progress[keyPath: toggle.keyPath] }
@@ -805,9 +823,13 @@ private struct ItemToggleBox: View {
         .overlay(
             RoundedRectangle(cornerRadius: 4).strokeBorder(borderColor, lineWidth: 1.5)
         )
-        .onTapGesture { progress[keyPath: toggle.keyPath].toggle() }
+        .onTapGesture {
+            // Block turning it on when it can't be reached yet (T-214); turning off is fine.
+            if !progress[keyPath: toggle.keyPath] && !canAcquire { return }
+            progress[keyPath: toggle.keyPath].toggle()
+        }
         .onRightClick { progress[keyPath: toggle.keyPath] = false }
-        .help(toggle.help)
+        .help(canAcquire ? toggle.help : toggle.help + " — needs \(ItemAcquisitionGate.magicalSwordMinHearts) hearts (min) before you can have it")
     }
 }
 
