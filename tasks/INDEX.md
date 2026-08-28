@@ -25,6 +25,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-219](./T-219.md) | Drop Rooms breakout window + Hint Decoder "Other hints" clickable title | frontend-engineer | — | feat/drop-rooms-window | — | docs/reviews/feat-drop-rooms-window/final.md |
 | [T-218](./T-218.md) | Shop & Price tracker breakout window (+ 4-wide Info icons, real bomb-upgrade glyph) | frontend-engineer | — | feat/shop-price-tracker | — | docs/reviews/feat-shop-price-tracker/final.md |
 | [T-217](./T-217.md) | Generic "Bomb Droppers" overworld enemy marker (plain bomb icon) | frontend-engineer | — | feat/bomb-droppers-enemy | — | docs/reviews/feat-bomb-droppers-enemy/final.md |
 | [T-216](./T-216.md) | Spot Summary breakout — scale on resize + use current game-sprite icons | frontend-engineer | — | fix/spot-summary-breakout-scale-icons | — | docs/reviews/fix-spot-summary-breakout-scale-icons/final.md |
