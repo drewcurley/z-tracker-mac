@@ -8,8 +8,11 @@ frictionless (notarized, auto-updating) build when you're ready.
 1. **Bump the version.** Edit `VERSION` (e.g. `0.8.0` → `0.9.0`). This flows to
    `CFBundleShortVersionString` via `scripts/build-app.sh` and is what the update
    check compares against.
-2. **Commit** the bump on a branch and merge it (governance flow as usual).
-3. **Build the disk images (both architectures):**
+2. **Add a `CHANGELOG.md` entry** for the new version (newest first), with the same user-facing
+   notes you'll put on the GitHub Release and in the release's `--notes`. Keep the three sources in
+   sync — `CHANGELOG.md` is the cumulative history readers scan; the release notes are per-version.
+3. **Commit** the bump + changelog on a branch and merge it (governance flow as usual).
+4. **Build the disk images (both architectures):**
    ```bash
    scripts/make-dmg.sh
    ```
@@ -25,7 +28,7 @@ frictionless (notarized, auto-updating) build when you're ready.
    arch (`dist/appcast-arm64.xml`, `dist/appcast-x86_64.xml`) using the private key in your
    login Keychain (see Sparkle section). These MUST be attached to the release so installed
    apps can find the update.
-4. **Tag and publish a GitHub Release** whose tag is the version, attaching **both** DMGs
+5. **Tag and publish a GitHub Release** whose tag is the version, attaching **both** DMGs
    **and both appcasts**. The tag may be `v1.0.0` or `1.0.0` — the update check tolerates a
    leading `v`.
    ```bash
