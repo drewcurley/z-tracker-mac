@@ -39,6 +39,9 @@ let OverworldWindowID = "z-overworld"
 /// so it can stay up (e.g. on a second monitor) instead of a hover/click popover.
 let SpotSummaryWindowID = "z-spot-summary"
 
+/// The id of the Shop & Price tracker breakout window (T-218).
+let ShopPricesWindowID = "z-shop-prices"
+
 /// The id of the broadcast **mirror** window (T-178) — a synced full-tracker clone.
 let BroadcastWindowID = "z-broadcast"
 
@@ -244,6 +247,15 @@ struct ZTrackerMacApp: App {
                 .frame(minWidth: 240, minHeight: 200)
         }
         .defaultSize(width: 320, height: 460)
+
+        // The Shop & Price tracker (T-218) — a standalone breakout, opened from the Info panel's
+        // top-row shop icon.
+        Window("Shops & Prices", id: ShopPricesWindowID) {
+            ShopPriceView(record: model.shopPrices, options: options)
+                .frame(minWidth: 360, minHeight: 320)
+                .onDisappear { model.showShopPricesWindow = false }
+        }
+        .defaultSize(width: 460, height: 560)
 
         // The break-out Progress HUD (T-035.10) — opened on demand by the
         // "Progress" toggle (a secondary WindowGroup doesn't open at launch).

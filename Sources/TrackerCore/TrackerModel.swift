@@ -78,6 +78,10 @@ public final class TrackerModel {
     /// the Flags checkbox regardless).
     public var showProgressWindow: Bool = false
 
+    /// Whether the Shop & Price tracker breakout window is open (T-218) — drives the Info panel's
+    /// cart icon tint. Transient (not saved), mirroring `showProgressWindow`.
+    public var showShopPricesWindow: Bool = false
+
     /// The overworld screen the player spawned on (T-035.8), or `nil` if unset.
     /// Ported from `startIconX/startIconY` (`TrackerModel.fs:1295`, `NOTFOUND` =
     /// unset). Rendered as a lime/violet ring on the map; purely a marker.
@@ -144,6 +148,10 @@ public final class TrackerModel {
     /// names/colors. Session state, saved with the game. Phase 1 tracks the overworld only.
     public let commentary = CommentaryLayer()
 
+    /// The Shop & Price tracker (T-218): a standalone breakout record of shop stock + prices,
+    /// potions, bomb upgrades, and paid hints. Saved with the game.
+    public let shopPrices = ShopPriceRecord()
+
     /// The edge-triggered reminder/announcement engine (T-018.2). Owned here
     /// so its transition state survives view redraws; driven by the app's
     /// poll loop via `pollReminders()` (T-018.3).
@@ -191,6 +199,8 @@ public final class TrackerModel {
         /// Commentary Mode overlay (T-215). Optional so pre-commentary saves still decode
         /// (they restore with an empty overlay + default runner names).
         var commentary: CommentaryLayer.State? = nil
+        /// Shop & Price tracker (T-218). Optional so pre-T-218 saves still decode (empty record).
+        var shopPrices: ShopPriceRecord.State? = nil
     }
 
     public func snapshot() -> State {
@@ -204,7 +214,7 @@ public final class TrackerModel {
               overworld: overworldGrid.state, roomMaps: dungeonRoomMaps.map(\.state),
               tracker: dungeonTracker.state, blockers: dungeonBlockers.state, progress: playerProgress.state,
               timeline: timeline.state, startingItems: startingItemsAndExtras.state,
-              commentary: commentary.state)
+              commentary: commentary.state, shopPrices: shopPrices.state)
     }
 
     /// Restore a saved snapshot into this model. Order matters: the HDN flag is applied
@@ -234,6 +244,7 @@ public final class TrackerModel {
         if let t = s.timeline { timeline.restore(t) }   // absent in pre-timeline saves
         if let si = s.startingItems { startingItemsAndExtras.restore(si) }  // absent in pre-T-196 saves
         if let c = s.commentary { commentary.restore(c) }   // absent in pre-commentary saves (T-215)
+        if let sp = s.shopPrices { shopPrices.restore(sp) }   // absent in pre-T-218 saves
         applyIntraHeartDeduction()   // re-derive any intra-shuffle heart (T-212)
     }
 

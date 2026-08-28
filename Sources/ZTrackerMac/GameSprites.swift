@@ -105,13 +105,43 @@ struct ItemGlyph: View {
     let icon: ItemIconAtlas.Icon
     init(_ icon: ItemIconAtlas.Icon) { self.icon = icon }
     var body: some View {
-        if let file = GameSprite.itemFile(icon), let cg = GameSprite.image(file) {
+        if icon == .wsMsBombUpgrade {
+            // The bomb-upgrade "bomb+" — composed from the real bomb sprite plus a "+" badge,
+            // replacing the low-fidelity atlas glyph (T-218).
+            BombUpgradeGlyph()
+        } else if let file = GameSprite.itemFile(icon), let cg = GameSprite.image(file) {
             Image(decorative: cg, scale: 1, orientation: .up)
                 .resizable().interpolation(.none).aspectRatio(contentMode: .fit)
         } else if let img = Image(atlasIcon: ItemIconAtlas.cgImage(icon)) {
             img.interpolation(.none).resizable()
         } else {
             Color.clear
+        }
+    }
+}
+
+/// The bomb-upgrade icon (T-218): the real bomb game sprite with a small green "+" in the upper-right
+/// (outlined for contrast on any background), signifying "more bombs". Scales to the caller's frame.
+/// Used for both swordless upgrades and the Shop & Price window's bomb-upgrade row.
+struct BombUpgradeGlyph: View {
+    var body: some View {
+        GeometryReader { geo in
+            let side = min(geo.size.width, geo.size.height)
+            ZStack(alignment: .topTrailing) {
+                if let cg = GameSprite.image("Bomb") {
+                    Image(decorative: cg, scale: 1, orientation: .up)
+                        .resizable().interpolation(.none).aspectRatio(contentMode: .fit)
+                        // Leave room in the top-right for the badge.
+                        .padding(.top, side * 0.14).padding(.trailing, side * 0.14)
+                        .frame(width: geo.size.width, height: geo.size.height, alignment: .bottomLeading)
+                }
+                Image(systemName: "plus")
+                    .font(.system(size: side * 0.5, weight: .black))
+                    .foregroundStyle(Color(red: 0.30, green: 0.92, blue: 0.36))
+                    // A dark outline so the badge reads on light or dark art.
+                    .shadow(color: .black, radius: 0.5).shadow(color: .black, radius: 0.5)
+                    .shadow(color: .black, radius: 0.5)
+            }
         }
     }
 }

@@ -646,20 +646,9 @@ struct MapInfoView: View {
             hintDecoderButton
             settingsButton
             overlayToggles
-            commentaryControl
-            // (Recorder widget moved to the Flags group, T-104.)
+            // (Recorder widget moved to the Flags group, T-104; Commentary + Shop/Price
+            //  live in the overlay-icon grid's 4th column, T-218.)
         }
-    }
-
-    /// Quick Commentary-Mode on/off (T-215) for mid-cast use. Full config (names/colors/style)
-    /// lives in the Commentary settings window; the runner legend shows in the banner above the map.
-    @ViewBuilder
-    private var commentaryControl: some View {
-        let c = model.commentary
-        Toggle("Commentary", isOn: Bindable(options).commentaryMode)
-            .toggleStyle(.checkbox)
-            .font(.system(size: 12))
-            .help("Mark who's discovered each spot: ⌥-click = \(c.runner1Name), ⌥-right-click = \(c.runner2Name).")
     }
 
     /// Opens the mid-game Settings window (T-091) — same panel as the startup
@@ -727,7 +716,9 @@ struct MapInfoView: View {
     /// "Hide tile icons" leads (T-035.11), moved here from the Flags checkboxes
     /// since it's the same hover-preview / click-lock overlay model.
     private var overlayToggles: some View {
-        // Two rows of three, sized to match the item icons (T-035.11 follow-up).
+        // Two rows of four (T-218): the map-overlay toggles fill the first three columns; the
+        // 4th column holds the two breakout openers — Shop & Price (top), Commentary (bottom) —
+        // so we add them without taking any more app vertical space.
         Grid(horizontalSpacing: 6, verticalSpacing: 6) {
             GridRow {
                 overlayToggle(.hideMarks, systemImage: "eye.slash",
@@ -736,6 +727,7 @@ struct MapInfoView: View {
                               help: "3-way (hover previews, then cycle by clicking): green = open caves only (late game, Armos spots); orange = ALL currently-gettable locations; third click = off.")
                 overlayToggle(.money, atlasIcon: .rupee,
                               help: "Highlight money spots: Money Making Game, Unknown Secret, and known money secrets. Hover to preview, click to lock on.")
+                shopPricesToggle
             }
             GridRow {
                 overlayToggle(.zones, systemImage: "map.fill",
@@ -743,8 +735,45 @@ struct MapInfoView: View {
                 overlayToggle(.coords, systemImage: "number",
                               help: "Overlay screen coordinates (A1…H16). Hover to preview, click to lock on.")
                 progressToggle
+                commentaryToggle
             }
         }
+    }
+
+    /// Opens/closes the Shop & Price tracker breakout window (T-218). Tints green while that window
+    /// is open (mirrors the Progress toggle), not based on whether the record holds data.
+    private var shopPricesToggle: some View {
+        iconCell(systemImage: "cart.fill", on: model.showShopPricesWindow,
+                 help: "Shops & Prices — record shop stock/prices, potions, bomb upgrades, and paid hints in a separate window.") {
+            model.showShopPricesWindow.toggle()
+        }
+        .onChange(of: model.showShopPricesWindow) { _, isOn in
+            if isOn { openWindow(id: ShopPricesWindowID) } else { dismissWindow(id: ShopPricesWindowID) }
+        }
+    }
+
+    /// The Commentary-Mode quick toggle (T-218) — the old checkbox as a race-flag icon matching the
+    /// other overlay toggles (green when on). Full config lives in the Commentary settings window.
+    private var commentaryToggle: some View {
+        let c = model.commentary
+        return iconCell(systemImage: "flag.checkered", on: options.commentaryMode,
+                        help: "Commentary Mode — mark who's discovered each spot: ⌥-click = \(c.runner1Name), ⌥-right-click = \(c.runner2Name). Click to toggle.") {
+            options.commentaryMode.toggle()
+        }
+    }
+
+    /// A tap-action overlay icon styled like `progressToggle` / `overlayToggle` (green when `on`).
+    private func iconCell(systemImage: String, on: Bool, help: String, action: @escaping () -> Void) -> some View {
+        ZStack {
+            Image(systemName: systemImage).font(.system(size: 18))
+                .foregroundStyle(on ? Color.green : Color.secondary)
+        }
+        .frame(width: itemGridCellSize, height: itemGridCellSize)
+        .background(RoundedRectangle(cornerRadius: 6).fill(on ? Color.green.opacity(0.3) : Color.clear))
+        .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(on ? Color.green : Theme.border, lineWidth: 1))
+        .contentShape(Rectangle())
+        .onTapGesture { action() }
+        .help(help)
     }
 
     /// The "Progress" toggle icon (T-035.10), styled like the overlay toggles:
