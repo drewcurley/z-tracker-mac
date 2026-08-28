@@ -9,9 +9,10 @@ import TrackerCore
 struct DungeonDetailAtlasTests {
     @Test("every dungeon monster (except Unmarked) resolves to a dungeon-sheet sprite")
     func monstersLoad() {
-        // The 3 overworld-only enemies (octorok / peahat / leever, T-185) aren't on the
-        // dungeon sheet — they render from game-sprite GIFs via OverworldEnemyGlyph.
-        let overworldOnly: Set<MonsterDetail> = [.octorok, .peahat, .leever]
+        // The overworld-only enemies (octorok / peahat / leever, T-185; the generic
+        // bomb-droppers marker, T-217) aren't on the dungeon sheet — they render from
+        // game-sprite art via OverworldEnemyGlyph.
+        let overworldOnly: Set<MonsterDetail> = [.octorok, .peahat, .leever, .bombDroppers]
         for md in MonsterDetail.allCases where !overworldOnly.contains(md) {
             if md == .unmarked {
                 #expect(DungeonMonsterAtlas.sprite(md) == nil)

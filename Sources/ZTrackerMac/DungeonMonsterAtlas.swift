@@ -59,6 +59,8 @@ enum DungeonMonsterAtlas {
         // Overworld-only enemies (T-185) aren't on the dungeon sheet — they render
         // from the game sprite GIFs via `OverworldEnemyGlyph`.
         case .octorok, .peahat, .leever: nil
+        // Generic bomb-droppers marker (T-217) — a plain bomb sprite, not on the dungeon sheet.
+        case .bombDroppers: nil
         }
     }
 }

@@ -14,4 +14,13 @@ struct OverworldEnemyGlyphTests {
             #expect(GameSprite.image(name) != nil, "missing game sprite '\(name)' for \(e)")
         }
     }
+
+    @Test("bomb-droppers renders the plain bomb sprite (T-217)")
+    func bombDroppersSprite() {
+        // The generic marker resolves to the same bomb sprite the shops use — a plain bomb,
+        // not a specific enemy — and it isn't on the dungeon sheet.
+        #expect(OverworldEnemyGlyph.gifName(.bombDroppers) == "Bomb")
+        #expect(GameSprite.image("Bomb") != nil)
+        #expect(DungeonMonsterAtlas.sprite(.bombDroppers) == nil)
+    }
 }

@@ -10,8 +10,9 @@ struct DungeonRoomModelTests {
     func counts() {
         #expect(RoomType.allCases.count == 34)      // Unmarked + 33
         // Reference: Unmarked + 31 = 32. Beyond the reference we add 3 overworld-only
-        // enemies (octorok / peahat / leever, T-185) → 35.
-        #expect(MonsterDetail.allCases.count == 35)
+        // enemies (octorok / peahat / leever, T-185) and the generic bomb-droppers
+        // marker (T-217) → 36.
+        #expect(MonsterDetail.allCases.count == 36)
         #expect(FloorDropDetail.allCases.count == 9)
         #expect(DoorState.allCases.count == 5)
     }
