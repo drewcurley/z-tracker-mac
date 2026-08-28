@@ -217,11 +217,17 @@ struct MainTrackerPlaceholderView: View {
                     // cleaner broadcast; global, so the main window and the mirror agree.
                     if options.showInfoPanel {
                         TopSectionGroup(title: "Info") {
-                            MapInfoView(model: model, playerState: model.playerComputedStateSummary, mapState: mapState, overlays: overlays, timer: timer, onResetApp: onResetApp)
+                            MapInfoView(model: model, playerState: model.playerComputedStateSummary, mapState: mapState, overlays: overlays, timer: timer, onResetApp: onResetApp, options: options)
                         }
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
+
+                // Commentary Mode runner legend (T-215): in the open band above the map while the
+                // mode is on, so the two runners' names/colors are clearly visible mid-cast.
+                if options.commentaryMode, !breakout.overworldPoppedOut {
+                    CommentaryLegendBanner(commentary: model.commentary)
+                }
 
                 // The overworld map (T-006), with a compact corner pop-out (T-126).
                 // ContentView only shows this view once model.quest is set. The map

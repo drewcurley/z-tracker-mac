@@ -140,6 +140,10 @@ public final class TrackerModel {
     /// Indexed `0…8` for dungeons 1–9.
     public let dungeonRoomMaps: [DungeonRoomMap] = (0..<9).map { _ in DungeonRoomMap() }
 
+    /// Commentary Mode (T-215): the commentator-only "who knows what" overlay + the two runners'
+    /// names/colors. Session state, saved with the game. Phase 1 tracks the overworld only.
+    public let commentary = CommentaryLayer()
+
     /// The edge-triggered reminder/announcement engine (T-018.2). Owned here
     /// so its transition state survives view redraws; driven by the app's
     /// poll loop via `pollReminders()` (T-018.3).
@@ -184,6 +188,9 @@ public final class TrackerModel {
         /// The seed's starting inventory (T-196). Optional so pre-T-196 saves still
         /// decode (they restore with the default all-empty starting items).
         var startingItems: StartingItemsAndExtras.State? = nil
+        /// Commentary Mode overlay (T-215). Optional so pre-commentary saves still decode
+        /// (they restore with an empty overlay + default runner names).
+        var commentary: CommentaryLayer.State? = nil
     }
 
     public func snapshot() -> State {
@@ -196,7 +203,8 @@ public final class TrackerModel {
               levelHints: levelHints, notes: notes,
               overworld: overworldGrid.state, roomMaps: dungeonRoomMaps.map(\.state),
               tracker: dungeonTracker.state, blockers: dungeonBlockers.state, progress: playerProgress.state,
-              timeline: timeline.state, startingItems: startingItemsAndExtras.state)
+              timeline: timeline.state, startingItems: startingItemsAndExtras.state,
+              commentary: commentary.state)
     }
 
     /// Restore a saved snapshot into this model. Order matters: the HDN flag is applied
@@ -225,6 +233,7 @@ public final class TrackerModel {
         playerProgress.restore(s.progress)
         if let t = s.timeline { timeline.restore(t) }   // absent in pre-timeline saves
         if let si = s.startingItems { startingItemsAndExtras.restore(si) }  // absent in pre-T-196 saves
+        if let c = s.commentary { commentary.restore(c) }   // absent in pre-commentary saves (T-215)
         applyIntraHeartDeduction()   // re-derive any intra-shuffle heart (T-212)
     }
 

@@ -20,6 +20,7 @@ import TrackerCore
 /// (docs/ux.md § Accessibility).
 struct BlockersView: View {
     @Bindable var model: TrackerModel
+    var options: TrackerOptions
     /// Shared keyboard-cursor state (T-135) — this is the "blockers" cursor region.
     var focus: TrackerFocusState
 
@@ -49,7 +50,9 @@ struct BlockersView: View {
                     model: model,
                     dungeonIndex: dungeonIndex,
                     slot: slot,
-                    playerState: model.playerComputedStateSummary)
+                    playerState: model.playerComputedStateSummary,
+                    commentaryActive: options.commentaryMode,
+                    commentaryEncoding: options.commentaryEncoding)
                     .overlay { cursorRing(dungeon: dungeonIndex, slot: slot) }
                     .onHover { hovering in
                         if hovering {
@@ -83,10 +86,17 @@ private struct BlockerBoxView: View {
     let dungeonIndex: Int
     let slot: Int
     let playerState: PlayerComputedStateSummary
+    /// Commentary Mode (T-215): when on, ⌥-click = runner 1, ⌥-right-click = runner 2, and the
+    /// runner pips/border draw over the box; the normal kind / applies-to pickers stay on plain
+    /// left/right click.
+    var commentaryActive: Bool = false
+    var commentaryEncoding: CommentaryEncoding = .pips
 
     @State private var showingKindPicker = false
     @State private var showingAppliesTo = false
     private static let size: CGFloat = 30
+
+    private var commentaryKey: String { CommentaryLayer.blockerKey(dungeon: dungeonIndex, slot: slot) }
 
     private var blocker: DungeonBlocker {
         model.dungeonBlockers.dungeonBlocker(dungeon: dungeonIndex, slot: slot)
@@ -106,8 +116,21 @@ private struct BlockerBoxView: View {
         .contentShape(Rectangle())
         // Left-click sets the kind (need / might-need); right-click sets what the
         // blocker "applies to" (the reference uses middle / shift-left for that).
-        .onTapGesture { presentPopoverWithoutAnimation { showingKindPicker = true } }
+        // In Commentary Mode, ⌥-left toggles runner 1 instead (⌥-right is caught below).
+        .onTapGesture {
+            if commentaryActive, commentaryOptionKeyDown() {
+                model.commentary.toggle(.runner1, key: commentaryKey)
+            } else {
+                presentPopoverWithoutAnimation { showingKindPicker = true }
+            }
+        }
         .onRightClick { presentPopoverWithoutAnimation { showingAppliesTo = true } }
+        .commentaryCell(knowledge: model.commentary.knowledge(commentaryKey),
+                        encoding: commentaryEncoding,
+                        r1: Color(commentaryHex: model.commentary.runner1ColorHex),
+                        r2: Color(commentaryHex: model.commentary.runner2ColorHex),
+                        active: commentaryActive, size: Self.size,
+                        onRunner2: { model.commentary.toggle(.runner2, key: commentaryKey) })
         .help("Dungeon \(dungeonIndex + 1) blocker: \(blocker.displayDescription.replacingOccurrences(of: "\n", with: " ")) — right-click to set what it applies to")
         .popover(isPresented: $showingKindPicker, arrowEdge: .bottom) {
             BlockerKindPicker(current: blocker, playerState: playerState) { kind in

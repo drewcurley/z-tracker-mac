@@ -107,7 +107,12 @@ struct DungeonTrackerView: View {
                                     blockers: model.dungeonBlockers,
                                     chipPlayerState: model.playerComputedStateSummary,
                                     hint: $model.levelHints[HintTarget.dungeon(i + 1)],
-                                    focus: focus, dungeonRow: i)
+                                    focus: focus, dungeonRow: i,
+                                    commentary: model.commentary,
+                                    commentaryActive: options.commentaryMode,
+                                    commentaryEncoding: options.commentaryEncoding,
+                                    commentaryR1: Color(commentaryHex: model.commentary.runner1ColorHex),
+                                    commentaryR2: Color(commentaryHex: model.commentary.runner2ColorHex))
                 }
             }
         }
@@ -142,6 +147,13 @@ struct DungeonCardView: View {
     /// are optional so the dungeon-map inset can omit them.
     var focus: TrackerFocusState? = nil
     var dungeonRow: Int? = nil
+    /// Commentary Mode (T-215): the layer + style, forwarded to each item box. `nil` layer /
+    /// inactive → boxes render and behave normally.
+    var commentary: CommentaryLayer? = nil
+    var commentaryActive: Bool = false
+    var commentaryEncoding: CommentaryEncoding = .pips
+    var commentaryR1: Color = .red
+    var commentaryR2: Color = .blue
 
     /// Which box index is currently under a drag-to-swap (T-182), for the drop highlight.
     @State private var dropTargetBox: Int? = nil
@@ -232,11 +244,18 @@ struct DungeonCardView: View {
                 // In HDN, an identified two-boxer dungeon has no third item, so
                 // its last box is disabled (T-050, beyond the reference).
                 let isDisabledThirdBox = dungeon.identifiedAsTwoBoxer && idx == dungeon.boxes.count - 1
+                let cKey = CommentaryLayer.dungeonBoxKey(dungeon: dungeon.id, box: idx)
                 BoxView(box: box, instance: instance, label: nil, iconOptions: iconOptions,
                         disabled: isDisabledThirdBox,
                         chips: blockers?.blockersApplyingTo(
                             dungeon: dungeon.id, element: DungeonBlockerAppliesTo.Element.box(idx)) ?? [],
-                        chipPlayerState: chipPlayerState)
+                        chipPlayerState: chipPlayerState,
+                        commentaryKnowledge: commentaryActive ? (commentary?.knowledge(cKey) ?? []) : [],
+                        commentaryEncoding: commentaryEncoding,
+                        commentaryR1: commentaryR1, commentaryR2: commentaryR2,
+                        commentaryActive: commentaryActive && !isDisabledThirdBox,
+                        onCommentaryR1: { commentary?.toggle(.runner1, key: cKey) },
+                        onCommentaryR2: { commentary?.toggle(.runner2, key: cKey) })
                     // Dungeon-item hover context (T-168): col = dungeon, row = box index,
                     // matching the layout (cards across, boxes down).
                     .onHover { hovering in
@@ -328,6 +347,16 @@ struct BoxView: View {
     /// whether each is resolved (T-082). Empty → no chips.
     var chips: [DungeonBlocker] = []
     var chipPlayerState: PlayerComputedStateSummary? = nil
+
+    /// Commentary Mode overlay for this box (T-215): which runners know it + how to draw it, and
+    /// whether ⌥-click / ⌥-right-click should toggle runner 1 / runner 2 here.
+    var commentaryKnowledge: CommentaryKnowledge = []
+    var commentaryEncoding: CommentaryEncoding = .pips
+    var commentaryR1: Color = .red
+    var commentaryR2: Color = .blue
+    var commentaryActive: Bool = false
+    var onCommentaryR1: () -> Void = {}
+    var onCommentaryR2: () -> Void = {}
 
     @State private var showPicker = false
 
@@ -422,10 +451,21 @@ struct BoxView: View {
             // change the item. An empty box has nothing to toggle, so a
             // left-click opens the picker too.
             .onTapGesture {
+                // Commentary Mode (T-215): ⌥-click toggles runner 1's knowledge of this box.
+                if commentaryActive, commentaryOptionKeyDown() { onCommentaryR1(); return }
                 if box.hasKnownItem { box.toggleTaken() }
                 else { presentPopoverWithoutAnimation { showPicker = true } }
             }
             .onRightClick { presentPopoverWithoutAnimation { showPicker = true } }
+            // Commentary ⌥-right-click → runner 2 (T-215), layered after onRightClick so it sits
+            // on top and claims ⌥+right first; plain right-clicks fall through to the picker.
+            .overlay { if commentaryActive { OptionRightClickCatcher(action: onCommentaryR2) } }
+            // The knowledge overlay (pips / border), sized to the box.
+            .overlay {
+                CommentaryTileOverlay(knowledge: commentaryKnowledge, encoding: commentaryEncoding,
+                                      r1: commentaryR1, r2: commentaryR2)
+                    .frame(width: Self.size, height: Self.size)
+            }
             .popover(isPresented: $showPicker, arrowEdge: .bottom) {
                 BoxItemPicker(box: box, instance: instance, iconOptions: iconOptions,
                               defaultAcquired: defaultAcquired) { showPicker = false }
