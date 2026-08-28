@@ -26,10 +26,8 @@ so you can keep your hands on the controller.
 
    Not sure which you have?  → Apple menu → About This Mac. "Chip" = Apple Silicon; "Processor" = Intel.
 2. Open the DMG and drag **ZTrackerMac** into your **Applications** folder.
-3. **First launch:** the app isn't signed with an Apple Developer ID yet, so macOS
-   Gatekeeper will block a plain double-click. To open it the first time:
-   **right-click the app → Open → Open**. macOS remembers your choice, so every launch after
-   that is a normal double-click.
+3. **Launch it** with a normal double-click. The app is signed with an Apple Developer ID and
+   notarized by Apple, so Gatekeeper opens it without any right-click workaround.
 
 ## Getting started
 
@@ -51,12 +49,16 @@ from a previous session was auto-saved, the app offers to reopen it — handy af
   and potion shops, and "nothing here."
 - A graphical or text tile chooser, quick left-click marking, and per-kind hiding once
   things are no longer relevant.
+- Annotate the enemies on a screen — wizzrobes, darknuts, lynels, and the rest, or a generic
+  **bomb-droppers** marker — up to two per screen, for planning farms and safe routes.
 - Route/"get-your-stuff" highlighting, an open-caves overlay, and a mirrored-overworld option.
 
 **Dungeon tracker**
 - Per-dungeon room maps (room types, doors, floor items, monsters), item boxes, triforce and
   "you can whistle here" state, and blockers ("need bombs / ladder / bow…").
 - Drag to swap floor↔basement item boxes; per-dungeon notes.
+- A **Drop Rooms** reference (its own window) showing, for the dungeon you're viewing, the room
+  layouts that never contain a floor drop — so you don't waste time checking them.
 
 **Items, hints & progress**
 - A full item grid with seed flags (Heart Shuffle, Hidden Dungeon Numbers, swordless,
@@ -64,6 +66,16 @@ from a previous session was auto-saved, the app offers to reopen it — handy af
 - Location hints per dungeon and per sword cave, a hint decoder, and a "spot summary" of
   what's left to find.
 - A faux in-game inventory/hearts HUD you can pop out into its own window.
+- A **Shop & Price tracker** (its own window): record what each of the four shops stocks and for
+  how much, the two potion prices, the bomb-upgrade price, and the six paid hints — each with a
+  "collected" check.
+
+**Race commentary**
+- A **commentator-only** overlay for casting a two-runner race on one seed: ⌥-click and
+  ⌥-right-click mark which runner has seen each overworld spot, dungeon item, collectible item,
+  room, or blocker.
+- Corner-pip or colored-border encoding, with custom per-session runner names and colors. It
+  never appears on the broadcast/stream layout — it's just for the caster.
 
 **Reminders & voice**
 - Spoken and on-screen reminders (e.g. "you have the recorder," "consider the boomstick
@@ -89,7 +101,8 @@ from a previous session was auto-saved, the app offers to reopen it — handy af
 - Fully re-bindable hotkeys (hover a region, press a key) with the bound key shown right in
   the menus, plus a hotkey/voice-command editor.
 - A broadcast **mirror window** for streaming, with independent breakout windows.
-- Check-on-launch notice when a newer version is available.
+- In-app **auto-update** (Sparkle): **Check for Updates…** downloads and installs the newest
+  signed build in place — and prompts you when one is available.
 
 ## Files & data
 

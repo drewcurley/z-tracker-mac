@@ -25,6 +25,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-220](./T-220.md) | README — document newer features; fix notarization/auto-update install notes | frontend-engineer | — | chore/readme-feature-updates | — | — (docs-only chore) |
 | [T-219](./T-219.md) | Drop Rooms breakout window + Hint Decoder "Other hints" clickable title | frontend-engineer | — | feat/drop-rooms-window | — | docs/reviews/feat-drop-rooms-window/final.md |
 | [T-218](./T-218.md) | Shop & Price tracker breakout window (+ 4-wide Info icons, real bomb-upgrade glyph) | frontend-engineer | — | feat/shop-price-tracker | — | docs/reviews/feat-shop-price-tracker/final.md |
 | [T-217](./T-217.md) | Generic "Bomb Droppers" overworld enemy marker (plain bomb icon) | frontend-engineer | — | feat/bomb-droppers-enemy | — | docs/reviews/feat-bomb-droppers-enemy/final.md |
