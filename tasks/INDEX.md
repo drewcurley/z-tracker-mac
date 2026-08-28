@@ -25,6 +25,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-215](./T-215.md) | Commentary Mode — commentator-only runner-knowledge overlay across five surfaces | frontend-engineer | — | feat/commentary-mode | — | docs/reviews/feat-commentary-mode/final.md |
 | [T-214](./T-214.md) | Gated items default to untaken when unreachable (coast/ladder, white-sword/4♥, magical-sword/10♥) | frontend-engineer | — | feat/gated-item-defaults | — | docs/reviews/feat-gated-item-defaults/final.md |
 | [T-213](./T-213.md) | Overworld sword-cave markers use real game sprites; first NOTARIZED release | frontend-engineer | T-212 | feat/sword-cave-sprites | — | docs/reviews/feat-sword-cave-sprites/final.md |
 | [T-212](./T-212.md) | Tracker UX batch — sword-cave hint, bigger indicators, shop redraw, large-X option, Heart Shuffle 3-state + intra deduction | frontend-engineer | — | feat/tracker-ux-and-heart-shuffle | — | docs/reviews/feat-tracker-ux-and-heart-shuffle/final.md |

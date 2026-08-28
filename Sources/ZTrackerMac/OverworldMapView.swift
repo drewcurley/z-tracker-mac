@@ -46,6 +46,10 @@ struct OverworldMapView: View {
     /// (T-207). Matches the reminder engine's `hasTheBook`.
     var haveBook: Bool = false
 
+    /// Commentary Mode overlay (T-215): the "who knows what" layer. Active only when
+    /// `options.commentaryMode` is on; ⌥-click / ⌥-right-click toggle runner 1 / runner 2.
+    @Bindable var commentary: CommentaryLayer = CommentaryLayer()
+
     /// Live derived overworld map state (T-015.3). Supplies
     /// `owGettableLocations` for the true green/yellow/red highlight cascade
     /// (T-015.4), replacing T-011's flat single-color "reachable" overlay.
@@ -323,7 +327,15 @@ struct OverworldMapView: View {
                                     guard !hasRescuedZelda, case .shop(let primary) = mark else { return [] }
                                     return OverworldTileHiding.hiddenShopItems(primary: primary, second: shopSecondItem, options: options, playerState: playerState, haveBook: haveBook)
                                 }()
-                                TileView(mark: mark, background: background, tileWidth: tileWidth, tileHeight: tileHeight, isAlwaysEmpty: isAlwaysEmpty, showsFairy: showsFairy, mirrored: mirrored, hideDungeonNumbers: hideDungeonNumbers, used: used, shopSecondItem: shopSecondItem, hiddenShopItems: hiddenShopItems, hideMarks: overlays?.isActive(.hideMarks) ?? false, dungeonComplete: dungeonDone, kindHidden: kindHidden, fog: fog, sharedBackground: customActive, animateChanges: options.animateTileChanges)
+                                // Commentary Mode (T-215): who knows this screen + the runner colors (hoisted
+                                // out of the TileView call to keep the type-checker fast).
+                                let commentaryK: CommentaryKnowledge = options.commentaryMode ? commentary.knowledge(column: column, row: row) : []
+                                let commentaryR1 = Color(commentaryHex: commentary.runner1ColorHex)
+                                let commentaryR2 = Color(commentaryHex: commentary.runner2ColorHex)
+                                TileView(mark: mark, background: background, tileWidth: tileWidth, tileHeight: tileHeight, isAlwaysEmpty: isAlwaysEmpty, showsFairy: showsFairy, mirrored: mirrored, hideDungeonNumbers: hideDungeonNumbers, used: used, shopSecondItem: shopSecondItem, hiddenShopItems: hiddenShopItems, hideMarks: overlays?.isActive(.hideMarks) ?? false, dungeonComplete: dungeonDone, kindHidden: kindHidden, fog: fog, sharedBackground: customActive, animateChanges: options.animateTileChanges,
+                                             commentaryKnowledge: commentaryK,
+                                             commentaryEncoding: options.commentaryEncoding,
+                                             commentaryR1: commentaryR1, commentaryR2: commentaryR2)
                                     .overlay {
                                         if options.highlightNearby, !customActive, !isAlwaysEmpty,
                                            let isBold = highlights[OverworldScreenCoordinate(x: column, y: row)] {
@@ -463,6 +475,12 @@ struct OverworldMapView: View {
                                     // The tile chooser + enemy picker (T-185), bundled into one
                                     // modifier so the tile expression stays type-checkable.
                                     .modifier(tileChooserModifiers(column: column, row: row))
+                                    // Commentary Mode (T-215): ⌥-right-click toggles runner 2. Layered
+                                    // AFTER the chooser's right-click catcher so it sits on top and
+                                    // claims ⌥+right first; plain right-clicks fall through to the chooser.
+                                    .modifier(CommentaryRightClickModifier(
+                                        active: options.commentaryMode && !isAlwaysEmpty,
+                                        toggle: { commentary.toggle(.runner2, column: column, row: row) }))
                                     .onContinuousHover { phase in
                                         handleHover(column: column, row: row, phase: phase, tileWidth: tileWidth, tileHeight: tileHeight)
                                     }
@@ -559,6 +577,13 @@ struct OverworldMapView: View {
     }
 
     private func handleLeftClick(column: Int, row: Int) {
+        // Commentary Mode (T-215): ⌥-click toggles runner 1's knowledge of this screen instead of
+        // marking. Checked first so it intercepts before any normal left-click behavior. Skips
+        // dead spots (nothing to know there), matching the ⌥-right-click catcher.
+        if options.commentaryMode, commentaryOptionKeyDown(), !screenIsDeadSpot(column, row) {
+            commentary.toggle(.runner1, column: column, row: row)
+            return
+        }
         // The coast item's screen (F16) always holds the coast item, so a left-click opens
         // the coast-item picker directly (T-205). Checked before the dead-spot guard so it
         // works regardless of that screen's status; right-click still gives the normal menu.
@@ -1170,6 +1195,16 @@ private struct TileChooserModifiers: ViewModifier {
     }
 }
 
+/// Layers the Commentary ⌥-right-click catcher on top of a tile's normal right-click handling
+/// (T-215) — as its own `ViewModifier` so the big per-tile expression stays type-checkable.
+private struct CommentaryRightClickModifier: ViewModifier {
+    let active: Bool
+    let toggle: () -> Void
+    func body(content: Content) -> some View {
+        content.overlay { if active { OptionRightClickCatcher(action: toggle) } }
+    }
+}
+
 /// Internal (not private) so the graphical tile chooser (T-185) can reuse the exact
 /// map glyph rendering for its option cells.
 struct TileView: View {
@@ -1218,6 +1253,13 @@ struct TileView: View {
     /// Pop the mark glyph in with a slight overshoot when it changes (T-207, "Animate tile
     /// changes"). Off in the chooser (which reuses this view for its icon grid).
     var animateChanges: Bool = false
+
+    /// Commentary Mode overlay for this tile (T-215): which runners know it + how to draw it.
+    /// Empty knowledge → nothing renders (also the case when the mode is off).
+    var commentaryKnowledge: CommentaryKnowledge = []
+    var commentaryEncoding: CommentaryEncoding = .pips
+    var commentaryR1: Color = .red
+    var commentaryR2: Color = .blue
 
     /// Reveals a `kindHidden` tile's icon while the pointer is over it (the
     /// reference's `temporarilyDisplayHiddenOverworldTileMarks` peek).
@@ -1353,6 +1395,15 @@ struct TileView: View {
         .frame(width: tileWidth, height: tileHeight)
         .clipped()
         .overlay(Rectangle().stroke(.black.opacity(0.3), lineWidth: 0.5))
+        // Commentary Mode "who knows this spot" overlay (T-215) — on top of everything, and not
+        // clipped away, so pips/border read regardless of the tile's marks. Suppressed with the
+        // rest of the mark layers under "Hide tile icons".
+        .overlay {
+            if !hideMarks {
+                CommentaryTileOverlay(knowledge: commentaryKnowledge, encoding: commentaryEncoding,
+                                      r1: commentaryR1, r2: commentaryR2)
+            }
+        }
     }
 
     /// A shop tile with every item owned (`kindHidden` set for a `.shop` mark) — T-207. Drives

@@ -34,6 +34,14 @@ struct SettingsPanelView: View {
 
             Divider()
             HStack(spacing: 8) {
+                settingsHeader("Commentary")
+                Button("Commentary…") { openWindow(id: CommentaryWindowID) }
+                Text("Race-commentator overlay: mark which runner has seen each spot.")
+                    .font(.caption).foregroundStyle(.secondary)
+            }
+
+            Divider()
+            HStack(spacing: 8) {
                 settingsHeader("Hotkeys")
                 Button("Edit hotkeys…") { openWindow(id: HotkeyWindowID) }
                 Text("Bind keys per context; import/export the Windows HotKeys.txt.")

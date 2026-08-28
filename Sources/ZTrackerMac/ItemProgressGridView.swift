@@ -89,6 +89,9 @@ enum ItemProgressGrid {
         case bomb, ganon, zelda
         case meat
 
+        /// Stable id for the commentary key (T-215).
+        var commentaryID: String { "\(self)" }
+
         /// The `PlayerProgressAndTakeAnyHearts` flag this box toggles.
         var keyPath: ReferenceWritableKeyPath<PlayerProgressAndTakeAnyHearts, Bool> {
             switch self {
@@ -198,6 +201,9 @@ enum ItemProgressGrid {
             case .whiteSword: dt.sword2Box
             }
         }
+
+        /// Stable id for the commentary key (T-215).
+        var commentaryID: String { "\(self)" }
 
         /// Whether identifying this box's item defaults to **taken** (T-214): the coast item needs
         /// the ladder and the white-sword item needs the heart minimum, so below those the mark
@@ -348,17 +354,33 @@ struct ObtainableItemsView: View {
         return nil
     }
 
+    // Commentary Mode (T-215): shared style + per-cell helpers for the item-grid cells.
+    private var commentaryActive: Bool { options.commentaryMode }
+    private var commentaryR1: Color { Color(commentaryHex: model.commentary.runner1ColorHex) }
+    private var commentaryR2: Color { Color(commentaryHex: model.commentary.runner2ColorHex) }
+    private func commentaryKnowledge(_ key: String) -> CommentaryKnowledge {
+        commentaryActive ? model.commentary.knowledge(key) : []
+    }
+
     @ViewBuilder
     private func cellView(_ cell: ItemProgressGrid.Cell) -> some View {
         switch cell {
         case .indicator(let coast):
             IndicatorCell(icon: coast.indicator, help: coast.help, size: itemGridCellSize)
         case .pickerBox(let coast):
+            let key = CommentaryLayer.itemKey(coast.commentaryID)
             BoxView(box: coast.box(in: model.dungeonTracker), instance: model.dungeonTracker,
                     label: nil, iconOptions: model.iconOptions.with(largeUnwantedX: options.largeUnwantedX),
-                    defaultAcquired: coast.defaultAcquired(playerState))
+                    defaultAcquired: coast.defaultAcquired(playerState),
+                    commentaryKnowledge: commentaryKnowledge(key),
+                    commentaryEncoding: options.commentaryEncoding,
+                    commentaryR1: commentaryR1, commentaryR2: commentaryR2,
+                    commentaryActive: commentaryActive,
+                    onCommentaryR1: { model.commentary.toggle(.runner1, key: key) },
+                    onCommentaryR2: { model.commentary.toggle(.runner2, key: key) })
                 .help(coast.help)
         case .toggle(let toggle):
+            let key = CommentaryLayer.itemKey("toggle:" + toggle.commentaryID)
             ItemToggleBox(
                 progress: model.playerProgress,
                 toggle: toggle,
@@ -367,13 +389,26 @@ struct ObtainableItemsView: View {
                 superseded: toggle.superseded(playerState: playerState),
                 // Magical sword can't be marked held below its 10-heart minimum (T-214).
                 canAcquire: toggle == .magicalSword ? ItemAcquisitionGate.magicalSwordReachable(playerState) : true,
-                size: itemGridCellSize
+                size: itemGridCellSize,
+                commentaryKnowledge: commentaryKnowledge(key),
+                commentaryEncoding: options.commentaryEncoding,
+                commentaryR1: commentaryR1, commentaryR2: commentaryR2,
+                commentaryActive: commentaryActive,
+                onCommentaryR1: { model.commentary.toggle(.runner1, key: key) },
+                onCommentaryR2: { model.commentary.toggle(.runner2, key: key) }
             )
         case .takeAnyHeart(let i):
+            let key = CommentaryLayer.itemKey("takeAny:\(i)")
             // Cycling a heart box routes through the model so a take-any tile
             // linked to this slot updates its dim in sync (T-066).
             TakeAnyHeartBox(progress: model.playerProgress, index: i, size: itemGridCellSize,
-                            onCycle: { delta in model.cycleTakeAnySlot(i, by: delta) })
+                            onCycle: { delta in model.cycleTakeAnySlot(i, by: delta) },
+                            commentaryKnowledge: commentaryKnowledge(key),
+                            commentaryEncoding: options.commentaryEncoding,
+                            commentaryR1: commentaryR1, commentaryR2: commentaryR2,
+                            commentaryActive: commentaryActive,
+                            onCommentaryR1: { model.commentary.toggle(.runner1, key: key) },
+                            onCommentaryR2: { model.commentary.toggle(.runner2, key: key) })
         case .empty:
             Color.clear.frame(width: itemGridCellSize, height: itemGridCellSize)
         }
@@ -596,6 +631,8 @@ struct MapInfoView: View {
     var timer: TrackerTimer
     /// "Reset App" — discard everything and return to the startup screen (T-046).
     var onResetApp: () -> Void = {}
+    /// For the Commentary Mode quick toggle (T-215).
+    var options: TrackerOptions
 
     @State private var showingSpotSummary = false
     @State private var showingHintDecoder = false
@@ -609,8 +646,20 @@ struct MapInfoView: View {
             hintDecoderButton
             settingsButton
             overlayToggles
+            commentaryControl
             // (Recorder widget moved to the Flags group, T-104.)
         }
+    }
+
+    /// Quick Commentary-Mode on/off (T-215) for mid-cast use. Full config (names/colors/style)
+    /// lives in the Commentary settings window; the runner legend shows in the banner above the map.
+    @ViewBuilder
+    private var commentaryControl: some View {
+        let c = model.commentary
+        Toggle("Commentary", isOn: Bindable(options).commentaryMode)
+            .toggleStyle(.checkbox)
+            .font(.system(size: 12))
+            .help("Mark who's discovered each spot: ⌥-click = \(c.runner1Name), ⌥-right-click = \(c.runner2Name).")
     }
 
     /// Opens the mid-game Settings window (T-091) — same panel as the startup
@@ -793,6 +842,15 @@ private struct ItemToggleBox: View {
     var canAcquire: Bool = true
     let size: CGFloat
 
+    /// Commentary Mode overlay for this item (T-215).
+    var commentaryKnowledge: CommentaryKnowledge = []
+    var commentaryEncoding: CommentaryEncoding = .pips
+    var commentaryR1: Color = .red
+    var commentaryR2: Color = .blue
+    var commentaryActive: Bool = false
+    var onCommentaryR1: () -> Void = {}
+    var onCommentaryR2: () -> Void = {}
+
     private var has: Bool { progress[keyPath: toggle.keyPath] }
 
     /// Border precedence ported from `veryBasicBoxImpl`'s redraw
@@ -824,11 +882,16 @@ private struct ItemToggleBox: View {
             RoundedRectangle(cornerRadius: 4).strokeBorder(borderColor, lineWidth: 1.5)
         )
         .onTapGesture {
+            // Commentary Mode (T-215): ⌥-click toggles runner 1's knowledge of this item.
+            if commentaryActive, commentaryOptionKeyDown() { onCommentaryR1(); return }
             // Block turning it on when it can't be reached yet (T-214); turning off is fine.
             if !progress[keyPath: toggle.keyPath] && !canAcquire { return }
             progress[keyPath: toggle.keyPath].toggle()
         }
         .onRightClick { progress[keyPath: toggle.keyPath] = false }
+        .commentaryCell(knowledge: commentaryKnowledge, encoding: commentaryEncoding,
+                        r1: commentaryR1, r2: commentaryR2, active: commentaryActive,
+                        size: size, onRunner2: onCommentaryR2)
         .help(canAcquire ? toggle.help : toggle.help + " — needs \(ItemAcquisitionGate.magicalSwordMinHearts) hearts (min) before you can have it")
     }
 }
@@ -846,6 +909,15 @@ private struct TakeAnyHeartBox: View {
     /// Cycle by `delta` — routed through the model so a linked take-any tile
     /// stays in sync (T-066).
     var onCycle: (Int) -> Void
+
+    /// Commentary Mode overlay for this take-any slot (T-215).
+    var commentaryKnowledge: CommentaryKnowledge = []
+    var commentaryEncoding: CommentaryEncoding = .pips
+    var commentaryR1: Color = .red
+    var commentaryR2: Color = .blue
+    var commentaryActive: Bool = false
+    var onCommentaryR1: () -> Void = {}
+    var onCommentaryR2: () -> Void = {}
 
     private var state: TakeAnyHeartState { progress.takeAnyHearts[index] }
 
@@ -866,8 +938,14 @@ private struct TakeAnyHeartBox: View {
         .overlay(
             RoundedRectangle(cornerRadius: 4).strokeBorder(Theme.border, lineWidth: 1.5)
         )
-        .onTapGesture { cycle(1) }
+        .onTapGesture {
+            if commentaryActive, commentaryOptionKeyDown() { onCommentaryR1(); return }
+            cycle(1)
+        }
         .onRightClick { cycle(-1) }
+        .commentaryCell(knowledge: commentaryKnowledge, encoding: commentaryEncoding,
+                        r1: commentaryR1, r2: commentaryR2, active: commentaryActive,
+                        size: size, onRunner2: onCommentaryR2)
         .help("Take-any cave \(index + 1): \(state.label)")
     }
 

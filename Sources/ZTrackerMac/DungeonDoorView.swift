@@ -53,8 +53,10 @@ struct DungeonDoorView: View {
             // already the left/right clicks), so all four states are one flick away.
             case .shiftLeft, .scrollUp: set(s.scrollUp)                   // unknown → purple
             case .shiftRight, .scrollDown: set(s.scrollDown)             // unknown → gold
-            // ⌥-click stands in for the reference middle-click (no middle button).
-            case .middle, .optionLeft: set(s.toggled(to: .yellow))
+            // ⌘-click stands in for the reference middle-click (no middle button); ⌥ moved off
+            // to become the app-wide Commentary modifier (T-215), so it no-ops on doors.
+            case .middle, .commandLeft: set(s.toggled(to: .yellow))
+            case .optionLeft, .optionRight: break
             }
         })
         .accessibilityElement(children: .ignore)

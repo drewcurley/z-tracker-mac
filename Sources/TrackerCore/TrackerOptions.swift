@@ -156,6 +156,11 @@ public final class TrackerOptions {
     /// Mark an unwanted ("skipped") item box with a **large X across the whole box** (default
     /// `true`, T-212) instead of a small X in the corner — easier to see at a glance.
     public var largeUnwantedX: Bool { didSet { persistSettingsBoolsIfNeeded() } }
+    /// Commentary Mode (T-215): when on, the tracker shows the commentator-only "who knows what"
+    /// overlay and ⌥-click / ⌥-right-click toggle runner 1 / runner 2. Default off.
+    public var commentaryMode: Bool { didSet { persistSettingsBoolsIfNeeded() } }
+    /// How the commentary overlay renders (T-215): corner pips or split edge-border. Persisted.
+    public var commentaryEncoding: CommentaryEncoding { didSet { persistCommentaryEncodingIfNeeded() } }
     /// The app's color theme (T-187, beyond the reference): dark (default), light, or
     /// follow the OS. Replaces the reference's unimplemented "Dungeon 'sunglasses'"
     /// toggle. Drives `NSApp.appearance`. Persists **immediately** on change (not just at
@@ -266,6 +271,8 @@ public final class TrackerOptions {
         leftDragAutoInverts: Bool = false,
         defaultToNonDescript: Bool = false,
         largeUnwantedX: Bool = true,
+        commentaryMode: Bool = false,
+        commentaryEncoding: CommentaryEncoding = .pips,
         appTheme: AppTheme = .dark,
         hiddenOverworldTiles: [OverworldHiddenTileKind: Bool]? = nil,
         hideNoLongerRelevantShopItems: Bool = false,
@@ -305,6 +312,8 @@ public final class TrackerOptions {
         self.leftDragAutoInverts = leftDragAutoInverts
         self.defaultToNonDescript = defaultToNonDescript
         self.largeUnwantedX = largeUnwantedX
+        self.commentaryMode = commentaryMode
+        self.commentaryEncoding = commentaryEncoding
         self.appTheme = appTheme
         self.hiddenOverworldTiles = hiddenOverworldTiles ?? Self.defaultHiddenOverworldTiles()
         self.hideNoLongerRelevantShopItems = hideNoLongerRelevantShopItems
@@ -452,6 +461,7 @@ public final class TrackerOptions {
     private static let hiddenTilesKey = "ztracker.settings.hiddenTiles"
     private static let customLevelPrefixKey = "ztracker.settings.customLevelPrefix"
     private static let appThemeKey = "ztracker.settings.appTheme"
+    private static let commentaryEncodingKey = "ztracker.settings.commentaryEncoding"
     private static let voiceConfirmVolumeKey = "ztracker.settings.voiceConfirmVolume"
     private static let inputConfirmVolumeKey = "ztracker.settings.inputConfirmVolume"
 
@@ -474,6 +484,7 @@ public final class TrackerOptions {
         "leftDragAutoInverts": \.leftDragAutoInverts,
         "defaultToNonDescript": \.defaultToNonDescript,
         "largeUnwantedX": \.largeUnwantedX,
+        "commentaryMode": \.commentaryMode,
         "hideNoLongerRelevantShopItems": \.hideNoLongerRelevantShopItems,
         "alwaysHideMeatShops": \.alwaysHideMeatShops,
         "animateTileChanges": \.animateTileChanges,
@@ -514,6 +525,10 @@ public final class TrackerOptions {
         if let raw = store.string(forKey: Self.appThemeKey), let theme = AppTheme(rawValue: raw) {
             appTheme = theme
         }
+        if let raw = store.string(forKey: Self.commentaryEncodingKey),
+           let enc = CommentaryEncoding(rawValue: raw) {
+            commentaryEncoding = enc
+        }
         if store.object(forKey: Self.voiceConfirmVolumeKey) != nil {
             voiceConfirmationVolume = max(0, min(100, store.integer(forKey: Self.voiceConfirmVolumeKey)))
         }
@@ -533,6 +548,7 @@ public final class TrackerOptions {
         store.set(Self.encodeHiddenTiles(hiddenOverworldTiles), forKey: Self.hiddenTilesKey)
         store.set(customLevelPrefix, forKey: Self.customLevelPrefixKey)
         store.set(appTheme.rawValue, forKey: Self.appThemeKey)
+        store.set(commentaryEncoding.rawValue, forKey: Self.commentaryEncodingKey)
         store.set(voiceConfirmationVolume, forKey: Self.voiceConfirmVolumeKey)
         store.set(inputConfirmationVolume, forKey: Self.inputConfirmVolumeKey)
     }
@@ -543,6 +559,12 @@ public final class TrackerOptions {
     private func persistAppThemeIfNeeded() {
         guard let store = settingsStore, !isApplyingSettings else { return }
         store.set(appTheme.rawValue, forKey: Self.appThemeKey)
+    }
+
+    /// Persist the commentary encoding the moment it changes (T-215), like the theme.
+    private func persistCommentaryEncodingIfNeeded() {
+        guard let store = settingsStore, !isApplyingSettings else { return }
+        store.set(commentaryEncoding.rawValue, forKey: Self.commentaryEncodingKey)
     }
 
     /// Persist the confirmation-sound volumes the moment a slider moves (T-208), so an

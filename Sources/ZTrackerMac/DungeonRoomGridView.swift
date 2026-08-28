@@ -99,7 +99,12 @@ struct DungeonMapView: View {
                                         outlineQuest: outlineMode,
                                         hoveredRow: $hoveredRow,
                                         grab: grab,
-                                        focus: focus)
+                                        focus: focus,
+                                        commentary: model.commentary,
+                                        commentaryActive: options.commentaryMode,
+                                        commentaryEncoding: options.commentaryEncoding,
+                                        commentaryR1: Color(commentaryHex: model.commentary.runner1ColorHex),
+                                        commentaryR2: Color(commentaryHex: model.commentary.runner2ColorHex))
                     dungeonInfoStrip
                 }
             }
@@ -320,7 +325,14 @@ struct DungeonMapView: View {
                 showLocationHeader: false,
                 blockers: model.dungeonBlockers,
                 chipPlayerState: model.playerComputedStateSummary,
-                hint: $model.levelHints[HintTarget.dungeon(selected + 1)]
+                hint: $model.levelHints[HintTarget.dungeon(selected + 1)],
+                // Same item boxes as the top-row cards (same commentary keys) — show/edit the
+                // runner-knowledge overlay here too (T-215).
+                commentary: model.commentary,
+                commentaryActive: options.commentaryMode,
+                commentaryEncoding: options.commentaryEncoding,
+                commentaryR1: Color(commentaryHex: model.commentary.runner1ColorHex),
+                commentaryR2: Color(commentaryHex: model.commentary.runner2ColorHex)
             )
             .frame(maxWidth: .infinity)
             // Minimap preview (T-079): hover to see the faux in-game HUD map.
@@ -387,6 +399,13 @@ struct DungeonRoomGridView: View {
     /// Shared focus state (T-134) â the keyboard cursor follows hover here and is
     /// drawn on the cursor room when the cursor is on the dungeon grid.
     @Bindable var focus: TrackerFocusState
+    /// Commentary Mode (T-215): the knowledge layer + whether the mode is on, plumbed so each room
+    /// cell can render its runner pips/border and toggle on ⌥-click / ⌥-right-click.
+    var commentary: CommentaryLayer? = nil
+    var commentaryActive: Bool = false
+    var commentaryEncoding: CommentaryEncoding = .pips
+    var commentaryR1: Color = .red
+    var commentaryR2: Color = .blue
 
     /// The single active detail-picker request (T-145). Grid-level so there are
     /// three popovers total, not three per cell.
@@ -427,6 +446,18 @@ struct DungeonRoomGridView: View {
                                  preferNonDescript: preferNonDescript,
                                  confirmInputSound: confirmInputSound,
                                  confirmInputVolume: confirmInputVolume,
+                                 commentaryKnowledge: commentaryActive
+                                     ? (commentary?.knowledge(CommentaryLayer.roomKey(dungeon: dungeonNumber - 1, col: col, row: row)) ?? [])
+                                     : [],
+                                 commentaryEncoding: commentaryEncoding,
+                                 commentaryR1: commentaryR1, commentaryR2: commentaryR2,
+                                 commentaryActive: commentaryActive,
+                                 onCommentaryR1: {
+                                     commentary?.toggle(.runner1, key: CommentaryLayer.roomKey(dungeon: dungeonNumber - 1, col: col, row: row))
+                                 },
+                                 onCommentaryR2: {
+                                     commentary?.toggle(.runner2, key: CommentaryLayer.roomKey(dungeon: dungeonNumber - 1, col: col, row: row))
+                                 },
                                  grab: grab,
                                  onHover: { hovering in
                                      if hovering {
@@ -598,6 +629,15 @@ private struct RoomCellView: View {
     /// The GRAB tool state (T-083) â routes clicks and paints the preview.
     var confirmInputSound: Bool = false   // mouse confirmation tick on a room edit (T-208)
     var confirmInputVolume: Int = 100
+    /// Commentary Mode overlay for this room cell (T-215). Pips go in the free corners (monster
+    /// owns top-left, drop bottom-right): runner 1 bottom-left, runner 2 top-right.
+    var commentaryKnowledge: CommentaryKnowledge = []
+    var commentaryEncoding: CommentaryEncoding = .pips
+    var commentaryR1: Color = .red
+    var commentaryR2: Color = .blue
+    var commentaryActive: Bool = false
+    var onCommentaryR1: () -> Void = {}
+    var onCommentaryR2: () -> Void = {}
     var grab: DungeonGrabController
     /// Reports hover enter/leave for the row-locator (T-078).
     var onHover: (Bool) -> Void = { _ in }
@@ -700,8 +740,12 @@ private struct RoomCellView: View {
                 // up/Shift-left = monster, down/Shift-right = floor drop.
                 case .shiftLeft, .scrollUp: onPick(.monster)
                 case .shiftRight, .scrollDown: onPick(.floorDrop)
+                // Commentary Mode (T-215): ⌥-click = runner 1, ⌥-right-click = runner 2 (no-op
+                // when the mode is off, since ⌥ is reserved for commentary).
+                case .optionLeft: if commentaryActive { onCommentaryR1() }
+                case .optionRight: if commentaryActive { onCommentaryR2() }
                 // â¥-click stands in for the reference middle-click (no middle button).
-                case .middle, .optionLeft: map.middleClick(col: col, row: row)
+                case .middle, .commandLeft: map.middleClick(col: col, row: row)
                 }
             },
             // Drag-paint (T-072): left over off-map â unmarked, right over unmarked
@@ -710,6 +754,14 @@ private struct RoomCellView: View {
             dragContext: .init(col: col, row: row, pitchX: pitchX, pitchY: pitchY),
             onDragPaint: { button, c, r in if !grab.isGrabMode { map.dragPaint(button, col: c, row: r) } }
         ))
+        // Commentary Mode knowledge overlay (T-215): pips in the free corners (runner 1
+        // bottom-left, runner 2 top-right), or the edge border. Non-interactive.
+        .overlay {
+            CommentaryTileOverlay(knowledge: commentaryActive ? commentaryKnowledge : [],
+                                  encoding: commentaryEncoding, r1: commentaryR1, r2: commentaryR2,
+                                  r1Corner: .bottomLeading, r2Corner: .topTrailing)
+                .frame(width: width, height: height)
+        }
         // The detail-picker popovers live at the grid level now (T-145) â the cell
         // only requests them via `onPick`.
         // VoiceOver (docs/ux.md Â§ Accessibility). Default action = the primary

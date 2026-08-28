@@ -22,7 +22,11 @@ import TrackerCore
 /// before — so door behavior is unchanged.
 struct RoomMouseCatcher: NSViewRepresentable {
     enum Gesture: Equatable {
-        case left, right, shiftLeft, shiftRight, middle, optionLeft, scrollUp, scrollDown
+        case left, right, shiftLeft, shiftRight, middle, scrollUp, scrollDown
+        /// ⌥-click / ⌥-right-click — reserved app-wide for Commentary Mode (runner 1 / 2), T-215.
+        case optionLeft, optionRight
+        /// ⌘-click — the room "circle"/brightness (moved off ⌥ so ⌥ is always commentary), T-215.
+        case commandLeft
     }
 
     /// This cell's grid position + the column/row pitch, so a drag can be mapped
@@ -66,6 +70,7 @@ struct RoomMouseCatcher: NSViewRepresentable {
         private var downButton: Int?
         private var downOption = false
         private var downShift = false
+        private var downCommand = false
         private var didDrag = false
         private var downLocation: NSPoint = .zero
         /// Movement past this (in window points) counts as a drag, not a click —
@@ -101,6 +106,7 @@ struct RoomMouseCatcher: NSViewRepresentable {
             downButton = button
             downOption = event.modifierFlags.contains(.option)
             downShift = event.modifierFlags.contains(.shift)
+            downCommand = event.modifierFlags.contains(.command)
             downLocation = event.locationInWindow
             didDrag = false
             // Fire immediately for doors (no drag), and for a *plain* left press on
@@ -110,14 +116,14 @@ struct RoomMouseCatcher: NSViewRepresentable {
             // so a drag doesn't first fire its click — e.g. an ⌥-drag must not
             // toggle the start room's circle before painting.
             if !dragEnabled || isPlainLeft(button) {
-                fireClick(button: button, option: downOption, shift: downShift)
+                fireClick(button: button, option: downOption, shift: downShift, command: downCommand)
             }
         }
 
         /// A plain left press (no modifiers) — the one gesture that fires on
         /// mouse-down even on rooms.
         private func isPlainLeft(_ button: Int) -> Bool {
-            button == 0 && !downOption && !downShift
+            button == 0 && !downOption && !downShift && !downCommand
         }
 
         // MARK: Drag — paint the room under the cursor (rooms only).
@@ -133,6 +139,8 @@ struct RoomMouseCatcher: NSViewRepresentable {
                               event.locationInWindow.y - downLocation.y)
             guard didDrag || moved >= dragThreshold else { return }
             didDrag = true
+            // ⌥ is reserved for Commentary Mode (click-only, T-215) — never drag-paint on ⌥.
+            if button == 0 && downOption { return }
             let p = convert(event.locationInWindow, from: nil)
             let gridX = CGFloat(ctx.col) * ctx.pitchX + p.x
             let gridY = CGFloat(ctx.row) * ctx.pitchY + p.y
@@ -141,7 +149,7 @@ struct RoomMouseCatcher: NSViewRepresentable {
             let paint: DungeonRoomMap.DragPaintButton = switch button {
                 case 1: .right
                 case 2: .middle
-                default: downOption ? .middle : .left   // ⌥+left-drag stands in for middle
+                default: downCommand ? .middle : .left   // ⌘+left-drag stands in for middle
             }
             onDragPaint(paint, col, row)
         }
@@ -157,16 +165,20 @@ struct RoomMouseCatcher: NSViewRepresentable {
             // A plain left press already fired on mouse-down; every deferred press
             // (⌥/shift-left, right, middle) fires here, and only if it wasn't a drag.
             guard dragEnabled, downButton == button, !didDrag, !isPlainLeft(button) else { return }
-            fireClick(button: button, option: downOption, shift: downShift)
+            fireClick(button: button, option: downOption, shift: downShift, command: downCommand)
         }
 
-        private func fireClick(button: Int, option: Bool, shift: Bool) {
+        private func fireClick(button: Int, option: Bool, shift: Bool, command: Bool) {
             switch button {
-            case 1: onGesture?(shift ? .shiftRight : .right)
+            case 1:
+                if shift { onGesture?(.shiftRight) }
+                else if option { onGesture?(.optionRight) }   // commentary runner 2 (T-215)
+                else { onGesture?(.right) }
             case 2: onGesture?(.middle)
             default:
                 if shift { onGesture?(.shiftLeft) }
-                else if option { onGesture?(.optionLeft) }
+                else if option { onGesture?(.optionLeft) }    // commentary runner 1 (T-215)
+                else if command { onGesture?(.commandLeft) }  // circle / brightness (moved off ⌥)
                 else { onGesture?(.left) }
             }
         }

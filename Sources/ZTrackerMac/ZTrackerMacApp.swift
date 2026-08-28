@@ -27,6 +27,9 @@ let HotkeyWindowID = "z-hotkeys"
 /// The id of the voice-command editor window (T-139).
 let VoiceWindowID = "z-voice"
 
+/// The id of the Commentary Mode settings window (T-215) — the race-commentator overlay config.
+let CommentaryWindowID = "z-commentary"
+
 /// The id of the broken-out dungeon band (map + blockers + notes) window (T-123).
 let DungeonBandWindowID = "z-dungeon-band"
 
@@ -186,6 +189,12 @@ struct ZTrackerMacApp: App {
             VoiceCommandEditorView(config: voiceConfig)
         }
         .defaultSize(width: 480, height: 620)
+
+        // The Commentary Mode settings window (T-215) — opened from Settings' "Commentary…".
+        Window("Commentary", id: CommentaryWindowID) {
+            CommentarySettingsView(options: options, commentary: model.commentary)
+        }
+        .defaultSize(width: 440, height: 440)
 
         // The broken-out reminder Log window (T-122) — opened by the timeline
         // section's "Log" button; a scrollable list of fired reminders with their
