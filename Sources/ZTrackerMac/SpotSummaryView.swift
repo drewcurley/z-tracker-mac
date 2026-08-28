@@ -10,7 +10,6 @@ struct OverworldMarkIcon: View {
     var hideDungeonNumbers: Bool = false
 
     private static let anyRoadBg = Color(red: 218.0 / 255, green: 112.0 / 255, blue: 214.0 / 255)
-    private static let shopBg = Color(red: 0xEF / 255.0, green: 0x83 / 255.0, blue: 0)
     private static let hintBg = Color(white: 0.58)
 
     var body: some View {
@@ -41,21 +40,76 @@ struct OverworldMarkIcon: View {
                     .padding(size * 0.14)
             }
         case .interiorSprite(let idx):
-            sprite(OverworldInteriorIconAtlas.icon(at: idx), inset: size * 0.14)
+            interiorSprite(idx)
         case .swordCaveItem(let level):
-            // High-fidelity Items-area sword sprite (T-063); the black box below
-            // already provides the plate, so just inset the sword.
-            sprite(ItemIconAtlas.cgImage(swordIcon(forCaveLevel: level)), inset: size * 0.16)
+            swordCave(level)
         case .shopSprite(let idx):
-            ZStack {
-                Self.shopBg
-                sprite(OverworldShopIconAtlas.icon(at: idx), inset: size * 0.18)
-            }
-            .clipShape(RoundedRectangle(cornerRadius: 4))
-            .padding(size * 0.1)
+            shopSprite(idx)
         case .none, .solidBlackTile:
             EmptyView()
         }
+    }
+
+    /// The plain interior sprites — prefer the real game sprite (matching the map, T-161);
+    /// the sized secrets (small/medium/large = indices 9/6/8) are 1/2/3 five-rupee clusters;
+    /// fall back to the old atlas glyph only when no sprite is mapped.
+    @ViewBuilder private func interiorSprite(_ index: Int) -> some View {
+        switch index {
+        case 9: secretRupees(1)
+        case 6: secretRupees(2)
+        case 8: secretRupees(3)
+        default:
+            if let file = GameSprite.overworldFile(index: index), let cg = GameSprite.image(file) {
+                gameSprite(cg, inset: size * 0.1)
+            } else {
+                sprite(OverworldInteriorIconAtlas.icon(at: index), inset: size * 0.14)
+            }
+        }
+    }
+
+    /// A cluster of `count` five-rupee sprites for a secret-money spot, mirroring the map.
+    @ViewBuilder private func secretRupees(_ count: Int) -> some View {
+        if let cg = GameSprite.image("5 Rupees") {
+            HStack(spacing: -size * 0.05) {
+                ForEach(0..<count, id: \.self) { _ in
+                    Image(decorative: cg, scale: 1, orientation: .up)
+                        .interpolation(.none).resizable().scaledToFit()
+                }
+            }
+            .padding(size * 0.1)
+        } else {
+            sprite(OverworldInteriorIconAtlas.icon(at: count == 1 ? 9 : count == 2 ? 6 : 8), inset: size * 0.14)
+        }
+    }
+
+    /// The sword-cave item — prefer the real game sword sprite (T-213), drawn on the box plate
+    /// with a drop-shadow for contrast; fall back to the atlas glyph.
+    @ViewBuilder private func swordCave(_ level: Int) -> some View {
+        let icon = swordIcon(forCaveLevel: level)
+        if let file = GameSprite.itemFile(icon), let cg = GameSprite.image(file) {
+            gameSprite(cg, inset: size * 0.14, shadow: true)
+        } else {
+            sprite(ItemIconAtlas.cgImage(icon), inset: size * 0.16)
+        }
+    }
+
+    /// A shop's primary item — the real game sprite drawn straight on the plate (no orange
+    /// backing, matching the map after T-212); fall back to the atlas glyph.
+    @ViewBuilder private func shopSprite(_ index: Int) -> some View {
+        if index >= 0, index < ShopKind.allCases.count,
+           let file = GameSprite.shopFile(ShopKind.allCases[index]), let cg = GameSprite.image(file) {
+            gameSprite(cg, inset: size * 0.14, shadow: true)
+        } else {
+            sprite(OverworldShopIconAtlas.icon(at: index), inset: size * 0.18)
+        }
+    }
+
+    /// A real game sprite, fit to the tile at its native aspect (crisp nearest-neighbor).
+    @ViewBuilder private func gameSprite(_ cg: CGImage, inset: CGFloat, shadow: Bool = false) -> some View {
+        Image(decorative: cg, scale: 1, orientation: .up)
+            .interpolation(.none).resizable().scaledToFit()
+            .shadow(color: shadow ? .black : .clear, radius: shadow ? 1 : 0)
+            .padding(inset)
     }
 
     /// Cave level 1 / 2 / 3 → wood / white / magical sword (T-063). Only levels
@@ -98,6 +152,10 @@ struct OverworldMarkIcon: View {
 struct SpotSummaryView: View {
     let summary: SpotSummary
     var hideDungeonNumbers: Bool = false
+
+    /// The summary's fixed natural width — the breakout window scales the whole view by
+    /// (window width ÷ this) so it fills a resized window instead of leaving dead space.
+    static let naturalWidth: CGFloat = 340
 
     private let uniqueColumns = Array(repeating: GridItem(.fixed(26), spacing: 5), count: 9)
 
@@ -146,7 +204,7 @@ struct SpotSummaryView: View {
             }
         }
         .padding(14)
-        .frame(width: 340)
+        .frame(width: Self.naturalWidth)
     }
 
     private func nonUniqueRow(_ nu: SpotSummary.NonUniqueCount) -> some View {
@@ -205,17 +263,30 @@ struct SpotSummaryView: View {
 struct SpotSummaryWindowView: View {
     let model: TrackerModel
 
+    /// Clamp how far the summary scales: never smaller than ~0.8× (stays legible in a tiny
+    /// window) nor larger than 3× (a huge window shouldn't make it comically big).
+    private static let minScale: CGFloat = 0.8
+    private static let maxScale: CGFloat = 3.0
+    /// The window padding on each side that the content width must fit within.
+    private static let hPadding: CGFloat = 14
+
     var body: some View {
-        ScrollView {
-            SpotSummaryView(
-                summary: SpotSummary.compute(
-                    grid: model.overworldGrid, quest: model.quest ?? .first,
-                    armosDone: model.dungeonTracker.armosBox.isDone,
-                    whiteSwordItemDone: model.dungeonTracker.sword2Box.isDone,
-                    hasMagicalSword: model.playerComputedStateSummary.swordLevel >= 3),
-                hideDungeonNumbers: model.hideDungeonNumbers)
-            .padding(14)
-            .frame(maxWidth: .infinity, alignment: .leading)
+        // Scale the whole summary to fill the window width (both up and down) — the window is
+        // resizable, so match its size instead of leaving the fixed 340-wide view stranded.
+        GeometryReader { proxy in
+            let usable = max(proxy.size.width - Self.hPadding * 2, 1)
+            let scale = min(max(usable / SpotSummaryView.naturalWidth, Self.minScale), Self.maxScale)
+            ScrollView([.vertical, .horizontal]) {
+                SpotSummaryView(
+                    summary: SpotSummary.compute(
+                        grid: model.overworldGrid, quest: model.quest ?? .first,
+                        armosDone: model.dungeonTracker.armosBox.isDone,
+                        whiteSwordItemDone: model.dungeonTracker.sword2Box.isDone,
+                        hasMagicalSword: model.playerComputedStateSummary.swordLevel >= 3),
+                    hideDungeonNumbers: model.hideDungeonNumbers)
+                .scaledFootprint(scale, naturalWidth: SpotSummaryView.naturalWidth)
+                .padding(Self.hPadding)
+            }
         }
     }
 }

@@ -25,6 +25,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-216](./T-216.md) | Spot Summary breakout — scale on resize + use current game-sprite icons | frontend-engineer | — | fix/spot-summary-breakout-scale-icons | — | docs/reviews/fix-spot-summary-breakout-scale-icons/final.md |
 | [T-215](./T-215.md) | Commentary Mode — commentator-only runner-knowledge overlay across five surfaces | frontend-engineer | — | feat/commentary-mode | — | docs/reviews/feat-commentary-mode/final.md |
 | [T-214](./T-214.md) | Gated items default to untaken when unreachable (coast/ladder, white-sword/4♥, magical-sword/10♥) | frontend-engineer | — | feat/gated-item-defaults | — | docs/reviews/feat-gated-item-defaults/final.md |
 | [T-213](./T-213.md) | Overworld sword-cave markers use real game sprites; first NOTARIZED release | frontend-engineer | T-212 | feat/sword-cave-sprites | — | docs/reviews/feat-sword-cave-sprites/final.md |
