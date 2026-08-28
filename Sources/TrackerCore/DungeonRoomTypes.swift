@@ -132,6 +132,9 @@ public enum MonsterDetail: CaseIterable, Sendable, Equatable, Codable {
     // in the dungeon monster picker. No dungeon-sheet sprite; rendered from the game
     // sprite GIFs (see the overworld enemy glyph helper).
     case octorok, peahat, leever
+    // A generic "bomb droppers" marker (T-217, user request) — any screen whose enemies
+    // drop bombs, for bomb farming. Rendered as a plain bomb icon, not a specific enemy.
+    case bombDroppers
 
     public var isNotMarked: Bool { self == .unmarked }
 
@@ -146,7 +149,7 @@ public enum MonsterDetail: CaseIterable, Sendable, Equatable, Codable {
     public static let overworldEnemies: [MonsterDetail] = [
         .blueWizzrobe, .blueDarknut, .redLynel, .polsVoice, .redGoriya,
         .gibdo, .rope, .stalfos, .redTektite, .blueMoblin,
-        .octorok, .peahat, .leever,
+        .octorok, .peahat, .leever, .bombDroppers,
     ]
 
     /// Toggle `m` into a normalized up-to-two monster pair (T-116/T-117), shared
@@ -201,6 +204,7 @@ public enum MonsterDetail: CaseIterable, Sendable, Equatable, Codable {
         case .octorok: "Octorok"
         case .peahat: "Peahat"
         case .leever: "Leever"
+        case .bombDroppers: "Bomb Droppers"
         }
     }
 }

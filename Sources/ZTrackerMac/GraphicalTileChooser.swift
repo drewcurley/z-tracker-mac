@@ -208,6 +208,7 @@ struct OverworldEnemyGlyph: View {
         case .octorok: "Octorok - Red (Front)"
         case .peahat: "Peahat"
         case .leever: "Leever - Red1"
+        case .bombDroppers: "Bomb"   // generic bomb-droppers marker (T-217)
         default: ""
         }
     }
