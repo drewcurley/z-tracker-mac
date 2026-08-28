@@ -42,6 +42,9 @@ let SpotSummaryWindowID = "z-spot-summary"
 /// The id of the Shop & Price tracker breakout window (T-218).
 let ShopPricesWindowID = "z-shop-prices"
 
+/// The id of the Drop Rooms reference breakout window (T-219).
+let DropRoomsWindowID = "z-drop-rooms"
+
 /// The id of the broadcast **mirror** window (T-178) — a synced full-tracker clone.
 let BroadcastWindowID = "z-broadcast"
 
@@ -256,6 +259,13 @@ struct ZTrackerMacApp: App {
                 .onDisappear { model.showShopPricesWindow = false }
         }
         .defaultSize(width: 460, height: 560)
+
+        // The Drop Rooms reference (T-219) — rooms that never drop in the selected dungeon.
+        Window("Drop Rooms", id: DropRoomsWindowID) {
+            DropRoomsView(model: model, focus: focus)
+                .frame(minWidth: 300, minHeight: 260)
+        }
+        .defaultSize(width: 440, height: 560)
 
         // The break-out Progress HUD (T-035.10) — opened on demand by the
         // "Progress" toggle (a secondary WindowGroup doesn't open at launch).

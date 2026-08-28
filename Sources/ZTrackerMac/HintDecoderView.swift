@@ -71,7 +71,10 @@ struct HintDecoderView: View {
                     .padding(.top, 2)
                 }
             } label: {
+                // Clicking the title (not just the chevron) toggles the section (T-219 polish).
                 Text("Other hints").font(.system(size: 13, weight: .semibold))
+                    .contentShape(Rectangle())
+                    .onTapGesture { withAnimation { showOtherHints.toggle() } }
             }
         }
         .padding(14)

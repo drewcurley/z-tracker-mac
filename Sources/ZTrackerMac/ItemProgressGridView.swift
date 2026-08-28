@@ -644,6 +644,7 @@ struct MapInfoView: View {
         VStack(alignment: .leading, spacing: 8) {
             spotSummaryButton
             hintDecoderButton
+            dropRoomsButton
             settingsButton
             overlayToggles
             // (Recorder widget moved to the Flags group, T-104; Commentary + Shop/Price
@@ -663,6 +664,16 @@ struct MapInfoView: View {
         .controlSize(.small)
         .buttonStyle(.bordered)
         .help("Open Settings (also ⌘,) — draw routes, magnifier, animation, and other preferences, live")
+    }
+
+    /// "Drop Rooms" (T-219): a breakout reference of the room layouts that never drop in the
+    /// currently-selected dungeon.
+    private var dropRoomsButton: some View {
+        Button("Drop Rooms…") { openWindow(id: DropRoomsWindowID) }
+            .font(.system(size: 10))
+            .controlSize(.small)
+            .buttonStyle(.bordered)
+            .help("Room layouts that never contain a floor drop in the dungeon selected on the Dungeon Map tab")
     }
 
     /// "Hint Decoder" (T-039.1): the consolidated per-target location-hint
