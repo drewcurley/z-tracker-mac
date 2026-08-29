@@ -4,6 +4,12 @@ All notable changes to **Z-Tracker for macOS**. Newest first. This project follo
 [Keep a Changelog](https://keepachangelog.com/) and [Semantic Versioning](https://semver.org/).
 Each entry mirrors the notes on its [GitHub Release](https://github.com/drewcurley/z-tracker-mac/releases).
 
+## [1.2.4] — 2026-08-28
+### Fixed
+- The dungeon room, monster, and floor-drop choosers and the overworld enemy chooser now show a
+  **live header label** naming whatever option you hover — matching the graphical tile chooser.
+- The room chooser now spells it **Ganon** (was "Gannon").
+
 ## [1.2.3] — 2026-08-27
 ### Added
 - **Drop Rooms** window (button in the Info area, between Hint Decoder and Settings): shows the room
@@ -120,6 +126,7 @@ Each entry mirrors the notes on its [GitHub Release](https://github.com/drewcurl
   import, custom-map fog-of-war, Dark/Light/OS themes, rebindable hotkeys with in-menu hints, and a
   broadcast mirror window for streaming.
 
+[1.2.4]: https://github.com/drewcurley/z-tracker-mac/releases/tag/v1.2.4
 [1.2.3]: https://github.com/drewcurley/z-tracker-mac/releases/tag/v1.2.3
 [1.2.2]: https://github.com/drewcurley/z-tracker-mac/releases/tag/v1.2.2
 [1.2.1]: https://github.com/drewcurley/z-tracker-mac/releases/tag/v1.2.1

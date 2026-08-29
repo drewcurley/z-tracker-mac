@@ -818,11 +818,18 @@ private struct RoomTypePicker: View {
         .transport4, .transport5, .transport6, .transport7, .transport8, .turnstile, nil,
     ]
     private let columns = Array(repeating: GridItem(.fixed(44), spacing: 4), count: 7)
+    /// Live header label naming the hovered cell (T-222), matching the graphical tile chooser.
+    @State private var hoverLabel: String?
+
+    private func label(_ type: RoomType) -> String {
+        type == .unmarked ? "Unmarked (clear)" : type.displayDescription
+    }
 
     var body: some View {
         let _ = perfTrace()
         VStack(alignment: .leading, spacing: 8) {
-            Text("Select a room type").font(.caption).foregroundStyle(.secondary)
+            Text(hoverLabel ?? "Select a room type").font(.caption).lineLimit(1)
+                .foregroundStyle(hoverLabel == nil ? Color.secondary : Color.primary)
             LazyVGrid(columns: columns, spacing: 4) {
                 ForEach(Array(Self.order.enumerated()), id: \.offset) { _, entry in
                     if let type = entry {
@@ -838,8 +845,12 @@ private struct RoomTypePicker: View {
                             .frame(width: 44, height: 32)
                         }
                         .buttonStyle(.plain)
-                        .help(type == .unmarked ? "Unmarked (clear)" : type.displayDescription)
+                        .help(label(type))
                         .accessibilityLabel(type == .unmarked ? "Unmarked" : type.displayDescription)
+                        .onHover { inside in
+                            let l = label(type)
+                            if inside { hoverLabel = l } else if hoverLabel == l { hoverLabel = nil }
+                        }
                     } else {
                         Color.clear.frame(width: 44, height: 32)
                     }
@@ -862,16 +873,23 @@ private struct MonsterPicker: View {
     let onToggle: (MonsterDetail) -> Void
     let onDone: () -> Void
     private let columns = Array(repeating: GridItem(.fixed(34), spacing: 4), count: 8)
+    /// Live header label naming the hovered cell (T-222).
+    @State private var hoverLabel: String?
 
     private func isSelected(_ md: MonsterDetail) -> Bool {
         !md.isNotMarked && (md == primary || md == secondary)
+    }
+
+    private func label(_ md: MonsterDetail) -> String {
+        md == .unmarked ? "None (clear both)" : md.displayName
     }
 
     var body: some View {
         let _ = perfTrace()
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("Select up to two monsters").font(.caption).foregroundStyle(.secondary)
+                Text(hoverLabel ?? "Select up to two monsters").font(.caption).lineLimit(1)
+                    .foregroundStyle(hoverLabel == nil ? Color.secondary : Color.primary)
                 Spacer()
                 Button("Done") { onDone() }.font(.caption)
             }
@@ -898,8 +916,12 @@ private struct MonsterPicker: View {
                         }
                     }
                     .buttonStyle(.plain)
-                    .help(md == .unmarked ? "None (clear both)" : md.displayName)
+                    .help(label(md))
                     .accessibilityLabel(md == .unmarked ? "None" : md.displayName)
+                    .onHover { inside in
+                        let l = label(md)
+                        if inside { hoverLabel = l } else if hoverLabel == l { hoverLabel = nil }
+                    }
                 }
             }
         }
@@ -924,11 +946,18 @@ private struct FloorDropPicker: View {
     let current: FloorDropDetail
     let onPick: (FloorDropDetail) -> Void
     private let columns = Array(repeating: GridItem(.fixed(38), spacing: 6), count: 3)
+    /// Live header label naming the hovered cell (T-222).
+    @State private var hoverLabel: String?
+
+    private func label(_ fd: FloorDropDetail) -> String {
+        fd == .unmarked ? "None (clear)" : fd.displayName
+    }
 
     var body: some View {
         let _ = perfTrace()
         VStack(alignment: .leading, spacing: 8) {
-            Text("Select a floor drop").font(.caption).foregroundStyle(.secondary)
+            Text(hoverLabel ?? "Select a floor drop").font(.caption).lineLimit(1)
+                .foregroundStyle(hoverLabel == nil ? Color.secondary : Color.primary)
             LazyVGrid(columns: columns, spacing: 6) {
                 ForEach(Array(FloorDropDetail.allInPickerOrder.enumerated()), id: \.offset) { _, fd in
                     Button { onPick(fd) } label: {
@@ -944,8 +973,12 @@ private struct FloorDropPicker: View {
                         .frame(width: 38, height: 38)
                     }
                     .buttonStyle(.plain)
-                    .help(fd == .unmarked ? "None (clear)" : fd.displayName)
+                    .help(label(fd))
                     .accessibilityLabel(fd == .unmarked ? "None" : fd.displayName)
+                    .onHover { inside in
+                        let l = label(fd)
+                        if inside { hoverLabel = l } else if hoverLabel == l { hoverLabel = nil }
+                    }
                 }
             }
         }

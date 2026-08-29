@@ -25,6 +25,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-222](./T-222.md) | Live hover labels on the room/monster/floor-drop/enemy choosers; "Ganon" spelling | frontend-engineer | — | fix/chooser-hover-labels | — | docs/reviews/fix-chooser-hover-labels/final.md |
 | [T-221](./T-221.md) | Add cumulative CHANGELOG.md; wire it into the release process | frontend-engineer | — | chore/changelog | — | — (docs-only chore) |
 | [T-220](./T-220.md) | README — document newer features; fix notarization/auto-update install notes | frontend-engineer | — | chore/readme-feature-updates | — | — (docs-only chore) |
 | [T-219](./T-219.md) | Drop Rooms breakout window + Hint Decoder "Other hints" clickable title | frontend-engineer | — | feat/drop-rooms-window | — | docs/reviews/feat-drop-rooms-window/final.md |
