@@ -225,11 +225,14 @@ struct OverworldEnemyPicker: View {
     var onDone: () -> Void
 
     private let columns = Array(repeating: GridItem(.fixed(34), spacing: 4), count: 6)
+    /// Live header label naming the hovered cell (T-222), matching the tile chooser.
+    @State private var hoverLabel: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("Enemies (up to two)").font(.caption).foregroundStyle(.secondary)
+                Text(hoverLabel ?? "Enemies (up to two)").font(.caption).lineLimit(1)
+                    .foregroundStyle(hoverLabel == nil ? Color.secondary : Color.primary)
                 Spacer()
                 Button("Done") { onDone() }.font(.caption)
             }
@@ -245,6 +248,10 @@ struct OverworldEnemyPicker: View {
                     }
                     .buttonStyle(.plain)
                     .help(enemy.displayName)
+                    .onHover { inside in
+                        if inside { hoverLabel = enemy.displayName }
+                        else if hoverLabel == enemy.displayName { hoverLabel = nil }
+                    }
                 }
             }
             if !current.isEmpty {

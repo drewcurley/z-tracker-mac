@@ -113,7 +113,7 @@ public enum RoomType: CaseIterable, Sendable, Equatable, Codable {
         case .startEnterFromN: "Dungeon entrance (from north)"
         case .startEnterFromS: "Dungeon entrance (from south)"
         case .offTheMap: "(Off the map)"
-        case .gannon: "Gannon"
+        case .gannon: "Ganon"
         case .zelda: "Zelda"
         }
     }
