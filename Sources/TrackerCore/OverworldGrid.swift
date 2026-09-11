@@ -169,30 +169,50 @@ public final class OverworldGrid {
         setExtraData(used ? key : 0, column: column, row: row, key: key)
     }
 
-    /// A shop tile's **second** item (T-060), or `nil` if none. Zelda shops
-    /// carry two items: the primary is the `.shop(kind)` mark, the second is
-    /// stored at `shopExtraDataKey` in the reference's toItem encoding
-    /// (`1…8`; `0` = none) — the same slot `MapStateSummary` reads for
-    /// "found shop".
+    // Shop items beyond the primary mark are packed into the single `shopExtraDataKey` value:
+    // **low nibble = 2nd item, high nibble = 3rd item** — each a `1…9` ShopKind index (`0` = none),
+    // in the reference's `toItem` encoding (T-224 extends the old bare-second-item encoding). Old
+    // saves (a bare `1…9` second item, no third) decode as third = 0, so they stay compatible.
+    private func encodeShopKind(_ kind: ShopKind?) -> Int {
+        kind.flatMap { ShopKind.allCases.firstIndex(of: $0) }.map { $0 + 1 } ?? 0
+    }
+    private func decodeShopKind(_ value: Int) -> ShopKind? {
+        (1...ShopKind.allCases.count).contains(value) ? ShopKind.allCases[value - 1] : nil
+    }
+
+    /// A shop tile's **second** item (T-060), or `nil` if none. The primary is the `.shop(kind)`
+    /// mark; the second is the low nibble of `shopExtraDataKey` — the slot `MapStateSummary` reads.
     public func shopSecondItem(column: Int, row: Int) -> ShopKind? {
-        let value = extraData(column: column, row: row, key: OverworldTileMark.shopExtraDataKey)
-        guard (1...ShopKind.allCases.count).contains(value) else { return nil }
-        return ShopKind.allCases[value - 1]
+        decodeShopKind(extraData(column: column, row: row, key: OverworldTileMark.shopExtraDataKey) & 0xF)
     }
 
-    /// Set (or clear, with `nil`) a shop tile's second item.
+    /// A shop tile's **third** item (T-224), or `nil` if none — the high nibble of `shopExtraDataKey`.
+    public func shopThirdItem(column: Int, row: Int) -> ShopKind? {
+        decodeShopKind((extraData(column: column, row: row, key: OverworldTileMark.shopExtraDataKey) >> 4) & 0xF)
+    }
+
+    /// Set (or clear, with `nil`) a shop tile's second item — preserving any third item.
     public func setShopSecondItem(_ kind: ShopKind?, column: Int, row: Int) {
-        let value = kind.flatMap { ShopKind.allCases.firstIndex(of: $0) }.map { $0 + 1 } ?? 0
-        setExtraData(value, column: column, row: row, key: OverworldTileMark.shopExtraDataKey)
+        let packed = extraData(column: column, row: row, key: OverworldTileMark.shopExtraDataKey)
+        setExtraData(encodeShopKind(kind) | (packed & 0xF0),
+                     column: column, row: row, key: OverworldTileMark.shopExtraDataKey)
     }
 
-    /// A shop tile's items in the picker's listing order (`ShopKind.allCases`),
-    /// for a stable left→right display regardless of which was chosen first
-    /// (T-060). Empty when the tile isn't a shop.
+    /// Set (or clear, with `nil`) a shop tile's third item — preserving the second item.
+    public func setShopThirdItem(_ kind: ShopKind?, column: Int, row: Int) {
+        let packed = extraData(column: column, row: row, key: OverworldTileMark.shopExtraDataKey)
+        setExtraData((packed & 0xF) | (encodeShopKind(kind) << 4),
+                     column: column, row: row, key: OverworldTileMark.shopExtraDataKey)
+    }
+
+    /// A shop tile's items (primary + second + third) in the picker's listing order
+    /// (`ShopKind.allCases`), for a stable left→right display regardless of pick order (T-060).
+    /// De-duplicated; empty when the tile isn't a shop.
     public func shopItems(column: Int, row: Int) -> [ShopKind] {
         guard case .shop(let first) = mark(column: column, row: row) else { return [] }
         var kinds = [first]
-        if let second = shopSecondItem(column: column, row: row), second != first { kinds.append(second) }
+        if let second = shopSecondItem(column: column, row: row), !kinds.contains(second) { kinds.append(second) }
+        if let third = shopThirdItem(column: column, row: row), !kinds.contains(third) { kinds.append(third) }
         return kinds.sorted {
             (ShopKind.allCases.firstIndex(of: $0) ?? 0) < (ShopKind.allCases.firstIndex(of: $1) ?? 0)
         }

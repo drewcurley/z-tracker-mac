@@ -26,14 +26,15 @@ public enum OverworldTileHiding {
                                     hasRescuedZelda: Bool,
                                     playerState: PlayerComputedStateSummary = PlayerComputedStateSummary(),
                                     shopSecondItem: ShopKind? = nil,
+                                    shopThirdItem: ShopKind? = nil,
                                     haveBook: Bool = false) -> Bool {
         if hasRescuedZelda { return false }
         if case .shop(let primary) = mark {
             // The whole shop tile hides only when *every* item it sells is hidden — then it's
             // effectively a "don't care". Per-item hiding (drop just the owned ones) is
             // `hiddenShopItems`, applied to the shop's icon render.
-            let items = shopItems(primary, shopSecondItem)
-            let hidden = hiddenShopItems(primary: primary, second: shopSecondItem,
+            let items = shopItems(primary, shopSecondItem, shopThirdItem)
+            let hidden = hiddenShopItems(primary: primary, second: shopSecondItem, third: shopThirdItem,
                                          options: options, playerState: playerState, haveBook: haveBook)
             return !items.isEmpty && hidden.count == items.count
         }
@@ -41,17 +42,20 @@ public enum OverworldTileHiding {
         return options.hiddenOverworldTiles[kind] == true
     }
 
-    /// A shop's items (primary + optional distinct second), deduped.
-    public static func shopItems(_ primary: ShopKind, _ second: ShopKind?) -> [ShopKind] {
-        [primary] + (second.flatMap { $0 == primary ? nil : [$0] } ?? [])
+    /// A shop's items (primary + optional distinct second + third), deduped in that order.
+    public static func shopItems(_ primary: ShopKind, _ second: ShopKind?, _ third: ShopKind? = nil) -> [ShopKind] {
+        var items = [primary]
+        if let second, !items.contains(second) { items.append(second) }
+        if let third, !items.contains(third) { items.append(third) }
+        return items
     }
 
     /// The subset of a shop's items to hide (dim) — the owned/irrelevant ones. The shop's icon
     /// renders only the remaining items; when this is *all* of them the tile fully dims.
-    public static func hiddenShopItems(primary: ShopKind, second: ShopKind?,
+    public static func hiddenShopItems(primary: ShopKind, second: ShopKind?, third: ShopKind? = nil,
                                        options: TrackerOptions, playerState: PlayerComputedStateSummary,
                                        haveBook: Bool) -> Set<ShopKind> {
-        Set(shopItems(primary, second).filter {
+        Set(shopItems(primary, second, third).filter {
             shopItemHideable($0, playerState: playerState, options: options, haveBook: haveBook)
         })
     }
@@ -63,7 +67,7 @@ public enum OverworldTileHiding {
     static func shopItemHideable(_ kind: ShopKind, playerState: PlayerComputedStateSummary,
                                  options: TrackerOptions, haveBook: Bool) -> Bool {
         switch kind {
-        case .bomb, .shield: return false                       // consumable — always relevant
+        case .bomb, .shield, .heart: return false               // consumable — always relevant
         case .meat: return options.alwaysHideMeatShops          // consumable, but its own opt-in
         default:
             guard options.hideNoLongerRelevantShopItems else { return false }

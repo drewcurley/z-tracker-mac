@@ -342,14 +342,14 @@ public struct SpoilerLog: Sendable, Equatable {
             }
         }
         // Reorder each shop notable-first so the primary mark is the item players track.
-        let priority: [ShopKind] = [.blueRing, .candle, .book, .arrow, .bomb, .shield, .key, .meat]
+        let priority: [ShopKind] = [.blueRing, .candle, .book, .arrow, .bomb, .shield, .key, .meat, .heart]
         for (n, kinds) in table {
             table[n] = priority.filter { kinds.contains($0) }
         }
         return table
     }
 
-    /// A shop item name → the tracked `ShopKind`, or nil for untracked items (e.g. Heart).
+    /// A shop item name → the tracked `ShopKind`, or nil for untracked items (e.g. Potion).
     private static func shopItemKind(_ name: String) -> ShopKind? {
         let s = name.uppercased()
         if s.contains("BLUE RING") { return .blueRing }
@@ -360,6 +360,7 @@ public struct SpoilerLog: Sendable, Equatable {
         if s.contains("SHIELD")    { return .shield }   // "Magic Shield"
         if s.contains("KEY")       { return .key }
         if s.contains("BAIT")      { return .meat }     // Bait = meat/food
-        return nil                                       // Heart, Potion, etc. — untracked
+        if s.contains("HEART"), !s.contains("CONTAINER") { return .heart }   // recovery heart, not a container (T-224)
+        return nil                                       // Potion, etc. — still untracked
     }
 }

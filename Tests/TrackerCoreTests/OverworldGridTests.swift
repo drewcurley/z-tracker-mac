@@ -9,6 +9,35 @@ struct OverworldGridTests {
         #expect(OverworldGrid.rowCount == 8)
     }
 
+    @Test("shop 2nd + 3rd items pack independently and round-trip (T-224)")
+    func shopThreeItems() {
+        let g = OverworldGrid()
+        g.setMark(.shop(.bomb), column: 2, row: 2)
+        g.setShopSecondItem(.arrow, column: 2, row: 2)
+        g.setShopThirdItem(.heart, column: 2, row: 2)
+        #expect(g.shopSecondItem(column: 2, row: 2) == .arrow)
+        #expect(g.shopThirdItem(column: 2, row: 2) == .heart)
+        // Editing one leaves the other intact.
+        g.setShopSecondItem(.candle, column: 2, row: 2)
+        #expect(g.shopThirdItem(column: 2, row: 2) == .heart)
+        #expect(g.shopItems(column: 2, row: 2) == [.bomb, .candle, .heart].sorted {
+            (ShopKind.allCases.firstIndex(of: $0) ?? 0) < (ShopKind.allCases.firstIndex(of: $1) ?? 0) })
+        // Clearing the 3rd leaves the 2nd.
+        g.setShopThirdItem(nil, column: 2, row: 2)
+        #expect(g.shopSecondItem(column: 2, row: 2) == .candle)
+        #expect(g.shopThirdItem(column: 2, row: 2) == nil)
+    }
+
+    @Test("a pre-T-224 save (bare second item, no third) still decodes (T-224)")
+    func backwardCompatSecondItem() {
+        let g = OverworldGrid()
+        g.setMark(.shop(.bomb), column: 3, row: 3)
+        // Old encoding: a bare 1…8 value at the shop key (blueRing = index 4 + 1 = 5).
+        g.setExtraData(5, column: 3, row: 3, key: OverworldTileMark.shopExtraDataKey)
+        #expect(g.shopSecondItem(column: 3, row: 3) == .blueRing)
+        #expect(g.shopThirdItem(column: 3, row: 3) == nil)
+    }
+
     @Test("every tile starts unmarked")
     func startsUnmarked() {
         let grid = OverworldGrid()

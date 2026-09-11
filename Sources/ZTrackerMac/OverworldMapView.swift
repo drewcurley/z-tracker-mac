@@ -325,21 +325,22 @@ struct OverworldMapView: View {
                                 // toggle (T-110, matching the reference tile dim).
                                 let used = tileIsCollected(mark: mark, column: column, row: row)
                                 let shopSecondItem = grid.shopSecondItem(column: column, row: row)
+                                let shopThirdItem = grid.shopThirdItem(column: column, row: row)
                                 let dungeonDone: Bool = { if case .dungeon(let n) = mark { return dungeonComplete(n) } else { return false } }()
-                                let kindHidden = OverworldTileHiding.isKindHidden(mark: mark, options: options, hasRescuedZelda: hasRescuedZelda, playerState: playerState, shopSecondItem: shopSecondItem, haveBook: haveBook)
+                                let kindHidden = OverworldTileHiding.isKindHidden(mark: mark, options: options, hasRescuedZelda: hasRescuedZelda, playerState: playerState, shopSecondItem: shopSecondItem, shopThirdItem: shopThirdItem, haveBook: haveBook)
                                 // Per-item shop hiding (T-207): the owned/irrelevant items to drop from
                                 // this shop's icon (a combo bomb/ring shop with the ring owned shows just
                                 // the bomb). Empty once Zelda is rescued (the endgame reveal).
                                 let hiddenShopItems: Set<ShopKind> = {
                                     guard !hasRescuedZelda, case .shop(let primary) = mark else { return [] }
-                                    return OverworldTileHiding.hiddenShopItems(primary: primary, second: shopSecondItem, options: options, playerState: playerState, haveBook: haveBook)
+                                    return OverworldTileHiding.hiddenShopItems(primary: primary, second: shopSecondItem, third: shopThirdItem, options: options, playerState: playerState, haveBook: haveBook)
                                 }()
                                 // Commentary Mode (T-215): who knows this screen + the runner colors (hoisted
                                 // out of the TileView call to keep the type-checker fast).
                                 let commentaryK: CommentaryKnowledge = options.commentaryMode ? commentary.knowledge(column: column, row: row) : []
                                 let commentaryR1 = Color(commentaryHex: commentary.runner1ColorHex)
                                 let commentaryR2 = Color(commentaryHex: commentary.runner2ColorHex)
-                                TileView(mark: mark, background: background, tileWidth: tileWidth, tileHeight: tileHeight, isAlwaysEmpty: isAlwaysEmpty, showsFairy: showsFairy, mirrored: mirrored, hideDungeonNumbers: hideDungeonNumbers, used: used, shopSecondItem: shopSecondItem, hiddenShopItems: hiddenShopItems, hideMarks: overlays?.isActive(.hideMarks) ?? false, dungeonComplete: dungeonDone, kindHidden: kindHidden, fog: fog, sharedBackground: customActive, animateChanges: options.animateTileChanges,
+                                TileView(mark: mark, background: background, tileWidth: tileWidth, tileHeight: tileHeight, isAlwaysEmpty: isAlwaysEmpty, showsFairy: showsFairy, mirrored: mirrored, hideDungeonNumbers: hideDungeonNumbers, used: used, shopSecondItem: shopSecondItem, shopThirdItem: shopThirdItem, hiddenShopItems: hiddenShopItems, hideMarks: overlays?.isActive(.hideMarks) ?? false, dungeonComplete: dungeonDone, kindHidden: kindHidden, fog: fog, sharedBackground: customActive, animateChanges: options.animateTileChanges,
                                              commentaryKnowledge: commentaryK,
                                              commentaryEncoding: options.commentaryEncoding,
                                              commentaryR1: commentaryR1, commentaryR2: commentaryR2)
@@ -751,8 +752,8 @@ struct OverworldMapView: View {
                 switch action {
                 case .mark(.shop(let kind))
                     where OverworldMark.applyShopHotkeySmart(kind, column: column, row: row, grid: grid):
-                    // Already a shop → the second shop pick fills the 2nd-item slot,
-                    // a third replaces the primary (T-185, same smarts as the shop hotkey).
+                    // Already a shop → the next pick fills the 2nd then 3rd item slot; a 4th
+                    // distinct item replaces the primary (T-185/T-224, same smarts as the hotkey).
                     break
                 case .mark(let m): applyMark(m, column: column, row: row)
                 case .takeAny(let s): applyTakeAny(s, column: column, row: row)
@@ -1244,6 +1245,7 @@ struct TileView: View {
     var used: Bool = false
     /// A shop tile's second item (T-060); both are drawn in `ShopKind` order.
     var shopSecondItem: ShopKind? = nil
+    var shopThirdItem: ShopKind? = nil
     /// Owned/irrelevant shop items to drop from this shop's icon (T-207 per-item hiding).
     /// A combo bomb/ring shop with the ring owned passes `[.blueRing]` and shows just the bomb.
     var hiddenShopItems: Set<ShopKind> = []
@@ -1614,7 +1616,8 @@ struct TileView: View {
     private var orderedShopItems: [ShopKind] {
         guard case .shop(let first) = mark else { return [] }
         var kinds = [first]
-        if let second = shopSecondItem, second != first { kinds.append(second) }
+        if let second = shopSecondItem, !kinds.contains(second) { kinds.append(second) }
+        if let third = shopThirdItem, !kinds.contains(third) { kinds.append(third) }
         return kinds.sorted {
             (ShopKind.allCases.firstIndex(of: $0) ?? 0) < (ShopKind.allCases.firstIndex(of: $1) ?? 0)
         }

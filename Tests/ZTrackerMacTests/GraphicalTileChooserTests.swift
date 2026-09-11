@@ -5,11 +5,12 @@ import TrackerCore
 
 /// The graphical overworld tile chooser's fixed layout (T-185).
 struct GraphicalTileChooserTests {
-    @Test("layout is 5 rows × 8, 40 cells total")
+    @Test("layout is 5 rows: the 9 shop items then four rows of 8, 41 cells total")
     func shape() {
         #expect(OverworldChooserLayout.rows.count == 5)
-        #expect(OverworldChooserLayout.rows.allSatisfy { $0.count == 8 })
-        #expect(OverworldChooserLayout.all.count == 40)
+        #expect(OverworldChooserLayout.rows[0].count == 9)   // the shop items (heart added, T-224)
+        #expect(OverworldChooserLayout.rows.dropFirst().allSatisfy { $0.count == 8 })
+        #expect(OverworldChooserLayout.all.count == 41)
     }
 
     @Test("rows hold the user-specified marks in order")

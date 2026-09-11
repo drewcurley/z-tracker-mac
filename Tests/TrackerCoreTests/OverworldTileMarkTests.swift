@@ -101,7 +101,7 @@ struct OverworldTileMarkTests {
         """
         iconSource covers every documented mark exactly once across its real \
         source (interiorSprite 3...13, sword caves via swordCaveItem, \
-        shopSprite 0...7, dungeon/any-road digits) -- bugfix: not a single flat \
+        shopSprite 0...8, dungeon/any-road digits) -- bugfix: not a single flat \
         0...35 strip index into the dead s_icon_overworld_strip39.png ZHelper \
         leftover
         """
@@ -135,7 +135,7 @@ struct OverworldTileMarkTests {
             guard case .shopSprite(let i) = mark.iconSource else { fatalError("expected shopSprite") }
             return i
         }
-        #expect(Set(shopIndices) == Set(0...7))
+        #expect(Set(shopIndices) == Set(0...8))   // 8 = standalone-heart shop (T-224)
 
         let interiorIndices = otherMarks.map { mark -> Int in
             guard case .interiorSprite(let i) = mark.iconSource else { fatalError("expected interiorSprite") }

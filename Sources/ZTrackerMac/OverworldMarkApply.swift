@@ -86,36 +86,49 @@ enum OverworldMark {
         guard case .shop(let newKind) = mark,
               case .shop(let firstKind) = grid.mark(column: column, row: row),
               newKind != firstKind else { return false }
-        grid.setShopSecondItem(newKind, column: column, row: row)
+        let second = grid.shopSecondItem(column: column, row: row)
+        // Fill the second slot, or the third if the second is taken by a different item (T-224).
+        if second == nil {
+            grid.setShopSecondItem(newKind, column: column, row: row)
+        } else if second != newKind, grid.shopThirdItem(column: column, row: row) == nil {
+            grid.setShopThirdItem(newKind, column: column, row: row)
+        }
         return true
     }
 
-    /// The overworld **shop hotkey** smarts (T-169, `extras.md` §hotkeys) for a tile
-    /// that is *already* a shop: pressing an item already in the shop removes it;
-    /// a new item fills the free slot; and when both slots are full, a third item
-    /// replaces the **first** (primary) item. Returns `false` when the tile isn't a
-    /// shop yet, so the caller places it fresh through `apply` (which handles the
-    /// take-any release and other side effects).
+    /// The overworld **shop hotkey** smarts (T-169, `extras.md` §hotkeys) for a tile that is
+    /// *already* a shop, extended to a true **three** item slots (T-224): pressing an item already
+    /// in the shop removes it (remaining items shift up to stay gap-free); a new item fills the first
+    /// free slot (second, then third); and when all three are full, a fourth distinct item replaces
+    /// the **primary**. Returns `false` when the tile isn't a shop yet, so the caller places it fresh
+    /// through `apply` (which handles the take-any release and other side effects).
     @MainActor @discardableResult
     static func applyShopHotkeySmart(_ newKind: ShopKind, column: Int, row: Int,
                                      grid: OverworldGrid) -> Bool {
         guard case .shop(let first) = grid.mark(column: column, row: row) else { return false }
         let second = grid.shopSecondItem(column: column, row: row)
+        let third = grid.shopThirdItem(column: column, row: row)
         if newKind == first {
-            // Remove the primary; a present secondary is promoted to primary.
+            // Remove the primary; promote second → primary and third → second (gap-free).
             if let second {
                 grid.setMark(.shop(second), column: column, row: row)
-                grid.setShopSecondItem(nil, column: column, row: row)
+                grid.setShopSecondItem(third, column: column, row: row)
+                grid.setShopThirdItem(nil, column: column, row: row)
             } else {
                 grid.setMark(.unmarked, column: column, row: row)
+                grid.setShopThirdItem(nil, column: column, row: row)   // defensive: no gaps left behind
             }
         } else if newKind == second {
-            grid.setShopSecondItem(nil, column: column, row: row)   // remove the secondary
+            grid.setShopSecondItem(third, column: column, row: row)     // remove 2nd; promote 3rd → 2nd
+            grid.setShopThirdItem(nil, column: column, row: row)
+        } else if newKind == third {
+            grid.setShopThirdItem(nil, column: column, row: row)        // remove the 3rd
         } else if second == nil {
-            grid.setShopSecondItem(newKind, column: column, row: row)  // fill the free slot
+            grid.setShopSecondItem(newKind, column: column, row: row)   // fill the 2nd slot
+        } else if third == nil {
+            grid.setShopThirdItem(newKind, column: column, row: row)    // fill the 3rd slot
         } else {
-            // Both slots full → replace the primary, keep the secondary (which differs,
-            // so no dup).
+            // All three full → replace the primary, keep second + third (both differ, so no dup).
             grid.setMark(.shop(newKind), column: column, row: row)
         }
         return true

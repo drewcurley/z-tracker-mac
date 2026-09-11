@@ -107,13 +107,38 @@ struct HotkeySmartsTests {
         #expect(g.shopSecondItem(column: 4, row: 4) == nil)
     }
 
-    @Test("a third item, with both slots full, replaces the primary and keeps the secondary")
-    func thirdItemReplacesPrimary() {
+    @Test("a third item fills the true third slot (T-224), keeping primary + secondary")
+    func thirdItemFillsThirdSlot() {
         let g = OverworldGrid()
         g.setMark(.shop(.bomb), column: 4, row: 4)
         g.setShopSecondItem(.arrow, column: 4, row: 4)
         #expect(OverworldMark.applyShopHotkeySmart(.candle, column: 4, row: 4, grid: g))
-        #expect(shopKind(g.mark(column: 4, row: 4)) == .candle)
+        #expect(shopKind(g.mark(column: 4, row: 4)) == .bomb)
         #expect(g.shopSecondItem(column: 4, row: 4) == .arrow)
+        #expect(g.shopThirdItem(column: 4, row: 4) == .candle)
+    }
+
+    @Test("a fourth distinct item, all three slots full, replaces the primary (T-224)")
+    func fourthItemReplacesPrimary() {
+        let g = OverworldGrid()
+        g.setMark(.shop(.bomb), column: 4, row: 4)
+        g.setShopSecondItem(.arrow, column: 4, row: 4)
+        g.setShopThirdItem(.candle, column: 4, row: 4)
+        #expect(OverworldMark.applyShopHotkeySmart(.key, column: 4, row: 4, grid: g))
+        #expect(shopKind(g.mark(column: 4, row: 4)) == .key)
+        #expect(g.shopSecondItem(column: 4, row: 4) == .arrow)
+        #expect(g.shopThirdItem(column: 4, row: 4) == .candle)
+    }
+
+    @Test("removing the primary promotes second→primary and third→second (T-224)")
+    func removePrimaryPromotes() {
+        let g = OverworldGrid()
+        g.setMark(.shop(.bomb), column: 4, row: 4)
+        g.setShopSecondItem(.arrow, column: 4, row: 4)
+        g.setShopThirdItem(.candle, column: 4, row: 4)
+        #expect(OverworldMark.applyShopHotkeySmart(.bomb, column: 4, row: 4, grid: g))  // press primary again
+        #expect(shopKind(g.mark(column: 4, row: 4)) == .arrow)
+        #expect(g.shopSecondItem(column: 4, row: 4) == .candle)
+        #expect(g.shopThirdItem(column: 4, row: 4) == nil)
     }
 }

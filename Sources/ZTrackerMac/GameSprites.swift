@@ -92,6 +92,7 @@ enum GameSprite {
         case .meat:    "Food"
         case .key:     "Key"
         case .shield:  "Magical Shield"
+        case .heart:   "Heart"
         }
     }
 }

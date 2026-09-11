@@ -191,15 +191,15 @@ public struct MapStateSummary: Sendable {
                         owSpotsRemain += 1 // un-revealed dark spots count as remaining
                     }
                 default:
-                    if OverworldTileMark.isItem(rawIndex: cur) { // an item shop
-                        let shopItem = grid.extraData(
-                            column: i, row: j, key: OverworldTileMark.shopExtraDataKey)
-                        // Primary mark OR the stored second item marks the shop found.
-                        if cur == 20 || shopItem == OverworldTileMark.toItem(rawIndex: 20) { foundBlueRingShop = true }
-                        if cur == 18 || shopItem == OverworldTileMark.toItem(rawIndex: 18) { foundBookShop = true }
-                        if cur == 19 || shopItem == OverworldTileMark.toItem(rawIndex: 19) { foundCandleShop = true }
-                        if cur == 16 || shopItem == OverworldTileMark.toItem(rawIndex: 16) { foundArrowShop = true }
-                        if cur == 17 || shopItem == OverworldTileMark.toItem(rawIndex: 17) { foundBombShop = true }
+                    // Any item shop (primary / second / third item — incl. a heart-primary shop),
+                    // marks its notable kinds found (T-224 extends the old primary-or-second check).
+                    if case .shop = grid.mark(column: i, row: j) {
+                        let items = grid.shopItems(column: i, row: j)
+                        if items.contains(.blueRing) { foundBlueRingShop = true }
+                        if items.contains(.book)     { foundBookShop = true }
+                        if items.contains(.candle)   { foundCandleShop = true }
+                        if items.contains(.arrow)    { foundArrowShop = true }
+                        if items.contains(.bomb)     { foundBombShop = true }
                     } else if cur == 30 // THE_LETTER
                         && grid.extraData(column: i, row: j, key: 30) == 0 {
                         havePotionLetter = true

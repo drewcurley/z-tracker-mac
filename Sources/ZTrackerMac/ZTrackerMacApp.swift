@@ -256,6 +256,7 @@ struct ZTrackerMacApp: App {
         Window("Shops & Prices", id: ShopPricesWindowID) {
             ShopPriceView(record: model.shopPrices, options: options)
                 .frame(minWidth: 360, minHeight: 320)
+                .onAppear { model.syncShopPriceSlots() }   // prefill slots from the map on open (T-224)
                 .onDisappear { model.showShopPricesWindow = false }
         }
         .defaultSize(width: 460, height: 560)

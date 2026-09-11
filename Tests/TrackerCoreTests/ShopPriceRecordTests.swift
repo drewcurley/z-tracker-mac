@@ -3,6 +3,68 @@ import Testing
 
 @Suite("Shop & Price tracker (T-218)")
 struct ShopPriceRecordTests {
+    private func kinds(_ r: ShopPriceRecord, _ slot: Int) -> Set<ShopKind> { Set(r.shops[slot].compactMap(\.kind)) }
+    private func coord(_ x: Int, _ y: Int) -> OverworldScreenCoordinate { .init(x: x, y: y) }
+
+    @Test("distinct shops take distinct slots; identical shops don't duplicate (T-224)")
+    func syncAssignsAndDedups() {
+        let r = ShopPriceRecord()
+        let a = coord(1, 1), b = coord(2, 2), c = coord(3, 3)
+        r.syncToMap(shopItemsByCoord: [a: [.candle, .blueRing], b: [.arrow], c: [.candle, .blueRing]],
+                    orderedCoords: [a, b, c])
+        #expect(kinds(r, 0) == [.candle, .blueRing])   // SH1 follows a
+        #expect(kinds(r, 1) == [.arrow])               // SH2 follows b
+        #expect(kinds(r, 2).isEmpty)                   // c is a duplicate of a → no slot
+    }
+
+    @Test("editing a shop's items updates its slot (T-224)")
+    func syncUpdatesFollowedSlot() {
+        let r = ShopPriceRecord()
+        let b = coord(2, 2)
+        r.syncToMap(shopItemsByCoord: [b: [.candle, .shield]], orderedCoords: [b])
+        #expect(kinds(r, 0) == [.candle, .shield])
+        r.syncToMap(shopItemsByCoord: [b: [.candle, .shield, .meat]], orderedCoords: [b])   // added meat
+        #expect(kinds(r, 0) == [.candle, .shield, .meat])
+    }
+
+    @Test("the reported scenario: two shops stay separate until they become identical (T-224)")
+    func syncScenarioConsolidatesOnEqual() {
+        let r = ShopPriceRecord()
+        let a = coord(1, 1), b = coord(2, 2)
+        // candle/meat and candle/shield → two separate slots.
+        r.syncToMap(shopItemsByCoord: [a: [.candle, .meat], b: [.candle, .shield]], orderedCoords: [a, b])
+        #expect(kinds(r, 0) == [.candle, .meat] && kinds(r, 1) == [.candle, .shield])
+        // Add shield to shop A → (candle/meat/shield, candle/shield): STILL separate (not a subset merge).
+        r.syncToMap(shopItemsByCoord: [a: [.candle, .meat, .shield], b: [.candle, .shield]], orderedCoords: [a, b])
+        #expect(kinds(r, 0) == [.candle, .meat, .shield])
+        #expect(kinds(r, 1) == [.candle, .shield])   // second shop unchanged, still its own slot
+        // Add meat to shop B → both are candle/meat/shield: NOW consolidate to one slot.
+        r.syncToMap(shopItemsByCoord: [a: [.candle, .meat, .shield], b: [.candle, .meat, .shield]], orderedCoords: [a, b])
+        #expect(kinds(r, 0) == [.candle, .meat, .shield])
+        #expect(kinds(r, 1).isEmpty)   // consolidated
+    }
+
+    @Test("sync fills only empty cells — a hand-typed item/price survives (T-224)")
+    func syncPreservesEdits() {
+        let r = ShopPriceRecord()
+        let a = coord(1, 1)
+        r.shops[0][0] = .init(kind: .candle, price: 40)   // typed before marking on the map
+        r.slotCoords[0] = a                               // (pretend it's already following a)
+        r.syncToMap(shopItemsByCoord: [a: [.candle, .key]], orderedCoords: [a])
+        #expect(r.shops[0][0] == ShopPriceRecord.Slot(kind: .candle, price: 40))   // untouched
+        #expect(r.shops[0][1].kind == .key)                                        // key fills the empty cell
+    }
+
+    @Test("a shop removed from the map releases its slot (T-224)")
+    func syncReleasesOnRemoval() {
+        let r = ShopPriceRecord()
+        let a = coord(1, 1)
+        r.syncToMap(shopItemsByCoord: [a: [.candle]], orderedCoords: [a])
+        #expect(kinds(r, 0) == [.candle])
+        r.syncToMap(shopItemsByCoord: [:], orderedCoords: [])
+        #expect(r.slotCoords[0] == nil && kinds(r, 0).isEmpty)
+    }
+
     @Test("a fresh record is the fixed shape and empty")
     func freshShape() {
         let r = ShopPriceRecord()
