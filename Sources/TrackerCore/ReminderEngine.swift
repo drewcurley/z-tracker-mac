@@ -41,6 +41,10 @@ public enum ReminderAnnouncement: Equatable, Sendable {
     /// Periodic nudge to grab the armos item while it's located but unobtained (T-185,
     /// user request). `itemName` is the known item's spoken name, or `nil` if unknown.
     case getArmosItem(itemName: String?)
+    /// One-shot: the armos item's screen just became known — either you marked it, or it was
+    /// deduced once the other four eligible screens were ruled out (T-223). `name` is the screen's
+    /// nickname (e.g. "East Forest Armos").
+    case armosLocated(name: String)
     /// Periodic nudge to buy the boomstick book — only in a boomstick seed (the
     /// Boomstick flag is on) when you have the wand, no book yet, and a book shop is
     /// marked.
@@ -215,7 +219,8 @@ public final class ReminderEngine {
         isCurrentlyBook: Bool = true,
         bookShopMarked: Bool = false,
         bookForHelpfulHints: Bool = false,
-        secretRemaining: [SecretSize: Int] = [:]
+        secretRemaining: [SecretSize: Int] = [:],
+        armosJustDeduced: Bool = false
     ) -> [ReminderAnnouncement] {
         var out: [ReminderAnnouncement] = []
 
@@ -431,6 +436,14 @@ public final class ReminderEngine {
                 out.append(.getCoastItem(itemName: ITEMS.spokenName(coastItemValue, isBook: isCurrentlyBook)))
             }
             lastCoastReminder = now
+        }
+
+        // armos located (T-223): announce once, only when the model *just deduced* the location
+        // (the other four eligible screens were ruled out) — a manual mark means the player already
+        // found it, so it stays silent. `armosJustDeduced` is true for exactly the poll that placed it.
+        if armosJustDeduced, let loc = mapState.armosLocation,
+           let name = ArmosLocation.name(column: loc.x, row: loc.y) {
+            out.append(.armosLocated(name: name))
         }
 
         // armos item — every 3 min while it's located on the map but not yet obtained

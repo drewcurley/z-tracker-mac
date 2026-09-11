@@ -244,6 +244,13 @@ struct OverworldMapView: View {
         OverworldInstance(quest: quest)
     }
 
+    /// Whether the Armos item may be marked on this screen (T-223): only the five vanilla
+    /// armos-eligible screens accept it. A custom map has no fixed vanilla spots, so armos stays
+    /// markable anywhere there.
+    private func armosAllowed(column: Int, row: Int) -> Bool {
+        customMapImagePath != nil || overworldInstance.hasArmos(x: column, y: row)
+    }
+
     /// The green/yellow/red tint for a highlighted screen (T-015.4).
     /// A "dead spot" (no potential opening) — vanilla map only. A custom map (T-167)
     /// has none, so every screen stays clickable/markable there.
@@ -739,6 +746,7 @@ struct OverworldMapView: View {
             isStartSpot: startSpot == OverworldScreenCoordinate(x: column, y: row),
             hideDungeonNumbers: hideDungeonNumbers,
             isExhausted: { isExhausted($0, column: column, row: row, counts: markCounts) },
+            armosAllowed: armosAllowed(column: column, row: row),
             onPick: { action in
                 switch action {
                 case .mark(.shop(let kind))
@@ -758,6 +766,9 @@ struct OverworldMapView: View {
     /// armos / letter / hint shop) defaults to **used** — you usually mark one
     /// right after collecting it; a left-click flips it back to unused (T-056).
     private func applyMark(_ mark: OverworldTileMark, column: Int, row: Int) {
+        // Armos only on the five eligible screens (T-223) — a central guard so every path (menu,
+        // graphical chooser, hotkey) respects it, not just the choosers.
+        if mark == .armos, !armosAllowed(column: column, row: row) { return }
         ConfirmationSound.input(options)   // mouse-edit tick (T-208); keyboard ticks in the dispatcher
         // Selecting a mark closes the menu-mode chooser popover (T-185) — a picked
         // mark should dismiss it, like the native context menu does on selection.
@@ -911,8 +922,10 @@ struct OverworldMapView: View {
             .disabled(isExhausted(.moneyMakingGame, column: column, row: row, counts: counts))
         Button("The letter" + hk(.theLetter)) { applyMark(.theLetter, column: column, row: row) }
             .disabled(isExhausted(.theLetter, column: column, row: row, counts: counts))
-        Button("Armos" + hk(.armos)) { applyMark(.armos, column: column, row: row) }
-            .disabled(isExhausted(.armos, column: column, row: row, counts: counts))
+        if armosAllowed(column: column, row: row) {
+            Button("Armos" + hk(.armos)) { applyMark(.armos, column: column, row: row) }
+                .disabled(isExhausted(.armos, column: column, row: row, counts: counts))
+        }
         Button("Hint shop" + hk(.hintShop)) { applyMark(.hintShop, column: column, row: row) }
             .disabled(isExhausted(.hintShop, column: column, row: row, counts: counts))
         Button("Potion shop" + hk(.potionShop)) { applyMark(.potionShop, column: column, row: row) }

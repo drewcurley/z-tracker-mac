@@ -56,6 +56,7 @@ public enum ReminderIcons {
             if let id = coastItemId, id >= 0 { icons.append(.item(id)) }
             return icons
         case .getArmosItem: return [.rightArrow]
+        case .armosLocated: return [.rightArrow]
         case .considerBoomstickBook: return [.rightArrow, .boomBook]
         case .remindVisitHints: return [.book]
         case .overworldOverwrite: return []

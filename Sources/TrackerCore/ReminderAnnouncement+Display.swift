@@ -15,7 +15,7 @@ extension ReminderAnnouncement {
         case .remindShortly: .haveKeyLadder
         case .doorRepairCount: .doorRepair
         case .getCoastItem: .coastItem
-        case .getArmosItem: .armosItem
+        case .getArmosItem, .armosLocated: .armosItem
         case .considerBoomstickBook: .recorderPBSpotsAndBoomstickBook
         case .remindVisitHints: .haveKeyLadder
         case .overworldOverwrite: .overworldOverwrites
@@ -91,6 +91,8 @@ extension ReminderAnnouncement {
         case .getArmosItem(let itemName):
             return itemName.map { "Get the \($0) from the armos" }
                 ?? "Get the armos item"
+        case .armosLocated(let name):
+            return "\(name) has your item"
         case .considerBoomstickBook:
             return "Consider buying the boomstick book"
         case .remindVisitHints:

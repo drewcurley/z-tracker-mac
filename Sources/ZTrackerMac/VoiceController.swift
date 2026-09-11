@@ -469,6 +469,8 @@ final class VoiceController {
             }
             switch action {
             case .mark(let mark):
+                // Armos only on the five eligible screens (T-223) — voice mustn't place it elsewhere.
+                if mark == .armos, !model.canMarkArmos(column: cell.col, row: cell.row) { return }
                 // A second shop word on an existing shop tile sets the tile's *second*
                 // item rather than overwriting the primary (T-141).
                 if OverworldMark.applyVoiceSecondShopItem(mark, column: cell.col, row: cell.row,
