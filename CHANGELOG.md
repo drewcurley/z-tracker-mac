@@ -11,6 +11,13 @@ Each entry mirrors the notes on its [GitHub Release](https://github.com/drewcurl
   graphical chooser, hotkeys, and voice. Once the other four are ruled out, the fifth is
   auto-marked and you get a spoken/on-screen "**[Location] has your item**" alert. (Custom maps are
   unaffected — armos stays markable anywhere there.)
+- **Standalone-heart shop item** — a shop can now stock a plain recovery heart (a 9th shop item),
+  markable everywhere shop items are and recognized on spoiler import.
+- **Three items per shop** — a shop tile now holds up to three items (was two).
+- **Shop & Price panel syncs with the map** — marking shops fills the panel's four slots
+  automatically, each slot following its shop (edit a shop's items on the map and its slot updates).
+  Shops merge into one slot only when their item sets are **equal**, so the game's four shop types
+  stay distinct while duplicate instances don't pile up. Prices you type are always preserved.
 
 ## [1.2.4] — 2026-08-28
 ### Fixed

@@ -37,6 +37,11 @@ extension OverworldTileMark {
         case .shop(.meat): 21
         case .shop(.key): 22
         case .shop(.shield): 23
+        // Standalone-heart shop (T-224) — an app-specific extension beyond the reference's 8-shop
+        // domain (16…23), numbered past the reserved range like any-road "?" (36). It's never an
+        // extra-data key (shops aren't `isUsedToggleable`) and the recompute treats it as a generic
+        // marked tile, so it stays clear of the 0…35 arithmetic.
+        case .shop(.heart): 37
         case .secret(.unknown): 24
         case .secret(.large): 25
         case .secret(.medium): 26
@@ -87,6 +92,7 @@ extension OverworldTileMark {
         case 34: .potionShop
         case 35: .dontCare
         case 36: .anyRoad(0)   // any-road "?" (unknown order, T-181)
+        case 37: .shop(.heart) // standalone-heart shop (app extension, T-224)
         default: nil
         }
     }

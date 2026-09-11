@@ -25,6 +25,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-224](./T-224.md) | Shop items — standalone heart, 3rd item per tile, and map↔panel sync | frontend-engineer | — | feat/shop-items-and-panel-sync | — | docs/reviews/feat-shop-items-and-panel-sync/final.md |
 | [T-223](./T-223.md) | Armos item restricted to its five screens + auto-deduction with a named alert | frontend-engineer | — | feat/armos-eligibility-deduction | — | docs/reviews/feat-armos-eligibility-deduction/final.md |
 | [T-222](./T-222.md) | Live hover labels on the room/monster/floor-drop/enemy choosers; "Ganon" spelling | frontend-engineer | — | fix/chooser-hover-labels | — | docs/reviews/fix-chooser-hover-labels/final.md |
 | [T-221](./T-221.md) | Add cumulative CHANGELOG.md; wire it into the release process | frontend-engineer | — | chore/changelog | — | — (docs-only chore) |

@@ -308,6 +308,7 @@ public final class TrackerModel {
         // Auto-mark the armos once the other four eligibles are ruled out; only a *fresh* deduction
         // (not a manual mark) fires the "located" alert (T-223).
         let armosJustDeduced = applyArmosDeduction()
+        syncShopPriceSlots()   // keep the Shop & Price panel's slots in step with the map (T-224)
         let instance = OverworldInstance(quest: quest ?? .first)
         let mapState = MapStateSummary.compute(
             grid: overworldGrid, instance: instance, dungeonTracker: dungeonTracker,
@@ -550,6 +551,23 @@ public final class TrackerModel {
                 unknown[0].set(cellCurrent: ITEMS.heartContainer, playerHas: .no)
             }
         }
+    }
+
+    /// Sync the Shop & Price panel's 4 slots to the overworld shops (T-224): links each marked shop
+    /// to a slot in mark order and prefills the slot's empty item cells from the map. Cheap +
+    /// idempotent; runs each reminder poll and can be called on demand (e.g. when the panel opens).
+    public func syncShopPriceSlots() {
+        var itemsByCoord: [OverworldScreenCoordinate: [ShopKind]] = [:]
+        var ordered: [OverworldScreenCoordinate] = []
+        for j in 0..<OverworldGrid.rowCount {
+            for i in 0..<OverworldGrid.columnCount {
+                guard case .shop = overworldGrid.mark(column: i, row: j) else { continue }
+                let coord = OverworldScreenCoordinate(x: i, y: j)
+                itemsByCoord[coord] = overworldGrid.shopItems(column: i, row: j)
+                ordered.append(coord)
+            }
+        }
+        shopPrices.syncToMap(shopItemsByCoord: itemsByCoord, orderedCoords: ordered)
     }
 
     /// Whether the Armos item may be marked on `(column, row)` (T-223): only the five vanilla

@@ -1,6 +1,7 @@
-/// The 8 shop kinds a shop tile can carry (docs/domain.md § 4.5).
+/// The shop items a shop tile can carry (docs/domain.md § 4.5). `heart` is a standalone recovery
+/// heart (not a container), a consumable a shop can stock (T-224, user request).
 public enum ShopKind: String, Codable, CaseIterable, Sendable {
-    case arrow, bomb, book, candle, blueRing, meat, key, shield
+    case arrow, bomb, book, candle, blueRing, meat, key, shield, heart
 
     public var displayName: String {
         switch self {
@@ -12,6 +13,7 @@ public enum ShopKind: String, Codable, CaseIterable, Sendable {
         case .meat: "Meat shop"
         case .key: "Key shop"
         case .shield: "Shield shop"
+        case .heart: "Heart shop"
         }
     }
 
@@ -27,6 +29,7 @@ public enum ShopKind: String, Codable, CaseIterable, Sendable {
         case .meat: "Meat"
         case .key: "Key"
         case .shield: "Shield"
+        case .heart: "Heart"
         }
     }
 }
@@ -254,6 +257,7 @@ public enum OverworldTileMark: Hashable, Codable, Sendable {
         case .shop(.meat): .shopSprite(5)
         case .shop(.key): .shopSprite(6)
         case .shop(.shield): .shopSprite(7)
+        case .shop(.heart): .shopSprite(8)
         // Unknown secret: a pale-white "ghost" rupee (user request) rather than the
         // reference's Goriya secret-giver — the reward (rupees) reads clearer than the
         // enemy, and "ghost" distinguishes it from the sized money secrets.
