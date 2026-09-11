@@ -369,6 +369,8 @@ final class GlobalHotkeyDispatcher {
         // Don't mark a border screen that never holds anything (vanilla map only —
         // a custom map has no dead spots, T-167).
         guard !model.isDeadSpot(x: cell.col, y: cell.row) else { return true }
+        // Armos only on the five eligible screens (T-223) — a hotkey mustn't place it elsewhere.
+        if mark == .armos, !model.canMarkArmos(column: cell.col, row: cell.row) { return true }
         // Shop add/remove/replace on an existing shop (T-169). Returns false on a
         // non-shop tile, so a fresh shop still places through `apply` below.
         if case .shop(let kind) = mark,

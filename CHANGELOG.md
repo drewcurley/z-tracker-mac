@@ -4,6 +4,14 @@ All notable changes to **Z-Tracker for macOS**. Newest first. This project follo
 [Keep a Changelog](https://keepachangelog.com/) and [Semantic Versioning](https://semver.org/).
 Each entry mirrors the notes on its [GitHub Release](https://github.com/drewcurley/z-tracker-mac/releases).
 
+## [1.2.5] — 2026-09-08
+### Added
+- **Armos smarts.** The Armos item can now only be marked on its five real screens (Grave, Lost
+  Hills, Death, North Forest, East Forest Armos) — every other screen refuses it in the menu,
+  graphical chooser, hotkeys, and voice. Once the other four are ruled out, the fifth is
+  auto-marked and you get a spoken/on-screen "**[Location] has your item**" alert. (Custom maps are
+  unaffected — armos stays markable anywhere there.)
+
 ## [1.2.4] — 2026-08-28
 ### Fixed
 - The dungeon room, monster, and floor-drop choosers and the overworld enemy chooser now show a
@@ -126,6 +134,7 @@ Each entry mirrors the notes on its [GitHub Release](https://github.com/drewcurl
   import, custom-map fog-of-war, Dark/Light/OS themes, rebindable hotkeys with in-menu hints, and a
   broadcast mirror window for streaming.
 
+[1.2.5]: https://github.com/drewcurley/z-tracker-mac/releases/tag/v1.2.5
 [1.2.4]: https://github.com/drewcurley/z-tracker-mac/releases/tag/v1.2.4
 [1.2.3]: https://github.com/drewcurley/z-tracker-mac/releases/tag/v1.2.3
 [1.2.2]: https://github.com/drewcurley/z-tracker-mac/releases/tag/v1.2.2

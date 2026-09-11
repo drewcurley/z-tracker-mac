@@ -246,6 +246,7 @@ public final class TrackerModel {
         if let c = s.commentary { commentary.restore(c) }   // absent in pre-commentary saves (T-215)
         if let sp = s.shopPrices { shopPrices.restore(sp) }   // absent in pre-T-218 saves
         applyIntraHeartDeduction()   // re-derive any intra-shuffle heart (T-212)
+        applyArmosDeduction()        // re-derive the armos location if it's now determinable (T-223)
     }
 
     public init(
@@ -304,6 +305,9 @@ public final class TrackerModel {
     }
 
     public func pollReminders(bookForHelpfulHints: Bool = false) -> [ReminderAnnouncement] {
+        // Auto-mark the armos once the other four eligibles are ruled out; only a *fresh* deduction
+        // (not a manual mark) fires the "located" alert (T-223).
+        let armosJustDeduced = applyArmosDeduction()
         let instance = OverworldInstance(quest: quest ?? .first)
         let mapState = MapStateSummary.compute(
             grid: overworldGrid, instance: instance, dungeonTracker: dungeonTracker,
@@ -345,7 +349,8 @@ public final class TrackerModel {
             isCurrentlyBook: isCurrentlyBook,
             bookShopMarked: bookShopMarked,
             bookForHelpfulHints: bookForHelpfulHints,
-            secretRemaining: secretRemaining)
+            secretRemaining: secretRemaining,
+            armosJustDeduced: armosJustDeduced)
     }
 
     /// The derived player state (item possession, levels, hearts) read by
@@ -545,6 +550,42 @@ public final class TrackerModel {
                 unknown[0].set(cellCurrent: ITEMS.heartContainer, playerHas: .no)
             }
         }
+    }
+
+    /// Whether the Armos item may be marked on `(column, row)` (T-223): only the five vanilla
+    /// eligible screens (`OverworldInstance.hasArmos`), or anywhere on a custom map (which has no
+    /// fixed vanilla spots). Shared by the choosers, the hotkey dispatcher, and voice.
+    public func canMarkArmos(column: Int, row: Int) -> Bool {
+        customMapImagePath != nil || OverworldInstance(quest: quest ?? .first).hasArmos(x: column, y: row)
+    }
+
+    /// Armos-item deduction (T-223): the item sits on exactly one of the five eligible screens
+    /// (`OverworldInstance.hasArmos`). Once the other four are marked as definite non-armos things,
+    /// the fifth must hold it — auto-mark it Armos. Vanilla overworld only (the eligible screens are
+    /// a vanilla concept, absent on a custom map). Only *adds* a mark (never removes), so a manual
+    /// correction survives; a no-op unless exactly four eligibles are ruled out and the fifth is
+    /// still unmarked. Safe to call after any overworld edit (and it runs each reminder poll).
+    ///
+    /// Returns `true` iff this call *just* auto-placed the armos — the caller fires the one-shot
+    /// "located" alert only then, since a **manual** mark means the player already found it.
+    @discardableResult
+    public func applyArmosDeduction() -> Bool {
+        guard customMapImagePath == nil else { return false }   // vanilla overworld only
+        let instance = OverworldInstance(quest: quest ?? .first)
+        var eligible: [(x: Int, y: Int)] = []
+        for y in 0..<OverworldGrid.rowCount {
+            for x in 0..<OverworldGrid.columnCount where instance.hasArmos(x: x, y: y) {
+                eligible.append((x, y))
+            }
+        }
+        guard eligible.count == 5 else { return false }
+        // Already located (marked, or previously deduced) → nothing to do.
+        if eligible.contains(where: { overworldGrid.mark(column: $0.x, row: $0.y) == .armos }) { return false }
+        // "Excluded" = marked as a definite non-armos thing (anything but unmarked / armos).
+        let unmarked = eligible.filter { overworldGrid.mark(column: $0.x, row: $0.y) == .unmarked }
+        guard eligible.count - unmarked.count == 4, let target = unmarked.first else { return false }
+        overworldGrid.setMark(.armos, column: target.x, row: target.y)
+        return true
     }
 
     /// Toggle Hidden Dungeon Numbers live (T-049). HDN changes the dungeon

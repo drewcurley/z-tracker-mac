@@ -50,6 +50,9 @@ struct GraphicalTileChooser: View {
     var hideDungeonNumbers: Bool
     /// Whether a mark is exhausted (all copies placed) → dim + disable, matching the menu.
     var isExhausted: (OverworldTileMark) -> Bool
+    /// Whether this screen may hold the Armos item (T-223) — false dims + disables the armos cell,
+    /// since only the five vanilla armos screens are eligible.
+    var armosAllowed: Bool = true
     var onPick: (OverworldChooserAction) -> Void
 
     private static let cell: CGFloat = 30
@@ -126,6 +129,7 @@ struct GraphicalTileChooser: View {
 
     private func isDisabled(_ action: OverworldChooserAction) -> Bool {
         switch action {
+        case .mark(.armos): !armosAllowed || isExhausted(.armos)   // eligible screens only (T-223)
         case .mark(.unmarked), .mark(.dontCare), .startSpot: false
         case .mark(let m): isExhausted(m)
         case .takeAny: isExhausted(.takeAny)
