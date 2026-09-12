@@ -52,6 +52,10 @@ struct StartupView: View {
                 SettingsPanelView(options: options)
                     .frame(maxWidth: 900)
                     .frame(maxWidth: .infinity)
+
+                // A quiet, persistent sponsor link at the very bottom (T-225).
+                SponsorFooterLink()
+                    .padding(.top, 4)
             }
             .padding(32)
         }

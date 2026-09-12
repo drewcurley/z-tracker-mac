@@ -46,6 +46,10 @@ struct MainTrackerPlaceholderView: View {
     @State private var globalHotkeys: GlobalHotkeyDispatcher?
     /// Voice control (T-137) — created on appear (needs model + focus).
     @State private var voice: VoiceController?
+    /// Occasional post-run sponsor plug (T-225): a weekly cap + opt-out, and whether it's showing now.
+    @AppStorage(Sponsor.lastPromptKey) private var sponsorLastPromptAt: Double = 0
+    @AppStorage(Sponsor.optOutKey) private var sponsorOptOut = false
+    @State private var showSponsorPrompt = false
 
     /// The live overworld map-state summary (T-015.3) feeding the map's true
     /// GYR highlight. Recomputed here from the observable model each time the
@@ -278,6 +282,15 @@ struct MainTrackerPlaceholderView: View {
                 }
                 // Auto-save the finished run if the option is on (T-196).
                 GameSave.saveOnCompletionIfEnabled(model: model, timer: timer, options: options)
+                // Occasional sponsor thank-you (T-225) — the real window only, at most once a week,
+                // unless the user opted out.
+                if !isMirror, !sponsorOptOut {
+                    let now = Date().timeIntervalSinceReferenceDate
+                    if now - sponsorLastPromptAt >= Sponsor.minInterval {
+                        sponsorLastPromptAt = now
+                        showSponsorPrompt = true
+                    }
+                }
             } else {
                 timer.resume()
             }
@@ -285,6 +298,16 @@ struct MainTrackerPlaceholderView: View {
         .overlay(alignment: .top) {
             ReminderOverlayView(controller: reminders)
                 .padding(.top, 8)
+        }
+        // The occasional post-run sponsor thank-you (T-225).
+        .overlay(alignment: .bottom) {
+            if showSponsorPrompt {
+                SponsorCompletionBanner(
+                    onDismiss: { withAnimation { showSponsorPrompt = false } },
+                    onOptOut: { sponsorOptOut = true; withAnimation { showSponsorPrompt = false } })
+                    .padding(.bottom, 12)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
         }
         // Poll the reminder engine ~once a second (the reference's cadence)
         // and speak/show the returned announcements. The mirror skips it — one poll
