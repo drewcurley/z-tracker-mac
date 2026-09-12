@@ -4,6 +4,12 @@ All notable changes to **Z-Tracker for macOS**. Newest first. This project follo
 [Keep a Changelog](https://keepachangelog.com/) and [Semantic Versioning](https://semver.org/).
 Each entry mirrors the notes on its [GitHub Release](https://github.com/drewcurley/z-tracker-mac/releases).
 
+## [1.2.6] — 2026-09-08
+### Added
+- **GitHub Sponsors plug.** A quiet "Sponsor Z-Tracker on GitHub" link at the bottom of the
+  startup/settings screen, plus a dismissible thank-you after you finish a run — shown at most once a
+  week, with a "don't show again" opt-out, and never on the broadcast/mirror window.
+
 ## [1.2.5] — 2026-09-08
 ### Added
 - **Armos smarts.** The Armos item can now only be marked on its five real screens (Grave, Lost
@@ -141,6 +147,7 @@ Each entry mirrors the notes on its [GitHub Release](https://github.com/drewcurl
   import, custom-map fog-of-war, Dark/Light/OS themes, rebindable hotkeys with in-menu hints, and a
   broadcast mirror window for streaming.
 
+[1.2.6]: https://github.com/drewcurley/z-tracker-mac/releases/tag/v1.2.6
 [1.2.5]: https://github.com/drewcurley/z-tracker-mac/releases/tag/v1.2.5
 [1.2.4]: https://github.com/drewcurley/z-tracker-mac/releases/tag/v1.2.4
 [1.2.3]: https://github.com/drewcurley/z-tracker-mac/releases/tag/v1.2.3
