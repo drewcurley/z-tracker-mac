@@ -25,6 +25,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-226](./T-226.md) | README — add a GitHub Sponsors badge under the title | frontend-engineer | — | chore/readme-sponsor-badge | — | — (docs-only chore) |
 | [T-225](./T-225.md) | GitHub Sponsors plug — startup/settings footer link + occasional post-run thank-you | frontend-engineer | — | feat/github-sponsors-plug | — | docs/reviews/feat-github-sponsors-plug/final.md |
 | [T-224](./T-224.md) | Shop items — standalone heart, 3rd item per tile, and map↔panel sync | frontend-engineer | — | feat/shop-items-and-panel-sync | — | docs/reviews/feat-shop-items-and-panel-sync/final.md |
 | [T-223](./T-223.md) | Armos item restricted to its five screens + auto-deduction with a named alert | frontend-engineer | — | feat/armos-eligibility-deduction | — | docs/reviews/feat-armos-eligibility-deduction/final.md |

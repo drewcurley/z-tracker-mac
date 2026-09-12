@@ -1,5 +1,7 @@
 # Z-Tracker for macOS
 
+[![Sponsor Z-Tracker](https://img.shields.io/badge/Sponsor-%E2%9D%A4-ea4aaa?logo=githubsponsors&logoColor=white)](https://github.com/sponsors/drewcurley)
+
 A native Apple-Silicon macOS tracker for **The Legend of Zelda: Randomizer (Z1R)** — a
 spiritual successor to [Z-Tracker](https://github.com/brianmcn/Zelda1RandoTools) by
 Dr. Brian Lorgon111, rebuilt from the ground up as a real Mac app (SwiftUI, no emulation
