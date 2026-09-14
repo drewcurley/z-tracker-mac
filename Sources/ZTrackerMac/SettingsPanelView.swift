@@ -222,13 +222,15 @@ struct SettingsPanelView: View {
             // (e.g. a single 1080p monitor shared with the game). Complements the auto-responsive
             // layout: zooming out also frees horizontal room, so panels stay expanded longer.
             Picker("Tracker zoom", selection: $uiZoom) {
+                Text("120%").tag(1.2)
+                Text("110%").tag(1.1)
                 Text("100%").tag(1.0)
                 Text("90%").tag(0.9)
                 Text("80%").tag(0.8)
                 Text("70%").tag(0.7)
                 Text("60%").tag(0.6)
             }
-            .help("Scale the entire tracker down to fit a smaller screen. Text and icons soften slightly at non-round scales.")
+            .help("Scale the entire tracker — down to fit a smaller screen, or up for a larger display. Text and icons soften slightly at non-round scales.")
 
             Toggle("Use detailed app icon", isOn: Bindable(options).useDetailedAppIcon)
                 .help("Swap the dock icon to the original, more detailed design (while the app is open).")

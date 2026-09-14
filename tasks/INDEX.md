@@ -25,6 +25,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-230](./T-230.md) | Tracker zoom — add 110% and 120% zoom-in levels | frontend-engineer | — | feat/zoom-in-levels | — | docs/reviews/feat-zoom-in-levels/final.md |
 | [T-229](./T-229.md) | Universal UI zoom — browser-style scale of the whole tracker to fit a small screen | frontend-engineer | — | feat/responsive-lowres-and-zoom | — | docs/reviews/feat-responsive-lowres-and-zoom/final.md |
 | [T-228](./T-228.md) | Responsive low-resolution layout — auto map-scale, collapsible Flags/Info, compact buttons | frontend-engineer | — | feat/responsive-lowres-and-zoom | — | docs/reviews/feat-responsive-lowres-and-zoom/final.md |
 | [T-227](./T-227.md) | Add .github/FUNDING.yml for the native repo Sponsor button | frontend-engineer | — | chore/funding-yml | — | — (docs-only chore) |

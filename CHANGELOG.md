@@ -4,6 +4,11 @@ All notable changes to **Z-Tracker for macOS**. Newest first. This project follo
 [Keep a Changelog](https://keepachangelog.com/) and [Semantic Versioning](https://semver.org/).
 Each entry mirrors the notes on its [GitHub Release](https://github.com/drewcurley/z-tracker-mac/releases).
 
+## [1.2.8] — 2026-09-14
+### Added
+- **Zoom in, too.** The "Tracker zoom" setting now offers **110%** and **120%** for larger displays,
+  alongside the existing 100–60% levels.
+
 ## [1.2.7] — 2026-09-14
 ### Added
 - **Responsive low-resolution layout** — for playing with the game and tracker side by side on a
