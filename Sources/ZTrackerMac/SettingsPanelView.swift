@@ -12,6 +12,8 @@ struct SettingsPanelView: View {
     var options: TrackerOptions
 
     @Environment(\.openWindow) private var openWindow
+    /// Universal UI zoom (T-229) — a display pref shared with the tracker via `@AppStorage`.
+    @AppStorage("ui.zoom") private var uiZoom: Double = 1.0
     @State private var showMoreSettings = false
     @State private var showVoicePicker = false
     @State private var showLevelPrefixEditor = false
@@ -214,6 +216,20 @@ struct SettingsPanelView: View {
             // want a tighter layout / cleaner broadcast. The broadcast mirror window
             // itself is opened from the Window menu, not a persisted toggle.
             Toggle("Show Info panel", isOn: Bindable(options).showInfoPanel)
+            Toggle("Show Flags panel", isOn: Bindable(options).showFlagsPanel)
+
+            // Universal UI zoom (T-229) — shrink the whole tracker uniformly to fit a small screen
+            // (e.g. a single 1080p monitor shared with the game). Complements the auto-responsive
+            // layout: zooming out also frees horizontal room, so panels stay expanded longer.
+            Picker("Tracker zoom", selection: $uiZoom) {
+                Text("100%").tag(1.0)
+                Text("90%").tag(0.9)
+                Text("80%").tag(0.8)
+                Text("70%").tag(0.7)
+                Text("60%").tag(0.6)
+            }
+            .help("Scale the entire tracker down to fit a smaller screen. Text and icons soften slightly at non-round scales.")
+
             Toggle("Use detailed app icon", isOn: Bindable(options).useDetailedAppIcon)
                 .help("Swap the dock icon to the original, more detailed design (while the app is open).")
 

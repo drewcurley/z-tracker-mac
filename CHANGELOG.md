@@ -4,6 +4,19 @@ All notable changes to **Z-Tracker for macOS**. Newest first. This project follo
 [Keep a Changelog](https://keepachangelog.com/) and [Semantic Versioning](https://semver.org/).
 Each entry mirrors the notes on its [GitHub Release](https://github.com/drewcurley/z-tracker-mac/releases).
 
+## [1.2.7] — 2026-09-14
+### Added
+- **Responsive low-resolution layout** — for playing with the game and tracker side by side on a
+  single 1080p monitor. As the window narrows, the dungeon map auto-scales (100% → 80% at ≤ 975 wide
+  → 60% at ≤ 850), and the Flags and Info panels collapse to slim tap-to-expand chips (Info at
+  ≤ 1035, Flags at ≤ 900) instead of wrapping down and pushing the maps below the fold. Below 1100
+  wide, the item/dungeon buttons and the Blockers boxes shrink slightly to buy room. A new **"Show
+  Flags panel"** setting mirrors the existing "Show Info panel" toggle.
+- **Universal "Tracker zoom"** setting (100 / 90 / 80 / 70 / 60%, on the welcome and in-app settings)
+  — scales the whole tracker to fit a smaller screen. It works like a browser zoom: zooming out frees
+  horizontal room too, so the panels stay expanded and buttons full-size longer. The broadcast/mirror
+  window always renders full-size.
+
 ## [1.2.6] — 2026-09-08
 ### Added
 - **GitHub Sponsors plug.** A quiet "Sponsor Z-Tracker on GitHub" link at the bottom of the

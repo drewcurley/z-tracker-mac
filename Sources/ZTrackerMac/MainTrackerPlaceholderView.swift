@@ -50,6 +50,36 @@ struct MainTrackerPlaceholderView: View {
     @AppStorage(Sponsor.lastPromptKey) private var sponsorLastPromptAt: Double = 0
     @AppStorage(Sponsor.optOutKey) private var sponsorOptOut = false
     @State private var showSponsorPrompt = false
+    /// The main content-area (viewport) width, measured via a background reader (T-228), driving the
+    /// responsive layout. Defaults wide so a normal window starts un-shrunk with no flash.
+    @State private var contentWidth: CGFloat = 100_000
+    /// Universal UI zoom (T-229): scales the whole tracker uniformly to fit a smaller screen. A pure
+    /// display pref, shared across views via `@AppStorage`; never applied to the broadcast mirror.
+    @AppStorage("ui.zoom") private var uiZoom: Double = 1.0
+    /// Which auto-collapsed panels the user has temporarily expanded (T-228). Transient (not saved).
+    @State private var flagsExpanded = false
+    @State private var infoExpanded = false
+
+    /// The active zoom (the mirror always renders full-size for streaming, T-229).
+    private var effectiveZoom: CGFloat { isMirror ? 1.0 : CGFloat(uiZoom) }
+    /// The content's **logical** width once the zoom is undone — what the layout actually gets to use
+    /// (a zoomed-out tracker fits more), so the breakpoints compose with the zoom (T-228/T-229).
+    private var effectiveWidth: CGFloat { contentWidth / max(effectiveZoom, 0.1) }
+
+    /// Responsive breakpoints (T-228). Flags/Info collapse right where they'd otherwise wrap below
+    /// the trackers (Info first, then Flags) — there's no case where wrapping them is useful.
+    private var compactButtons: Bool { effectiveWidth <= 1100 }
+    private var infoCollapse: Bool { effectiveWidth <= 1035 }
+    private var flagsCollapse: Bool { effectiveWidth <= 900 }
+
+    /// The forced layout width when zoomed (T-229): the content lays out at the enlarged logical
+    /// width, and `scaledFootprint` then scales it down to the real viewport. `nil` when not zoomed
+    /// (or before the first viewport measurement) so the normal `maxWidth: .infinity` layout — and
+    /// the wide-window default — is left untouched, avoiding a giant-frame flash on first paint.
+    private var zoomLayoutWidth: CGFloat? {
+        guard effectiveZoom != 1, contentWidth < 50_000 else { return nil }
+        return effectiveWidth
+    }
 
     /// The live overworld map-state summary (T-015.3) feeding the map's true
     /// GYR highlight. Recomputed here from the observable model each time the
@@ -182,6 +212,38 @@ struct MainTrackerPlaceholderView: View {
         .padding(.vertical, 4)
     }
 
+    /// Store the latest measured content width, ignoring degenerate 0-width passes (T-228).
+    private func updateContentWidth(_ w: CGFloat) {
+        guard w > 0, abs(w - contentWidth) > 0.5 else { return }
+        contentWidth = w
+    }
+
+    /// A top-section group that, on a narrow window (T-228), collapses to a slim tap-to-expand
+    /// toggle so the Flags/Info panels don't push the map down; otherwise it renders normally.
+    @ViewBuilder
+    private func collapsibleSection<Content: View>(title: String, collapse: Bool, expanded: Binding<Bool>,
+                                                   @ViewBuilder content: () -> Content) -> some View {
+        if collapse {
+            VStack(alignment: .leading, spacing: 6) {
+                Button { withAnimation(.easeInOut(duration: 0.15)) { expanded.wrappedValue.toggle() } } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: expanded.wrappedValue ? "chevron.down" : "chevron.right")
+                            .font(.system(size: 9, weight: .bold))
+                        Text(title).font(.system(size: 12, weight: .semibold))
+                    }
+                    .padding(.horizontal, 8).padding(.vertical, 4)
+                    .background(RoundedRectangle(cornerRadius: 6).fill(Theme.panelFill))
+                    .overlay(RoundedRectangle(cornerRadius: 6).strokeBorder(Theme.border, lineWidth: 1))
+                }
+                .buttonStyle(.plain)
+                .help("\(expanded.wrappedValue ? "Hide" : "Show") the \(title) panel")
+                if expanded.wrappedValue { content() }
+            }
+        } else {
+            TopSectionGroup(title: title) { content() }
+        }
+    }
+
     var body: some View {
         let _ = perfTrace()
         ScrollView {
@@ -214,13 +276,15 @@ struct MainTrackerPlaceholderView: View {
                     TopSectionGroup(title: "Items") {
                         ObtainableItemsView(model: model, options: options, playerState: model.playerComputedStateSummary, mapState: mapState, focus: focus)
                     }
-                    TopSectionGroup(title: "Flags") {
-                        SeedFlagsView(model: model, options: options, playerState: model.playerComputedStateSummary, mapState: mapState, timer: timer, voice: voice)
+                    // Flags / Info are suppressible (T-178) and, on a narrow window (T-228),
+                    // auto-collapse to a slim toggle so they don't push the map down.
+                    if options.showFlagsPanel {
+                        collapsibleSection(title: "Flags", collapse: flagsCollapse, expanded: $flagsExpanded) {
+                            SeedFlagsView(model: model, options: options, playerState: model.playerComputedStateSummary, mapState: mapState, timer: timer, voice: voice)
+                        }
                     }
-                    // The Info panel is suppressible (T-178) for a tighter layout /
-                    // cleaner broadcast; global, so the main window and the mirror agree.
                     if options.showInfoPanel {
-                        TopSectionGroup(title: "Info") {
+                        collapsibleSection(title: "Info", collapse: infoCollapse, expanded: $infoExpanded) {
                             MapInfoView(model: model, playerState: model.playerComputedStateSummary, mapState: mapState, overlays: overlays, timer: timer, onResetApp: onResetApp, options: options)
                         }
                     }
@@ -263,8 +327,32 @@ struct MainTrackerPlaceholderView: View {
             }
             .padding(24)
             .frame(maxWidth: .infinity)
+            // Shrink the tracker's grid buttons on a narrow window (T-228) — applied to the whole
+            // content so the top-section boxes AND the blockers grid track it.
+            .environment(\.trackerCompact, compactButtons)
+            // Universal UI zoom (T-229): lay the content out at the enlarged *logical* width
+            // (viewport ÷ zoom) so the responsive breakpoints see the room the zoom frees, then
+            // `scaledFootprint` scales it back down to the real viewport — a browser-style zoom that
+            // shrinks the whole tracker to fit a small screen. Both are inert at zoom == 1.
+            .frame(width: zoomLayoutWidth, alignment: .topLeading)
+            .scaledFootprint(effectiveZoom)
         }
-        .frame(minWidth: 420, minHeight: 320)
+        // Force the ScrollView to always FILL the window (T-229): when zoomed, `scaledFootprint`
+        // gives the content a fixed pixel width, and without this the vertical ScrollView shrinks to
+        // fit that fixed content — so the viewport reader below would measure the shrunken ScrollView
+        // instead of the window, `contentWidth` would never grow, and the canvas would stay cropped
+        // after the window is widened (a stuck fixpoint). Filling keeps the reader on true window width.
+        .frame(minWidth: 420, maxWidth: .infinity, minHeight: 320, maxHeight: .infinity, alignment: .topLeading)
+        // Measure the **viewport** width for the responsive breakpoints (T-228) — reading the
+        // ScrollView's own frame, not the content, so a wide child (top strip / dungeon cards) can't
+        // pin the measurement above the narrow-window thresholds.
+        .background {
+            GeometryReader { proxy in
+                Color.clear
+                    .onAppear { updateContentWidth(proxy.size.width) }
+                    .onChange(of: proxy.size.width) { _, w in updateContentWidth(w) }
+            }
+        }
         // Make the hotkey bindings available to leaf menus/pickers for inline hotkey
         // hints (T-197) without threading them through every intermediate view.
         .environment(hotkeys)

@@ -297,15 +297,15 @@ struct DungeonCardView: View {
 /// which dungeon carries the extra item. Mirrors the reference's "ghost" box;
 /// rendered as a dashed, dimmed slot with a down-arrow hint (aesthetic license).
 private struct GhostBoxView: View {
+    @Environment(\.trackerCompact) private var trackerCompact   // responsive box size (T-228)
+    private var size: CGFloat { trackerCompact ? 30 : 34 }
     var onToggle: () -> Void
-    /// Matches `BoxView`'s cell size so the ghost aligns with the real boxes.
-    private static let size: CGFloat = 34
 
     var body: some View {
         let _ = perfTrace()
         RoundedRectangle(cornerRadius: 4)
             .fill(Theme.panelFill)
-            .frame(width: Self.size, height: Self.size)
+            .frame(width: size, height: size)
             .overlay(
                 RoundedRectangle(cornerRadius: 4)
                     .strokeBorder(Theme.border, style: StrokeStyle(lineWidth: 1.5, dash: [3, 2]))
@@ -331,6 +331,8 @@ private struct GhostBoxView: View {
 /// basement-stair glyph when applicable. Left-click toggles taken/untaken once
 /// an item is known (else opens the picker); right-click opens the picker.
 struct BoxView: View {
+    @Environment(\.trackerCompact) private var trackerCompact   // responsive box size (T-228)
+    private var size: CGFloat { trackerCompact ? 30 : 34 }
     @Bindable var box: Box
     var instance: DungeonTrackerInstance
     var label: String?
@@ -360,8 +362,6 @@ struct BoxView: View {
 
     @State private var showPicker = false
 
-    private static let size: CGFloat = 34
-
     private var borderColor: Color {
         switch box.playerHas {
         case .yes: .green
@@ -390,7 +390,7 @@ struct BoxView: View {
         VStack(spacing: 2) {
             RoundedRectangle(cornerRadius: 4)
                 .fill(Theme.boxFill)
-                .frame(width: Self.size, height: Self.size)
+                .frame(width: size, height: size)
                 .overlay(RoundedRectangle(cornerRadius: 4)
                     .strokeBorder(Theme.border, style: StrokeStyle(lineWidth: 1.5, dash: [3, 2])))
                 .overlay(Image(systemName: "nosign")
@@ -410,7 +410,7 @@ struct BoxView: View {
                 if box.cellCurrent != -1,
                    let icon = ItemIconAtlas.icon(forItemIndex: box.cellCurrent, options: iconOptions) {
                     ItemGlyph(icon)
-                        .frame(width: Self.size - 10, height: Self.size - 10)
+                        .frame(width: size - 10, height: size - 10)
                         // Full colour only when actually obtained; not-obtained (.no) AND
                         // "don't want it" (.skipped) both read dimmed/untaken (T-212).
                         .opacity(box.playerHas == .yes ? 1 : 0.45)
@@ -425,7 +425,7 @@ struct BoxView: View {
                     if iconOptions.largeUnwantedX {
                         // A big X through the whole box — the default (T-212), easier to see.
                         Image(systemName: "xmark")
-                            .font(.system(size: Self.size * 0.72, weight: .bold))
+                            .font(.system(size: size * 0.72, weight: .bold))
                             .foregroundStyle(.primary.opacity(0.85))
                     } else {
                         Image(systemName: "xmark")
@@ -436,7 +436,7 @@ struct BoxView: View {
                     }
                 }
             }
-            .frame(width: Self.size, height: Self.size)
+            .frame(width: size, height: size)
             .overlay(RoundedRectangle(cornerRadius: 4).strokeBorder(borderColor, lineWidth: 1.5))
             // Blocker "applies to" chips (T-082), inside the box's bottom-left so
             // each chip clearly belongs to its own box (not the gap below it).
@@ -464,7 +464,7 @@ struct BoxView: View {
             .overlay {
                 CommentaryTileOverlay(knowledge: commentaryKnowledge, encoding: commentaryEncoding,
                                       r1: commentaryR1, r2: commentaryR2)
-                    .frame(width: Self.size, height: Self.size)
+                    .frame(width: size, height: size)
             }
             .popover(isPresented: $showPicker, arrowEdge: .bottom) {
                 BoxItemPicker(box: box, instance: instance, iconOptions: iconOptions,

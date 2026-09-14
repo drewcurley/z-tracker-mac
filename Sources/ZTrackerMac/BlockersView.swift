@@ -82,6 +82,7 @@ struct BlockersView: View {
 /// One blocker box — the state border + kind icon, with the kind picker
 /// (left-click) and the "applies to" / clear context menu (right-click).
 private struct BlockerBoxView: View {
+    @Environment(\.trackerCompact) private var trackerCompact   // responsive box size (T-228)
     @Bindable var model: TrackerModel
     let dungeonIndex: Int
     let slot: Int
@@ -94,7 +95,7 @@ private struct BlockerBoxView: View {
 
     @State private var showingKindPicker = false
     @State private var showingAppliesTo = false
-    private static let size: CGFloat = 30
+    private var size: CGFloat { trackerCompact ? 26 : 30 }
 
     private var commentaryKey: String { CommentaryLayer.blockerKey(dungeon: dungeonIndex, slot: slot) }
 
@@ -111,7 +112,7 @@ private struct BlockerBoxView: View {
                     .opacity(blocker.isMaybe ? 0.85 : 1)
             }
         }
-        .frame(width: Self.size, height: Self.size)
+        .frame(width: size, height: size)
         .overlay(border)
         .contentShape(Rectangle())
         // Left-click sets the kind (need / might-need); right-click sets what the
@@ -129,7 +130,7 @@ private struct BlockerBoxView: View {
                         encoding: commentaryEncoding,
                         r1: Color(commentaryHex: model.commentary.runner1ColorHex),
                         r2: Color(commentaryHex: model.commentary.runner2ColorHex),
-                        active: commentaryActive, size: Self.size,
+                        active: commentaryActive, size: size,
                         onRunner2: { model.commentary.toggle(.runner2, key: commentaryKey) })
         .help("Dungeon \(dungeonIndex + 1) blocker: \(blocker.displayDescription.replacingOccurrences(of: "\n", with: " ")) — right-click to set what it applies to")
         .popover(isPresented: $showingKindPicker, arrowEdge: .bottom) {

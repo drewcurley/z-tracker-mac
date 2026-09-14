@@ -228,6 +228,9 @@ public final class TrackerOptions {
     /// want a tighter layout (and a cleaner broadcast). Global: applies to the main
     /// window and the broadcast mirror alike.
     public var showInfoPanel: Bool { didSet { persistSettingsBoolsIfNeeded() } }
+    /// Show/hide the top **Flags** panel (T-228), mirroring `showInfoPanel` — for a tighter layout
+    /// on a small screen. Global: applies to the main window and the broadcast mirror alike.
+    public var showFlagsPanel: Bool { didSet { persistSettingsBoolsIfNeeded() } }
     /// `ShowMouseMagnifierWindow`, default `false`.
     public var showMouseMagnifierWindow: Bool { didSet { persistSettingsBoolsIfNeeded() } }
     /// `HideTimer`, default `false`. Labeled "Hide timer" on-screen
@@ -290,6 +293,7 @@ public final class TrackerOptions {
         inputConfirmationVolume: Int = 100,
         useDetailedAppIcon: Bool = false,
         showInfoPanel: Bool = true,
+        showFlagsPanel: Bool = true,
         showMouseMagnifierWindow: Bool = false,
         hideTimer: Bool = false,
         warnOnCloseWhileTimerRunning: Bool = true,
@@ -331,6 +335,7 @@ public final class TrackerOptions {
         self.inputConfirmationVolume = inputConfirmationVolume
         self.useDetailedAppIcon = useDetailedAppIcon
         self.showInfoPanel = showInfoPanel
+        self.showFlagsPanel = showFlagsPanel
         self.showMouseMagnifierWindow = showMouseMagnifierWindow
         self.hideTimer = hideTimer
         self.warnOnCloseWhileTimerRunning = warnOnCloseWhileTimerRunning
@@ -494,6 +499,7 @@ public final class TrackerOptions {
         "inputConfirmationSound": \.inputConfirmationSound,
         "useDetailedAppIcon": \.useDetailedAppIcon,
         "showInfoPanel": \.showInfoPanel,
+        "showFlagsPanel": \.showFlagsPanel,
         "showMouseMagnifierWindow": \.showMouseMagnifierWindow,
         "hideTimer": \.hideTimer,
         "warnOnCloseWhileTimerRunning": \.warnOnCloseWhileTimerRunning,
