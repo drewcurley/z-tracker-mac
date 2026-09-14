@@ -269,8 +269,17 @@ enum ItemProgressGrid {
 extension ItemProgressGrid.CoastBox: Equatable {}
 extension ItemProgressGrid.ItemToggle: Equatable {}
 
-/// Shared cell size for the obtainable-item grid and its hint row.
-private let itemGridCellSize: CGFloat = 34
+/// Compact-layout flag for a narrow window (T-228): when true the tracker's grid buttons shrink from
+/// their normal size so the panels fit without wrapping (item/dungeon boxes 34→30, blockers 30→26).
+/// Set once on the main content via `.environment(\.trackerCompact, …)`; each view applies it to its
+/// own baseline size.
+struct TrackerCompactKey: EnvironmentKey { static let defaultValue: Bool = false }
+extension EnvironmentValues {
+    var trackerCompact: Bool {
+        get { self[TrackerCompactKey.self] }
+        set { self[TrackerCompactKey.self] = newValue }
+    }
+}
 
 /// **Obtainables** group (T-043): the reference's top-right `owItemGrid`,
 /// re-laid-out cleanly — the white-sword-item / armos / coast picker boxes, the
@@ -280,6 +289,8 @@ private let itemGridCellSize: CGFloat = 34
 /// `BoxView`. Located (yellow) / superseded (gray-X) highlighting comes from
 /// live state (T-025.3).
 struct ObtainableItemsView: View {
+    @Environment(\.trackerCompact) private var trackerCompact   // responsive button size (T-228)
+    private var itemGridCellSize: CGFloat { trackerCompact ? 30 : 34 }
     @Bindable var model: TrackerModel
     /// User prefs affecting the item boxes (the large-vs-corner unwanted X, T-212).
     var options: TrackerOptions
@@ -421,6 +432,8 @@ struct ObtainableItemsView: View {
 /// consumer (`PlayerCanSeeMapOfThisDungeon`, a dungeon-map view) isn't built
 /// yet, so it's intentionally still absent (no dead toggle / invented flag).
 struct SeedFlagsView: View {
+    @Environment(\.trackerCompact) private var trackerCompact   // responsive button size (T-228)
+    private var itemGridCellSize: CGFloat { trackerCompact ? 30 : 34 }
     @Bindable var model: TrackerModel
     /// Seed-flag options that live in the Flags section (T-092: Book for Helpful
     /// Hints), toggled here rather than in the preferences panel.
@@ -622,6 +635,8 @@ struct SeedFlagsView: View {
 /// App, Reset Timer, and Reset (keep maps). They're always visible here (not
 /// gated behind pausing), and the groundhog reset never pauses the main timer.
 struct MapInfoView: View {
+    @Environment(\.trackerCompact) private var trackerCompact   // responsive button size (T-228)
+    private var itemGridCellSize: CGFloat { trackerCompact ? 30 : 34 }
     @Bindable var model: TrackerModel
     var playerState: PlayerComputedStateSummary
     var mapState: MapStateSummary

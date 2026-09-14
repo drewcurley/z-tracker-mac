@@ -83,7 +83,19 @@ struct DungeonBandView: View {
     /// (which would otherwise pin the band to the stacked layout).
     private func updateWidth(_ w: CGFloat) {
         guard w > 0, w != availableWidth else { return }
+        // Auto-scale the dungeon map on a narrow window (T-228): 100% normally, 80% at ≤975, 60% at
+        // ≤850. Applied only when crossing into a different band, so manual zoom is still respected
+        // between crossings.
+        let old = availableWidth
         availableWidth = w
+        if Self.autoMapScale(for: w) != Self.autoMapScale(for: old) { mapScale = Self.autoMapScale(for: w) }
+    }
+
+    /// The auto dungeon-map zoom for a given band width (T-228).
+    private static func autoMapScale(for w: CGFloat) -> CGFloat {
+        if w <= 850 { return 0.6 }
+        if w <= 975 { return 0.8 }
+        return 1.0
     }
 
     private var dungeonMapGroup: some View {
