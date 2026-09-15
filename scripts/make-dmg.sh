@@ -101,3 +101,15 @@ APPCASTXML
 
     echo "==> done: $DMG"
 done
+
+# Restore the project-root ZTrackerMac.app to a build NATIVE to this machine (T-231).
+# build-app.sh assembles into a fixed path (./ZTrackerMac.app), so the per-arch loop above
+# leaves whichever arch ran LAST sitting in the project root — on an Apple-Silicon dev machine
+# that's the x86_64 build, which then launches under Rosetta (and trips the macOS "won't run on
+# a future macOS" warning). The shipped DMGs are unaffected; this only fixes the leftover local
+# copy the developer double-clicks. Skip it if the host arch was already the last one packaged.
+HOST_ARCH="$(uname -m)"
+if [[ "${ARCHES[${#ARCHES[@]}-1]}" != "$HOST_ARCH" ]]; then
+    echo "==> restoring project-root app to host arch ($HOST_ARCH) so ./ZTrackerMac.app stays native"
+    scripts/build-app.sh release "$HOST_ARCH"
+fi

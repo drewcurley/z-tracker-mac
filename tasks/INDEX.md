@@ -25,6 +25,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-231](./T-231.md) | Fix — make-dmg.sh leaves an Intel (Rosetta) app in the project root on Apple Silicon | devops | — | fix/make-dmg-native-root-app | — | docs/reviews/fix-make-dmg-native-root-app/final.md |
 | [T-230](./T-230.md) | Tracker zoom — add 110% and 120% zoom-in levels | frontend-engineer | — | feat/zoom-in-levels | — | docs/reviews/feat-zoom-in-levels/final.md |
 | [T-229](./T-229.md) | Universal UI zoom — browser-style scale of the whole tracker to fit a small screen | frontend-engineer | — | feat/responsive-lowres-and-zoom | — | docs/reviews/feat-responsive-lowres-and-zoom/final.md |
 | [T-228](./T-228.md) | Responsive low-resolution layout — auto map-scale, collapsible Flags/Info, compact buttons | frontend-engineer | — | feat/responsive-lowres-and-zoom | — | docs/reviews/feat-responsive-lowres-and-zoom/final.md |
