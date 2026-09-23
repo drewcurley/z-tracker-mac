@@ -4,7 +4,7 @@ All notable changes to **Z-Tracker for macOS**. Newest first. This project follo
 [Keep a Changelog](https://keepachangelog.com/) and [Semantic Versioning](https://semver.org/).
 Each entry mirrors the notes on its [GitHub Release](https://github.com/drewcurley/z-tracker-mac/releases).
 
-## [Unreleased]
+## [1.2.9] — 2026-09-22
 ### Fixed
 - **No more false "Triforce and Go."** The tracker no longer tells you you're Triforce-and-Go when
   level 9 is actually unreachable — e.g. all 8 triforces in hand, but level 9 still hidden under a
