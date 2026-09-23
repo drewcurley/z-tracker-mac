@@ -96,6 +96,37 @@ struct TriforceAndGoSummaryTests {
         #expect(s.level == 15)
     }
 
+    /// Mark every screen `.dontCare` so nothing is unmarked → zero gettable
+    /// overworld spots, and level 9 is not located (rawIndex 8 never set).
+    private func boardWithNoGettableSpots() -> OverworldGrid {
+        let g = OverworldGrid()
+        for x in 0..<16 { for y in 0..<8 { g.setMark(.dontCare, column: x, row: y) } }
+        return g
+    }
+
+    @Test("false-TAG suppressed: full TAG items but level 9 unreachable -> not TAG (T-232)")
+    func level9UnreachableSuppressesTag() {
+        // All 8 triforces, bow, silvers, ladder — normally level 103 — but 9 is
+        // unlocated and no overworld spot is gettable, so it must NOT read as TAG.
+        let s = compute(
+            grid: boardWithNoGettableSpots(),
+            dungeonTracker: allTriforce(),
+            playerState: PlayerComputedStateSummary(haveLadder: true, haveBow: true, arrowLevel: 2))
+        #expect(s.level < 101)            // no false Triforce-and-Go
+        #expect(s.level == 100)           // computeScore: all located, all key items held
+    }
+
+    @Test("control: level 9 located keeps full TAG even with nothing else gettable (T-232)")
+    func level9LocatedStillTag() {
+        let grid = boardWithNoGettableSpots()
+        grid.setMark(.dungeon(9), column: 7, row: 3)   // 9 is located → reachable
+        let s = compute(
+            grid: grid,
+            dungeonTracker: allTriforce(),
+            playerState: PlayerComputedStateSummary(haveLadder: true, haveBow: true, arrowLevel: 2))
+        #expect(s.level == 103)
+    }
+
     @Test("upstream bug preserved: haveRecorder always mirrors haveLadder")
     func recorderBugMirrorsLadder() {
         // Even with recorder held and ladder NOT held, the summary's

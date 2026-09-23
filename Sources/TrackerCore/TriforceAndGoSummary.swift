@@ -117,11 +117,27 @@ public struct TriforceAndGoSummary: Sendable, Equatable {
             return score < 0 ? 0 : score
         }
 
+        // Level 9 must be *reachable* to be Triforce-and-Go (T-232). If 9 isn't
+        // located yet and there's no overworld spot the player can currently
+        // uncover, they can't get to 9 no matter how complete everything else
+        // is — so it isn't TAG. Real run that exposed this: all 8 triforces held,
+        // but 9 sat under a power-bracelet spot and the bracelet was still inside
+        // a dungeon, so every remaining overworld spot was ungettable. The old
+        // gate still announced TAG because `missingDungeonCount == 0` (all eight
+        // numbered dungeons located) OR-short-circuited the `unreachableCount`
+        // guard below. This conservative check only bites when 9 is unlocated
+        // AND nothing at all is gettable — exactly that dead-end — and otherwise
+        // leaves the reference scoring untouched. Falls through to `computeScore`,
+        // whose sub-101 text ("You need something to be triforce and go") is the
+        // honest "not yet" note.
+        let level9Located = mapState.dungeonLocations[8] != nil
+        let canReachLevel9 = level9Located || mapState.owGettableLocations.trueCount > 0
+
         // You might need e.g. power bracelet or raft to find a missing
         // dungeon, so never TAG unless every remaining dungeon is locatable.
         let knowSilvers = haveSilvers || silversKnownToBeInLevel9
         let level: Int
-        if missingDungeonCount == 0 || unreachableCount == 0 {
+        if canReachLevel9 && (missingDungeonCount == 0 || unreachableCount == 0) {
             if haveBow && knowSilvers && haveLadder && haveRecorder {
                 level = 103
             } else if haveBow && knowSilvers && haveLadder {
