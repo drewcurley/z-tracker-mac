@@ -4,6 +4,12 @@ All notable changes to **Z-Tracker for macOS**. Newest first. This project follo
 [Keep a Changelog](https://keepachangelog.com/) and [Semantic Versioning](https://semver.org/).
 Each entry mirrors the notes on its [GitHub Release](https://github.com/drewcurley/z-tracker-mac/releases).
 
+## [Unreleased]
+### Fixed
+- **No more false "Triforce and Go."** The tracker no longer tells you you're Triforce-and-Go when
+  level 9 is actually unreachable — e.g. all 8 triforces in hand, but level 9 still hidden under a
+  power-bracelet (or other item-blocked) spot and no overworld spot you can currently uncover.
+
 ## [1.2.8] — 2026-09-14
 ### Added
 - **Zoom in, too.** The "Tracker zoom" setting now offers **110%** and **120%** for larger displays,
