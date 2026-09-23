@@ -4,6 +4,10 @@ import Foundation
 
 /// Guards the direct-path resource resolver (T-203) that replaced SwiftPM's `Bundle.module`
 /// (whose `Bundle(url:)` validation crashed the app at launch on macOS 15 Sequoia).
+///
+/// Also the regression guard for T-233: the 2026 Xcode update changed the nested resource bundle
+/// from a flat folder to a deep macOS bundle (`…<bundle>/Contents/Resources/`), which made every
+/// lookup miss until `searchRoots` learned to probe both layouts.
 @Suite("AppResources (direct-path resource loader)")
 struct AppResourcesTests {
     @Test("resolves known sprite + atlas resources to real files")
