@@ -26,10 +26,20 @@ enum AppResources {
     private static let searchRoots: [URL] = {
         var roots: [URL] = []
         var seen = Set<String>()
+        func append(_ url: URL) {
+            if seen.insert(url.path).inserted { roots.append(url) }
+        }
         func add(_ base: URL?, nested: Bool = true) {
             guard let base else { return }
-            let url = nested ? base.appendingPathComponent(bundleFolder) : base
-            if seen.insert(url.path).inserted { roots.append(url) }
+            guard nested else { append(base); return }
+            // The nested SwiftPM resource bundle has two on-disk shapes depending on the toolchain:
+            // older ones flatten the files directly inside `…<bundle>/`, while newer ones (post the
+            // 2026 Xcode update) emit a proper *deep* macOS bundle with the files under
+            // `…<bundle>/Contents/Resources/`. Probe both so a toolchain change can't move the files
+            // out from under us (T-233 — the deep layout made every image lookup miss).
+            let bundle = base.appendingPathComponent(bundleFolder)
+            append(bundle)
+            append(bundle.appendingPathComponent("Contents/Resources"))
         }
         let token = Bundle(for: BundleToken.self)   // the .app in-app; the .xctest in tests
         // App: …/Contents/Resources/<bundle>. Tests: the resource bundle sits beside the
