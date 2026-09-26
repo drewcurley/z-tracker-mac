@@ -92,14 +92,21 @@ public struct SpotSummary: Equatable, Sendable {
     /// These three drive the "done" state of the armos / sword2 / sword3 uniques
     /// from model state rather than a map toggle (T-110), matching the reference
     /// tile dimming (`OverworldMapTileCustomization.fs:221-260`).
+    /// - Parameter includeCell: an optional per-cell filter. When it returns `false` for a
+    ///   `(column, row)`, that cell is skipped entirely — as if unmarked. Defaults to including
+    ///   every cell (the normal combined summary). The dual-pane commentary summary (T-234) passes
+    ///   a predicate keyed on `CommentaryLayer.knowledge(column:row:)` so each runner's column tallies
+    ///   only the spots that runner has been shown.
     public static func compute(grid: OverworldGrid, quest: OverworldQuest,
                                armosDone: Bool = false,
                                whiteSwordItemDone: Bool = false,
-                               hasMagicalSword: Bool = false) -> SpotSummary {
+                               hasMagicalSword: Bool = false,
+                               includeCell: (_ column: Int, _ row: Int) -> Bool = { _, _ in true }) -> SpotSummary {
         var counts: [OverworldTileMark: Int] = [:]
         var used: [OverworldTileMark: Int] = [:]
         for c in 0..<OverworldGrid.columnCount {
             for r in 0..<OverworldGrid.rowCount {
+                guard includeCell(c, r) else { continue }
                 let m = grid.mark(column: c, row: r)
                 counts[m, default: 0] += 1
                 if grid.isUsed(column: c, row: r) { used[m, default: 0] += 1 }

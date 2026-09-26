@@ -25,6 +25,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-234](./T-234.md) | Dual-pane per-runner Spot Summary in commentary mode | frontend-engineer | — | feat/commentary-dual-pane-spot-summary | — | docs/reviews/feat-commentary-dual-pane-spot-summary/final.md |
 | [T-233](./T-233.md) | Fix — resource lookup misses the deep SwiftPM bundle layout from the 2026 Xcode update | devops | — | fix/appresources-deep-bundle-layout | — | docs/reviews/fix-appresources-deep-bundle-layout/final.md |
 | [T-232](./T-232.md) | Fix — don't announce "Triforce and Go" when level 9 is unreachable | backend-engineer | — | fix/tag-requires-reachable-level9 | — | docs/reviews/fix-tag-requires-reachable-level9/final.md |
 | [T-231](./T-231.md) | Fix — make-dmg.sh leaves an Intel (Rosetta) app in the project root on Apple Silicon | devops | — | fix/make-dmg-native-root-app | — | docs/reviews/fix-make-dmg-native-root-app/final.md |
