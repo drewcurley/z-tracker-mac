@@ -246,7 +246,7 @@ struct ZTrackerMacApp: App {
         // The broken-out Spot Summary window (T-199) — remaining unique locations + money
         // secrets, recomputed live from the model so it stays current while it's up.
         Window("Spot Summary", id: SpotSummaryWindowID) {
-            SpotSummaryWindowView(model: model)
+            SpotSummaryWindowView(model: model, options: options)
                 .frame(minWidth: 240, minHeight: 200)
         }
         .defaultSize(width: 320, height: 460)

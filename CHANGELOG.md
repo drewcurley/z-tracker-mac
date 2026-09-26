@@ -4,6 +4,14 @@ All notable changes to **Z-Tracker for macOS**. Newest first. This project follo
 [Keep a Changelog](https://keepachangelog.com/) and [Semantic Versioning](https://semver.org/).
 Each entry mirrors the notes on its [GitHub Release](https://github.com/drewcurley/z-tracker-mac/releases).
 
+## [1.2.10] — 2026-09-25
+### Added
+- **Per-runner Spot Summary in commentary mode.** With commentary mode on, the Spot Summary (popover
+  and its own window) splits into two columns — one per runner, each headed by the runner's name and
+  color — so you can see at a glance how many of each spot type each runner has been shown. The
+  breakout window shows the columns side by side when there's room and stacks them when it's narrow.
+  With commentary mode off, it's the same single summary as before.
+
 ## [1.2.9] — 2026-09-22
 ### Fixed
 - **No more false "Triforce and Go."** The tracker no longer tells you you're Triforce-and-Go when

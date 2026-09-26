@@ -51,6 +51,34 @@ struct SpotSummaryTests {
         #expect(takeAny.marked == 1 && takeAny.remaining == 3)
     }
 
+    @Test("includeCell filter tallies only the chosen cells (per-runner dual-pane, T-234)")
+    func perRunnerFilter() {
+        // Two dungeons + two door-repairs marked in different columns; a filter that only accepts
+        // even columns should see exactly the even-column subset — like one runner's commentary view.
+        let grid = OverworldGrid()
+        grid.setMark(.dungeon(3), column: 0, row: 0)   // even col — runner "sees" it
+        grid.setMark(.dungeon(4), column: 1, row: 0)   // odd col — runner doesn't
+        grid.setMark(.doorRepair, column: 2, row: 0)   // even
+        grid.setMark(.doorRepair, column: 3, row: 0)   // odd
+
+        // Default (no filter) sees everything.
+        let all = SpotSummary.compute(grid: grid, quest: .first)
+        #expect(all.uniques.first { $0.mark == .dungeon(3) }?.placed == true)
+        #expect(all.uniques.first { $0.mark == .dungeon(4) }?.placed == true)
+        #expect(all.nonUniques.first { $0.mark == .doorRepair }?.marked == 2)
+
+        // Even-columns-only: dungeon 3 placed, dungeon 4 NOT; one door repair counted.
+        let even = SpotSummary.compute(grid: grid, quest: .first, includeCell: { c, _ in c % 2 == 0 })
+        #expect(even.uniques.first { $0.mark == .dungeon(3) }?.placed == true)
+        #expect(even.uniques.first { $0.mark == .dungeon(4) }?.placed == false)
+        #expect(even.nonUniques.first { $0.mark == .doorRepair }?.marked == 1)
+
+        // A filter that accepts nothing yields an empty tally (a runner who's seen nothing).
+        let none = SpotSummary.compute(grid: grid, quest: .first, includeCell: { _, _ in false })
+        #expect(none.uniques.allSatisfy { !$0.placed })
+        #expect(none.nonUniques.allSatisfy { $0.marked == 0 })
+    }
+
     @Test("placing a unique flags it placed; placing a secret alone doesn't reduce remaining")
     func placement() {
         let grid = OverworldGrid()

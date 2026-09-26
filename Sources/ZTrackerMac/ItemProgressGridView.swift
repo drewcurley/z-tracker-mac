@@ -725,11 +725,7 @@ struct MapInfoView: View {
                     .help("Keep the Spot Summary open in its own window")
 
                     SpotSummaryView(
-                        summary: SpotSummary.compute(
-                            grid: model.overworldGrid, quest: model.quest ?? .first,
-                            armosDone: model.dungeonTracker.armosBox.isDone,
-                            whiteSwordItemDone: model.dungeonTracker.sword2Box.isDone,
-                            hasMagicalSword: model.playerComputedStateSummary.swordLevel >= 3),
+                        content: SpotSummaryView.makeContent(model: model, commentaryMode: options.commentaryMode),
                         hideDungeonNumbers: model.hideDungeonNumbers
                     )
                 }

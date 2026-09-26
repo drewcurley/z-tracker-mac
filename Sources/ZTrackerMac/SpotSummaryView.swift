@@ -150,19 +150,104 @@ struct OverworldMarkIcon: View {
 /// `MakeRemainderSummaryDisplay`, minus the unknown-secret bin-shuffling — an
 /// unsized secret is surfaced as a small note instead.
 struct SpotSummaryView: View {
-    let summary: SpotSummary
+    /// What to show: one combined tally, or — in commentary mode — one tally per runner (T-234).
+    let content: Content
     var hideDungeonNumbers: Bool = false
+    /// How the two runner panes are arranged in dual (commentary) mode: side-by-side (default) or
+    /// stacked. The breakout window switches to `.vertical` when it's too narrow for side-by-side
+    /// (T-234); the inline popover always uses the default horizontal layout.
+    var dualAxis: Axis = .horizontal
 
-    /// The summary's fixed natural width — the breakout window scales the whole view by
-    /// (window width ÷ this) so it fills a resized window instead of leaving dead space.
-    static let naturalWidth: CGFloat = 340
+    /// A runner's column in the dual-pane (commentary) layout: their name, color, and the tally of
+    /// only the spots they've been shown.
+    struct RunnerColumn {
+        let name: String
+        let colorHex: String
+        let summary: SpotSummary
+    }
+
+    enum Content {
+        case single(SpotSummary)
+        case dual(RunnerColumn, RunnerColumn)
+    }
+
+    /// Convenience for the plain (non-commentary) single-tally case — keeps existing call sites working.
+    init(summary: SpotSummary, hideDungeonNumbers: Bool = false) {
+        self.content = .single(summary)
+        self.hideDungeonNumbers = hideDungeonNumbers
+    }
+
+    init(content: Content, hideDungeonNumbers: Bool = false, dualAxis: Axis = .horizontal) {
+        self.content = content
+        self.hideDungeonNumbers = hideDungeonNumbers
+        self.dualAxis = dualAxis
+    }
+
+    /// One column's fixed width. The unique-locations grid (9 × 26pt) sets the floor.
+    static let columnWidth: CGFloat = 300
+    private static let hPadding: CGFloat = 14
+    private static let columnGap: CGFloat = 12
+
+    /// The view's natural width for the given content and dual-pane axis — the breakout window scales
+    /// the whole view by (window width ÷ this) so it fills a resized window instead of leaving dead
+    /// space. Single = 340 (unchanged); dual side-by-side = two columns + the divider gap + padding;
+    /// dual stacked = a single column's width (the panes are full-width, one above the other).
+    static func naturalWidth(for content: Content, axis: Axis = .horizontal) -> CGFloat {
+        switch content {
+        case .single: return 340
+        case .dual: return axis == .horizontal ? columnWidth * 2 + columnGap + hPadding * 2
+                                                : columnWidth + hPadding * 2
+        }
+    }
 
     private let uniqueColumns = Array(repeating: GridItem(.fixed(26), spacing: 5), count: 9)
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Text("Remaining Locations Summary").font(.headline)
+            switch content {
+            case .single(let summary):
+                sections(summary)
+            case .dual(let r1, let r2):
+                // One column per runner, split by a divider, each headed by the runner's name on a
+                // color chip matching the map's commentary indicators (T-234). Side-by-side by
+                // default; stacked when the breakout window is too narrow.
+                if dualAxis == .horizontal {
+                    HStack(alignment: .top, spacing: Self.columnGap) {
+                        runnerColumn(r1)
+                        Divider()
+                        runnerColumn(r2)
+                    }
+                } else {
+                    VStack(alignment: .leading, spacing: Self.columnGap) {
+                        runnerColumn(r1)
+                        Divider().frame(width: Self.columnWidth)
+                        runnerColumn(r2)
+                    }
+                }
+            }
+        }
+        .padding(Self.hPadding)
+        .frame(width: Self.naturalWidth(for: content, axis: dualAxis))
+    }
 
+    @ViewBuilder private func runnerColumn(_ r: RunnerColumn) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 6) {
+                RoundedRectangle(cornerRadius: 3)
+                    .fill(Color(commentaryHex: r.colorHex))
+                    .frame(width: 12, height: 12)
+                Text(r.name).font(.subheadline).bold().lineLimit(1)
+            }
+            sections(r.summary)
+        }
+        .frame(width: Self.columnWidth, alignment: .leading)
+    }
+
+    /// The three tally sections (unique / secrets / non-unique) for one summary — rendered once in
+    /// single mode, and once per runner column in dual mode.
+    @ViewBuilder private func sections(_ summary: SpotSummary) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
             VStack(alignment: .leading, spacing: 4) {
                 Text("Unique locations").font(.caption).bold().foregroundStyle(.secondary)
                 Text("Bright = to find · faded = found · dim = collected")
@@ -203,8 +288,27 @@ struct SpotSummaryView: View {
                 }
             }
         }
-        .padding(14)
-        .frame(width: Self.naturalWidth)
+    }
+
+    /// Builds the display content from the model: a single combined tally, or — when commentary mode
+    /// is on — one per-runner tally each filtered to the spots that runner has been shown (T-234).
+    static func makeContent(model: TrackerModel, commentaryMode: Bool) -> Content {
+        let quest = model.quest ?? .first
+        func summary(_ include: @escaping (Int, Int) -> Bool) -> SpotSummary {
+            SpotSummary.compute(
+                grid: model.overworldGrid, quest: quest,
+                armosDone: model.dungeonTracker.armosBox.isDone,
+                whiteSwordItemDone: model.dungeonTracker.sword2Box.isDone,
+                hasMagicalSword: model.playerComputedStateSummary.swordLevel >= 3,
+                includeCell: include)
+        }
+        guard commentaryMode else { return .single(summary { _, _ in true }) }
+        let c = model.commentary
+        return .dual(
+            RunnerColumn(name: c.runner1Name, colorHex: c.runner1ColorHex,
+                         summary: summary { c.knowledge(column: $0, row: $1).contains(.runner1) }),
+            RunnerColumn(name: c.runner2Name, colorHex: c.runner2ColorHex,
+                         summary: summary { c.knowledge(column: $0, row: $1).contains(.runner2) }))
     }
 
     private func nonUniqueRow(_ nu: SpotSummary.NonUniqueCount) -> some View {
@@ -262,6 +366,7 @@ struct SpotSummaryView: View {
 /// shows it scrollably. The inline popover computes the same value; this just keeps it up.
 struct SpotSummaryWindowView: View {
     let model: TrackerModel
+    var options: TrackerOptions
 
     /// Clamp how far the summary scales: never smaller than ~0.8× (stays legible in a tiny
     /// window) nor larger than 3× (a huge window shouldn't make it comically big).
@@ -272,20 +377,22 @@ struct SpotSummaryWindowView: View {
 
     var body: some View {
         // Scale the whole summary to fill the window width (both up and down) — the window is
-        // resizable, so match its size instead of leaving the fixed 340-wide view stranded.
+        // resizable, so match its size instead of leaving the fixed-width view stranded. In
+        // commentary mode (dual-pane, T-234) the panes sit side-by-side while there's room, then
+        // stack vertically once the window is too narrow to show them side-by-side without shrinking
+        // past the minimum scale — at which point one full-width column reads far better.
+        let content = SpotSummaryView.makeContent(model: model, commentaryMode: options.commentaryMode)
+        let sideBySideWidth = SpotSummaryView.naturalWidth(for: content, axis: .horizontal)
         GeometryReader { proxy in
             let usable = max(proxy.size.width - Self.hPadding * 2, 1)
-            let scale = min(max(usable / SpotSummaryView.naturalWidth, Self.minScale), Self.maxScale)
+            // Stack the runner panes when side-by-side would have to shrink below the minimum scale.
+            let axis: Axis = usable >= sideBySideWidth * Self.minScale ? .horizontal : .vertical
+            let naturalWidth = SpotSummaryView.naturalWidth(for: content, axis: axis)
+            let scale = min(max(usable / naturalWidth, Self.minScale), Self.maxScale)
             ScrollView([.vertical, .horizontal]) {
-                SpotSummaryView(
-                    summary: SpotSummary.compute(
-                        grid: model.overworldGrid, quest: model.quest ?? .first,
-                        armosDone: model.dungeonTracker.armosBox.isDone,
-                        whiteSwordItemDone: model.dungeonTracker.sword2Box.isDone,
-                        hasMagicalSword: model.playerComputedStateSummary.swordLevel >= 3),
-                    hideDungeonNumbers: model.hideDungeonNumbers)
-                .scaledFootprint(scale, naturalWidth: SpotSummaryView.naturalWidth)
-                .padding(Self.hPadding)
+                SpotSummaryView(content: content, hideDungeonNumbers: model.hideDungeonNumbers, dualAxis: axis)
+                    .scaledFootprint(scale, naturalWidth: naturalWidth)
+                    .padding(Self.hPadding)
             }
         }
     }
