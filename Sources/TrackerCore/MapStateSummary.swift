@@ -47,8 +47,14 @@ public struct MapStateSummary: Sendable {
     public let sword3Location: OverworldScreenCoordinate?
     public let sword2Location: OverworldScreenCoordinate?
     public let sword1Location: OverworldScreenCoordinate?
-    /// How many overworld spots still hold an unknown thing.
+    /// How many overworld spots still hold an unknown thing. On a **custom map** (T-235) this is the
+    /// quest's fixed spot total minus the screens marked as a real spot, clamped to never exceed
+    /// `owUndiscovered`; on a vanilla map it's the count of unmarked, non-dead screens.
     public let owSpotsRemain: Int
+    /// Custom-map only (T-235): overworld screens still under fog (unrevealed). `0` on vanilla maps.
+    /// A remaining spot is always still fogged (marking a screen reveals it), so
+    /// `owSpotsRemain <= owUndiscovered` on a custom map.
+    public let owUndiscovered: Int
     /// The screens the player can currently *reach and uncover* — the red/
     /// not-red GYR input consumed by `doComputedDrawing` (T-015.4).
     public let owGettableLocations: ScreenBoolGrid
@@ -160,33 +166,39 @@ public struct MapStateSummary: Sendable {
                         owRouteworthySpots[i, j] = true
                     }
                 case -1: // unmarked / empty spot
-                    owSpotsRemain += 1
-                    if instance.whistleable(x: i, y: j) {
-                        owWhistleSpotsRemain.append(OverworldScreenCoordinate(x: i, y: j))
-                    }
-                    if instance.powerBraceletable(x: i, y: j) {
-                        owPowerBraceletSpotsRemain += 1
-                    }
-                    let cannotUncover =
-                        (instance.whistleable(x: i, y: j) && !playerState.haveRecorder)
-                        || (instance.powerBraceletable(x: i, y: j) && !playerState.havePowerBracelet)
-                        || (instance.ladderable(x: i, y: j) && !playerState.haveLadder)
-                        || (instance.raftable(x: i, y: j) && !playerState.haveRaft)
-                        || (instance.bombable(x: i, y: j) && !progress.hasBombs)
-                        || (instance.burnable(x: i, y: j) && playerState.candleLevel == 0)
-                    if cannotUncover {
-                        // Player can't uncover the spot... except the coast island,
-                        // reachable out-of-logic by screen-scrolling when mirrored
-                        // (`:1119`) — worth teaching that it's possible.
-                        if i == 15 && j == 2 && drawRoutes && routesCanScreenScroll && mirrorOverworld {
-                            owRouteworthySpots[i, j] = true
+                    // Vanilla only: the whistle/bracelet/gettable logic is all derived from this
+                    // quest's terrain masks, which don't describe an imported custom map (T-235). On
+                    // a custom map, spots-remaining is computed after the loop (quest total − marked).
+                    if !customMapActive {
+                        owSpotsRemain += 1
+                        if instance.whistleable(x: i, y: j) {
+                            owWhistleSpotsRemain.append(OverworldScreenCoordinate(x: i, y: j))
                         }
-                    } else {
-                        owRouteworthySpots[i, j] = true
-                        owGettableLocations[i, j] = true
+                        if instance.powerBraceletable(x: i, y: j) {
+                            owPowerBraceletSpotsRemain += 1
+                        }
+                        let cannotUncover =
+                            (instance.whistleable(x: i, y: j) && !playerState.haveRecorder)
+                            || (instance.powerBraceletable(x: i, y: j) && !playerState.havePowerBracelet)
+                            || (instance.ladderable(x: i, y: j) && !playerState.haveLadder)
+                            || (instance.raftable(x: i, y: j) && !playerState.haveRaft)
+                            || (instance.bombable(x: i, y: j) && !progress.hasBombs)
+                            || (instance.burnable(x: i, y: j) && playerState.candleLevel == 0)
+                        if cannotUncover {
+                            // Player can't uncover the spot... except the coast island,
+                            // reachable out-of-logic by screen-scrolling when mirrored
+                            // (`:1119`) — worth teaching that it's possible.
+                            if i == 15 && j == 2 && drawRoutes && routesCanScreenScroll && mirrorOverworld {
+                                owRouteworthySpots[i, j] = true
+                            }
+                        } else {
+                            owRouteworthySpots[i, j] = true
+                            owGettableLocations[i, j] = true
+                        }
                     }
                 case OverworldTileMark.maxRawIndex: // DARK_X (35)
-                    if grid.extraData(column: i, row: j, key: OverworldTileMark.maxRawIndex)
+                    if !customMapActive,
+                       grid.extraData(column: i, row: j, key: OverworldTileMark.maxRawIndex)
                         == OverworldTileMark.maxRawIndex {
                         owSpotsRemain += 1 // un-revealed dark spots count as remaining
                     }
@@ -220,6 +232,27 @@ public struct MapStateSummary: Sendable {
         // Gettable coast item is routeworthy (`:1129`).
         owRouteworthySpots[15, 5] = playerState.haveLadder && !playerState.haveCoastItem
 
+        // Custom-map spot accounting (T-235). The vanilla terrain masks don't apply to an imported
+        // map, so "spots left" is the quest's fixed spot total minus screens the user has marked as
+        // a real spot (a real mark — not unmarked, and not the "confirmed-empty" DarkX/dontCare).
+        // "Undiscovered" is the screens still under fog; because marking a screen reveals it, every
+        // remaining spot is necessarily still fogged, so spots-left is clamped to never exceed it.
+        var owUndiscovered = 0
+        if customMapActive {
+            var realMarked = 0
+            for i in 0..<16 {
+                for j in 0..<8 {
+                    switch grid.mark(column: i, row: j) {
+                    case .unmarked, .dontCare: break
+                    default: realMarked += 1
+                    }
+                }
+            }
+            owUndiscovered = grid.customMapFogCount
+            let remaining = max(0, instance.quest.overworldSpotTotal - realMarked)
+            owSpotsRemain = min(remaining, owUndiscovered)
+        }
+
         return MapStateSummary(
             dungeonLocations: dungeonLocations,
             anyRoadLocations: anyRoadLocations,
@@ -228,6 +261,7 @@ public struct MapStateSummary: Sendable {
             sword2Location: sword2Location,
             sword1Location: sword1Location,
             owSpotsRemain: owSpotsRemain,
+            owUndiscovered: owUndiscovered,
             owGettableLocations: owGettableLocations,
             owWhistleSpotsRemain: owWhistleSpotsRemain,
             owPowerBraceletSpotsRemain: owPowerBraceletSpotsRemain,

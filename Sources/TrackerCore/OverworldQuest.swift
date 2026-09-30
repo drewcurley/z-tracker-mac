@@ -32,4 +32,13 @@ public enum OverworldQuest: String, Codable, CaseIterable, Sendable {
         case .second, .mixedSecond: false
         }
     }
+
+    /// The fixed number of overworld **spots** (screens that hold something) a seed of this quest
+    /// contains — a property of the quest's rules, not of the map art. First-quest overworld uses
+    /// **73**, second-quest **80**; the mixed quests draw from 93 potential screen positions but
+    /// still resolve to the same *used* totals (mixed-first 73, mixed-second 80), so this keys off
+    /// `isFirstQuestOverworld`. Source: the Z1R quest ruleset (per the project owner). Used for the
+    /// custom-map "spots left" count (T-235), where the vanilla terrain masks don't apply and the
+    /// count is `overworldSpotTotal − (screens marked as a real spot)`.
+    public var overworldSpotTotal: Int { isFirstQuestOverworld ? 73 : 80 }
 }

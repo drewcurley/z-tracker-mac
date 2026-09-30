@@ -58,26 +58,65 @@ struct CustomMapFogTests {
         }
     }
 
-    @Test("a custom map counts every screen toward 'OW spots left'")
-    func spotCountIncludesFormerDeadSpots() {
-        let m = TrackerModel(quest: .first)
-        m.selectQuest(.first)
-        func spotsRemaining(customMap: Bool) -> Int {
-            MapStateSummary.compute(
-                grid: m.overworldGrid,
-                instance: OverworldInstance(quest: .first),
-                dungeonTracker: m.dungeonTracker,
-                playerState: m.playerComputedStateSummary,
-                progress: m.playerProgress,
-                drawRoutes: false,
-                routesCanScreenScroll: false,
-                mirrorOverworld: false,
-                customMapActive: customMap
-            ).owSpotsRemain
+    /// Compute a summary for a bare grid (default first-quest custom map, no dungeon/player state).
+    private func summary(_ grid: OverworldGrid, quest: OverworldQuest = .first,
+                         customMap: Bool = true) -> MapStateSummary {
+        MapStateSummary.compute(
+            grid: grid, instance: OverworldInstance(quest: quest),
+            dungeonTracker: DungeonTrackerInstance(),
+            playerState: PlayerComputedStateSummary(),
+            progress: PlayerProgressAndTakeAnyHearts(),
+            drawRoutes: false, routesCanScreenScroll: false, mirrorOverworld: false,
+            customMapActive: customMap)
+    }
+
+    @Test("custom-map spots-left = quest total − real marks; undiscovered = fogged screens (T-235)")
+    func customMapSpotAccounting() {
+        let g = OverworldGrid()
+        // Empty first-quest custom board: 73 spots to find, all 128 screens still fogged.
+        var s = summary(g)
+        #expect(s.owSpotsRemain == 73)
+        #expect(s.owUndiscovered == 128)
+
+        // Marking 5 real spots (dungeons) finds 5 and reveals their screens.
+        for n in 1...5 { g.setMark(.dungeon(n), column: n, row: 0) }
+        s = summary(g)
+        #expect(s.owSpotsRemain == 68)      // 73 − 5 found
+        #expect(s.owUndiscovered == 123)    // 128 − 5 revealed
+
+        // A "confirmed-empty" DarkX (dontCare) mark reveals its screen but is NOT a found spot.
+        g.setMark(.dontCare, column: 10, row: 0)
+        s = summary(g)
+        #expect(s.owSpotsRemain == 68)      // unchanged — dontCare isn't a spot
+        #expect(s.owUndiscovered == 122)    // but one more screen is revealed
+    }
+
+    @Test("custom-map spots-left is clamped to never exceed undiscovered (T-235)")
+    func customMapClampInvariant() {
+        let g = OverworldGrid()
+        // Reveal 70 screens without marking any spot → only 58 remain fogged, fewer than the 73
+        // quest total, so spots-left must clamp down to the undiscovered count.
+        var revealed = 0
+        outer: for x in 0..<OverworldGrid.columnCount {
+            for y in 0..<OverworldGrid.rowCount {
+                g.setCustomMapRevealed(true, column: x, row: y)
+                revealed += 1
+                if revealed == 70 { break outer }
+            }
         }
-        // The vanilla count skips quest dead spots; a custom map has none, so its
-        // remaining-count must be strictly larger on an otherwise-identical board.
-        #expect(spotsRemaining(customMap: true) > spotsRemaining(customMap: false))
+        let s = summary(g)
+        #expect(s.owUndiscovered == 58)               // 128 − 70
+        #expect(s.owSpotsRemain == 58)                // clamped from 73 down to 58
+        #expect(s.owSpotsRemain <= s.owUndiscovered)  // the invariant the user asked for
+    }
+
+    @Test("second-quest custom map uses an 80-spot total; vanilla reports 0 undiscovered (T-235)")
+    func customMapQuestTotalsAndVanilla() {
+        #expect(summary(OverworldGrid(), quest: .second).owSpotsRemain == 80)
+        #expect(summary(OverworldGrid(), quest: .mixedSecond).owSpotsRemain == 80)
+        #expect(summary(OverworldGrid(), quest: .mixedFirst).owSpotsRemain == 73)
+        // A vanilla (non-custom) map has no fog concept — undiscovered is always 0.
+        #expect(summary(OverworldGrid(), customMap: false).owUndiscovered == 0)
     }
 
     @Test("manual fairy fountains toggle and persist")

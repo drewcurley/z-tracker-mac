@@ -4,6 +4,15 @@ All notable changes to **Z-Tracker for macOS**. Newest first. This project follo
 [Keep a Changelog](https://keepachangelog.com/) and [Semantic Versioning](https://semver.org/).
 Each entry mirrors the notes on its [GitHub Release](https://github.com/drewcurley/z-tracker-mac/releases).
 
+## [1.2.11] — 2026-09-30
+### Fixed
+- **Custom-map overworld spot counting.** On an imported custom map the tracker was still counting
+  and highlighting the *base* map's spots. Now "OW spots left" is the chosen quest's spot total
+  (73 first-quest, 80 second-quest) minus what you've marked, and a new **"undiscovered"** number
+  shows how many screens are still under fog (spots-left can never exceed it). The INFO
+  "available spots" highlight, which only made sense for a vanilla layout, is turned off on custom
+  maps. (Vanilla maps are unchanged.)
+
 ## [1.2.10] — 2026-09-25
 ### Added
 - **Per-runner Spot Summary in commentary mode.** With commentary mode on, the Spot Summary (popover
