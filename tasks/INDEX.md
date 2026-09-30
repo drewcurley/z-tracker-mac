@@ -25,6 +25,7 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-235](./T-235.md) | Custom-map overworld spot counting — quest-total based, with an "undiscovered" fog count | frontend-engineer | — | fix/custom-map-spot-counting | — | docs/reviews/fix-custom-map-spot-counting/final.md |
 | [T-234](./T-234.md) | Dual-pane per-runner Spot Summary in commentary mode | frontend-engineer | — | feat/commentary-dual-pane-spot-summary | — | docs/reviews/feat-commentary-dual-pane-spot-summary/final.md |
 | [T-233](./T-233.md) | Fix — resource lookup misses the deep SwiftPM bundle layout from the 2026 Xcode update | devops | — | fix/appresources-deep-bundle-layout | — | docs/reviews/fix-appresources-deep-bundle-layout/final.md |
 | [T-232](./T-232.md) | Fix — don't announce "Triforce and Go" when level 9 is unreachable | backend-engineer | — | fix/tag-requires-reachable-level9 | — | docs/reviews/fix-tag-requires-reachable-level9/final.md |

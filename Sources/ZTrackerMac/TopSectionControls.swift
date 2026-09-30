@@ -14,8 +14,17 @@ struct StatusReadoutView: View {
             Text("\(mapState.owSpotsRemain) OW spots left")
                 .font(.system(size: 28, weight: .semibold))
                 .foregroundStyle(.orange)
-                .help("Unmarked overworld screens remaining")
-            if !customMapActive {
+                .help(customMapActive
+                      ? "Overworld spots still to find — this quest's spot total minus what you've marked (never more than are still under fog)"
+                      : "Unmarked overworld screens remaining")
+            if customMapActive {
+                // On a custom map (T-235) "gettable" is meaningless; show how many screens are still
+                // under fog instead — the pool the remaining spots must be hiding in.
+                Text("\(mapState.owUndiscovered) undiscovered")
+                    .font(.system(size: 23, weight: .semibold))
+                    .foregroundStyle(.cyan)
+                    .help("Overworld screens still hidden under fog on this custom map")
+            } else {
                 Text("\(ItemProgressGrid.gettableCount(mapState)) gettable")
                     .font(.system(size: 23, weight: .semibold))
                     .foregroundStyle(.green)

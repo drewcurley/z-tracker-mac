@@ -139,6 +139,11 @@ struct OverworldMapView: View {
            OverworldOverlays.isMoneyTile(mark, secretCollected: grid.isUsed(column: column, row: row)) {
             return Self.overlayGreen
         }
+        // The open-caves ("available spots") highlight is derived from this quest's vanilla terrain
+        // masks and mask-based gettability, which don't describe an imported custom map — so disable
+        // both its modes on custom maps (T-235), matching the already-disabled hover-route highlight.
+        // (The money-secret highlight above is mark-based, not mask-based, so it still applies.)
+        if customMapImagePath != nil { return nil }
         switch overlays.effectiveOpenCavesMode {
         case .openCaves:
             let pastEarly = OverworldOverlays.openCavesPastEarlyGame(

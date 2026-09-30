@@ -61,6 +61,12 @@ public final class OverworldGrid {
     }
 
     // MARK: Custom-map fog (T-167)
+
+    /// How many screens are still under fog — i.e. not yet revealed — on a custom map (T-235's
+    /// "undiscovered" count). Meaningful only while a custom map is active; on a vanilla map the
+    /// reveal flags are all-false and this returns the full screen count.
+    public var customMapFogCount: Int { customMapRevealed.lazy.filter { !$0 }.count }
+
     public func isCustomMapRevealed(column: Int, row: Int) -> Bool {
         customMapRevealed[Self.index(column: column, row: row)]
     }
