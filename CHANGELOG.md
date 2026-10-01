@@ -4,6 +4,17 @@ All notable changes to **Z-Tracker for macOS**. Newest first. This project follo
 [Keep a Changelog](https://keepachangelog.com/) and [Semantic Versioning](https://semver.org/).
 Each entry mirrors the notes on its [GitHub Release](https://github.com/drewcurley/z-tracker-mac/releases).
 
+## [1.2.12] — 2026-09-30
+### Added
+- **Change the overworld quest mid-run.** If you picked the wrong quest at the start (say "First"
+  when the ROM was really "Mixed — First"), the in-run Settings window now has an "Overworld quest"
+  picker. Switching asks for confirmation and re-derives the map art, valid spots, and secret counts
+  on the fly — your markings are kept.
+### Fixed
+- **Voice "set white sword item" no longer claims you have it when you can't.** Setting the
+  white-sword (or coast) item by voice now follows the same reachability gate as clicking it — below
+  the heart/ladder requirement it records *what* the item is without marking it collected.
+
 ## [1.2.11] — 2026-09-30
 ### Fixed
 - **Custom-map overworld spot counting.** On an imported custom map the tracker was still counting

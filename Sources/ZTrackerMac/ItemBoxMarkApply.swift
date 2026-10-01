@@ -30,15 +30,19 @@ enum ItemBoxMark {
 
     /// Place (or clear) an item in `box`, mirroring the picker's left-click. Respects
     /// the unique-item rule (`canSelectItem`); returns false if the item can't go here.
+    /// - Parameter acquired: the possession state a *fresh* placement claims. Defaults to `.yes`
+    ///   (owned), matching the hotkey/left-click behavior. The voice path passes `.no` for a gated
+    ///   box the player can't have reached yet (coast without the ladder, white-sword item below the
+    ///   heart minimum), so "identify it" doesn't wrongly claim possession (T-236).
     @MainActor @discardableResult
     static func apply(itemIndex index: Int, to box: Box,
-                      instance: DungeonTrackerInstance) -> Bool {
+                      instance: DungeonTrackerInstance, acquired: PlayerHas = .yes) -> Bool {
         if index < 0 {
             box.set(cellCurrent: -1, playerHas: .no)   // clear
             return true
         }
         guard instance.canSelectItem(index, forBox: box) else { return false }
-        box.set(cellCurrent: index, playerHas: .yes)
+        box.set(cellCurrent: index, playerHas: acquired)
         return true
     }
 

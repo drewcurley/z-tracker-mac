@@ -505,6 +505,16 @@ public final class TrackerModel {
         dungeonTracker.applyFloorItemHearts(mode: heartShuffle)
     }
 
+    /// Change the overworld quest **mid-run** (T-237) — for fixing a quest picked wrong at the start
+    /// (e.g. "first" when the ROM was really "mixed-first"). Unlike `selectQuest`, it does **not**
+    /// re-seed the dungeon floor-item hearts (a once-at-start step that would clobber in-run edits);
+    /// it only swaps the quest. Every quest-derived view — background art, terrain masks, spot
+    /// totals, mixed-quest dimming — recomputes from `quest` live, and the overworld/dungeon marks
+    /// are left untouched.
+    public func changeQuest(_ quest: OverworldQuest) {
+        self.quest = quest
+    }
+
     /// Toggle Heart Shuffle live (T-049 — the flag now lives in the in-app Flags
     /// group, not just the startup screen). Re-seeds the dungeon floor-item
     /// hearts: **off** puts a known Heart Container in dungeons 1–8's first box,
