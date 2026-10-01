@@ -25,6 +25,8 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-237](./T-237.md) | Change the overworld quest mid-run | frontend-engineer | — | feat/mid-run-quest-switch-and-voice-gate | — | docs/reviews/feat-mid-run-quest-switch/final.md |
+| [T-236](./T-236.md) | Fix — voice "set white sword item" claimed possession below the heart gate | backend-engineer | — | feat/mid-run-quest-switch-and-voice-gate | — | docs/reviews/fix-voice-whitesword-heart-gate/final.md |
 | [T-235](./T-235.md) | Custom-map overworld spot counting — quest-total based, with an "undiscovered" fog count | frontend-engineer | — | fix/custom-map-spot-counting | — | docs/reviews/fix-custom-map-spot-counting/final.md |
 | [T-234](./T-234.md) | Dual-pane per-runner Spot Summary in commentary mode | frontend-engineer | — | feat/commentary-dual-pane-spot-summary | — | docs/reviews/feat-commentary-dual-pane-spot-summary/final.md |
 | [T-233](./T-233.md) | Fix — resource lookup misses the deep SwiftPM bundle layout from the 2026 Xcode update | devops | — | fix/appresources-deep-bundle-layout | — | docs/reviews/fix-appresources-deep-bundle-layout/final.md |

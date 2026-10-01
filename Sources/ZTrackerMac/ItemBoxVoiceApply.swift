@@ -26,9 +26,16 @@ enum ItemBoxVoiceApply {
     /// the ids are unknown, the region is wrong, or the unique-item rule rejected it.
     @MainActor @discardableResult
     static func apply(boxID: String, itemID: String, region: TrackerFocusState.CursorRegion,
-                      tracker: DungeonTrackerInstance) -> Bool {
+                      tracker: DungeonTrackerInstance,
+                      playerState: PlayerComputedStateSummary) -> Bool {
         guard region == .overworld else { return false }
         guard let box = box(forID: boxID), let index = itemIndex(forID: itemID) else { return false }
-        return ItemBoxMark.apply(itemIndex: index, to: box.box(in: tracker), instance: tracker)
+        // Match the GUI picker's acquisition gate (T-214/T-236): a gated box the player can't have
+        // reached yet — the coast item without the ladder, or the white-sword item below the heart
+        // minimum — is "identified, not yet taken" (.no), not owned (.yes). So setting the white
+        // sword item at 3 hearts records *what* it is without claiming you have it.
+        let acquired: PlayerHas = box.defaultAcquired(playerState) ? .yes : .no
+        return ItemBoxMark.apply(itemIndex: index, to: box.box(in: tracker), instance: tracker,
+                                 acquired: acquired)
     }
 }

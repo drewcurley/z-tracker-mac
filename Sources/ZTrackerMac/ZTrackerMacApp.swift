@@ -150,7 +150,7 @@ struct ZTrackerMacApp: App {
         // The mid-game Settings window (T-091): a single, resizable window sharing
         // the same `options` as the tracker — the startup preference panel, live.
         Window("Settings", id: SettingsWindowID) {
-            SettingsWindowView(options: options)
+            SettingsWindowView(model: model, options: options)
         }
         .defaultSize(width: 460, height: 660)
 

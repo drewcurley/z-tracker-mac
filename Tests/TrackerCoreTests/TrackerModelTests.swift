@@ -23,6 +23,20 @@ struct TrackerModelTests {
         #expect(model.quest == .mixedSecond)
     }
 
+    @Test("changeQuest swaps the quest mid-run and keeps overworld marks (T-237)")
+    func changeQuestKeepsMarks() {
+        let model = TrackerModel(quest: .first)
+        model.overworldGrid.setMark(.dungeon(3), column: 4, row: 2)
+        model.overworldGrid.setMark(.armos, column: 7, row: 5)
+
+        model.changeQuest(.mixedFirst)
+
+        #expect(model.quest == .mixedFirst)
+        // Marks survive the quest change untouched.
+        #expect(model.overworldGrid.mark(column: 4, row: 2) == .dungeon(3))
+        #expect(model.overworldGrid.mark(column: 7, row: 5) == .armos)
+    }
+
     @Test("heartShuffle and hideDungeonNumbers default to off")
     func togglesDefaultOff() {
         let model = TrackerModel()

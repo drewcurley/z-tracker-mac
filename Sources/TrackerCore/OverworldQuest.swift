@@ -41,4 +41,15 @@ public enum OverworldQuest: String, Codable, CaseIterable, Sendable {
     /// custom-map "spots left" count (T-235), where the vanilla terrain masks don't apply and the
     /// count is `overworldSpotTotal − (screens marked as a real spot)`.
     public var overworldSpotTotal: Int { isFirstQuestOverworld ? 73 : 80 }
+
+    /// A human-readable name for the quest, shared by the startup picker and the mid-run quest
+    /// changer (T-237).
+    public var displayName: String {
+        switch self {
+        case .first: "First Quest"
+        case .second: "Second Quest"
+        case .mixedFirst: "Mixed — First Quest rules"
+        case .mixedSecond: "Mixed — Second Quest rules"
+        }
+    }
 }

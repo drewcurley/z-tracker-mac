@@ -325,7 +325,8 @@ final class VoiceController {
             applyProgression(id)
         case let .setItemBox(boxID, itemID):
             if !ItemBoxVoiceApply.apply(boxID: boxID, itemID: itemID, region: focus.cursorRegion,
-                                        tracker: model.dungeonTracker) {
+                                        tracker: model.dungeonTracker,
+                                        playerState: model.playerComputedStateSummary) {
                 vlog("item box \(boxID)=\(itemID) not applied (region \(focus.cursorRegion), or item can't go here)")
             }
         case .stopListening:
