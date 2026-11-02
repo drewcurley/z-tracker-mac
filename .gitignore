@@ -16,7 +16,7 @@ xcuserdata/
 # Swift Package Manager
 Packages/
 Package.pins
-Package.resolved
+# Package.resolved is committed (T-243) so release builds use the exact, tested Sparkle.
 *.xcodeproj
 
 !default.pbxproj
@@ -24,3 +24,20 @@ Package.resolved
 # App bundle build product
 /ZTrackerMac.app/
 dist/
+
+# Compiler intermediates that once got committed at the repo root (T-243)
+*.swiftdeps
+*.swiftmodule
+*.dia
+/*.d
+
+# Signing / update-key material — must never be committed (T-243)
+*.p12
+*.p8
+*.key
+*.pem
+*.cer
+*.csr
+*.mobileprovision
+sparkle_private_key*
+app specific password*

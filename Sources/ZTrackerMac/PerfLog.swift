@@ -94,8 +94,17 @@ enum PerfLog {
             guard panel.runModal() == .OK, let dest = panel.url else {
                 return false                        // save cancelled → back to app, keep file
             }
-            try? FileManager.default.removeItem(at: dest)   // overwrite if the user picked an existing name
-            try? FileManager.default.copyItem(at: url, to: dest)
+            // Overwrite safely (T-243): copy first, then swap it in — a failed copy no longer
+            // deletes the user's existing file at `dest`.
+            let fm = FileManager.default
+            if fm.fileExists(atPath: dest.path) {
+                let tmp = dest.deletingLastPathComponent().appendingPathComponent(".\(UUID().uuidString).log")   // same volume as dest
+                if (try? fm.copyItem(at: url, to: tmp)) != nil {
+                    _ = try? fm.replaceItemAt(dest, withItemAt: tmp)
+                }
+            } else {
+                try? fm.copyItem(at: url, to: dest)
+            }
             discardAndReopen()
             return true
         case .alertSecondButtonReturn:              // Don't Save → delete the temp file

@@ -25,6 +25,8 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-243](./T-243.md) | Security hygiene — private opt-in voice log, trusted update URL, safe perf-log save, repo hygiene, Sparkle pin | architect | — | chore/release-hardening | — | docs/reviews/chore-release-hardening/final.md |
+| [T-242](./T-242.md) | Release pipeline hardening — preflight, fail-safe dist/, verified signing, release notes in appcast | devops | — | chore/release-hardening | — | docs/reviews/chore-release-hardening/final.md |
 | [T-241](./T-241.md) | Restore hardening — corrupt saves load safely; crash-loop guard on resume | backend-engineer | — | fix/run-safety | — | docs/reviews/fix-run-safety/final.md |
 | [T-240](./T-240.md) | Timer restore correctness — exclude pauses, keep paused/lap state, no stale auto-resume | backend-engineer | — | fix/run-safety | — | docs/reviews/fix-run-safety/final.md |
 | [T-239](./T-239.md) | Guard destructive inputs — groundhog hotkey double-press, deliberate voice end-game | backend-engineer | — | fix/run-safety | — | docs/reviews/fix-run-safety/final.md |

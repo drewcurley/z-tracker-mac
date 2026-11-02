@@ -59,8 +59,9 @@ final class UpdateChecker {
             let http = response as? HTTPURLResponse, http.statusCode == 200,
             let release = try? JSONDecoder().decode(GitHubRelease.self, from: data)
         else { return }
-        // A release page is nice-to-have; fall back to the repo releases page.
-        let url = release.htmlURL.flatMap(URL.init(string:))
+        // A release page is nice-to-have; fall back to the repo releases page. The API's
+        // html_url is only trusted if it points at this repo on github.com over HTTPS (T-243).
+        let url = release.htmlURL.flatMap(URL.init(string:)).flatMap(Self.trustedReleaseURL)
             ?? URL(string: "https://github.com/drewcurley/z-tracker-mac/releases")!
         if AppVersion.isNewer(latest: release.tagName, than: currentVersion) {
             available = Available(version: AppVersion(release.tagName)?.description ?? release.tagName,
@@ -69,6 +70,13 @@ final class UpdateChecker {
     }
 
     func dismiss() { available = nil }
+
+    /// `url` if it's an HTTPS page of this repo on github.com, else nil (T-243).
+    nonisolated static func trustedReleaseURL(_ url: URL) -> URL? {
+        guard url.scheme == "https", url.host == "github.com",
+              url.path.hasPrefix("/drewcurley/z-tracker-mac/") else { return nil }
+        return url
+    }
 
     private struct GitHubRelease: Decodable {
         let tagName: String

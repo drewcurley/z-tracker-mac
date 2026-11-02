@@ -29,6 +29,13 @@ SUFEEDURL="https://github.com/drewcurley/z-tracker-mac/releases/latest/download/
 echo "==> swift build -c $CONFIG --arch $ARCH"
 swift build -c "$CONFIG" --arch "$ARCH"
 BIN_DIR="$(swift build -c "$CONFIG" --arch "$ARCH" --show-bin-path)"
+# The newer SwiftBuild backend can put every arch's product in the same output folder, so a
+# sequential multi-arch build could pick up the wrong one — assert we got what we asked for (T-242).
+BUILT_ARCHS="$(lipo -archs "$BIN_DIR/$EXE" 2>/dev/null || true)"
+if [[ "$BUILT_ARCHS" != "$ARCH" ]]; then
+    echo "==> ERROR: built binary is '$BUILT_ARCHS', expected '$ARCH' ($BIN_DIR/$EXE)" >&2
+    exit 1
+fi
 
 echo "==> assembling $APP (v$VERSION)"
 rm -rf "$APP"
@@ -44,8 +51,10 @@ cp -R "$BIN_DIR/$RES_BUNDLE" "$APP/Contents/Resources/$RES_BUNDLE"
 # `Bundle.module` fatalErrors "unable to find bundle" at launch → SIGILL on first sprite
 # load (T-202). Write a minimal old-style (flattened, resources-at-root) Info.plist so the
 # bundle validates on every supported OS. Done *before* signing so the signature seals it.
+# Newer toolchains already emit a *deep* bundle (Contents/Info.plist) — don't add a second,
+# flat-layout plist beside it (T-242); only the old flat layout needs the fix.
 RES_PLIST="$APP/Contents/Resources/$RES_BUNDLE/Info.plist"
-if [ ! -f "$RES_PLIST" ]; then
+if [ ! -f "$RES_PLIST" ] && [ ! -f "$APP/Contents/Resources/$RES_BUNDLE/Contents/Info.plist" ]; then
     echo "==> adding Info.plist to the resource bundle (Sequoia Bundle(url:) fix)"
     cat > "$RES_PLIST" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
@@ -122,8 +131,12 @@ fi
 # that notarization requires. Any other identity (the default self-signed dev cert)
 # signs without the hardened runtime, which is what local dev + TCC want.
 SIGN_ID="${ZTRACKER_SIGN_ID:-ZTracker Dev}"
-if security find-identity -p codesigning 2>/dev/null | grep -q "$SIGN_ID"; then
+if security find-identity -p codesigning 2>/dev/null | grep -qF "$SIGN_ID"; then
     ACTUAL_ID="$SIGN_ID"
+elif [[ -n "${ZTRACKER_SIGN_ID:-}" ]]; then
+    # A release identity was explicitly requested — never silently ship an ad-hoc build (T-242).
+    echo "==> ERROR: requested signing identity not found: $SIGN_ID" >&2
+    exit 1
 else
     echo "==> '$SIGN_ID' not found; ad-hoc signing (TCC will re-prompt on each rebuild)"
     ACTUAL_ID="-"
@@ -146,6 +159,11 @@ if [[ "$ACTUAL_ID" == Developer\ ID\ Application* ]]; then
     codesign --force --options runtime \
         --entitlements Bundle/ZTrackerMac.entitlements \
         --timestamp --sign "$ACTUAL_ID" "$APP"
+    # Verify before anything is packaged: a valid, strict, deep signature with the hardened
+    # runtime that notarization requires (T-242).
+    codesign --verify --deep --strict "$APP" || { echo "==> ERROR: signature verification failed" >&2; exit 1; }
+    codesign -d --verbose=2 "$APP" 2>&1 | grep -q "flags=.*runtime" \
+        || { echo "==> ERROR: hardened runtime flag missing" >&2; exit 1; }
 else
     echo "==> code signing as '$ACTUAL_ID'"
     codesign --force --sign "$ACTUAL_ID" "$APP"

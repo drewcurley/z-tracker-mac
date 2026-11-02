@@ -26,21 +26,48 @@ private final class RequestBox: @unchecked Sendable {
     }
 }
 
-/// File diagnostics for the voice pipeline (T-137). Written to a fixed path so it can
-/// be read regardless of how the app was launched (a raw-binary launch bypasses the
-/// bundle Info.plist and is TCC-killed, so stderr isn't reliable here).
-private let vlogPath = "/tmp/ztracker-voice.log"
-private func vlog(_ s: String) {
-    guard let data = "[voice] \(s)\n".data(using: .utf8) else { return }
-    let url = URL(fileURLWithPath: vlogPath)
-    if let fh = try? FileHandle(forWritingTo: url) {
-        defer { try? fh.close() }
-        fh.seekToEndOfFile()
-        fh.write(data)
-    } else {
-        try? data.write(to: url)
+/// File diagnostics for the voice pipeline (T-137). **Off by default** (T-243): it records
+/// what the user said, so it's written only when explicitly enabled with
+///   `defaults write com.drewcurley.ztracker-mac ZTrackerVoiceDebugLog -bool YES`
+/// — to a per-user log (`~/Library/Logs/ZTracker/voice.log`, mode 0600, symlinks refused),
+/// capped in size. It used to append every utterance (plus the live heard text every second)
+/// to a world-readable fixed path in `/tmp`, on the main thread, for every user.
+enum VoiceDebugLog {
+    static let defaultsKey = "ZTrackerVoiceDebugLog"
+    static var isEnabled: Bool { UserDefaults.standard.bool(forKey: defaultsKey) }
+    static let maxBytes = 1_000_000
+    static var url: URL {
+        FileManager.default.urls(for: .libraryDirectory, in: .userDomainMask).first!
+            .appendingPathComponent("Logs/ZTracker", isDirectory: true)
+            .appendingPathComponent("voice.log")
+    }
+
+    /// Append one line (no-op unless enabled). Opens with `O_NOFOLLOW` so a planted symlink
+    /// can't redirect the write, creates the file 0600, and starts over past `maxBytes`.
+    static func write(_ line: String, to fileURL: URL = url, enabled: Bool = isEnabled) {
+        guard enabled, let data = "[voice] \(line)\n".data(using: .utf8) else { return }
+        let dir = fileURL.deletingLastPathComponent()
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true,
+                                                 attributes: [.posixPermissions: 0o700])
+        var flags = O_WRONLY | O_CREAT | O_APPEND | O_NOFOLLOW
+        if let size = (try? FileManager.default.attributesOfItem(atPath: fileURL.path))?[.size] as? Int,
+           size > maxBytes {
+            flags |= O_TRUNC
+        }
+        let fd = open(fileURL.path, flags, 0o600)
+        guard fd >= 0 else { return }
+        defer { close(fd) }
+        data.withUnsafeBytes { _ = Darwin.write(fd, $0.baseAddress, data.count) }
+    }
+
+    /// Start a fresh log for a new listening session (no-op unless enabled).
+    static func reset(_ fileURL: URL = url, enabled: Bool = isEnabled) {
+        guard enabled else { return }
+        let fd = open(fileURL.path, O_WRONLY | O_CREAT | O_TRUNC | O_NOFOLLOW, 0o600)
+        if fd >= 0 { close(fd) }
     }
 }
+private func vlog(_ s: String) { VoiceDebugLog.write(s) }
 
 /// Hands-free voice control (T-137). On-device `SFSpeechRecognizer` over the mic; each
 /// spoken phrase is parsed by `VoiceGrammar` and executed through the same region-apply
@@ -126,7 +153,7 @@ final class VoiceController {
             vlog("start aborted: recognizer available=\(recognizer?.isAvailable ?? false)")
             return
         }
-        try? "".write(toFile: vlogPath, atomically: true, encoding: .utf8)   // fresh log
+        VoiceDebugLog.reset()   // fresh log (only when the debug log is enabled, T-243)
         do {
             let input = engine.inputNode
             let format = input.outputFormat(forBus: 0)
