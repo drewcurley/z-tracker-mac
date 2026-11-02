@@ -44,6 +44,8 @@ struct MainTrackerPlaceholderView: View {
     @State private var timelineCollapsed = false
     /// The runtime dispatcher for Global hotkeys (T-132), installed while on screen.
     @State private var globalHotkeys: GlobalHotkeyDispatcher?
+    /// Shared by the groundhog hotkey and button, so either one's Undo covers both (T-246).
+    @State private var groundhog = GroundhogReset()
     /// Voice control (T-137) — created on appear (needs model + focus).
     @State private var voice: VoiceController?
     /// Occasional post-run sponsor plug (T-225): a weekly cap + opt-out, and whether it's showing now.
@@ -263,7 +265,8 @@ struct MainTrackerPlaceholderView: View {
                     }
                     .buttonStyle(.plain)
                     .help("Show the timer in its own window")
-                    ResetButtonsView(model: model, timer: timer, onResetApp: onResetApp)
+                    ResetButtonsView(model: model, timer: timer, onResetApp: onResetApp,
+                                     groundhog: groundhog, reminders: reminders)
                 }
 
                 // The top section, split into four logical groups laid out
@@ -443,7 +446,7 @@ struct MainTrackerPlaceholderView: View {
             // so the mic is live without clicking the FLAGS mic icon. Prompts for mic
             // permission the first time; a no-op if already listening.
             if isNewVoice, options.listenForSpeech, !voiceController.isListening { voiceController.toggle() }
-            let dispatcher = GlobalHotkeyDispatcher(model: model, options: options, timer: timer, hotkeys: hotkeys, focus: focus, voice: voiceController, reminders: reminders)
+            let dispatcher = GlobalHotkeyDispatcher(model: model, options: options, timer: timer, hotkeys: hotkeys, focus: focus, voice: voiceController, reminders: reminders, groundhog: groundhog)
             dispatcher.install()
             globalHotkeys = dispatcher
         }

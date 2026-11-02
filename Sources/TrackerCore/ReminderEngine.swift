@@ -199,6 +199,55 @@ public final class ReminderEngine {
         previousCompletedDungeonCount = 0
     }
 
+    /// The part of the engine's memory that `resetForGroundhogOrRouters` clears, so a
+    /// groundhog reset's Undo can put it back (T-246) — otherwise the restored items would
+    /// look newly acquired and re-fire their reminders.
+    public struct GroundhogMemory: Equatable, Sendable {
+        fileprivate var haveAnnouncedHearts: [Bool]
+        fileprivate var haveAnnouncedCompletedDungeons: [Bool]
+        fileprivate var previouslyAnnouncedTriforceCount: Int
+        fileprivate var remindedLadder, remindedAnyKey, remindedRecorder: Bool
+        fileprivate var remindedPowerBracelet, remindedBookHints: Bool
+        fileprivate var priorSwordLevel, priorSwordWandLevel, priorRingLevel: Int
+        fileprivate var priorBowArrow, priorRecorder, priorLadder, priorAnyKey: Bool
+        fileprivate var previouslyAnnouncedTriforceAndGo: Int
+        fileprivate var previousCompletedDungeonCount: Int
+    }
+
+    public var groundhogMemory: GroundhogMemory {
+        GroundhogMemory(haveAnnouncedHearts: haveAnnouncedHearts,
+                        haveAnnouncedCompletedDungeons: haveAnnouncedCompletedDungeons,
+                        previouslyAnnouncedTriforceCount: previouslyAnnouncedTriforceCount,
+                        remindedLadder: remindedLadder, remindedAnyKey: remindedAnyKey,
+                        remindedRecorder: remindedRecorder, remindedPowerBracelet: remindedPowerBracelet,
+                        remindedBookHints: remindedBookHints, priorSwordLevel: priorSwordLevel,
+                        priorSwordWandLevel: priorSwordWandLevel, priorRingLevel: priorRingLevel,
+                        priorBowArrow: priorBowArrow, priorRecorder: priorRecorder,
+                        priorLadder: priorLadder, priorAnyKey: priorAnyKey,
+                        previouslyAnnouncedTriforceAndGo: previouslyAnnouncedTriforceAndGo,
+                        previousCompletedDungeonCount: previousCompletedDungeonCount)
+    }
+
+    public func restore(_ m: GroundhogMemory) {
+        haveAnnouncedHearts = m.haveAnnouncedHearts
+        haveAnnouncedCompletedDungeons = m.haveAnnouncedCompletedDungeons
+        previouslyAnnouncedTriforceCount = m.previouslyAnnouncedTriforceCount
+        remindedLadder = m.remindedLadder
+        remindedAnyKey = m.remindedAnyKey
+        remindedRecorder = m.remindedRecorder
+        remindedPowerBracelet = m.remindedPowerBracelet
+        remindedBookHints = m.remindedBookHints
+        priorSwordLevel = m.priorSwordLevel
+        priorSwordWandLevel = m.priorSwordWandLevel
+        priorRingLevel = m.priorRingLevel
+        priorBowArrow = m.priorBowArrow
+        priorRecorder = m.priorRecorder
+        priorLadder = m.priorLadder
+        priorAnyKey = m.priorAnyKey
+        previouslyAnnouncedTriforceAndGo = m.previouslyAnnouncedTriforceAndGo
+        previousCompletedDungeonCount = m.previousCompletedDungeonCount
+    }
+
     /// Diffs current-vs-remembered state and returns the announcements to
     /// fire this tick, mutating the trackers. A structure-preserving port of
     /// `allUIEventingLogic` (`TrackerModel.fs:1568-1750`) minus the

@@ -27,17 +27,13 @@ final class GlobalHotkeyDispatcher {
     /// the same room coordinate in a different dungeon can't false-fire.
     private var justUnmarked: (tab: Int, col: Int, row: Int, selector: String)?
 
-    /// For the guarded hotkeys' "press again" prompt (T-239).
+    /// Shows the groundhog reset's Undo toast (T-246).
     private let reminders: ReminderController?
-    /// When the groundhog-reset hotkey was pressed once and is waiting for its confirming
-    /// second press (T-239).
-    private var groundhogArmedAt: Date?
-    /// The second press must land within this window to perform the reset.
-    static let groundhogConfirmWindow: TimeInterval = 1.5
+    private let groundhog: GroundhogReset
 
     init(model: TrackerModel, options: TrackerOptions, timer: TrackerTimer,
          hotkeys: HotkeyConfig, focus: TrackerFocusState, voice: VoiceController? = nil,
-         reminders: ReminderController? = nil) {
+         reminders: ReminderController? = nil, groundhog: GroundhogReset = GroundhogReset()) {
         self.model = model
         self.options = options
         self.timer = timer
@@ -45,13 +41,7 @@ final class GlobalHotkeyDispatcher {
         self.focus = focus
         self.voice = voice
         self.reminders = reminders
-    }
-
-    /// Whether a groundhog-reset press confirms an earlier, still-armed press (T-239). Pure.
-    static func isGroundhogConfirmed(armedAt: Date?, now: Date) -> Bool {
-        guard let armedAt else { return false }
-        let gap = now.timeIntervalSince(armedAt)
-        return gap >= 0 && gap <= groundhogConfirmWindow
+        self.groundhog = groundhog
     }
 
     func install() {
@@ -429,18 +419,10 @@ final class GlobalHotkeyDispatcher {
         case "Global_StartTimer":         timer.start()
         case "Global_GroundhogReset":
             // Match the "Reset (keep maps)" button — reset the inventory *and* restart the lap
-            // timer (T-132.1) — but guarded by a quick double-press instead of a dialog, so one
-            // stray press (it defaults to Shift+Space, next to Space = start timer) can't wipe
-            // a run's progress (T-239).
-            let now = Date()
-            if Self.isGroundhogConfirmed(armedAt: groundhogArmedAt, now: now) {
-                groundhogArmedAt = nil
-                model.resetForGroundhogOrRouters()
-                timer.startLap()
-            } else {
-                groundhogArmedAt = now
-                reminders?.toast("Press again to reset inventory (groundhog restart)")
-            }
+            // timer (T-132.1) — on a single press, without the dialog. A stray press (it
+            // defaults to Shift+Space, next to Space = start timer) is one click to reverse:
+            // the state is saved first and the toast offers Undo (T-246).
+            groundhog.perform(model: model, timer: timer, reminders: reminders)
         // Dungeon-tab switching (T-133): 1–9 → tabs 0–8, S → Summary (9).
         case "Global_DungeonTab1": focus.selectedDungeonTab = 0
         case "Global_DungeonTab2": focus.selectedDungeonTab = 1

@@ -18,6 +18,13 @@ final class ReminderController {
     struct Item: Identifiable, Equatable {
         let id = UUID()
         let text: String
+        var action: ToastAction? = nil
+        static func == (a: Item, b: Item) -> Bool { a.id == b.id }
+    }
+    /// A button on a toast, e.g. the groundhog reset's "Undo" (T-246).
+    struct ToastAction {
+        let title: String
+        let perform: @MainActor () -> Void
     }
 
     /// Currently-shown visual reminders (each auto-dismisses).
@@ -58,21 +65,33 @@ final class ReminderController {
 
     /// A brief on-screen hint that isn't a reminder (not spoken, not logged) — e.g. the
     /// "press again" prompt for a guarded hotkey (T-239).
-    func toast(_ text: String, duration: Duration = .seconds(2)) {
-        show(text, duration: duration)
+    /// With an `action`, the toast shows a button; tapping it runs the action and dismisses
+    /// the toast.
+    @discardableResult
+    func toast(_ text: String, duration: Duration = .seconds(2), action: ToastAction? = nil) -> UUID {
+        show(text, duration: duration, action: action)
     }
 
-    private func show(_ text: String, duration: Duration? = nil) {
-        let item = Item(text: text)
+    func dismiss(_ id: UUID) {
+        visible.removeAll { $0.id == id }
+    }
+
+    @discardableResult
+    private func show(_ text: String, duration: Duration? = nil, action: ToastAction? = nil) -> UUID {
+        let item = Item(text: text, action: action)
         visible.append(item)
-        if visible.count > maxVisible {
-            visible.removeFirst(visible.count - maxVisible)
+        // Over the cap, drop the oldest plain reminders first so a burst of them can't push an
+        // actionable toast (Undo) off screen early.
+        while visible.count > maxVisible {
+            let i = visible.firstIndex { $0.action == nil } ?? 0
+            visible.remove(at: i)
         }
         let wait = duration ?? visibleDuration
         Task { [weak self] in
             try? await Task.sleep(for: wait)
-            self?.visible.removeAll { $0.id == item.id }
+            self?.dismiss(item.id)
         }
+        return item.id
     }
 
 }
@@ -84,17 +103,28 @@ struct ReminderOverlayView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             ForEach(controller.visible) { item in
-                Text(item.text)
-                    .font(.callout.bold())
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 5)
-                    .background(.black.opacity(0.82), in: Capsule())
-                    .transition(.move(edge: .top).combined(with: .opacity))
-                    .accessibilityAddTraits(.updatesFrequently)
+                HStack(spacing: 10) {
+                    Text(item.text)
+                    if let action = item.action {
+                        Button(action.title) {
+                            controller.dismiss(item.id)
+                            action.perform()
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(Color.accentColor)
+                    }
+                }
+                .font(.callout.bold())
+                .foregroundStyle(.white)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 5)
+                .background(.black.opacity(0.82), in: Capsule())
+                .transition(.move(edge: .top).combined(with: .opacity))
+                .accessibilityAddTraits(.updatesFrequently)
+                // Only toasts with a button take clicks; plain ones never block the board.
+                .allowsHitTesting(item.action != nil)
             }
         }
         .animation(.easeInOut(duration: 0.25), value: controller.visible)
-        .allowsHitTesting(false)
     }
 }

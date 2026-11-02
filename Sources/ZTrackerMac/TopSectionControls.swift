@@ -40,6 +40,8 @@ struct ResetButtonsView: View {
     @Bindable var model: TrackerModel
     var timer: TrackerTimer
     var onResetApp: () -> Void = {}
+    var groundhog: GroundhogReset? = nil
+    var reminders: ReminderController? = nil
 
     @State private var confirmingResetApp = false
     @State private var confirmingResetTimer = false
@@ -84,12 +86,11 @@ struct ResetButtonsView: View {
         .confirmationDialog("Reset inventory for a groundhog/routers restart?",
                             isPresented: $confirmingGroundhog, titleVisibility: .visible) {
             Button("Reset inventory (keep maps)", role: .destructive) {
-                model.resetForGroundhogOrRouters()
-                timer.startLap()
+                (groundhog ?? GroundhogReset()).perform(model: model, timer: timer, reminders: reminders)
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Removes all items, triforces, and take-any hearts so you can replay the same seed. Your overworld marks and known item locations stay, and the lap timer restarts while the main timer keeps running. Use Save first if you want to keep it.")
+            Text("Removes all items, triforces, and take-any hearts so you can replay the same seed. Your overworld marks and known item locations stay, and the lap timer restarts while the main timer keeps running. A copy is saved first, and you can Undo for a few seconds.")
         }
     }
 }

@@ -15,8 +15,10 @@ Each entry mirrors the notes on its [GitHub Release](https://github.com/drewcurl
   app was closed while the run was going — never your pauses. A run saved while paused reopens
   paused, and the lap timer is saved too. Sessions more than six hours old wait for you to choose
   instead of auto-resuming.
-- **No more accidental resets.** The groundhog-reset hotkey (Shift+Space by default) now needs a
-  second press within a moment; the first shows "Press again…".
+- **Accidental resets are one click to undo.** The groundhog-reset hotkey (Shift+Space by default)
+  and button now save a copy of your run first (`ztracker-pre-groundhog-…`), and the "Inventory
+  reset" toast offers **Undo** for 10 seconds — restoring items, triforces and the lap without
+  re-announcing reminders.
 - **Chatter can't end your run.** Voice only marks Zelda rescued / Ganon defeated on a deliberate
   phrase like "rescued Zelda" or "beat Ganon" — not "I have to go save Zelda".
 - **Damaged saves load safely.** A corrupt or unreadable autosave is set aside (kept, not deleted)
