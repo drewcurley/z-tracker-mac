@@ -5,44 +5,69 @@ frictionless (notarized, auto-updating) build when you're ready.
 
 ## Cutting a release
 
-1. **Bump the version.** Edit `VERSION` (e.g. `0.8.0` → `0.9.0`). This flows to
-   `CFBundleShortVersionString` via `scripts/build-app.sh` and is what the update
-   check compares against.
-2. **Add a `CHANGELOG.md` entry** for the new version (newest first), with the same user-facing
-   notes you'll put on the GitHub Release and in the release's `--notes`. Keep the three sources in
-   sync — `CHANGELOG.md` is the cumulative history readers scan; the release notes are per-version.
-3. **Commit** the bump + changelog on a branch and merge it (governance flow as usual).
-4. **Build the disk images (both architectures):**
+1. **Bump the version.** Edit `VERSION` (e.g. `1.2.12` → `1.2.13`). This flows to
+   `CFBundleShortVersionString` via `scripts/build-app.sh` and is what the update check compares.
+2. **Finalize the `CHANGELOG.md` entry** — rename `## [Unreleased]` to `## [<version>] — <date>`.
+   `make-dmg.sh` embeds this section in the appcast, so it's what Sparkle shows users in the update
+   dialog; the appcast also links the full CHANGELOG, so users who skip versions still see history.
+3. **Commit** the bump + changelog on a branch and merge it (governance flow as usual). The release
+   must be built from a **clean, merged `main`** — `make-dmg.sh` refuses a dirty tree.
+4. **Build, sign, notarize and verify both architectures:**
    ```bash
-   scripts/make-dmg.sh
+   ZTRACKER_SIGN_ID="Developer ID Application: ANDREW MICHAEL CURLEY (VB8Y4UKJPQ)" \
+   ZTRACKER_NOTARY_PROFILE="ztracker-notary" scripts/make-dmg.sh
    ```
-   Builds a **dedicated native binary per arch** (no universal/fat binary) and produces
-   two git-ignored images:
-   - `dist/ZTrackerMac-<version>-AppleSilicon.dmg` (arm64)
-   - `dist/ZTrackerMac-<version>-Intel.dmg` (x86_64)
+   **Preflight first (T-242):** before building anything it checks the signing identity is in the
+   keychain, the notarization credentials actually work (`notarytool history`), Sparkle's
+   `sign_update` is present, and the tree is clean — so a missing credential fails in a second, not
+   ten minutes in.
 
-   Pass an arch to build just one (`scripts/make-dmg.sh arm64` / `x86_64`). The Intel
-   slice cross-builds fine from an Apple-Silicon Mac, but can only be *runtime-tested* on
-   actual Intel hardware (Rosetta runs the other direction).
-   `make-dmg.sh` also **EdDSA-signs each `.dmg` and writes the Sparkle appcast** for that
-   arch (`dist/appcast-arm64.xml`, `dist/appcast-x86_64.xml`) using the private key in your
-   login Keychain (see Sparkle section). These MUST be attached to the release so installed
-   apps can find the update.
-5. **Tag and publish a GitHub Release** whose tag is the version, attaching **both** DMGs
-   **and both appcasts**. The tag may be `v1.0.0` or `1.0.0` — the update check tolerates a
-   leading `v`.
+   Notarization credentials — either:
+   - a **keychain profile** (`ZTRACKER_NOTARY_PROFILE`), created once with
+     `xcrun notarytool store-credentials ztracker-notary --apple-id … --team-id VB8Y4UKJPQ` (it
+     prompts for the app-specific password). This profile **has vanished from the keychain once**
+     mid-release; if preflight reports it broken, re-run `store-credentials`; or
+   - an **App Store Connect API key** — a `.p8` file on disk, which can't disappear from the
+     keychain: `ZTRACKER_NOTARY_KEY=/path/AuthKey_XXXX.p8 ZTRACKER_NOTARY_KEY_ID=XXXX
+     ZTRACKER_NOTARY_ISSUER=<uuid>` (create the key in App Store Connect → Users and Access →
+     Integrations; keep the `.p8` outside the repo).
+
+   For each arch it builds a dedicated native binary (asserting the binary's arch), signs it with
+   the hardened runtime and verifies the signature, makes the DMG, **code-signs the DMG**,
+   notarizes it (checking the result is `Accepted`, printing Apple's log otherwise), staples,
+   validates the ticket, checks Gatekeeper accepts it, EdDSA-signs it and writes
+   `dist/appcast-<arch>.xml`. Outputs:
+   - `dist/ZTrackerMac-<version>-AppleSilicon.dmg` + `dist/appcast-arm64.xml`
+   - `dist/ZTrackerMac-<version>-Intel.dmg` + `dist/appcast-x86_64.xml`
+
+   **If it fails partway**, nothing half-finished is left under a release name: each arch is
+   staged in `dist/.staging` and only moved into `dist/` once verified, and that arch's old DMG and
+   appcast are removed first. Fix the cause and re-run **just the failed arch**
+   (`… scripts/make-dmg.sh x86_64`). Either way, the project-root `./ZTrackerMac.app` is rebuilt
+   for the host arch on exit, so it never stays an Intel/Rosetta build (T-231).
+
+   `ZTRACKER_ALLOW_UNSIGNED=1` packages a local test DMG without signing/notarizing (no appcast is
+   written); `ZTRACKER_ALLOW_DIRTY=1` skips the clean-tree check. Never publish either.
+5. **Publish the GitHub Release**, tagged at the exact commit you built (so the tag can't drift to
+   whatever `main` is when you publish), attaching **both** DMGs **and both appcasts**:
    ```bash
-   gh release create v1.0.0 \
-     dist/ZTrackerMac-1.0.0-AppleSilicon.dmg dist/ZTrackerMac-1.0.0-Intel.dmg \
+   gh release create v<version> --target "$(git rev-parse HEAD)" \
+     dist/ZTrackerMac-<version>-AppleSilicon.dmg dist/ZTrackerMac-<version>-Intel.dmg \
      dist/appcast-arm64.xml dist/appcast-x86_64.xml \
-     --title "Z-Tracker 1.0.0" --notes "…"
+     --title "v<version> — …" --notes "…"
    ```
-   The appcast enclosure points at this release's versioned DMG URL, and installed apps
-   fetch `releases/latest/download/appcast-<arch>.xml` (a stable redirect to the newest
-   release) — so **every** release must carry its appcasts.
+   Installed apps fetch `releases/latest/download/appcast-<arch>.xml` (a stable redirect to the
+   newest release), so **every** release must carry both appcasts.
+6. **Verify:** `curl -sL …/releases/latest/download/appcast-arm64.xml` (and `-x86_64`) resolves to
+   the new version.
 
 That's it. Installed apps (v1.0.0+) auto-update in place via Sparkle; older copies show the
 GitHub banner (below).
+
+> **Intel end-of-life (plan ahead):** macOS 26 is the last Intel macOS and Xcode is deprecating
+> x86_64. When Intel builds stop, keep attaching a frozen `appcast-x86_64.xml` (pointing at the
+> last Intel DMG) to every later release — otherwise `releases/latest/download/appcast-x86_64.xml`
+> 404s and Intel users silently stop getting update notices.
 
 ## The in-app update notice (T-174)
 
@@ -122,8 +147,10 @@ appcast, so it only ever updates to its own native binary.
   `make-dmg.sh`'s `sign_update` can sign the `.dmg`.
 - The **public** key is committed in `Info.plist.template` (`SUPublicEDKey`). If the private key is
   ever lost, generate a new pair and update the public key — but then only builds carrying the new
-  public key can verify future updates. Back it up:
-  `generate_keys -x sparkle_private_key.pem` (store the file somewhere safe, offline).
+  public key can verify future updates. **Back it up** — losing it means installed users can never
+  auto-update again: run `generate_keys -x ~/sparkle_private_key.pem` from **outside the repo**
+  (the repo `.gitignore` also blocks `sparkle_private_key*`, T-243), move the file to encrypted
+  offline storage, and delete the plaintext copy.
 
 **First release note:** users on a pre-Sparkle build (≤ v0.9.2) can't auto-update *to* the first
 Sparkle release — they take the GitHub banner and install it manually once. From then on it's

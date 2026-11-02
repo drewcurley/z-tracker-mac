@@ -12,7 +12,7 @@ let package = Package(
     dependencies: [
         // Sparkle 2 — in-place auto-update (T-211). Free path: EdDSA-signed updates,
         // per-arch appcast; notarization is a later drop-in.
-        .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.6.0"),
+        .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.9.6"),   // floor past GHSA-3x7w-j75x-ppq5 / GHSA-4v99-qgq9-6pxp (T-243); exact version pinned by Package.resolved
     ],
     targets: [
         .target(

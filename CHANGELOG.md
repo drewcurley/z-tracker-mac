@@ -25,6 +25,13 @@ Each entry mirrors the notes on its [GitHub Release](https://github.com/drewcurl
 - The finish time in Notes now reflects your real finish even after an accidental Zelda toggle, and
   a crash after finishing no longer offers to resume the unfinished run.
 
+### Changed
+- **Update prompts now show what's new.** The in-app update dialog lists the new version's changes,
+  with a link to the full history if you've skipped a few versions.
+### Security
+- **Voice transcripts are no longer written to disk.** The voice-control diagnostic log is now off
+  unless explicitly enabled, and when on it's private to your user account.
+
 ## [1.2.12] — 2026-09-30
 ### Added
 - **Change the overworld quest mid-run.** If you picked the wrong quest at the start (say "First"
