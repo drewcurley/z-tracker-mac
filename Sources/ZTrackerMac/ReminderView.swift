@@ -56,14 +56,21 @@ final class ReminderController {
         }
     }
 
-    private func show(_ text: String) {
+    /// A brief on-screen hint that isn't a reminder (not spoken, not logged) — e.g. the
+    /// "press again" prompt for a guarded hotkey (T-239).
+    func toast(_ text: String, duration: Duration = .seconds(2)) {
+        show(text, duration: duration)
+    }
+
+    private func show(_ text: String, duration: Duration? = nil) {
         let item = Item(text: text)
         visible.append(item)
         if visible.count > maxVisible {
             visible.removeFirst(visible.count - maxVisible)
         }
+        let wait = duration ?? visibleDuration
         Task { [weak self] in
-            try? await Task.sleep(for: self?.visibleDuration ?? .seconds(6))
+            try? await Task.sleep(for: wait)
             self?.visible.removeAll { $0.id == item.id }
         }
     }

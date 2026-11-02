@@ -128,6 +128,12 @@ public final class Box {
         playerHas == .no && cellCurrent == -1
     }
 
+    /// A decoded/untrusted item index made safe for `set`: anything outside `-1` or
+    /// `0..<itemCount` becomes `-1` (unknown) rather than tripping the precondition (T-241).
+    public static func sanitizedItem(_ v: Int) -> Int {
+        v == -1 || (0..<itemCount).contains(v) ? v : -1
+    }
+
     /// Sets both the known item and the possession state together. Ported
     /// from `Set(v, ph)` (`TrackerModel.fs:646-651`).
     public func set(cellCurrent: Int, playerHas: PlayerHas) {

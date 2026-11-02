@@ -114,7 +114,10 @@ public final class OverworldGrid {
               s.takeAnySlotLinks.count == n,
               s.enemyPairs.count == n * 2 else { return }
         tiles = s.tiles; extraData = s.extraData
-        takeAnySlotLinks = s.takeAnySlotLinks; enemyPairs = s.enemyPairs
+        // Links index the 4 Items-group take-any slots; anything else (corrupt save) is
+        // unlinked rather than later indexing out of bounds (T-241).
+        takeAnySlotLinks = s.takeAnySlotLinks.map { (0..<4).contains($0) ? $0 : -1 }
+        enemyPairs = s.enemyPairs
         // Pre-T-167 saves have no reveal array → leave everything hidden (default).
         if let cmr = s.customMapRevealed, cmr.count == n { customMapRevealed = cmr }
         if let cfs = s.customFairySpots, cfs.count == n { customFairySpots = cfs }

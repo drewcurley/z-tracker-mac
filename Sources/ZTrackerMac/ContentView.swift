@@ -34,6 +34,9 @@ struct ContentView: View {
     @State private var resumeChecked = false
     /// The autosaved unfinished session offered on launch; drives the resume dialog.
     @State private var pendingResume: GameSave.SaveFile?
+    /// Why the last session couldn't be offered (unreadable / crashed on resume) — it was
+    /// moved aside, not deleted (T-238/T-241). Shown once as an alert.
+    @State private var resumeProblem: String?
     /// Drives the ~60s autosave of the last session (T-165).
     private let autosaveTick = Timer.publish(every: 60, on: .main, in: .common).autoconnect()
 
@@ -44,6 +47,9 @@ struct ContentView: View {
                     // Persist the startup settings at the commit point (T-004.2),
                     // then start the run.
                     options.saveSettings()
+                    // A session deferred with "Not now" would otherwise be overwritten by
+                    // this new run's first autosave — keep it as an archive (T-238).
+                    GameSave.archiveDeferredSession()
                     model.selectQuest(quest)
                     // Pre-fill Notes from a user Notes.txt template if present (T-195).
                     GameSave.seedNotesFromTemplate(into: model)
@@ -83,23 +89,26 @@ struct ContentView: View {
             PerfLog.setEnabled(options.logRenderPerf)
         }
         .onChange(of: options.logRenderPerf) { _, v in PerfLog.setEnabled(v) }
-        // Gate app termination on the run-timer warning (T-109). Captures the
-        // hoisted timer + options; `Reset App` resets the timer in place so this
-        // closure stays valid across a reset.
+        // Gate app termination (T-109/T-165). `Reset App` *replaces* the model instance while
+        // this ContentView lives on, so the gate is re-installed whenever the model changes —
+        // otherwise quitting after a reset would save (or clear) the discarded run (T-238).
+        .onAppear { installQuitGate() }
+        .onChange(of: ObjectIdentifier(model)) { _, _ in installQuitGate() }
         .onAppear {
-            // Quit gate (T-165): the Save / Don't Save / Cancel dialog for an
-            // unfinished run supersedes the plain timer-running warning.
-            // Chain the perf-log save prompt (T-179.1) after the save-run dialog: save the
-            // run first, then offer to keep the captured render-perf log. Either canceling
-            // aborts the quit.
-            AppDelegate.confirmQuit = {
-                GameSave.confirmQuitSaving(model: model, timer: timer, options: options) && PerfLog.confirmSaveOnExit()
+            // One-time startup resume check; the overlay below presents it.
+            guard !resumeChecked else { return }
+            resumeChecked = true
+            switch GameSave.checkLastSession() {
+            case .none: break
+            case .offer(let file): pendingResume = file
+            case .problem(let message): resumeProblem = message
             }
-            // One-time startup resume check; the dialog below presents it.
-            if !resumeChecked {
-                resumeChecked = true
-                pendingResume = GameSave.pendingResume()
-            }
+        }
+        .alert("Couldn't resume your last run",
+               isPresented: Binding(get: { resumeProblem != nil }, set: { if !$0 { resumeProblem = nil } })) {
+            Button("OK", role: .cancel) { resumeProblem = nil }
+        } message: {
+            Text(resumeProblem ?? "")
         }
         // Startup "resume your last run?" — a custom overlay (not a confirmationDialog)
         // so it can show a live countdown and auto-resume after 5s (T-192). Any button,
@@ -108,9 +117,16 @@ struct ContentView: View {
             if let file = pendingResume {
                 ResumeSessionPrompt(
                     savedAt: file.savedAt,
+                    // An old session waits for an explicit choice rather than restarting its
+                    // clock on its own (T-240).
+                    autoResume: GameSave.shouldAutoResume(file),
                     onResume: {
+                        // Crash-loop guard (T-241): if applying/first-rendering this session
+                        // crashes, the next launch sees the flag and won't auto-resume it again.
+                        GameSave.beginResumeGuard()
                         GameSave.apply(file, to: model, timer: timer, options: options)
                         pendingResume = nil
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 3) { GameSave.endResumeGuard() }
                     },
                     onDiscard: {
                         GameSave.clearLastSession()
@@ -129,6 +145,16 @@ struct ContentView: View {
         // Remember where the user puts the window, and restore it next launch
         // (T-046.1) — so it reopens on the same display/spot every time.
         .persistWindowFrame("ZTrackerMainWindow")
+    }
+
+    /// Quit gate (T-165): the Save / Don't Save / Cancel dialog for an unfinished run, then
+    /// the perf-log save prompt (T-179.1). Either canceling aborts the quit. Re-installed on
+    /// every model replacement so it always acts on the *live* run (T-238).
+    private func installQuitGate() {
+        let model = model, timer = timer, options = options
+        AppDelegate.confirmQuit = {
+            GameSave.confirmQuitSaving(model: model, timer: timer, options: options) && PerfLog.confirmSaveOnExit()
+        }
     }
 }
 

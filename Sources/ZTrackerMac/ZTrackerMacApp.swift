@@ -289,6 +289,10 @@ struct ZTrackerMacApp: App {
         // Offer to save the captured render-perf log before discarding the session
         // (T-179.1); canceling the prompt aborts the reset.
         guard PerfLog.confirmSaveOnExit() else { return }
+        // Keep the discarded run recoverable (an unfinished one is archived as
+        // `ztracker-unfinished-…`) and clear the resume session, so the next launch doesn't
+        // offer the run the user just discarded (T-238).
+        GameSave.archiveRunForReset(model: model, timer: timer)
         model = TrackerModel()
         // Reset the hoisted timer in place (T-101/T-109) rather than replacing the
         // instance, so the quit-warning closure captured in `ContentView` keeps

@@ -254,6 +254,23 @@ struct VoiceGrammarTests {
         #expect(VoiceGrammar.parse("rescued zelda", config: config) == .toggleProgression(id: "Prog_Zelda"))
     }
 
+    @Test("end-game toggles need a deliberate past-tense command, not conversation (T-239)")
+    func endGameRequiresDeliberatePhrase() {
+        // Deliberate commands still work.
+        #expect(VoiceGrammar.parse("we beat ganon", config: config) == .toggleProgression(id: "Prog_Ganon"))
+        #expect(VoiceGrammar.parse("defeated gannon", config: config) == .toggleProgression(id: "Prog_Ganon"))
+        #expect(VoiceGrammar.parse("i rescued zelda", config: config) == .toggleProgression(id: "Prog_Zelda"))
+        #expect(VoiceGrammar.parse("saved the princess", config: config) == .toggleProgression(id: "Prog_Zelda"))
+        // Conversation containing the words must NOT end (or un-end) the run.
+        for sentence in ["i have to go save zelda", "we still have to beat ganon",
+                         "get to zelda", "save zelda", "have you seen zelda", "rescued zelda yesterday"] {
+            #expect(VoiceGrammar.parse(sentence, config: config) != .toggleProgression(id: "Prog_Zelda"), "\(sentence)")
+            #expect(VoiceGrammar.parse(sentence, config: config) != .toggleProgression(id: "Prog_Ganon"), "\(sentence)")
+        }
+        // Other progression toggles keep the loose rule.
+        #expect(VoiceGrammar.parse("got the bombs", config: config) == .toggleProgression(id: "Prog_Bomb"))
+    }
+
     @Test func bareItemWordStaysACaveOrShopMark() {
         // No action word → the overworld cave / shop mark, not a progression toggle.
         #expect(VoiceGrammar.parse("wood sword", config: config) == .actionAtCursor(words: ["wood", "sword"]))

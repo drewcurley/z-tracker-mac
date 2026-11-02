@@ -25,6 +25,10 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-241](./T-241.md) | Restore hardening — corrupt saves load safely; crash-loop guard on resume | backend-engineer | — | fix/run-safety | — | docs/reviews/fix-run-safety/final.md |
+| [T-240](./T-240.md) | Timer restore correctness — exclude pauses, keep paused/lap state, no stale auto-resume | backend-engineer | — | fix/run-safety | — | docs/reviews/fix-run-safety/final.md |
+| [T-239](./T-239.md) | Guard destructive inputs — groundhog hotkey double-press, deliberate voice end-game | backend-engineer | — | fix/run-safety | — | docs/reviews/fix-run-safety/final.md |
+| [T-238](./T-238.md) | Save/quit/resume integrity — never silently lose or overwrite a run | backend-engineer | — | fix/run-safety | — | docs/reviews/fix-run-safety/final.md |
 | [T-237](./T-237.md) | Change the overworld quest mid-run | frontend-engineer | — | feat/mid-run-quest-switch-and-voice-gate | — | docs/reviews/feat-mid-run-quest-switch/final.md |
 | [T-236](./T-236.md) | Fix — voice "set white sword item" claimed possession below the heart gate | backend-engineer | — | feat/mid-run-quest-switch-and-voice-gate | — | docs/reviews/fix-voice-whitesword-heart-gate/final.md |
 | [T-235](./T-235.md) | Custom-map overworld spot counting — quest-total based, with an "undiscovered" fog count | frontend-engineer | — | fix/custom-map-spot-counting | — | docs/reviews/fix-custom-map-spot-counting/final.md |

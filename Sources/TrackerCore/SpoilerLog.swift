@@ -251,7 +251,11 @@ public struct SpoilerLog: Sendable, Equatable {
     /// `Location E10 contains: MAGICAL SWORD CAVE` → (coord, "MAGICAL SWORD CAVE").
     private static func parseCaveLine(_ line: String) -> (Coord, String)? {
         guard line.hasPrefix("Location "), let range = line.range(of: " contains:") else { return nil }
-        let coordStr = String(line[line.index(line.startIndex, offsetBy: 9)..<range.lowerBound])
+        let coordStart = line.index(line.startIndex, offsetBy: 9)
+        // A line with no coordinate ("Location contains: X") would make an inverted range
+        // and trap mid-import (T-241).
+        guard range.lowerBound >= coordStart else { return nil }
+        let coordStr = String(line[coordStart..<range.lowerBound])
         guard let coord = Coord.parse(coordStr) else { return nil }
         let desc = String(line[range.upperBound...]).trimmingCharacters(in: .whitespaces)
         return (coord, desc)

@@ -232,19 +232,25 @@ public final class TrackerModel {
         customMapImagePath = s.customMapImagePath
         recorderToNewDungeons = s.recorderToNewDungeons
         recorderToUnbeatenDungeons = s.recorderToUnbeatenDungeons
-        recorderDestinationIndex = s.recorderDestinationIndex
+        // Bounded so a corrupt value can't overflow on the next step (T-241).
+        recorderDestinationIndex = min(max(s.recorderDestinationIndex, -10_000), 10_000)
         recorderDestinationManual = s.recorderDestinationManual
-        levelHints = s.levelHints
+        // Views index `levelHints` by `HintTarget` — keep it exactly `HintTarget.count` long (T-241).
+        levelHints = Array((s.levelHints + Array(repeating: HintZone.unknown, count: HintTarget.count))
+            .prefix(HintTarget.count))
         notes = s.notes
         overworldGrid.restore(s.overworld)
         for (map, ms) in zip(dungeonRoomMaps, s.roomMaps) { map.restore(ms) }
         dungeonTracker.restore(s.tracker)
         dungeonBlockers.restore(s.blockers)
         playerProgress.restore(s.progress)
-        if let t = s.timeline { timeline.restore(t) }   // absent in pre-timeline saves
-        if let si = s.startingItems { startingItemsAndExtras.restore(si) }  // absent in pre-T-196 saves
-        if let c = s.commentary { commentary.restore(c) }   // absent in pre-commentary saves (T-215)
-        if let sp = s.shopPrices { shopPrices.restore(sp) }   // absent in pre-T-218 saves
+        // Optional sub-states (absent in older saves): when a save lacks one, reset it to its
+        // default rather than keeping the *current* run's value — a loaded run must not mix
+        // in state from whatever was open before (T-241).
+        timeline.restore(s.timeline ?? TimelineModel().state)                       // pre-timeline saves
+        startingItemsAndExtras.restore(s.startingItems ?? StartingItemsAndExtras().state)  // pre-T-196
+        commentary.restore(s.commentary ?? CommentaryLayer().state)                 // pre-T-215
+        shopPrices.restore(s.shopPrices ?? ShopPriceRecord().state)                 // pre-T-218
         applyIntraHeartDeduction()   // re-derive any intra-shuffle heart (T-212)
         applyArmosDeduction()        // re-derive the armos location if it's now determinable (T-223)
     }

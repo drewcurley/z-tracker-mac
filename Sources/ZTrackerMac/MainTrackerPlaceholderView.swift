@@ -360,19 +360,26 @@ struct MainTrackerPlaceholderView: View {
         // un-rescuing resumes it (the reference's PlayerHasRescuedZelda →
         // Pause/Resume, OverworldItemGridUI.fs:428-440).
         .onChange(of: model.playerProgress.hasRescuedZelda) { _, rescued in
+            // The broadcast mirror shares the model — run these end-of-run side effects once,
+            // from the real window, so the timer isn't double-toggled and the completed save
+            // isn't written twice (T-238).
+            guard !isMirror else { return }
             if rescued {
                 timer.pause()
-                // Post the finish time to Notes, like the Windows app (T-107).
-                // Includes milliseconds so close race ties are visible (T-118).
+                // Post the finish time to Notes, like the Windows app (T-107). Includes
+                // milliseconds so close race ties are visible (T-118). Replaces an earlier
+                // "Finished in" line (e.g. from an accidental toggle) rather than keeping a
+                // stale time (T-238).
                 let line = "Finished in " + TimerFormatting.hmsMillis(timer.mainElapsed(asOf: Date()))
-                if !model.notes.contains("Finished in ") {
-                    model.notes += (model.notes.isEmpty ? "" : "\n") + line
-                }
+                model.notes = GameSave.notesWithFinishLine(model.notes, line: line)
                 // Auto-save the finished run if the option is on (T-196).
                 GameSave.saveOnCompletionIfEnabled(model: model, timer: timer, options: options)
-                // Occasional sponsor thank-you (T-225) — the real window only, at most once a week,
-                // unless the user opted out.
-                if !isMirror, !sponsorOptOut {
+                // Record the finish in the resume session too, so a crash after the finish
+                // isn't offered back as the pre-finish run with its clock restarted (T-238).
+                GameSave.autosave(model: model, timer: timer)
+                // Occasional sponsor thank-you (T-225) — at most once a week, unless the user
+                // opted out.
+                if !sponsorOptOut {
                     let now = Date().timeIntervalSinceReferenceDate
                     if now - sponsorLastPromptAt >= Sponsor.minInterval {
                         sponsorLastPromptAt = now
@@ -436,7 +443,7 @@ struct MainTrackerPlaceholderView: View {
             // so the mic is live without clicking the FLAGS mic icon. Prompts for mic
             // permission the first time; a no-op if already listening.
             if isNewVoice, options.listenForSpeech, !voiceController.isListening { voiceController.toggle() }
-            let dispatcher = GlobalHotkeyDispatcher(model: model, options: options, timer: timer, hotkeys: hotkeys, focus: focus, voice: voiceController)
+            let dispatcher = GlobalHotkeyDispatcher(model: model, options: options, timer: timer, hotkeys: hotkeys, focus: focus, voice: voiceController, reminders: reminders)
             dispatcher.install()
             globalHotkeys = dispatcher
         }
