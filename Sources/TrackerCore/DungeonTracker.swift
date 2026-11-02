@@ -257,18 +257,21 @@ public final class DungeonTrackerInstance {
     /// `kind`); dungeons/boxes with mismatched counts are skipped, guarding corruption.
     public func restore(_ s: State) {
         isSecondQuestDungeons = s.isSecondQuestDungeons
-        finalBoxOf1Or4.set(cellCurrent: s.finalBox.cellCurrent, playerHas: s.finalBox.playerHas)
-        ladderBox.set(cellCurrent: s.ladderBox.cellCurrent, playerHas: s.ladderBox.playerHas)
-        armosBox.set(cellCurrent: s.armosBox.cellCurrent, playerHas: s.armosBox.playerHas)
-        sword2Box.set(cellCurrent: s.sword2Box.cellCurrent, playerHas: s.sword2Box.playerHas)
+        // Item indices come from disk — sanitize so a corrupt save can't trip `Box.set`'s
+        // precondition (and, via auto-resume, crash every launch) (T-241).
+        func put(_ box: Box, _ c: BoxContent) {
+            box.set(cellCurrent: Box.sanitizedItem(c.cellCurrent), playerHas: c.playerHas)
+        }
+        put(finalBoxOf1Or4, s.finalBox)
+        put(ladderBox, s.ladderBox)
+        put(armosBox, s.armosBox)
+        put(sword2Box, s.sword2Box)
         guard s.dungeons.count == dungeons.count else { return }
         for (d, dc) in zip(dungeons, s.dungeons) {
             d.playerHasTriforce = dc.playerHasTriforce
             d.playerHasMap = dc.playerHasMap
             guard dc.boxes.count == d.baseBoxes.count else { continue }
-            for (box, bc) in zip(d.baseBoxes, dc.boxes) {
-                box.set(cellCurrent: bc.cellCurrent, playerHas: bc.playerHas)
-            }
+            for (box, bc) in zip(d.baseBoxes, dc.boxes) { put(box, bc) }
         }
     }
 

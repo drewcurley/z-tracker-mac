@@ -253,7 +253,7 @@ struct SettingsPanelView: View {
                 }
                 .pickerStyle(.radioGroup)
                 .labelsHidden()
-                Text("“Real time” adds the time the app was closed; “Active time” resumes at the saved elapsed.")
+                Text("“Real time” adds the time the app was closed while the run was going (your pauses never count); “Active time” resumes at the saved elapsed. A run saved while paused reopens paused.")
                     .font(.caption).foregroundStyle(.secondary)
             }
             Toggle("Show FPS counter (diagnostic)", isOn: Bindable(options).showFPS)

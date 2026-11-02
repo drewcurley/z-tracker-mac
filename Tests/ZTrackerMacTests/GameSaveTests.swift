@@ -15,8 +15,7 @@ struct GameSaveTests {
         model.overworldGrid.setMark(.shop(.bomb), column: 4, row: 3)
         model.notes = "mid run"
         let timer = TrackerTimer()
-        timer.start()
-        timer.pause()
+        timer.start()   // saved while running
 
         let file = GameSave.makeFile(model: model, timer: timer)
         let url = FileManager.default.temporaryDirectory
@@ -31,31 +30,82 @@ struct GameSaveTests {
 
         #expect(restoredModel.overworldGrid.mark(column: 4, row: 3) == .shop(.bomb))
         #expect(restoredModel.notes == "mid run")
-        // T-192: a reopened session now auto-resumes (crash recovery) rather than
-        // staying paused, so long as the run had started.
+        // T-192/T-240: a run that was running when saved resumes on reopen (crash recovery).
         #expect(restoredTimer.hasStarted)
         #expect(restoredTimer.isRunning)
     }
 
-    @Test("real-time restart mode counts the closed gap; active mode does not (T-192)")
+    @Test("a run saved while paused reopens paused (T-240)")
+    func pausedSaveStaysPaused() {
+        let timer = TrackerTimer()
+        let t0 = Date(timeIntervalSince1970: 1_000_000)
+        timer.start(asOf: t0)
+        timer.pause(asOf: t0.addingTimeInterval(10))
+        let state = timer.snapshot(asOf: t0.addingTimeInterval(20))
+        let restored = TrackerTimer()
+        restored.restore(state, resuming: true, realTimeSinceStart: true, asOf: t0.addingTimeInterval(3600))
+        #expect(restored.hasStarted)
+        #expect(restored.isRunning == false)
+        #expect(abs(restored.mainElapsed(asOf: t0.addingTimeInterval(9999)) - 10) < 0.01)
+    }
+
+    @Test("real-time restore counts the closed gap of a running run, but not pauses (T-192/T-240)")
     func restartModeElapsed() throws {
         let model = TrackerModel(quest: .first)
         let began = Date(timeIntervalSince1970: 1_000_000)
         let timer = TrackerTimer()
         timer.start(asOf: began)
-        timer.pause(asOf: began.addingTimeInterval(10))   // 10s of active play, then paused
-
-        let file = GameSave.makeFile(model: model, timer: timer)
-        // Reopen an hour later.
-        let reopen = began.addingTimeInterval(3600)
+        timer.pause(asOf: began.addingTimeInterval(10))     // 10s of play…
+        timer.resume(asOf: began.addingTimeInterval(610))   // …a 10-minute deliberate pause…
+        // …10 more seconds of play, then the app goes away while running (autosave at +620).
+        var file = GameSave.makeFile(model: model, timer: timer, date: began.addingTimeInterval(620))
+        file.timer = timer.snapshot(asOf: began.addingTimeInterval(620))
+        let reopen = began.addingTimeInterval(3620)          // reopened 50 minutes later
 
         let active = TrackerTimer()
         active.restore(file.timer, resuming: true, realTimeSinceStart: false, asOf: reopen)
-        #expect(abs(active.mainElapsed(asOf: reopen) - 10) < 0.01)   // resumes at the saved 10s
+        #expect(abs(active.mainElapsed(asOf: reopen) - 20) < 0.01)     // the saved 20s
 
         let realTime = TrackerTimer()
         realTime.restore(file.timer, resuming: true, realTimeSinceStart: true, asOf: reopen)
-        #expect(abs(realTime.mainElapsed(asOf: reopen) - 3600) < 0.01) // wall-clock since Go
+        // 20s played + 3000s closed while running; the 600s pause is NOT counted.
+        #expect(abs(realTime.mainElapsed(asOf: reopen) - 3020) < 0.01)
+        #expect(realTime.isRunning)
+    }
+
+    @Test("legacy timer states (no pause data) still restore (T-240)")
+    func legacyTimerStateRestores() {
+        let began = Date(timeIntervalSince1970: 1_000_000)
+        let legacy = TrackerTimer.State(elapsed: 10, hasStarted: true, runStart: began)
+        let t = TrackerTimer()
+        t.restore(legacy, resuming: true, realTimeSinceStart: true, asOf: began.addingTimeInterval(3600))
+        #expect(abs(t.mainElapsed(asOf: began.addingTimeInterval(3600)) - 3600) < 0.01)
+        #expect(t.isRunning)
+    }
+
+    @Test("the lap survives save/restore (T-240)")
+    func lapRestores() {
+        let t0 = Date(timeIntervalSince1970: 1_000_000)
+        let timer = TrackerTimer()
+        timer.start(asOf: t0)
+        timer.startLap(asOf: t0.addingTimeInterval(100))
+        let state = timer.snapshot(asOf: t0.addingTimeInterval(130))
+        let restored = TrackerTimer()
+        restored.restore(state, resuming: false, asOf: t0.addingTimeInterval(500))
+        #expect(restored.hasLap)
+        #expect(abs(restored.lapElapsed(asOf: t0.addingTimeInterval(500)) - 30) < 0.01)
+    }
+
+    @Test("absurd saved elapsed values are clamped, not trapped (T-241)")
+    func absurdElapsedClamped() {
+        let bad = TrackerTimer.State(elapsed: 1e300, hasStarted: true, runStart: nil)
+        let t = TrackerTimer()
+        t.restore(bad, asOf: Date(timeIntervalSince1970: 0))
+        let e = t.mainElapsed(asOf: Date(timeIntervalSince1970: 0))
+        #expect(e <= TimerFormatting.maxInterval)
+        _ = TimerFormatting.hmsMillis(e)            // must not trap
+        _ = TimerFormatting.hms(.infinity)
+        _ = TimerFormatting.hms(.nan)
     }
 
     @Test("completed flag tracks whether Zelda was rescued")

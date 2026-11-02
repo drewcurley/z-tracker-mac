@@ -279,7 +279,7 @@ public enum HotkeyCatalog {
         // Beyond the Windows app (T-131/T-135, user request) — these ids won't round-
         // trip into the reference tracker, which is expected (Mac-only actions).
         ("StartTimer", "Start timer"),
-        ("GroundhogReset", "Groundhog reset (skip confirmation)"),
+        ("GroundhogReset", "Groundhog reset (press twice)"),
         ("RecorderDestPrev", "Whistle destination ◀"),
         ("RecorderDestNext", "Whistle destination ▶"),
         ("ToggleVoice", "Toggle voice control"),

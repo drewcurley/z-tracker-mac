@@ -100,6 +100,17 @@ enum GameSave {
                    to: defaultDirectory.appendingPathComponent(completedName()))
     }
 
+    /// Notes with the run's finish line set (T-107/T-238): replaces the last existing
+    /// "Finished in …" line — e.g. one left by an accidental Zelda toggle — or appends one.
+    static func notesWithFinishLine(_ notes: String, line: String) -> String {
+        var lines = notes.components(separatedBy: "\n")
+        if let i = lines.lastIndex(where: { $0.hasPrefix("Finished in ") }) {
+            lines[i] = line
+            return lines.joined(separator: "\n")
+        }
+        return notes + (notes.isEmpty ? "" : "\n") + line
+    }
+
     // MARK: Disk I/O
     static func encode(_ file: SaveFile) throws -> Data {
         let e = JSONEncoder()
@@ -111,11 +122,14 @@ enum GameSave {
         ensureDirectory()
         try encode(file).write(to: url, options: .atomic)
     }
-    static func read(_ url: URL) -> SaveFile? {
-        guard let data = try? Data(contentsOf: url) else { return nil }
+    static func read(_ url: URL) -> SaveFile? { try? readThrowing(url) }
+    /// Read + decode a save, surfacing *why* it failed (missing, unreadable, or a format this
+    /// version can't decode) so callers can tell the user instead of silently doing nothing.
+    static func readThrowing(_ url: URL) throws -> SaveFile {
+        let data = try Data(contentsOf: url)
         let d = JSONDecoder()
         d.dateDecodingStrategy = .iso8601
-        return try? d.decode(SaveFile.self, from: data)
+        return try d.decode(SaveFile.self, from: data)
     }
 
     // MARK: Autosave / last session (resume)
@@ -130,45 +144,161 @@ enum GameSave {
     /// The last autosaved session, if one exists on disk.
     static func lastSession() -> SaveFile? { read(lastSessionURL) }
 
+    /// A timestamped archive name, e.g. `ztracker-unfinished-2026-11-01-143055.json`.
+    static func archivedName(_ kind: String, date: Date = Date()) -> String {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "yyyy-MM-dd-HHmmss"
+        return "ztracker-\(kind)-\(f.string(from: date)).json"
+    }
+
+    /// Move `url` aside into `directory` under a timestamped `kind` name (never overwriting an
+    /// existing file), returning the new location — `nil` if there was nothing to move or the
+    /// move failed. Used so a session we can't (or shouldn't) resume is **kept**, loadable via
+    /// Load, rather than deleted or silently overwritten by the next autosave (T-238).
+    @discardableResult
+    static func moveAside(_ url: URL, kind: String, into directory: URL,
+                          date: Date = Date()) -> URL? {
+        let fm = FileManager.default
+        guard fm.fileExists(atPath: url.path) else { return nil }
+        let base = archivedName(kind, date: date)
+        var dest = directory.appendingPathComponent(base)
+        var n = 2
+        while fm.fileExists(atPath: dest.path) {
+            dest = directory.appendingPathComponent(base.replacingOccurrences(of: ".json", with: "-\(n).json"))
+            n += 1
+        }
+        do { try fm.moveItem(at: url, to: dest); return dest } catch { return nil }
+    }
+
+    /// A session left on disk that the user deferred ("Not now") is about to be superseded by
+    /// a new run — archive it as `ztracker-unfinished-…` so the new run's autosave can't
+    /// overwrite it (T-238). No-op if there's no session file.
+    @discardableResult
+    static func archiveDeferredSession(from url: URL = lastSessionURL,
+                                       into directory: URL = defaultDirectory) -> URL? {
+        moveAside(url, kind: "unfinished", into: directory)
+    }
+
+    /// "Reset App" discards the run in memory (T-238). Keep it recoverable: an unfinished,
+    /// started run is written out as `ztracker-unfinished-…`, and the resume session is cleared
+    /// so the next launch doesn't resurrect the run the user just discarded.
+    static func archiveRunForReset(model: TrackerModel, timer: TrackerTimer) {
+        if model.quest != nil, !model.playerProgress.hasRescuedZelda, timer.hasStarted {
+            try? write(makeFile(model: model, timer: timer),
+                       to: defaultDirectory.appendingPathComponent(archivedName("unfinished")))
+        }
+        clearLastSession()
+    }
+
+    // MARK: Crash-loop guard (T-241)
+    /// Set while a resumed session is being applied and first rendered. If it's still set at
+    /// the next launch, that resume crashed the app — so we must not auto-resume it again.
+    static let resumeGuardKey = "ztracker.resumeInProgress"
+    static func beginResumeGuard(_ defaults: UserDefaults = .standard) {
+        defaults.set(true, forKey: resumeGuardKey)
+    }
+    static func endResumeGuard(_ defaults: UserDefaults = .standard) {
+        defaults.removeObject(forKey: resumeGuardKey)
+    }
+
     // MARK: Interactive flows (T-165)
 
-    /// Quit-time confirmation. Nothing to save (still on the startup screen, or the run
-    /// is finished) → allow the quit and clear the resume session. Otherwise the
-    /// standard Save / Don't Save / Cancel: Save flushes `last-session.json`, Don't Save
-    /// discards it (choice A), Cancel aborts the quit. Returns whether to proceed.
+    /// What quitting should do with the on-disk resume session (T-238). Pure, so it's testable.
+    enum QuitDecision: Equatable {
+        /// No run in memory (startup screen, resume prompt pending, or "Not now") — quit and
+        /// leave any on-disk session untouched.
+        case proceed
+        /// The run is finished — nothing to resume; clear the session and quit.
+        case clearSessionAndProceed
+        /// "Auto-save and quit" (T-207) — save silently and quit.
+        case autosaveAndProceed
+        /// Unfinished run — ask Save / Don't Save / Cancel.
+        case ask
+    }
+    static func quitDecision(runInMemory: Bool, finished: Bool, autoSaveOnQuit: Bool) -> QuitDecision {
+        guard runInMemory else { return .proceed }
+        if finished { return .clearSessionAndProceed }
+        return autoSaveOnQuit ? .autosaveAndProceed : .ask
+    }
+
+    /// Quit-time confirmation. Returns whether to proceed. Crucially, with **no run in
+    /// memory** it never touches `last-session.json` — so quitting while the resume prompt is
+    /// up, after "Not now", or via the startup banner's "Update now" keeps the saved run
+    /// (previously it was deleted, T-238).
     static func confirmQuitSaving(model: TrackerModel, timer: TrackerTimer,
                                   options: TrackerOptions? = nil) -> Bool {
-        guard model.quest != nil, !model.playerProgress.hasRescuedZelda else {
-            clearLastSession()       // finished or not started → no run to resume
+        switch quitDecision(runInMemory: model.quest != nil,
+                            finished: model.playerProgress.hasRescuedZelda,
+                            autoSaveOnQuit: options?.autoSaveOnQuit == true) {
+        case .proceed:
             return true
-        }
-        // "Auto-save and quit" (T-207): skip the dialog entirely — autosave the run and quit.
-        // (Resume on next launch still offers it.)
-        if options?.autoSaveOnQuit == true {
+        case .clearSessionAndProceed:
+            clearLastSession()
+            return true
+        case .autosaveAndProceed:
             autosave(model: model, timer: timer)
             return true
-        }
-        let alert = NSAlert()
-        alert.messageText = "Save your run before quitting?"
-        alert.informativeText = "You haven't rescued Zelda yet. Save so you can resume where you left off."
-        alert.addButton(withTitle: "Save")        // .alertFirstButtonReturn
-        alert.addButton(withTitle: "Don't Save")  // .alertSecondButtonReturn
-        alert.addButton(withTitle: "Cancel")      // .alertThirdButtonReturn
-        switch alert.runModal() {
-        case .alertFirstButtonReturn:  autosave(model: model, timer: timer); return true
-        case .alertSecondButtonReturn: clearLastSession(); return true
-        default:                       return false
+        case .ask:
+            let alert = NSAlert()
+            alert.messageText = "Save your run before quitting?"
+            alert.informativeText = "You haven't rescued Zelda yet. Save so you can resume where you left off."
+            alert.addButton(withTitle: "Save")        // .alertFirstButtonReturn
+            alert.addButton(withTitle: "Don't Save")  // .alertSecondButtonReturn
+            alert.addButton(withTitle: "Cancel")      // .alertThirdButtonReturn
+            switch alert.runModal() {
+            case .alertFirstButtonReturn:  autosave(model: model, timer: timer); return true
+            case .alertSecondButtonReturn: clearLastSession(); return true
+            default:                       return false
+            }
         }
     }
 
-    /// The unfinished session to offer resuming on launch, or nil (clearing a finished
-    /// one). The prompt itself is presented by `ContentView` as a SwiftUI dialog —
-    /// firing a raw `NSAlert` from `.onAppear` at launch doesn't reliably display,
-    /// since the app isn't active yet.
-    static func pendingResume() -> SaveFile? {
-        guard let file = lastSession() else { return nil }
-        guard !file.completed else { clearLastSession(); return nil }
-        return file
+    /// The outcome of the launch-time look at `last-session.json` (T-238/T-241).
+    enum ResumeCheck {
+        /// Nothing to offer.
+        case none
+        /// An unfinished session to offer resuming.
+        case offer(SaveFile)
+        /// The session couldn't be offered safely; it was moved aside (kept) — explain why.
+        case problem(String)
+    }
+
+    /// Inspect the last session at launch. A finished session is cleared; one that can't be
+    /// decoded, or whose previous resume crashed the app, is **moved aside** (never deleted,
+    /// never left for the next autosave to overwrite) and reported. Pure-ish: paths and
+    /// defaults are injectable for tests. The prompt itself is presented by `ContentView` as
+    /// a SwiftUI overlay — a raw `NSAlert` from `.onAppear` at launch doesn't reliably show.
+    static func checkLastSession(url: URL = lastSessionURL, directory: URL = defaultDirectory,
+                                 defaults: UserDefaults = .standard) -> ResumeCheck {
+        let fm = FileManager.default
+        let crashedLastResume = defaults.bool(forKey: resumeGuardKey)
+        endResumeGuard(defaults)
+        guard fm.fileExists(atPath: url.path) else { return .none }
+        if crashedLastResume {
+            let kept = moveAside(url, kind: "crashed-resume", into: directory)
+            return .problem("Resuming your last run closed the app unexpectedly, so it wasn't resumed again."
+                            + (kept.map { " It was kept as “\($0.lastPathComponent)” — you can try Load." } ?? ""))
+        }
+        do {
+            let file = try readThrowing(url)
+            guard !file.completed else { clearLastSession(at: url); return .none }
+            return .offer(file)
+        } catch {
+            let kept = moveAside(url, kind: "unreadable-session", into: directory)
+            return .problem("Your last run's autosave couldn't be read by this version, so it can't be resumed."
+                            + (kept.map { " It was kept as “\($0.lastPathComponent)”." } ?? ""))
+        }
+    }
+    private static func clearLastSession(at url: URL) {
+        try? FileManager.default.removeItem(at: url)
+    }
+
+    /// Auto-resume (the 5-second countdown) only for a recent session — an old save waits for
+    /// an explicit choice instead of restarting its clock on its own (T-240).
+    static let autoResumeMaxAge: TimeInterval = 6 * 3600
+    static func shouldAutoResume(_ file: SaveFile, now: Date = Date()) -> Bool {
+        now.timeIntervalSince(file.savedAt) <= autoResumeMaxAge
     }
 
     /// Manual Save button → a timestamped file via the standard save panel (defaulting
@@ -191,8 +321,15 @@ enum GameSave {
         panel.directoryURL = defaultDirectory
         panel.allowedContentTypes = [.json]
         panel.allowsMultipleSelection = false
-        guard panel.runModal() == .OK, let url = panel.url, let file = read(url) else { return }
-        if model.quest != nil {
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+        let file: SaveFile
+        do { file = try readThrowing(url) }
+        catch { presentError("Couldn't load “\(url.lastPathComponent)”", error); return }
+        if model.quest == nil {
+            // Loading from the startup screen supersedes any session the user deferred with
+            // "Not now" — keep it as an archive so the loaded run's autosave can't overwrite it.
+            archiveDeferredSession()
+        } else {
             let confirm = NSAlert()
             confirm.messageText = "Replace the current run?"
             confirm.informativeText = "Loading this save discards the tracker's current state."

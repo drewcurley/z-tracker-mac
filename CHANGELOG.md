@@ -4,6 +4,27 @@ All notable changes to **Z-Tracker for macOS**. Newest first. This project follo
 [Keep a Changelog](https://keepachangelog.com/) and [Semantic Versioning](https://semver.org/).
 Each entry mirrors the notes on its [GitHub Release](https://github.com/drewcurley/z-tracker-mac/releases).
 
+## [Unreleased]
+### Fixed
+- **Your run's save is much harder to lose.** Quitting while the "resume your last run?" prompt is
+  up, after choosing "Not now", or via "Update now" no longer deletes the saved run. Starting a new
+  run after "Not now" keeps the old one as a loadable `ztracker-unfinished-…` file instead of
+  overwriting it. Reset App followed by Quit no longer saves the discarded run, and a discarded
+  unfinished run is kept as a loadable file.
+- **Timer restores exactly what you left.** The "real time" reopen mode now adds only the time the
+  app was closed while the run was going — never your pauses. A run saved while paused reopens
+  paused, and the lap timer is saved too. Sessions more than six hours old wait for you to choose
+  instead of auto-resuming.
+- **No more accidental resets.** The groundhog-reset hotkey (Shift+Space by default) now needs a
+  second press within a moment; the first shows "Press again…".
+- **Chatter can't end your run.** Voice only marks Zelda rescued / Ganon defeated on a deliberate
+  phrase like "rescued Zelda" or "beat Ganon" — not "I have to go save Zelda".
+- **Damaged saves load safely.** A corrupt or unreadable autosave is set aside (kept, not deleted)
+  with an explanation instead of crashing the app, and the app won't keep re-trying a resume that
+  crashed it. Load now tells you why a file couldn't be opened.
+- The finish time in Notes now reflects your real finish even after an accidental Zelda toggle, and
+  a crash after finishing no longer offers to resume the unfinished run.
+
 ## [1.2.12] — 2026-09-30
 ### Added
 - **Change the overworld quest mid-run.** If you picked the wrong quest at the start (say "First"

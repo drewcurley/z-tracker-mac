@@ -14,7 +14,7 @@ struct HotkeyConfigTests {
         #expect(HotkeyCatalog.selector(id: "Global_DungeonTab1")?.context == .global)
         // Mac-only additions (T-131) live in the Global group.
         #expect(HotkeyCatalog.selector(id: "Global_StartTimer")?.context == .global)
-        #expect(HotkeyCatalog.selector(id: "Global_GroundhogReset")?.displayName == "Groundhog reset (skip confirmation)")
+        #expect(HotkeyCatalog.selector(id: "Global_GroundhogReset")?.displayName == "Groundhog reset (press twice)")
         #expect(HotkeyCatalog.selector(id: "DungeonRoom_MonsterDetail_Bow")?.displayName == "Gohma")
         #expect(HotkeyCatalog.selector(id: "Bogus_Name") == nil)
     }

@@ -176,7 +176,34 @@ public enum VoiceGrammar {
     /// stays a cave mark.
     static func progressionToggle(_ words: [String], config: VoiceConfig) -> String? {
         guard words.contains(where: { actionWords.contains($0) }) else { return nil }
-        return config.match(words, scope: .progression)?.actionID
+        guard let id = config.match(words, scope: .progression)?.actionID else { return nil }
+        // The end-game states pause the timer, write the finish to Notes, and save a completed
+        // run — so only a short, deliberate, past-tense command flips them ("rescued zelda",
+        // "beat ganon"), never conversation that happens to contain the words ("I have to go
+        // save Zelda", "we still have to beat Ganon") (T-239).
+        if endGameIDs.contains(id) {
+            return isDeliberateEndGame(words, actionID: id, config: config) ? id : nil
+        }
+        return id
+    }
+
+    /// Progression toggles that end (or un-end) the run.
+    static let endGameIDs: Set<String> = ["Prog_Ganon", "Prog_Zelda"]
+    /// Past-tense verbs that announce an end-game event as done.
+    static let endGameVerbs: Set<String> = ["rescued", "saved", "killed", "defeated", "beat", "beaten"]
+    /// Words allowed before the verb ("I rescued Zelda", "we beat Ganon").
+    static let endGameLeadingFillers: Set<String> = ["i", "we", "just", "finally"]
+
+    /// Whether `words` is a deliberate end-game command: optional leading filler, then a
+    /// past-tense end-game verb, then *only* the target's own phrase words (plus "the").
+    static func isDeliberateEndGame(_ words: [String], actionID: String, config: VoiceConfig) -> Bool {
+        var rest = words[...]
+        while let first = rest.first, endGameLeadingFillers.contains(first) { rest = rest.dropFirst() }
+        guard let verb = rest.first, endGameVerbs.contains(verb) else { return false }
+        let target = rest.dropFirst().filter { $0 != "the" }
+        guard !target.isEmpty, target.count <= 2 else { return false }
+        let phraseWords = Set(config.phrases(for: actionID).flatMap { $0.split(separator: " ").map(String.init) })
+        return target.allSatisfy { phraseWords.contains($0) }
     }
 
     // MARK: Item boxes (T-143)

@@ -9,6 +9,9 @@ import SwiftUI
 struct ResumeSessionPrompt: View {
     /// When the offered session was auto-saved.
     let savedAt: Date
+    /// Whether to run the 5-second auto-resume countdown. Off for an old session, which
+    /// should wait for an explicit choice rather than restart its clock unattended (T-240).
+    var autoResume: Bool = true
     /// Resume now (also fired automatically when the countdown hits zero).
     let onResume: () -> Void
     /// Discard the saved session and start fresh.
@@ -20,7 +23,8 @@ struct ResumeSessionPrompt: View {
     private static let countdownStart = 5
 
     @State private var remaining = ResumeSessionPrompt.countdownStart
-    /// Countdown runs until the pointer enters the card or a button is pressed.
+    /// Countdown runs until the pointer enters the card or a button is pressed (and never
+    /// starts when `autoResume` is off).
     @State private var counting = true
     @State private var hovering = false
 
@@ -36,7 +40,7 @@ struct ResumeSessionPrompt: View {
                 .onHover { hovering = $0 }
         }
         .onReceive(tick) { _ in
-            guard counting, !hovering else { return }
+            guard autoResume, counting, !hovering else { return }
             if remaining > 1 {
                 remaining -= 1
             } else {
@@ -57,14 +61,19 @@ struct ResumeSessionPrompt: View {
                     .font(.title2.bold())
             }
 
-            Text("An unfinished run was auto-saved on \(savedFormatted). "
-                 + "It will reopen and the timer will resume automatically.")
+            Text(autoResume
+                 ? "An unfinished run was auto-saved on \(savedFormatted). "
+                   + "It will reopen and the timer will resume automatically."
+                 : "An unfinished run was auto-saved on \(savedFormatted). "
+                   + "Since it's a while ago, it won't resume until you choose.")
                 .fixedSize(horizontal: false, vertical: true)
                 .foregroundStyle(.secondary)
 
             // The live countdown (or a "paused" note while hovering / after a choice).
             Group {
-                if counting && !hovering {
+                if !autoResume {
+                    EmptyView()
+                } else if counting && !hovering {
                     Text("Resuming in \(remaining)…")
                         .monospacedDigit()
                         .fontWeight(.semibold)
