@@ -133,9 +133,15 @@ enum ItemIconAtlas {
 
     private static let fullImage: CGImage? = AtlasLoader.load("icons7x7", blackIsTransparent: true)
 
+    /// Cropped once (T-245) so repeated lookups return the same image (cheap, and lets SwiftUI
+    /// skip unchanged views) instead of a fresh crop per render.
+    private static let icons: [CGImage?] = (0..<iconCount).map { index in
+        fullImage?.cropping(to: CGRect(x: index * iconWidth, y: 0, width: iconWidth, height: iconHeight))
+    }
+
     static func icon(at index: Int) -> CGImage? {
-        guard let fullImage, (0..<iconCount).contains(index) else { return nil }
-        return fullImage.cropping(to: CGRect(x: index * iconWidth, y: 0, width: iconWidth, height: iconHeight))
+        guard (0..<iconCount).contains(index) else { return nil }
+        return icons[index]
     }
 
     static func cgImage(_ icon: Icon) -> CGImage? { self.icon(at: icon.rawValue) }
@@ -158,9 +164,15 @@ enum DungeonCellIconAtlas {
 
     private static let fullImage: CGImage? = AtlasLoader.load("zelda_items16x16", blackIsTransparent: true)
 
+    /// Cropped once (T-245) so repeated lookups return the same image (cheap, and lets SwiftUI
+    /// skip unchanged views) instead of a fresh crop per render.
+    private static let icons: [CGImage?] = (0..<iconCount).map { index in
+        fullImage?.cropping(to: CGRect(x: index * iconWidth, y: 0, width: iconWidth, height: iconHeight))
+    }
+
     static func icon(at index: Int) -> CGImage? {
-        guard let fullImage, (0..<iconCount).contains(index) else { return nil }
-        return fullImage.cropping(to: CGRect(x: index * iconWidth, y: 0, width: iconWidth, height: iconHeight))
+        guard (0..<iconCount).contains(index) else { return nil }
+        return icons[index]
     }
 
     static func cgImage(_ icon: Icon) -> CGImage? { self.icon(at: icon.rawValue) }

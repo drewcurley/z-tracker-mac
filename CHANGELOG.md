@@ -26,6 +26,11 @@ Each entry mirrors the notes on its [GitHub Release](https://github.com/drewcurl
   a crash after finishing no longer offers to resume the unfinished run.
 
 ### Changed
+- **Smoother and lighter while streaming.** Moving the mouse across the overworld no longer redraws
+  the whole map on every tile, the "breathing" highlight no longer runs a separate animation clock
+  per highlighted tile, map art is no longer re-cut on every redraw, and the timeline stops forcing
+  a full window refresh every second — so the tracker uses noticeably less CPU next to your emulator
+  and OBS.
 - **Update prompts now show what's new.** The in-app update dialog lists the new version's changes,
   with a link to the full history if you've skipped a few versions.
 ### Security

@@ -121,6 +121,18 @@ struct TimelineModelTests {
         #expect(m.acquiredAt[.recorder] == 260)
     }
 
+    @Test("the observed 'now' steps every 10 s while the persisted value stays exact (T-245)")
+    func displaySecondsStepped() {
+        let m = TimelineModel()
+        for (t, shown) in [(0, 0), (7, 0), (12, 10), (19, 10), (25, 20)] {
+            m.record(elapsedSeconds: t, acquired: [], owRemaining: 100, finished: false)
+            #expect(m.latestSeconds == t)
+            #expect(m.displaySeconds == shown)
+        }
+        m.reset()
+        #expect(m.displaySeconds == 0 && m.latestSeconds == 0)
+    }
+
     @Test("OW-remaining series samples only on change; extends latestSeconds (T-099)")
     func owSeries() {
         let m = TimelineModel()

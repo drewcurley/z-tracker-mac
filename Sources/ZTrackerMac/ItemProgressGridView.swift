@@ -323,14 +323,9 @@ struct ObtainableItemsView: View {
 
     /// The keyboard cursor's cyan ring on its cell while the cursor is in the items
     /// region (T-135).
-    @ViewBuilder
     private func cursorRing(col: Int, row: Int) -> some View {
-        if focus.cursorShown, focus.cursorRegion == .items,
-           focus.itemsCursor == .init(col: col, row: row) {
-            RoundedRectangle(cornerRadius: 4)
-                .strokeBorder(Color.cyan, lineWidth: 2)
-                .shadow(color: .cyan, radius: 2)
-                .allowsHitTesting(false)
+        FocusCursorRing(focus: focus) {
+            $0.cursorShown && $0.cursorRegion == .items && $0.itemsCursor == .init(col: col, row: row)
         }
     }
 
