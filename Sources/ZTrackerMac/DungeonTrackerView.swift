@@ -170,13 +170,11 @@ struct DungeonCardView: View {
     /// grid's cyan ring so the two regions read the same.
     @ViewBuilder
     private func dungeonItemCursorRing(box: Int) -> some View {
-        if let focus, let dungeonRow, focus.cursorShown,
-           focus.cursorRegion == .dungeonItem,
-           focus.dungeonItemCursor == .init(col: dungeonRow, row: box) {
-            RoundedRectangle(cornerRadius: 4)
-                .strokeBorder(Color.cyan, lineWidth: 2)
-                .shadow(color: .cyan, radius: 2)
-                .allowsHitTesting(false)
+        if let focus, let dungeonRow {
+            FocusCursorRing(focus: focus) {
+                $0.cursorShown && $0.cursorRegion == .dungeonItem
+                    && $0.dungeonItemCursor == .init(col: dungeonRow, row: box)
+            }
         }
     }
 

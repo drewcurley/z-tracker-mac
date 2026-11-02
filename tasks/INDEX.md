@@ -25,6 +25,8 @@
 
 | ID | Title | Owner | Tier | Branch | PR | Review |
 |----|-------|-------|------|--------|----|--------|
+| [T-245](./T-245.md) | Idle CPU while streaming — cached atlas crops, cheap highlight pulse, quieter timeline, isolated panel cursor rings | frontend-engineer | — | perf/streaming-cpu | — | docs/reviews/perf-streaming-cpu/final.md |
+| [T-244](./T-244.md) | Overworld hover isolation — crossing a tile no longer re-renders all 128 tiles | frontend-engineer | — | perf/streaming-cpu | — | docs/reviews/perf-streaming-cpu/final.md |
 | [T-243](./T-243.md) | Security hygiene — private opt-in voice log, trusted update URL, safe perf-log save, repo hygiene, Sparkle pin | architect | — | chore/release-hardening | — | docs/reviews/chore-release-hardening/final.md |
 | [T-242](./T-242.md) | Release pipeline hardening — preflight, fail-safe dist/, verified signing, release notes in appcast | devops | — | chore/release-hardening | — | docs/reviews/chore-release-hardening/final.md |
 | [T-241](./T-241.md) | Restore hardening — corrupt saves load safely; crash-loop guard on resume | backend-engineer | — | fix/run-safety | — | docs/reviews/fix-run-safety/final.md |

@@ -204,8 +204,19 @@ public final class TimelineModel {
     /// The overworld-spots-remaining series over run time — appended only when the
     /// count changes, so it stays compact. Drives the phase-2 line graph.
     public private(set) var owRemainingSamples: [OverworldRemainingSample] = []
-    /// The most recent elapsed run seconds seen (the graph's right edge / "now").
-    public private(set) var latestSeconds: Int = 0
+    /// The most recent elapsed run seconds seen (persisted). **Not observed** (T-245): it changes
+    /// every poll tick, and observing it re-rendered the timeline — and re-laid-out the whole
+    /// tracker — once a second although the timeline's layout only changes per minute.
+    @ObservationIgnored public private(set) var latestSeconds: Int = 0
+    /// `latestSeconds` in `displayStep`-second steps — what views draw "now" from. Observed, so
+    /// the timeline updates every 10 s (sub-pixel at its fit-the-run-to-the-pane scale).
+    public private(set) var displaySeconds: Int = 0
+    public static let displayStep = 10
+    private func setLatest(_ seconds: Int) {
+        latestSeconds = seconds
+        let stepped = seconds - seconds % Self.displayStep
+        if stepped != displaySeconds { displaySeconds = stepped }
+    }
 
     public init() {}
 
@@ -215,7 +226,7 @@ public final class TimelineModel {
     /// finish snapshot.
     public func record(elapsedSeconds: Int, acquired: Set<TimelineEvent>, owRemaining: Int,
                        finished: Bool, locations: [TimelineEvent: String] = [:]) {
-        latestSeconds = elapsedSeconds
+        setLatest(elapsedSeconds)
         for e in acquired where acquiredAt[e] == nil {
             acquiredAt[e] = elapsedSeconds
         }
@@ -224,7 +235,9 @@ public final class TimelineModel {
         }
         // Source locations for the currently-acquired events (a live view — items
         // don't move once collected); prune any that are no longer acquired.
-        acquiredLocation = locations.filter { acquired.contains($0.key) }
+        // Assign only on a real change, so the once-a-second poll doesn't notify observers (T-245).
+        let liveLocations = locations.filter { acquired.contains($0.key) }
+        if liveLocations != acquiredLocation { acquiredLocation = liveLocations }
         // Overworld-progress series (T-099): sample only on a change (or first),
         // so the graph line has one point per real transition.
         if owRemainingSamples.last?.remaining != owRemaining {
@@ -245,7 +258,7 @@ public final class TimelineModel {
         finishSeconds = nil
         finishOwRemaining = nil
         owRemainingSamples = []
-        latestSeconds = 0
+        setLatest(0)
     }
 
     /// A `Codable` snapshot of the timeline for save/load (fixes the timeline being lost
@@ -271,6 +284,6 @@ public final class TimelineModel {
         finishSeconds = s.finishSeconds
         finishOwRemaining = s.finishOwRemaining
         owRemainingSamples = s.owRemainingSamples
-        latestSeconds = s.latestSeconds
+        setLatest(s.latestSeconds)
     }
 }

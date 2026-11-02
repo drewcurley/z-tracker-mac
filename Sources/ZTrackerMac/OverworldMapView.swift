@@ -184,8 +184,10 @@ struct OverworldMapView: View {
     /// integration doesn't have to fight a mismatched grid shape.
     private let tileAspectRatio: CGFloat = 16.0 / 11.0
 
-    @State private var hoveredVertex: OverworldVertex?
-    @State private var routeHighlight: OverworldRouteHighlight?
+    /// Hover routing state (T-244). An observable object the body only *writes* (from
+    /// `handleHover`); it's read by `OverworldHoverLayer` alone, so crossing a tile re-renders
+    /// that one overlay layer instead of re-running all 128 tile bodies.
+    @State private var hover = OverworldHoverState()
     /// The tile awaiting an in-place item pick (Armos / White-Sword cave), T-106.
     @State private var itemPrompt: ItemPromptTarget?
     /// The tile whose tile chooser popover is open (T-185) — opened by right-click
@@ -224,23 +226,27 @@ struct OverworldMapView: View {
         mapState.anyRoadLocations.compactMap { $0 }.map { (x: $0.x, y: $0.y) }
     }
 
-    private var dynamicGraph: OverworldDynamicGraph? {
-        OverworldRoutingGraph.dynamicGraph(
-            ladder: playerState.haveLadder,
-            raft: playerState.haveRaft,
+    /// The routing graph for the current ladder/raft/any-road/screen-scroll state, rebuilt only
+    /// when one of those inputs changes (T-244) — it used to be rebuilt on every mouse-move event.
+    private func currentGraph() -> OverworldDynamicGraph? {
+        let key = OverworldHoverState.GraphKey(
+            ladder: playerState.haveLadder, raft: playerState.haveRaft,
+            anyRoads: anyRoadDestinations.map { OverworldScreenCoordinate(x: $0.x, y: $0.y) },
+            canScreenScroll: options.showScreenScrolls)
+        if let cached = hover.graphCache, cached.key == key { return cached.graph }
+        let graph = OverworldRoutingGraph.dynamicGraph(
+            ladder: key.ladder,
+            raft: key.raft,
             // Recorder-warp destinations depend on the recorder-dest
             // derivation (recorder options + HDN + the T-018 orchestration),
             // not yet ported — see docs/domain.md § 6 (T-015 follow-ons).
             recorderWarpDestinations: [],
             anyRoads: anyRoadDestinations,
             isMirror: Self.placeholderIsMirror,
-            canScreenScroll: options.showScreenScrolls
+            canScreenScroll: key.canScreenScroll
         )
-    }
-
-    private var highlightByCoordinate: [OverworldScreenCoordinate: Bool] {
-        guard let routeHighlight else { return [:] }
-        return Dictionary(uniqueKeysWithValues: routeHighlight.highlightedTiles.map { ($0.coordinate, $0.isBold) })
+        hover.graphCache = (key, graph)
+        return graph
     }
 
     /// The terrain instance for the current quest — supplies `sometimesEmpty`
@@ -280,7 +286,6 @@ struct OverworldMapView: View {
         GeometryReader { geometry in
             let tileWidth = geometry.size.width / CGFloat(OverworldGrid.columnCount)
             let tileHeight = tileWidth / tileAspectRatio
-            let highlights = highlightByCoordinate
 
             ZStack(alignment: .topLeading) {
                 // Custom map (T-167): draw the imported image ONCE, stretched across the
@@ -349,16 +354,8 @@ struct OverworldMapView: View {
                                              commentaryKnowledge: commentaryK,
                                              commentaryEncoding: options.commentaryEncoding,
                                              commentaryR1: commentaryR1, commentaryR2: commentaryR2)
-                                    .overlay {
-                                        if options.highlightNearby, !customActive, !isAlwaysEmpty,
-                                           let isBold = highlights[OverworldScreenCoordinate(x: column, y: row)] {
-                                            // True GYR (T-015.4): green = accessible, yellow =
-                                            // sometimes-empty, red = inaccessible, per the
-                                            // reference's doComputedDrawing cascade. Bold/pale is
-                                            // the reachability `isBold` axis, rendered as opacity.
-                                            Rectangle().fill(gyrColor(column: column, row: row, mark: mark).opacity(isBold ? 0.45 : 0.2))
-                                        }
-                                    }
+                                    // (The hover GYR tint and keyboard-cursor ring are drawn by
+                                    // `OverworldHoverLayer` above the grid — T-244.)
                                     .overlay {
                                         // Top-section overlay toggles (T-035.2): open-caves /
                                         // money highlights, previewed on hover / locked on click.
@@ -452,17 +449,6 @@ struct OverworldMapView: View {
                                             .allowsHitTesting(false)
                                         }
                                     }
-                                    .overlay {
-                                        // Keyboard cursor (T-134): a bright ring on the
-                                        // cursor tile while the cursor is on the overworld.
-                                        if focus.cursorShown, focus.cursorRegion == .overworld,
-                                           focus.overworldCursor == .init(col: column, row: row) {
-                                            RoundedRectangle(cornerRadius: 2)
-                                                .strokeBorder(Color.cyan, lineWidth: 2)
-                                                .shadow(color: .cyan, radius: 2)
-                                                .allowsHitTesting(false)
-                                        }
-                                    }
                                     .onTapGesture { handleLeftClick(column: column, row: row) }
                                     // In-place item prompt for Armos / White-Sword cave (T-106).
                                     .popover(isPresented: itemPromptBinding(column: column, row: row), arrowEdge: .trailing) {
@@ -518,10 +504,19 @@ struct OverworldMapView: View {
                         }
                     }
                 }
-                if options.drawRoutes, let routeHighlight {
-                    OverworldRouteLinesOverlay(lines: routeHighlight.lines, tileWidth: tileWidth, tileHeight: tileHeight)
-                        .allowsHitTesting(false)
-                }
+                // Everything that changes on hover — the GYR tint (T-015.4), route lines (T-011)
+                // and the keyboard-cursor ring (T-134) — in one isolated layer (T-244).
+                OverworldHoverLayer(
+                    hover: hover, focus: focus,
+                    tileWidth: tileWidth, tileHeight: tileHeight,
+                    showGYR: options.highlightNearby && customMapImagePath == nil,
+                    drawRoutes: options.drawRoutes,
+                    tint: { column, row in
+                        // True GYR: green = accessible, yellow = sometimes-empty, red =
+                        // inaccessible, per the reference's doComputedDrawing cascade.
+                        screenIsDeadSpot(column, row) ? nil
+                            : gyrColor(column: column, row: row, mark: grid.mark(column: column, row: row))
+                    })
             }
             // Mirror the whole map East↔West (T-047). scaleEffect flips both the
             // rendering and the hit-test coordinate space, so taps still land on
@@ -549,14 +544,13 @@ struct OverworldMapView: View {
         // Routing/GYR is derived from the vanilla map's openings — meaningless on a
         // custom map, so skip it entirely there (T-167).
         guard customMapImagePath == nil, options.drawRoutes || options.highlightNearby else {
-            hoveredVertex = nil
-            routeHighlight = nil
+            hover.clear()
             return
         }
         switch phase {
         case .active(let location):
             guard
-                let graph = dynamicGraph,
+                let graph = currentGraph(),
                 let screenType = graph.screenTypes[OverworldScreenCoordinate(x: column, y: row)]
             else { return }
             let portion: OverworldScreenPortion
@@ -566,8 +560,8 @@ struct OverworldMapView: View {
             case .eastWest: portion = location.x > tileWidth / 2 ? .east : .west
             }
             let vertex = OverworldVertex(column, row, portion)
-            guard vertex != hoveredVertex else { return }
-            hoveredVertex = vertex
+            guard vertex != hover.vertex else { return }
+            hover.vertex = vertex
 
             var unmarkedScreens: Set<OverworldScreenCoordinate> = []
             for gridRow in 0..<OverworldGrid.rowCount {
@@ -575,7 +569,7 @@ struct OverworldMapView: View {
                     unmarkedScreens.insert(OverworldScreenCoordinate(x: gridColumn, y: gridRow))
                 }
             }
-            routeHighlight = OverworldRoutingGraph.routeHighlight(
+            hover.route = OverworldRoutingGraph.routeHighlight(
                 from: vertex,
                 unmarkedScreens: unmarkedScreens,
                 screenTypes: graph.screenTypes,
@@ -584,8 +578,7 @@ struct OverworldMapView: View {
                 maxPale: options.highlightNearby ? Self.maxGYR : 0
             )
         case .ended:
-            hoveredVertex = nil
-            routeHighlight = nil
+            hover.clear()
         }
     }
 
@@ -1675,10 +1668,15 @@ enum OverworldInteriorIconAtlas {
         return image
     }()
 
+    /// Cropped once (T-245): `cropping(to:)` returns a new `CGImage` per call, so a per-render
+    /// crop made every tile look changed to SwiftUI and re-ran all 128 tile bodies.
+    private static let icons: [CGImage?] = (0..<iconCount).map { index in
+        fullImage?.cropping(to: CGRect(x: index * iconWidth, y: 0, width: iconWidth, height: iconHeight))
+    }
+
     static func icon(at index: Int) -> CGImage? {
-        guard let fullImage, (0..<iconCount).contains(index) else { return nil }
-        let rect = CGRect(x: index * iconWidth, y: 0, width: iconWidth, height: iconHeight)
-        return fullImage.cropping(to: rect)
+        guard (0..<iconCount).contains(index) else { return nil }
+        return icons[index]
     }
 }
 
@@ -1705,10 +1703,14 @@ enum OverworldShopIconAtlas {
         return image
     }()
 
+    /// Cropped once (T-245) — see `OverworldInteriorIconAtlas.icons`.
+    private static let icons: [CGImage?] = (0..<iconCount).map { index in
+        fullImage?.cropping(to: CGRect(x: index * iconWidth, y: 0, width: iconWidth, height: iconHeight))
+    }
+
     static func icon(at index: Int) -> CGImage? {
-        guard let fullImage, (0..<iconCount).contains(index) else { return nil }
-        let rect = CGRect(x: index * iconWidth, y: 0, width: iconWidth, height: iconHeight)
-        return fullImage.cropping(to: rect)
+        guard (0..<iconCount).contains(index) else { return nil }
+        return icons[index]
     }
 }
 
@@ -1743,20 +1745,25 @@ enum OverworldBackgroundAtlas {
         return image
     }()
 
+    /// Every quest's 128 tiles, cropped once (T-245): returning the *same* `CGImage` each
+    /// render lets SwiftUI see an unchanged tile as unchanged instead of re-running (and
+    /// re-uploading) all 128 tile views on every map update. Indexed `[quest][row * 16 + column]`.
+    private static let tiles: [[CGImage?]] = (0..<questCount).map { q in
+        (0..<(OverworldGrid.columnCount * OverworldGrid.rowCount)).map { i in
+            let column = i % OverworldGrid.columnCount, row = i / OverworldGrid.columnCount
+            return fullImage?.cropping(to: CGRect(x: q * sectionWidth + column * tileWidth,
+                                                  y: row * tileHeight,
+                                                  width: tileWidth, height: tileHeight))
+        }
+    }
+
     static func tile(quest: OverworldQuest, column: Int, row: Int) -> CGImage? {
         guard
-            let fullImage,
             (0..<OverworldGrid.columnCount).contains(column),
-            (0..<OverworldGrid.rowCount).contains(row)
+            (0..<OverworldGrid.rowCount).contains(row),
+            (0..<questCount).contains(quest.referenceAppIndex)
         else { return nil }
-        let sectionX = quest.referenceAppIndex * sectionWidth
-        let rect = CGRect(
-            x: sectionX + column * tileWidth,
-            y: row * tileHeight,
-            width: tileWidth,
-            height: tileHeight
-        )
-        return fullImage.cropping(to: rect)
+        return tiles[quest.referenceAppIndex][row * OverworldGrid.columnCount + column]
     }
 }
 
@@ -1861,23 +1868,96 @@ struct HighlightBox: View {
     }
 }
 
-/// The animated highlight (T-207): a slow "breathing" pulse driven by a **`TimelineView`
-/// clock**, not `withAnimation`. The opacity is a pure function of the current time, so there
-/// is no animation transaction that could leak into other views (the earlier
-/// `withAnimation(.repeatForever)` did exactly that — the forever animation bled into every
-/// tile's `.animation(value:)` and pulsed the darkening overlays too). Removing this view
-/// (flag off, or the highlight cleared) simply stops the clock.
+/// The animated highlight (T-207): a slow "breathing" pulse.
+///
+/// T-245: this used a `TimelineView(.periodic(by: 1/24))` per highlighted tile — dozens of
+/// independent 24 fps clocks (doubled by the broadcast mirror) re-running view bodies forever
+/// while an overlay was locked on. It's now a `PhaseAnimator` between a dim and a bright phase:
+/// SwiftUI interpolates the opacities itself, so the body runs once per phase change (~twice per
+/// breath) instead of 24×/s per tile. The animation is scoped to the `PhaseAnimator`'s own
+/// content, so it can't leak into other tiles' `.animation(value:)` the way the original
+/// `withAnimation(.repeatForever)` did. Removing this view (flag off, highlight cleared) stops it.
 struct PulsingHighlight: View {
     let color: Color
-    /// Seconds per full breathe.
+    /// Seconds per full breathe (dim → bright → dim).
     private let period = 2.0
     var body: some View {
-        TimelineView(.periodic(from: .now, by: 1.0 / 24.0)) { context in
-            let t = context.date.timeIntervalSinceReferenceDate
-            let phase = 0.5 + 0.5 * sin(2 * .pi * t / period)   // 0…1
+        PhaseAnimator([false, true]) { bright in
             HighlightBox(color: color,
-                         border: 0.45 + 0.55 * phase,   // 0.45 … 1.0
-                         fill: 0.08 + 0.22 * phase)     // 0.08 … 0.30
+                         border: bright ? 1.0 : 0.45,
+                         fill: bright ? 0.30 : 0.08)
+        } animation: { _ in
+            .easeInOut(duration: period / 2)
         }
+    }
+}
+
+
+/// Hover routing state for the overworld (T-244). Only `route` is observed — and only
+/// `OverworldHoverLayer` reads it — so a hover update re-renders just that layer. The current
+/// vertex and the routing-graph cache are bookkeeping, not display state.
+@Observable
+@MainActor
+final class OverworldHoverState {
+    var route: OverworldRouteHighlight?
+    @ObservationIgnored var vertex: OverworldVertex?
+
+    struct GraphKey: Equatable {
+        let ladder: Bool
+        let raft: Bool
+        let anyRoads: [OverworldScreenCoordinate]
+        let canScreenScroll: Bool
+    }
+    @ObservationIgnored var graphCache: (key: GraphKey, graph: OverworldDynamicGraph?)?
+
+    func clear() {
+        vertex = nil
+        if route != nil { route = nil }
+    }
+}
+
+/// The overworld's hover-driven overlays in one layer above the tile grid (T-244): the GYR
+/// "nearby" tint (T-015.4), the route lines (T-011), and the keyboard-cursor ring (T-134). They
+/// used to be read inside each of the 128 tiles' closures, so every tile crossing re-ran the
+/// whole grid (and the broadcast mirror's). Now only this view observes hover and cursor state.
+/// Positions are in unmirrored grid space; the map's East↔West mirror flips this layer with it.
+struct OverworldHoverLayer: View {
+    let hover: OverworldHoverState
+    let focus: TrackerFocusState
+    let tileWidth: CGFloat
+    let tileHeight: CGFloat
+    let showGYR: Bool
+    let drawRoutes: Bool
+    /// The GYR color for a highlighted screen, or nil to skip it (a dead spot).
+    let tint: (Int, Int) -> Color?
+
+    var body: some View {
+        ZStack(alignment: .topLeading) {
+            if showGYR, let route = hover.route {
+                ForEach(route.highlightedTiles, id: \.self) { entry in
+                    if let color = tint(entry.coordinate.x, entry.coordinate.y) {
+                        Rectangle()
+                            .fill(color.opacity(entry.isBold ? 0.45 : 0.2))
+                            .frame(width: tileWidth, height: tileHeight)
+                            .offset(x: CGFloat(entry.coordinate.x) * tileWidth,
+                                    y: CGFloat(entry.coordinate.y) * tileHeight)
+                    }
+                }
+            }
+            if drawRoutes, let route = hover.route {
+                OverworldRouteLinesOverlay(lines: route.lines, tileWidth: tileWidth, tileHeight: tileHeight)
+            }
+            if focus.cursorShown, focus.cursorRegion == .overworld {
+                RoundedRectangle(cornerRadius: 2)
+                    .strokeBorder(Color.cyan, lineWidth: 2)
+                    .shadow(color: .cyan, radius: 2)
+                    .frame(width: tileWidth, height: tileHeight)
+                    .offset(x: CGFloat(focus.overworldCursor.col) * tileWidth,
+                            y: CGFloat(focus.overworldCursor.row) * tileHeight)
+            }
+        }
+        .frame(width: tileWidth * CGFloat(OverworldGrid.columnCount),
+               height: tileHeight * CGFloat(OverworldGrid.rowCount), alignment: .topLeading)
+        .allowsHitTesting(false)
     }
 }

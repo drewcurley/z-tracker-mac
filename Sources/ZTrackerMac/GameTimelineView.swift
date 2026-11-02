@@ -54,7 +54,7 @@ struct GameTimelineView: View {
     private var maxMinute: Int {
         let lastEvent = timeline.acquiredAt.values.max() ?? 0
         let finish = timeline.finishSeconds ?? 0
-        return max(10, (max(lastEvent, finish, timeline.latestSeconds)) / 60 + 1)
+        return max(10, (max(lastEvent, finish, timeline.displaySeconds)) / 60 + 1)
     }
 
     private var maxRows: Int {
@@ -160,7 +160,7 @@ struct GameTimelineView: View {
                     path.addLine(to: CGPoint(x: x(forSeconds: s.seconds), y: y(s.remaining)))
                 }
                 // Hold the last value out to "now" (the graph's right edge).
-                let lastX = x(forSeconds: max(timeline.latestSeconds, samples.last!.seconds))
+                let lastX = x(forSeconds: max(timeline.displaySeconds, samples.last!.seconds))
                 path.addLine(to: CGPoint(x: lastX, y: y(samples.last!.remaining)))
                 ctx.stroke(path, with: .color(Color(red: 0, green: 0.55, blue: 0.55)), lineWidth: 2)
             }

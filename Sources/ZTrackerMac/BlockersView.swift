@@ -67,14 +67,10 @@ struct BlockersView: View {
     }
 
     /// The keyboard cursor's cyan ring on its blocker box (T-135).
-    @ViewBuilder
     private func cursorRing(dungeon: Int, slot: Int) -> some View {
-        if focus.cursorShown, focus.cursorRegion == .blockers,
-           focus.blockersCursor == BlockerRegion.cell(dungeon: dungeon, slot: slot) {
-            RoundedRectangle(cornerRadius: 4)
-                .strokeBorder(Color.cyan, lineWidth: 2)
-                .shadow(color: .cyan, radius: 2)
-                .allowsHitTesting(false)
+        FocusCursorRing(focus: focus) {
+            $0.cursorShown && $0.cursorRegion == .blockers
+                && $0.blockersCursor == BlockerRegion.cell(dungeon: dungeon, slot: slot)
         }
     }
 }
