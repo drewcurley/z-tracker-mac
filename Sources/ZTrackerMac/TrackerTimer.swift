@@ -89,6 +89,17 @@ final class TrackerTimer {
         hasLap = true
     }
 
+    /// Just the lap, so a groundhog reset's Undo can put the previous lap back (T-246).
+    struct LapState: Equatable {
+        var origin: TimeInterval
+        var hasLap: Bool
+    }
+    var lapState: LapState { LapState(origin: lapOrigin, hasLap: hasLap) }
+    func restoreLap(_ s: LapState) {
+        lapOrigin = s.origin
+        hasLap = s.hasLap
+    }
+
     /// Pause the main (and thus the lap). No-op if already paused.
     func pause(asOf now: Date = Date()) {
         guard let start = segmentStart else { return }

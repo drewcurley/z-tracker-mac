@@ -127,14 +127,94 @@ struct RunSafetyTests {
                 == "a\nFinished in 1:00:00.000\nb")
     }
 
-    // MARK: Groundhog hotkey guard (T-239)
+    // MARK: Groundhog reset — one press, backup + Undo (T-246)
 
-    @Test("the groundhog hotkey needs a second press within the window")
-    func groundhogDoublePress() {
-        let t0 = Date(timeIntervalSince1970: 1_000)
-        #expect(!GlobalHotkeyDispatcher.isGroundhogConfirmed(armedAt: nil, now: t0))
-        #expect(GlobalHotkeyDispatcher.isGroundhogConfirmed(armedAt: t0, now: t0.addingTimeInterval(1.0)))
-        #expect(!GlobalHotkeyDispatcher.isGroundhogConfirmed(armedAt: t0, now: t0.addingTimeInterval(3.0)))
-        #expect(!GlobalHotkeyDispatcher.isGroundhogConfirmed(armedAt: t0, now: t0.addingTimeInterval(-1)))
+    private func midRun() -> (TrackerModel, TrackerTimer) {
+        let model = TrackerModel(quest: .first)
+        model.playerProgress.hasBlueRing = true
+        model.playerProgress.hasWoodSword = true
+        model.dungeonTracker.dungeon(0).toggleTriforce()
+        _ = model.pollReminders()                 // the engine has seen the items
+        let timer = TrackerTimer()
+        timer.start()
+        return (model, timer)
+    }
+
+    @Test("one press resets at once and saves a loadable copy of the run first")
+    func groundhogResetsAndBacksUp() throws {
+        let dir = try tempDir(); defer { try? FileManager.default.removeItem(at: dir) }
+        let (model, timer) = midRun()
+        let reset = GroundhogReset(directory: dir)
+        let backup = try #require(reset.perform(model: model, timer: timer))
+        #expect(!model.playerProgress.hasBlueRing)
+        #expect(!model.dungeonTracker.dungeon(0).playerHasTriforce)
+        #expect(timer.hasLap)
+        #expect(backup.lastPathComponent.hasPrefix("ztracker-pre-groundhog-"))
+        let saved = try GameSave.readThrowing(backup)
+        let copy = TrackerModel(quest: .first)
+        copy.restore(saved.model)
+        #expect(copy.playerProgress.hasBlueRing)
+        #expect(copy.dungeonTracker.dungeon(0).playerHasTriforce)
+    }
+
+    @Test("Undo restores items, triforces, the lap and the reminder memory — nothing re-announces")
+    func groundhogUndo() throws {
+        let dir = try tempDir(); defer { try? FileManager.default.removeItem(at: dir) }
+        let (model, timer) = midRun()
+        let memory = model.reminderEngine.groundhogMemory
+        let lap = timer.lapState
+        let reset = GroundhogReset(directory: dir)
+        reset.perform(model: model, timer: timer)
+        _ = model.pollReminders()                 // a poll lands during the Undo window
+        reset.undo(model: model, timer: timer)
+        #expect(model.playerProgress.hasBlueRing && model.playerProgress.hasWoodSword)
+        #expect(model.dungeonTracker.dungeon(0).playerHasTriforce)
+        #expect(timer.lapState == lap)
+        #expect(model.reminderEngine.groundhogMemory == memory)
+        let again = model.pollReminders().filter {
+            if case .triforceCount = $0 { return true }
+            if case .remindShortly = $0 { return true }
+            return false
+        }
+        #expect(again.isEmpty)
+        #expect(reset.pending == nil)
+    }
+
+    @Test("a quick double-tap still undoes to before the first press, with one backup")
+    func groundhogDoubleTapUndoesToOriginal() throws {
+        let dir = try tempDir(); defer { try? FileManager.default.removeItem(at: dir) }
+        let (model, timer) = midRun()
+        let reset = GroundhogReset(directory: dir)
+        #expect(reset.perform(model: model, timer: timer) != nil)
+        #expect(reset.perform(model: model, timer: timer) == nil)   // no second backup
+        #expect(try FileManager.default.contentsOfDirectory(atPath: dir.path).count == 1)
+        reset.undo(model: model, timer: timer)
+        #expect(model.playerProgress.hasBlueRing)
+    }
+
+    @Test("after the Undo window, Undo does nothing (the backup file remains)")
+    func groundhogUndoExpires() throws {
+        let dir = try tempDir(); defer { try? FileManager.default.removeItem(at: dir) }
+        let (model, timer) = midRun()
+        let reset = GroundhogReset(directory: dir)
+        reset.perform(model: model, timer: timer)
+        reset.expire()
+        reset.undo(model: model, timer: timer)
+        #expect(!model.playerProgress.hasBlueRing)
+    }
+
+    @Test("the Undo toast runs its action and isn't pushed off screen by a burst of reminders")
+    func undoToastSurvivesBurst() {
+        let reminders = ReminderController()
+        var undone = false
+        let id = reminders.toast("Inventory reset", duration: .seconds(60),
+                                 action: .init(title: "Undo") { undone = true })
+        for n in 0..<8 { reminders.toast("reminder \(n)", duration: .seconds(60)) }
+        #expect(reminders.visible.count == 5)
+        let item = try? #require(reminders.visible.first { $0.id == id })
+        item?.action?.perform()
+        #expect(undone)
+        reminders.dismiss(id)
+        #expect(!reminders.visible.contains { $0.id == id })
     }
 }
