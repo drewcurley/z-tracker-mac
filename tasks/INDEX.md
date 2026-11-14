@@ -12,6 +12,7 @@
 
 | ID | Title | Owner | State |
 |----|-------|-------|-------|
+| [T-252](./T-252.md) | Quest switch: flag and clear marks stranded on screens the new quest doesn't have | frontend-engineer | — | fix/quest-switch-stale-marks | — | docs/reviews/fix-quest-switch-stale-marks/final.md |
 | [T-251](./T-251.md) | Voice "make a note …" dictates into Notes | backend-engineer | — | feat/voice-note | — | docs/reviews/feat-voice-note/final.md |
 | [T-250](./T-250.md) | Full startup tips, a real "Disable all" reminder mute, and drop the dead spoiler-import message | frontend-engineer | — | feat/tips-and-mute | — | docs/reviews/feat-tips-and-mute/final.md |
 | [T-249](./T-249.md) | Wire the dead hotkeys — click/scroll keys, Take-Any/Take-This, door +/−; item hotkeys honor the reachability gate | frontend-engineer | — | fix/dead-controls | — | docs/reviews/fix-dead-controls/final.md |

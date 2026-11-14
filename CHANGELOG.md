@@ -14,6 +14,9 @@ Each entry mirrors the notes on its [GitHub Release](https://github.com/drewcurl
   queued.
 
 ### Fixed
+- **Switching quest mid-run no longer strands marks.** Marks left on screens that have no spot in the
+  new quest are flagged with a red "!" and can be cleared from their right-click menu, and the switch
+  dialog offers to clear them. A stranded dungeon no longer counts as found.
 - **Hotkeys that did nothing now work.** The click and scroll hotkeys act on the hovered or cursor
   cell. After placing a take-any or wood-sword cave by hotkey, the Take-Any / Take-This keys choose
   what you took (a toast shows them). Door +/− keys step the cursor room's doors. Item hotkeys now

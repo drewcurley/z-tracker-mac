@@ -73,6 +73,7 @@ struct OverworldSectionView: View {
             onClearWaypoint: { model.customWaypoint = nil },
             customMapImagePath: model.customMapImagePath,
             onSetTakeAny: { state, c, r in model.setOverworldTakeAny(state, column: c, row: r) },
+            onClearStaleMark: { c, r in model.clearStaleMark(column: c, row: r) },
             onCycleTakeAny: { c, r in model.cycleOverworldTakeAny(column: c, row: r) },
             onReleaseTakeAny: { c, r in model.releaseOverworldTakeAny(column: c, row: r) },
             onOverwrite: { old, new, c, r in

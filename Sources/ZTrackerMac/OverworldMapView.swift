@@ -106,6 +106,8 @@ struct OverworldMapView: View {
     /// Mark a take-any tile with what was taken, syncing its linked Items-group
     /// heart slot (T-066). `(state, column, row)`.
     var onSetTakeAny: (TakeAnyHeartState, Int, Int) -> Void = { _, _, _ in }
+    /// Clear a mark stranded on a screen that has no spot in this quest (T-252).
+    var onClearStaleMark: (Int, Int) -> Void = { _, _ in }
     /// Left-click a take-any tile to cycle its claimed state, keeping its slot
     /// in sync (T-066). `(column, row)`.
     var onCycleTakeAny: (Int, Int) -> Void = { _, _ in }
@@ -344,7 +346,8 @@ struct OverworldMapView: View {
                                 let commentaryK: CommentaryKnowledge = options.commentaryMode ? commentary.knowledge(column: column, row: row) : []
                                 let commentaryR1 = Color(commentaryHex: commentary.runner1ColorHex)
                                 let commentaryR2 = Color(commentaryHex: commentary.runner2ColorHex)
-                                TileView(mark: mark, background: background, tileWidth: tileWidth, tileHeight: tileHeight, isAlwaysEmpty: isAlwaysEmpty, showsFairy: showsFairy, mirrored: mirrored, hideDungeonNumbers: hideDungeonNumbers, used: used, shopSecondItem: shopSecondItem, shopThirdItem: shopThirdItem, hiddenShopItems: hiddenShopItems, hideMarks: overlays?.isActive(.hideMarks) ?? false, dungeonComplete: dungeonDone, kindHidden: kindHidden, fog: fog, sharedBackground: customActive, animateChanges: options.animateTileChanges,
+                                TileView(mark: mark, background: background, tileWidth: tileWidth, tileHeight: tileHeight, isAlwaysEmpty: isAlwaysEmpty,
+                                         isStale: isAlwaysEmpty && Self.isStaleMark(mark), showsFairy: showsFairy, mirrored: mirrored, hideDungeonNumbers: hideDungeonNumbers, used: used, shopSecondItem: shopSecondItem, shopThirdItem: shopThirdItem, hiddenShopItems: hiddenShopItems, hideMarks: overlays?.isActive(.hideMarks) ?? false, dungeonComplete: dungeonDone, kindHidden: kindHidden, fog: fog, sharedBackground: customActive, animateChanges: options.animateTileChanges,
                                              commentaryKnowledge: commentaryK,
                                              commentaryEncoding: options.commentaryEncoding,
                                              commentaryR1: commentaryR1, commentaryR2: commentaryR2)
@@ -491,7 +494,11 @@ struct OverworldMapView: View {
                                     // rather than deferred again.
                                     .accessibilityElement(children: .ignore)
                                     .accessibilityLabel("Overworld tile, column \(column + 1), row \(row + 1)")
-                                    .accessibilityValue(isAlwaysEmpty ? "Always empty (nothing here)" : mark.displayName)
+                                    .accessibilityValue(isAlwaysEmpty
+                                        ? (Self.isStaleMark(mark)
+                                           ? "No spot here in this quest: \(mark.displayName). Clear it from the context menu."
+                                           : "Always empty (nothing here)")
+                                        : mark.displayName)
                                     .accessibilityAddTraits(.isButton)
                                     .accessibilityAction { handleLeftClick(column: column, row: row) }
                             }
@@ -745,7 +752,25 @@ struct OverworldMapView: View {
                     onDone: { enemyCell = nil }))
             },
             isDeadSpot: screenIsDeadSpot(column, row),
-            deadSpotMenu: { AnyView(startSpotMenuItems(column: column, row: row)) })
+            deadSpotMenu: { AnyView(deadSpotMenu(column: column, row: row)) })
+    }
+
+    /// A mark (other than Don't-Care) left on a screen that can't hold one — after a mid-run
+    /// quest switch (T-252). Flagged on the map and clearable from the dead-spot menu.
+    static func isStaleMark(_ mark: OverworldTileMark) -> Bool {
+        mark != .unmarked && mark != .dontCare
+    }
+
+    /// The menu for an always-empty screen: clear a stale mark (T-252), then start spot /
+    /// waypoint (T-190).
+    @ViewBuilder
+    private func deadSpotMenu(column: Int, row: Int) -> some View {
+        let mark = grid.mark(column: column, row: row)
+        if Self.isStaleMark(mark) {
+            Button("Clear \(mark.displayName) (no spot here in this quest)") { onClearStaleMark(column, row) }
+            Divider()
+        }
+        startSpotMenuItems(column: column, row: row)
     }
 
     /// The start-spot + waypoint menu items, shared by the full mark menu and the
@@ -829,10 +854,12 @@ struct OverworldMapView: View {
 
     /// Count of each mark across the grid — for disabling exhausted picker
     /// options (T-058).
+    /// Stale marks on dead spots (T-252) don't use up a mark's per-quest limit, so the real
+    /// screen for e.g. a stranded "Level 3" can still be marked.
     private var markCounts: [OverworldTileMark: Int] {
         var counts: [OverworldTileMark: Int] = [:]
         for c in 0..<OverworldGrid.columnCount {
-            for r in 0..<OverworldGrid.rowCount {
+            for r in 0..<OverworldGrid.rowCount where !screenIsDeadSpot(c, r) {
                 counts[grid.mark(column: c, row: r), default: 0] += 1
             }
         }
@@ -1255,6 +1282,9 @@ struct TileView: View {
     /// (`OverworldInstance.alwaysEmpty`) — rendered as a permanent, non-
     /// editable darkened "don't care" tile (`WPFUI.fs:244`).
     var isAlwaysEmpty: Bool = false
+    /// An always-empty screen still holding a mark — stale after a quest switch (T-252). Drawn
+    /// with a red dashed frame and "!" so it can be found and cleared.
+    var isStale: Bool = false
     /// This always-empty screen is a fixed fairy-fountain spot and shows the
     /// fairy icon (`WPFUI.fs:488-490`).
     var showsFairy: Bool = false
@@ -1398,6 +1428,18 @@ struct TileView: View {
             if isAlwaysEmpty {
                 Rectangle().fill(.black.opacity(0.62))
                     .frame(width: tileWidth, height: tileHeight)
+            }
+            if isStale {
+                Rectangle()
+                    .strokeBorder(Color.red, style: StrokeStyle(lineWidth: 2, dash: [3, 2]))
+                    .overlay(alignment: .topTrailing) {
+                        Text("!").font(.system(size: max(8, tileHeight * 0.4), weight: .heavy))
+                            .foregroundStyle(.red)
+                            .scaleEffect(x: mirrored ? -1 : 1, y: 1)   // stay readable when mirrored
+                            .padding(.trailing, 2)
+                    }
+                    .frame(width: tileWidth, height: tileHeight)
+                    .help("This mark has no spot in this quest — right-click to clear it.")
             }
             // The fairy icon is map truth, not a user mark, so it draws on its own —
             // *not* nested under `isAlwaysEmpty`. Vanilla fairy spots happen to be
