@@ -394,6 +394,10 @@ struct MainTrackerPlaceholderView: View {
                 timer.resume()
             }
         }
+        // "Disable all" stops whatever is speaking / on screen right away (T-250).
+        .onChange(of: options.remindersMuted) { _, muted in
+            if muted, !isMirror { reminders.silenceNow() }
+        }
         .overlay(alignment: .top) {
             ReminderOverlayView(controller: reminders)
                 .padding(.top, 8)

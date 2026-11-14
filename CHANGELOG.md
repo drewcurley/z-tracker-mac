@@ -5,6 +5,12 @@ All notable changes to **Z-Tracker for macOS**. Newest first. This project follo
 Each entry mirrors the notes on its [GitHub Release](https://github.com/drewcurley/z-tracker-mac/releases).
 
 ## [Unreleased]
+### Added
+- **45 startup tips** — the Windows tracker's full tip list (Z-Tracker tips reworded for the Mac app).
+- **"Disable all" is now a mute switch** that keeps your reminder choices for when you turn it back off.
+  Muted reminders still appear (greyed) in the reminder log, and muting silences anything already
+  queued.
+
 ### Fixed
 - **Hotkeys that did nothing now work.** The click and scroll hotkeys act on the hovered or cursor
   cell. After placing a take-any or wood-sword cave by hotkey, the Take-Any / Take-This keys choose

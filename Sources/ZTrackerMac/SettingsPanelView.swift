@@ -138,8 +138,11 @@ struct SettingsPanelView: View {
                 Slider(value: Bindable(options).reminderVolume.doubleBinding, in: 0...100)
                     .accessibilityLabel("Reminder volume")
             }
+            .disabled(options.remindersMuted)
 
-            Button("Disable all") { options.disableAllReminders() }
+            Toggle("Disable all", isOn: Bindable(options).remindersMuted)
+                .toggleStyle(.checkbox)
+                .help("Turn off all reminders (but you can still view them in the reminder log). Your choices below are kept for when you turn it back off.")
 
             Grid(alignment: .leading, horizontalSpacing: 8, verticalSpacing: 4) {
                 GridRow {
@@ -164,6 +167,7 @@ struct SettingsPanelView: View {
                 }
             }
             .toggleStyle(.checkbox)
+            .disabled(options.remindersMuted)
 
             // Reference app only shows this button when >1 voice is
             // installed (OptionsMenu.fs:275) — same gate here.

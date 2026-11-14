@@ -71,6 +71,8 @@ struct ReminderLogView: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(.vertical, 4 * fontScale)
+        .opacity(entry.muted ? 0.6 : 1)   // fired while muted (T-250)
+        .help(entry.muted ? "Muted — reminders were disabled when this fired" : "")
     }
 
     private func split(_ seconds: Int) -> String {

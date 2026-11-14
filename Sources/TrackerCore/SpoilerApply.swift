@@ -10,9 +10,9 @@ extension SpoilerLog {
         public init(rawValue: Int) { self.rawValue = rawValue }
         /// The `CAVES` section → overworld tile marks.
         public static let overworldMarks = Sections(rawValue: 1 << 0)
-        /// The `ITEMS` section → dungeon / white-sword / coast / armos items. *(Next slice.)*
+        /// The `ITEMS` section → dungeon / white-sword / coast / armos items.
         public static let dungeonItems   = Sections(rawValue: 1 << 1)
-        /// The `LEVEL N MAP` ASCII → the 8×8 room grids. *(Next slice.)*
+        /// The `LEVEL N MAP` ASCII → the 8×8 room grids.
         public static let roomMaps       = Sections(rawValue: 1 << 2)
         /// L9 triforce requirements → Notes, plus the Start Screen spot.
         public static let l9AndStart     = Sections(rawValue: 1 << 3)
@@ -70,9 +70,6 @@ extension SpoilerLog {
         public var roomMapsApplied = 0
         public var roomMapRoomsPlaced = 0
         public var transportsRelocated = 0
-        /// Sections requested but not yet implemented (dungeon items / room maps) — surfaced so the
-        /// UI can be honest about what it did.
-        public var deferredSections: [String] = []
     }
 
     /// - Parameter heartShuffle: the seed's Heart Shuffle setting (from the import panel). **Off**:

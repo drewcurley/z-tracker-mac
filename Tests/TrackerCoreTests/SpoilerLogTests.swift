@@ -167,7 +167,6 @@ struct SpoilerLogTests {
         #expect(result.overworldMarksSet == 23)
         #expect(result.startSpotSet)
         #expect(result.l9NoteAdded)
-        #expect(result.deferredSections.contains("Dungeon items") == false)
     }
 
     @Test("armos is not inferred when more than one candidate is unmarked")
@@ -281,7 +280,6 @@ struct SpoilerLogTests {
         #expect(result.roomMapsApplied == 1)
         #expect(result.roomMapRoomsPlaced == 6)
         #expect(result.transportsRelocated == 1)
-        #expect(result.deferredSections.isEmpty)
     }
 
     @Test("unrecognized cave strings land in unmapped, not mis-marked")

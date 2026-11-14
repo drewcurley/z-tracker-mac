@@ -93,9 +93,6 @@ struct SpoilerImportView: View {
         }
         if result.startSpotSet { parts.append("start spot") }
         if result.l9NoteAdded { parts.append("L9 → Notes") }
-        if !result.deferredSections.isEmpty {
-            parts.append("not yet implemented: " + result.deferredSections.joined(separator: ", "))
-        }
         resultText = "Imported " + (parts.isEmpty ? "nothing." : parts.joined(separator: " · ") + ".")
     }
 }
