@@ -100,7 +100,8 @@ public final class DungeonRoomMap {
     /// Returns whether it painted, and clears the first-interaction flag when it
     /// does (the reference cancels the entrance accelerator on paint).
     @discardableResult
-    public func dragPaint(_ button: DragPaintButton, col: Int, row: Int) -> Bool {
+    public func dragPaint(_ button: DragPaintButton, col: Int, row: Int,
+                          defaultRoom: RoomType = DungeonRoomGesture.defaultRoom) -> Bool {
         var r = room(col: col, row: row)
         switch button {
         case .left where r.roomType.isOffMap:
@@ -110,7 +111,7 @@ public final class DungeonRoomMap {
             r.roomType = .offTheMap
             r.isCompleted = false
         case .middle where r.roomType.isNotMarked:
-            r.roomType = DungeonRoomGesture.defaultRoom
+            r.roomType = defaultRoom          // honors "Default to NonDescript", like left-click
             r.isCompleted = true
         default:
             return false
@@ -118,6 +119,35 @@ public final class DungeonRoomMap {
         setRoom(r, col: col, row: row)
         firstInteractionDone = true
         return true
+    }
+
+    /// Whether this dungeon map has been inverted or drag-painted yet this session — the
+    /// reference's per-tab `hasEverInvertedOrDragged` (`DungeonUI.fs:676`). Session-only (not
+    /// saved), as in the reference. Arms "Left-drag auto-inverts" until the first drag (T-253).
+    public private(set) var hasEverInvertedOrDragged = false
+
+    /// Swap every **unmarked** room ↔ **off-the-map** (`invertOffTheMapWithUnmarked`,
+    /// `DungeonUI.fs:959-967`): turn the empty grid into off-map background so the map can be
+    /// painted *on* with a left-drag. Marked rooms are untouched.
+    public func invertOffTheMapWithUnmarked() {
+        hasEverInvertedOrDragged = true
+        for row in 0..<Self.rows {
+            for col in 0..<Self.cols {
+                var r = room(col: col, row: row)
+                if r.roomType.isNotMarked { r.roomType = .offTheMap }
+                else if r.roomType == .offTheMap { r.roomType = .unmarked }
+                else { continue }
+                setRoom(r, col: col, row: row)
+            }
+        }
+    }
+
+    /// A drag-paint is starting (T-253, `DungeonUI.fs:695-697`): the first-ever drag in this
+    /// dungeon, if it's a left drag and "Left-drag auto-inverts" is on, inverts first so the
+    /// drag immediately paints the map on. Any drag disarms it.
+    public func beginDrag(_ button: DragPaintButton, autoInvert: Bool) {
+        if button == .left, autoInvert, !hasEverInvertedOrDragged { invertOffTheMapWithUnmarked() }
+        hasEverInvertedOrDragged = true
     }
 
     /// Conservative door inference (T-019.12, reference `DungeonUI.fs:1148-1167`):

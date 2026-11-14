@@ -94,6 +94,7 @@ struct DungeonMapView: View {
                                         headerText: headerText,
                                         inferDoors: options.doDoorInference,
                                         preferNonDescript: options.defaultToNonDescript,
+                                        autoInvert: options.leftDragAutoInverts,
                                         confirmInputSound: options.inputConfirmationSound,
                                         confirmInputVolume: options.inputConfirmationVolume,
                                         outlineQuest: outlineMode,
@@ -339,6 +340,9 @@ struct DungeonMapView: View {
             DungeonMinimapHoverIcon(map: model.dungeonRoomMaps[selected], headerText: headerText)
                 .frame(maxWidth: .infinity)   // centered in the sidebar
                 .padding(.top, 4)
+            // Invert off-the-map ↔ unmarked (T-253), right under the minimap as in the reference.
+            InvertOffMapButton(map: model.dungeonRoomMaps[selected], disabled: grab.isGrabMode)
+                .frame(maxWidth: .infinity)
             Spacer(minLength: 0)
         }
         .frame(width: Self.infoStripWidth)
@@ -370,6 +374,8 @@ struct DungeonRoomGridView: View {
     var inferDoors: Bool = false
     /// "Default to NonDescript" (T-206) — left-click marks unmarked rooms empty, not push-block.
     var preferNonDescript: Bool = false
+    /// "Left-drag auto-inverts" (T-253): the first left-drag in a dungeon inverts it first.
+    var autoInvert: Bool = false
     /// Play the mouse/keyboard confirmation tick on a room edit (T-208), and its volume (0…100).
     var confirmInputSound: Bool = false
     var confirmInputVolume: Int = 100
@@ -450,6 +456,7 @@ struct DungeonRoomGridView: View {
                                  width: Self.cellW, height: Self.cellH,
                                  pitchX: Self.pitchX, pitchY: Self.pitchY, inferDoors: inferDoors,
                                  preferNonDescript: preferNonDescript,
+                                 autoInvert: autoInvert,
                                  confirmInputSound: confirmInputSound,
                                  confirmInputVolume: confirmInputVolume,
                                  commentaryKnowledge: commentaryActive
@@ -641,6 +648,46 @@ private struct DungeonCursorRing: View {
     }
 }
 
+/// The reference's invert button (T-253, `DungeonUI.fs:939-975`): the off-the-map room, an
+/// orange slash, the unmarked room. Swaps every unmarked room with off-the-map (and back), so an
+/// empty grid becomes background you paint the map *onto* with a left-drag.
+private struct InvertOffMapButton: View {
+    var map: DungeonRoomMap
+    var disabled: Bool
+    @State private var hovering = false
+
+    var body: some View {
+        Button {
+            map.invertOffTheMapWithUnmarked()
+            ConfirmationSound.inputTick()
+        } label: {
+            HStack(spacing: 3) {
+                sprite(.offTheMap)
+                Text("/").font(.system(size: 13, weight: .heavy)).foregroundStyle(.orange)
+                sprite(.unmarked)
+            }
+            .padding(.horizontal, 4).padding(.vertical, 2)
+            .overlay(RoundedRectangle(cornerRadius: 3)
+                .strokeBorder(hovering ? Color.cyan : Color(white: 0.4), lineWidth: 1))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .onHover { hovering = $0 }
+        .disabled(disabled)
+        .opacity(disabled ? 0.4 : 1)
+        .help("Invert: swap every unmarked room with off-the-map (and back) — then left-drag to paint the map on")
+        .accessibilityLabel("Invert unmarked and off-the-map rooms")
+    }
+
+    @ViewBuilder private func sprite(_ type: RoomType) -> some View {
+        if let image = Image(atlasIcon: DungeonRoomSpriteAtlas.sprite(type, completed: false)) {
+            image.interpolation(.none).resizable()
+                .frame(width: CGFloat(DungeonRoomSpriteAtlas.tileW) * 1.5,
+                       height: CGFloat(DungeonRoomSpriteAtlas.tileH) * 1.5)
+        }
+    }
+}
+
 /// One room cell: the room-type sprite on a completion-tinted background, with
 /// the monster (top-left) and floor-drop (bottom-right) detail overlays and the
 /// "circled" ring. Left = accelerator/cycle/toggle, right = room-type picker,
@@ -658,6 +705,7 @@ private struct RoomCellView: View {
     /// is newly marked. Gated by the `doDoorInference` option upstream.
     var inferDoors: Bool = false
     var preferNonDescript: Bool = false
+    var autoInvert: Bool = false
     /// The GRAB tool state (T-083) â routes clicks and paints the preview.
     var confirmInputSound: Bool = false   // mouse confirmation tick on a room edit (T-208)
     var confirmInputVolume: Int = 100
@@ -786,7 +834,17 @@ private struct RoomCellView: View {
             // â off-map, â¥/middle over unmarked â default. Clicks fire on release.
             // Disabled in grab mode (a drag there would fight the grab click).
             dragContext: .init(col: col, row: row, pitchX: pitchX, pitchY: pitchY),
-            onDragPaint: { button, c, r in if !grab.isGrabMode { map.dragPaint(button, col: c, row: r) } }
+            onDragPaint: { button, c, r in
+                if !grab.isGrabMode {
+                    map.dragPaint(button, col: c, row: r,
+                                  defaultRoom: preferNonDescript ? .nonDescript : .maybePushBlock)
+                }
+            },
+            // Left-drag auto-invert (T-253): the first drag here may invert the map first, and
+            // while that's armed a plain left press waits for mouse-up so a drag doesn't first
+            // click the start room.
+            onDragBegin: { button in if !grab.isGrabMode { map.beginDrag(button, autoInvert: autoInvert) } },
+            deferPlainLeft: autoInvert && !map.hasEverInvertedOrDragged
         ))
         // Commentary Mode knowledge overlay (T-215): pips in the free corners (runner 1
         // bottom-left, runner 2 top-right), or the edge border. Non-interactive.

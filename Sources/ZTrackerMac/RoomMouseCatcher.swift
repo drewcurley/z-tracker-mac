@@ -39,6 +39,11 @@ struct RoomMouseCatcher: NSViewRepresentable {
     let onGesture: (Gesture) -> Void
     var dragContext: DragContext? = nil
     var onDragPaint: ((DungeonRoomMap.DragPaintButton, Int, Int) -> Void)? = nil
+    /// Called once when a press becomes a drag, before its first paint (T-253).
+    var onDragBegin: ((DungeonRoomMap.DragPaintButton) -> Void)? = nil
+    /// Defer even a plain left press to mouse-up (T-253): while an auto-invert is armed, a
+    /// left press that turns into a drag must not first run the click on the start room.
+    var deferPlainLeft: Bool = false
 
     /// Claim only the button-downs + scroll it acts on, so hover/drag-move to
     /// other views and page-scroll (elsewhere) fall through. Unit-testable.
@@ -51,19 +56,25 @@ struct RoomMouseCatcher: NSViewRepresentable {
 
     func makeNSView(context: Context) -> NSView {
         let view = MouseView()
-        view.configure(onGesture: onGesture, dragContext: dragContext, onDragPaint: onDragPaint)
+        view.configure(onGesture: onGesture, dragContext: dragContext, onDragPaint: onDragPaint,
+                       onDragBegin: onDragBegin, deferPlainLeft: deferPlainLeft)
         view.setAccessibilityElement(false)
         return view
     }
 
     func updateNSView(_ nsView: NSView, context: Context) {
-        (nsView as? MouseView)?.configure(onGesture: onGesture, dragContext: dragContext, onDragPaint: onDragPaint)
+        (nsView as? MouseView)?.configure(onGesture: onGesture, dragContext: dragContext, onDragPaint: onDragPaint,
+                                          onDragBegin: onDragBegin, deferPlainLeft: deferPlainLeft)
     }
 
     private final class MouseView: NSView {
         private var onGesture: ((Gesture) -> Void)?
         private var dragContext: DragContext?
         private var onDragPaint: ((DungeonRoomMap.DragPaintButton, Int, Int) -> Void)?
+        private var onDragBegin: ((DungeonRoomMap.DragPaintButton) -> Void)?
+        private var deferPlainLeft = false
+        /// This press's plain left was deferred to mouse-up (decided at mouse-down).
+        private var plainLeftDeferred = false
 
         private var scrollArmed = true
         // In-flight press bookkeeping (for click-on-release + drag detection).
@@ -82,10 +93,14 @@ struct RoomMouseCatcher: NSViewRepresentable {
 
         func configure(onGesture: @escaping (Gesture) -> Void,
                        dragContext: DragContext?,
-                       onDragPaint: ((DungeonRoomMap.DragPaintButton, Int, Int) -> Void)?) {
+                       onDragPaint: ((DungeonRoomMap.DragPaintButton, Int, Int) -> Void)?,
+                       onDragBegin: ((DungeonRoomMap.DragPaintButton) -> Void)?,
+                       deferPlainLeft: Bool) {
             self.onGesture = onGesture
             self.dragContext = dragContext
             self.onDragPaint = onDragPaint
+            self.onDragBegin = onDragBegin
+            self.deferPlainLeft = deferPlainLeft
         }
 
         private var dragEnabled: Bool { dragContext != nil }
@@ -109,13 +124,14 @@ struct RoomMouseCatcher: NSViewRepresentable {
             downCommand = event.modifierFlags.contains(.command)
             downLocation = event.locationInWindow
             didDrag = false
+            plainLeftDeferred = dragEnabled && isPlainLeft(button) && deferPlainLeft
             // Fire immediately for doors (no drag), and for a *plain* left press on
             // rooms — plain left-click and left-drag don't conflict (both no-op on a
             // non-off-map room), so the primary click stays on mouse-down. Every
             // modified/other press (⌥/shift-left, right, middle) defers to release,
             // so a drag doesn't first fire its click — e.g. an ⌥-drag must not
             // toggle the start room's circle before painting.
-            if !dragEnabled || isPlainLeft(button) {
+            if !dragEnabled || (isPlainLeft(button) && !plainLeftDeferred) {
                 fireClick(button: button, option: downOption, shift: downShift, command: downCommand)
             }
         }
@@ -138,9 +154,8 @@ struct RoomMouseCatcher: NSViewRepresentable {
             let moved = hypot(event.locationInWindow.x - downLocation.x,
                               event.locationInWindow.y - downLocation.y)
             guard didDrag || moved >= dragThreshold else { return }
-            didDrag = true
             // ⌥ is reserved for Commentary Mode (click-only, T-215) — never drag-paint on ⌥.
-            if button == 0 && downOption { return }
+            if button == 0 && downOption { didDrag = true; return }
             let p = convert(event.locationInWindow, from: nil)
             let gridX = CGFloat(ctx.col) * ctx.pitchX + p.x
             let gridY = CGFloat(ctx.row) * ctx.pitchY + p.y
@@ -151,6 +166,8 @@ struct RoomMouseCatcher: NSViewRepresentable {
                 case 2: .middle
                 default: downCommand ? .middle : .left   // ⌘+left-drag stands in for middle
             }
+            if !didDrag { onDragBegin?(paint) }
+            didDrag = true
             onDragPaint(paint, col, row)
         }
 
@@ -164,7 +181,8 @@ struct RoomMouseCatcher: NSViewRepresentable {
             defer { downButton = nil }
             // A plain left press already fired on mouse-down; every deferred press
             // (⌥/shift-left, right, middle) fires here, and only if it wasn't a drag.
-            guard dragEnabled, downButton == button, !didDrag, !isPlainLeft(button) else { return }
+            guard dragEnabled, downButton == button, !didDrag,
+                  !isPlainLeft(button) || plainLeftDeferred else { return }
             fireClick(button: button, option: downOption, shift: downShift, command: downCommand)
         }
 

@@ -62,3 +62,50 @@ struct DungeonDragPaintTests {
         for c in 0..<4 { #expect(map.room(col: c, row: 0).roomType == .unmarked) }
     }
 }
+
+@Suite("Invert + left-drag auto-invert (T-253)")
+struct DungeonInvertTests {
+    @Test("invert swaps unmarked ↔ off-the-map and leaves marked rooms alone")
+    func invertSwaps() {
+        let map = DungeonRoomMap()
+        var r = map.room(col: 1, row: 1); r.roomType = .nonDescript
+        map.setRoom(r, col: 1, row: 1)
+        var off = map.room(col: 2, row: 2); off.roomType = .offTheMap
+        map.setRoom(off, col: 2, row: 2)
+        map.invertOffTheMapWithUnmarked()
+        #expect(map.room(col: 0, row: 0).roomType == .offTheMap)
+        #expect(map.room(col: 2, row: 2).roomType == .unmarked)
+        #expect(map.room(col: 1, row: 1).roomType == .nonDescript)
+        #expect(map.hasEverInvertedOrDragged)
+        map.invertOffTheMapWithUnmarked()
+        #expect(map.room(col: 0, row: 0).roomType == .unmarked)
+    }
+
+    @Test("only the first left drag auto-inverts, and only with the option on")
+    func autoInvertOnce() {
+        let off = DungeonRoomMap()
+        off.beginDrag(.left, autoInvert: false)
+        #expect(off.room(col: 0, row: 0).roomType == .unmarked)      // option off: no invert
+        #expect(off.hasEverInvertedOrDragged)
+
+        let right = DungeonRoomMap()
+        right.beginDrag(.right, autoInvert: true)                     // a right drag disarms
+        right.beginDrag(.left, autoInvert: true)
+        #expect(right.room(col: 0, row: 0).roomType == .unmarked)
+
+        let map = DungeonRoomMap()
+        map.beginDrag(.left, autoInvert: true)
+        #expect(map.room(col: 0, row: 0).roomType == .offTheMap)
+        #expect(map.dragPaint(.left, col: 3, row: 3))                 // paints it back on
+        #expect(map.room(col: 3, row: 3).roomType == .unmarked)
+        map.beginDrag(.left, autoInvert: true)                        // second drag: no re-invert
+        #expect(map.room(col: 0, row: 0).roomType == .offTheMap)
+    }
+
+    @Test("middle-drag paints the chosen default room")
+    func middleDragDefaultRoom() {
+        let map = DungeonRoomMap()
+        #expect(map.dragPaint(.middle, col: 0, row: 0, defaultRoom: .nonDescript))
+        #expect(map.room(col: 0, row: 0).roomType == .nonDescript)
+    }
+}
