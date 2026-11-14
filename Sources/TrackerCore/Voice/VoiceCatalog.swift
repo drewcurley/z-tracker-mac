@@ -90,6 +90,9 @@ public enum VoiceCatalog {
                     ["pause timer", "pause the timer", "stop timer", "stop the timer", "timer pause", "timer stop"]),
         VoiceAction("Recorder_Next", "Recorder destination — next (▶)", .navigation,
                     ["recorder up", "recorder next", "recorder forward", "recorder right", "next recorder", "whistle next"]),
+        // Free-form dictation into Notes (T-251) — the words after the trigger are the note.
+        VoiceAction("Notes_Append", "Make a note (dictate into Notes)", .navigation,
+                    ["make a note", "take a note", "add a note", "note that"]),
         VoiceAction("Recorder_Prev", "Recorder destination — previous (◀)", .navigation,
                     ["recorder down", "recorder previous", "recorder back", "recorder left", "previous recorder", "whistle previous"]),
     ]

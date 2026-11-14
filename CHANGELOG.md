@@ -6,6 +6,8 @@ Each entry mirrors the notes on its [GitHub Release](https://github.com/drewcurl
 
 ## [Unreleased]
 ### Added
+- **"Make a note …" voice command.** Say "make a note" (or "take a note") and the rest of what you
+  say is added to Notes.
 - **45 startup tips** — the Windows tracker's full tip list (Z-Tracker tips reworded for the Mac app).
 - **"Disable all" is now a mute switch** that keeps your reminder choices for when you turn it back off.
   Muted reminders still appear (greyed) in the reminder log, and muting silences anything already
