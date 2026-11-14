@@ -239,6 +239,7 @@ struct SettingsPanelView: View {
             // Toggle("Mouse magnifier window", isOn: Bindable(options).showMouseMagnifierWindow)
             Toggle("Hide timer", isOn: Bindable(options).hideTimer)
             Toggle("Warn when quitting while the timer is running", isOn: Bindable(options).warnOnCloseWhileTimerRunning)
+                .help("With \"Auto-save and quit\" on, ask before quitting while the timer runs. Without it, the save prompt already asks.")
             Toggle("Auto-save and quit (skip the save prompt)", isOn: Bindable(options).autoSaveOnQuit)
                 .help("On quit, silently autosave the run and close — no Save/Don't-Save dialog. Resume on next launch still works.")
 

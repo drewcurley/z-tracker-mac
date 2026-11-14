@@ -58,7 +58,7 @@ enum ItemBoxMark {
     /// - Any other key sets that item at `.yes` (respecting the unique-item rule).
     @MainActor @discardableResult
     static func cycleHotkey(itemIndex index: Int, box: Box,
-                            instance: DungeonTrackerInstance) -> Bool {
+                            instance: DungeonTrackerInstance, acquired: PlayerHas = .yes) -> Bool {
         if index >= 0, box.cellCurrent == index {
             switch box.playerHas {
             case .yes:     box.setPlayerHas(.skipped)
@@ -73,6 +73,7 @@ enum ItemBoxMark {
             else { box.set(cellCurrent: -1, playerHas: .no) }
             return true
         }
-        return apply(itemIndex: index, to: box, instance: instance)
+        // A fresh mark honors the box's reachability gate, like voice + the picker (T-249).
+        return apply(itemIndex: index, to: box, instance: instance, acquired: acquired)
     }
 }

@@ -274,10 +274,17 @@ extension ItemProgressGrid.ItemToggle: Equatable {}
 /// Set once on the main content via `.environment(\.trackerCompact, …)`; each view applies it to its
 /// own baseline size.
 struct TrackerCompactKey: EnvironmentKey { static let defaultValue: Bool = false }
+/// Whether this view is in the broadcast mirror (T-249) — the mirror shares the run's state, so
+/// keyboard click requests are handled by the real window only (never opening a picker there).
+struct TrackerMirrorKey: EnvironmentKey { static let defaultValue: Bool = false }
 extension EnvironmentValues {
     var trackerCompact: Bool {
         get { self[TrackerCompactKey.self] }
         set { self[TrackerCompactKey.self] = newValue }
+    }
+    var trackerIsMirror: Bool {
+        get { self[TrackerMirrorKey.self] }
+        set { self[TrackerMirrorKey.self] = newValue }
     }
 }
 

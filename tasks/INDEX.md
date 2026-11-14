@@ -12,7 +12,9 @@
 
 | ID | Title | Owner | State |
 |----|-------|-------|-------|
+| [T-249](./T-249.md) | Wire the dead hotkeys — click/scroll keys, Take-Any/Take-This, door +/−; item hotkeys honor the reachability gate | frontend-engineer | — | fix/dead-controls | — | docs/reviews/fix-dead-controls/final.md |
 | [T-248](./T-248.md) | Partly-working features — Recorder/PB reminder toggle, input tick everywhere, mirrored routing, honest voice feedback + mic errors | frontend-engineer | — | fix/partial-features | — | docs/reviews/fix-partial-features/final.md |
+| [T-247](./T-247.md) | Wire the "Warn when quitting while the timer is running" setting | backend-engineer | — | fix/dead-controls | — | docs/reviews/fix-dead-controls/final.md |
 | [T-015](./T-015.md) | Real GYR + destination picker + live routing state (umbrella) | frontend-engineer | split |
 | [T-015.6](./T-015.6.md) | Destination-picker menu | frontend-engineer | proposed |
 | [T-015.7](./T-015.7.md) | MirrorOverworld — display flip + routing | frontend-engineer | proposed |

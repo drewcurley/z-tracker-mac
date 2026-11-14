@@ -6,6 +6,12 @@ Each entry mirrors the notes on its [GitHub Release](https://github.com/drewcurl
 
 ## [Unreleased]
 ### Fixed
+- **Hotkeys that did nothing now work.** The click and scroll hotkeys act on the hovered or cursor
+  cell. After placing a take-any or wood-sword cave by hotkey, the Take-Any / Take-This keys choose
+  what you took (a toast shows them). Door +/− keys step the cursor room's doors. Item hotkeys now
+  respect the same heart and ladder requirements as voice and the picker.
+- **"Warn when quitting while the timer is running" works again.** With "Auto-save and quit" on, it
+  asks before closing while the timer runs; otherwise the save prompt now mentions the running timer.
 - **Settings and feedback that only half worked now work fully.** The Recorder/PB/Boomstick reminder
   toggle now covers the recorder and power-bracelet reminders (off by default, as in the Windows app).
   The click confirmation sound now plays for item boxes, blockers and every map edit. Routing follows

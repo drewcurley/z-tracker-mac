@@ -1,3 +1,4 @@
+import Foundation
 import Observation
 import TrackerCore
 
@@ -105,6 +106,26 @@ final class TrackerFocusState {
             cursorShown = true
             hoverRegion = nil
         }
+    }
+
+    /// A click / scroll hotkey aimed at a cell (T-249), for the grid view that owns that
+    /// region's popovers to perform exactly what the mouse action does there. Whoever handles
+    /// it clears it.
+    struct ClickRequest: Equatable {
+        enum Kind: Sendable { case left, right, middle, scrollUp, scrollDown }
+        let id = UUID()
+        let kind: Kind
+        let region: CursorRegion
+        let cell: GridCell
+    }
+    var clickRequest: ClickRequest?
+
+    /// Take the pending click request for `region` (once — a mirror window sharing this
+    /// state then finds nothing left to handle).
+    func takeClickRequest(_ id: UUID, in region: CursorRegion) -> ClickRequest? {
+        guard let r = clickRequest, r.id == id, r.region == region else { return nil }
+        clickRequest = nil
+        return r
     }
 
     /// The region a hotkey should act on: whatever's hovered, else the keyboard

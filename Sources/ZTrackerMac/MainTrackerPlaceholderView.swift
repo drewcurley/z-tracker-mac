@@ -333,6 +333,7 @@ struct MainTrackerPlaceholderView: View {
             // Shrink the tracker's grid buttons on a narrow window (T-228) — applied to the whole
             // content so the top-section boxes AND the blockers grid track it.
             .environment(\.trackerCompact, compactButtons)
+            .environment(\.trackerIsMirror, isMirror)
             // Universal UI zoom (T-229): lay the content out at the enlarged *logical* width
             // (viewport ÷ zoom) so the responsive breakpoints see the room the zoom frees, then
             // `scaledFootprint` scales it back down to the real viewport — a browser-style zoom that

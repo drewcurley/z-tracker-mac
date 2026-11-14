@@ -35,6 +35,54 @@ enum DungeonRoomMark {
         _ = map.setRoom(r, col: col, row: row)
     }
 
+    /// The primary left-click on a room: the accelerator / cycle / completion toggle, then (if
+    /// enabled) entry-door inference. Shared by the mouse and the Left-click hotkey (T-249).
+    @MainActor
+    static func leftClick(col: Int, row: Int, map: DungeonRoomMap,
+                          preferNonDescript: Bool, inferDoors: Bool) {
+        let wasUnmarked = map.room(col: col, row: row).roomType.isNotMarked
+        // "Default to NonDescript" (T-206): the left-click accelerator marks an unmarked
+        // room as NonDescript (empty) instead of MaybePushBlock when the option is on.
+        map.leftClick(col: col, row: row, defaultRoom: preferNonDescript ? .nonDescript : .maybePushBlock)
+        if inferDoors, wasUnmarked { map.inferEntryDoor(col: col, row: row) }
+    }
+
+    /// A wall of the room, for the door-nudge hotkeys (T-249).
+    enum DoorSide: CaseIterable, Sendable {
+        case west, east, north, south
+        var hotkeyName: String {
+            switch self { case .west: "West"; case .east: "East"; case .north: "North"; case .south: "South" }
+        }
+    }
+
+    /// Step the door on `side` of room (col,row) to its next (or previous) state — the
+    /// reference's `DoorHotKeyResponse` (`DungeonUI.fs:1268-1279`, `Door.Next/Prev`). The outer
+    /// wall has no door, so an edge side is a no-op returning false. Counts as an interaction
+    /// (cancels the first-click entrance accelerator, `:1282`).
+    @MainActor @discardableResult
+    static func nudgeDoor(_ side: DoorSide, increment: Bool, col: Int, row: Int,
+                          map: DungeonRoomMap) -> Bool {
+        let target: (axis: DungeonRoomMap.DoorAxis, col: Int, row: Int)
+        switch side {
+        case .west:
+            guard col > 0 else { return false }
+            target = (.horizontal, col - 1, row)
+        case .east:
+            guard col < DungeonRoomMap.cols - 1 else { return false }
+            target = (.horizontal, col, row)
+        case .north:
+            guard row > 0 else { return false }
+            target = (.vertical, col, row - 1)
+        case .south:
+            guard row < DungeonRoomMap.rows - 1 else { return false }
+            target = (.vertical, col, row)
+        }
+        let state = map.door(target.axis, col: target.col, row: target.row)
+        map.setDoor(increment ? state.next : state.prev, axis: target.axis, col: target.col, row: target.row)
+        map.firstInteractionDone = true
+        return true
+    }
+
     /// Route a `DungeonRoom_*` hotkey selector to the room at (col,row). Returns
     /// false for the door-nudge selectors (handled elsewhere / unbound).
     @MainActor @discardableResult
