@@ -63,6 +63,15 @@ struct MainTrackerPlaceholderView: View {
     @State private var infoExpanded = false
 
     /// The active zoom (the mirror always renders full-size for streaming, T-229).
+    /// Open the mouse magnifier, then hand focus back to the tracker (the reference's
+    /// `refocusMainWindow`), so hotkeys keep working.
+    private func openMouseMagnifier() {
+        openWindow(id: MouseMagnifierWindowID)
+        DispatchQueue.main.async {
+            NSApp.windows.first { $0.title == "Z-Tracker" }?.makeKeyAndOrderFront(nil)
+        }
+    }
+
     private var effectiveZoom: CGFloat { isMirror ? 1.0 : CGFloat(uiZoom) }
     /// The content's **logical** width once the zoom is undone — what the layout actually gets to use
     /// (a zoomed-out tracker fits more), so the breakpoints compose with the zoom (T-228/T-229).
@@ -393,6 +402,12 @@ struct MainTrackerPlaceholderView: View {
             } else {
                 timer.resume()
             }
+        }
+        // The mouse-magnifier window follows its setting (T-255) — opened at launch when on.
+        .onAppear { if !isMirror, options.showMouseMagnifierWindow { openMouseMagnifier() } }
+        .onChange(of: options.showMouseMagnifierWindow) { _, on in
+            guard !isMirror else { return }
+            if on { openMouseMagnifier() } else { dismissWindow(id: MouseMagnifierWindowID) }
         }
         // "Disable all" stops whatever is speaking / on screen right away (T-250).
         .onChange(of: options.remindersMuted) { _, muted in

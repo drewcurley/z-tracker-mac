@@ -6,6 +6,8 @@ Each entry mirrors the notes on its [GitHub Release](https://github.com/drewcurl
 
 ## [Unreleased]
 ### Added
+- **Mouse magnifier window** (Settings ▸ "Mouse magnifier window") — a resizable window showing the
+  tracker at 3× around your mouse, for small screens.
 - **"Make a note …" voice command.** Say "make a note" (or "take a note") and the rest of what you
   say is added to Notes.
 - **45 startup tips** — the Windows tracker's full tip list (Z-Tracker tips reworded for the Mac app).
