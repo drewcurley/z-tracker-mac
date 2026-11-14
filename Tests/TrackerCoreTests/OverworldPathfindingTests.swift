@@ -125,4 +125,19 @@ struct OverworldPathfindingTests {
         let paths = OverworldRoutingGraph.findAllBestPaths(adjacency: graph.adjacency, from: sourceVertex, to: targetVertex)
         #expect(paths[targetVertex]?.cost == 4)
     }
+
+    @Test("a mirrored map swaps the screen-scroll edges and drops the world wrap (T-248)")
+    func mirrorScreenScrolls() throws {
+        func graph(_ mirror: Bool) throws -> OverworldDynamicGraph {
+            try #require(OverworldRoutingGraph.dynamicGraph(
+                ladder: true, raft: false, recorderWarpDestinations: [], anyRoads: [],
+                isMirror: mirror, canScreenScroll: true))
+        }
+        let wrapFrom = OverworldVertex(0, 6, .full), wrapTo = OverworldVertex(15, 5, .full)
+        func hasWrap(_ g: OverworldDynamicGraph) -> Bool {
+            g.adjacency[wrapFrom]?.contains { $0.vertex == wrapTo } == true
+        }
+        #expect(hasWrap(try graph(false)))
+        #expect(!hasWrap(try graph(true)))
+    }
 }

@@ -15,6 +15,11 @@ struct ReminderAnnouncementDisplayTests {
         #expect(ReminderAnnouncement.triforceAndGo(triforces: 8, summary: tag).category == .dungeonFeedback)
         #expect(ReminderAnnouncement.remindUnblock(blocker: .ladder, dungeons: [1], combatDetails: []).category == .blockers)
         #expect(ReminderAnnouncement.remindShortly(itemId: ITEMS.ladder).category == .haveKeyLadder)
+        #expect(ReminderAnnouncement.remindShortly(itemId: ITEMS.anyKey).category == .haveKeyLadder)
+        // T-248: the recorder / power-bracelet nudges sit under "Recorder/PB/Boomstick".
+        #expect(ReminderAnnouncement.remindShortly(itemId: ITEMS.recorder).category == .recorderPBSpotsAndBoomstickBook)
+        #expect(ReminderAnnouncement.remindShortly(itemId: ITEMS.powerBracelet).category == .recorderPBSpotsAndBoomstickBook)
+        #expect(ReminderAnnouncement.considerBoomstickBook.category == .recorderPBSpotsAndBoomstickBook)
     }
 
     @Test("display text matches the reference SendReminder strings")

@@ -132,6 +132,7 @@ private struct BlockerBoxView: View {
         .popover(isPresented: $showingKindPicker, arrowEdge: .bottom) {
             BlockerKindPicker(current: blocker, playerState: playerState) { kind in
                 model.dungeonBlockers.setDungeonBlocker(kind, dungeon: dungeonIndex, slot: slot)
+                ConfirmationSound.inputTick()
                 showingKindPicker = false
             }
         }
@@ -280,7 +281,10 @@ private struct BlockerAppliesToPanel: View {
             ForEach(elements, id: \.k) { el in
                 Toggle(el.name, isOn: Binding(
                     get: { model.dungeonBlockers.dungeonBlockerAppliesTo(dungeon: dungeonIndex, slot: slot, element: el.k) },
-                    set: { model.dungeonBlockers.setDungeonBlockerAppliesTo($0, dungeon: dungeonIndex, slot: slot, element: el.k) }))
+                    set: {
+                        model.dungeonBlockers.setDungeonBlockerAppliesTo($0, dungeon: dungeonIndex, slot: slot, element: el.k)
+                        ConfirmationSound.inputTick()
+                    }))
                     .font(.caption)
             }
             .disabled(blocker == .nothing)
@@ -294,6 +298,7 @@ private struct BlockerAppliesToPanel: View {
         for el in elements {
             model.dungeonBlockers.setDungeonBlockerAppliesTo(v, dungeon: dungeonIndex, slot: slot, element: el.k)
         }
+        ConfirmationSound.inputTick()
     }
 }
 

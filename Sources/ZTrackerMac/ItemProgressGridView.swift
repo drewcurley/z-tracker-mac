@@ -496,6 +496,11 @@ struct SeedFlagsView: View {
             if voice.auth == .denied {
                 Text("Mic/speech access denied — enable in System Settings ▸ Privacy.")
                     .font(.system(size: 9)).foregroundStyle(.orange)
+            } else if !voice.isListening, let error = voice.lastError {
+                Text(error).font(.system(size: 9)).foregroundStyle(.orange)
+                    .fixedSize(horizontal: false, vertical: true)
+            } else if voice.isListening, voice.lastCommand.hasPrefix("✗") {
+                Text(voice.lastCommand).font(.system(size: 9)).foregroundStyle(.orange)
             } else if voice.isListening, !voice.lastCommand.isEmpty {
                 Text("✓ \(voice.lastCommand)").font(.system(size: 9)).foregroundStyle(.green)
             } else if voice.isListening, !voice.lastHeard.isEmpty {
@@ -933,8 +938,13 @@ private struct ItemToggleBox: View {
             // Block turning it on when it can't be reached yet (T-214); turning off is fine.
             if !progress[keyPath: toggle.keyPath] && !canAcquire { return }
             progress[keyPath: toggle.keyPath].toggle()
+            ConfirmationSound.inputTick()
         }
-        .onRightClick { progress[keyPath: toggle.keyPath] = false }
+        .onRightClick {
+            guard progress[keyPath: toggle.keyPath] else { return }
+            progress[keyPath: toggle.keyPath] = false
+            ConfirmationSound.inputTick()
+        }
         .commentaryCell(knowledge: commentaryKnowledge, encoding: commentaryEncoding,
                         r1: commentaryR1, r2: commentaryR2, active: commentaryActive,
                         size: size, onRunner2: onCommentaryR2)
@@ -987,8 +997,9 @@ private struct TakeAnyHeartBox: View {
         .onTapGesture {
             if commentaryActive, commentaryOptionKeyDown() { onCommentaryR1(); return }
             cycle(1)
+            ConfirmationSound.inputTick()
         }
-        .onRightClick { cycle(-1) }
+        .onRightClick { cycle(-1); ConfirmationSound.inputTick() }
         .commentaryCell(knowledge: commentaryKnowledge, encoding: commentaryEncoding,
                         r1: commentaryR1, r2: commentaryR2, active: commentaryActive,
                         size: size, onRunner2: onCommentaryR2)
