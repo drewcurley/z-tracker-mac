@@ -104,8 +104,8 @@ struct SettingsPanelView: View {
             Toggle("Draw routes", isOn: Bindable(options).drawRoutes)
             Toggle("Show screen scrolls", isOn: Bindable(options).showScreenScrolls)
             Toggle("Highlight nearby", isOn: Bindable(options).highlightNearby)
-            // Back-burnered until the overworld magnifier is built (T-206): hidden, option kept.
-            // Toggle("Show magnifier", isOn: Bindable(options).showMagnifier)
+            Toggle("Show magnifier", isOn: Bindable(options).showMagnifier)
+                .help("Display a magnified view of the overworld screens around the mouse — entrances, bomb / burn / recorder / push spots ringed.")
             Toggle("Shops before dungeons", isOn: Bindable(options).shopsBeforeDungeons)
             Toggle("Graphical tile chooser", isOn: Bindable(options).graphicalOverworldChooser)
                 .help("Pick overworld marks from a grid of icons (faster to recognize) instead of the text menu. Scroll up on a tile to set its enemies.")
