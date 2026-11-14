@@ -14,6 +14,8 @@ Each entry mirrors the notes on its [GitHub Release](https://github.com/drewcurl
   queued.
 
 ### Fixed
+- **Dungeon room pickers no longer use the system popover** that could crash the app on recent macOS
+  betas; they open in a lightweight panel instead (Esc or a click outside closes it).
 - **Switching quest mid-run no longer strands marks.** Marks left on screens that have no spot in the
   new quest are flagged with a red "!" and can be cleared from their right-click menu, and the switch
   dialog offers to clear them. A stranded dungeon no longer counts as found.

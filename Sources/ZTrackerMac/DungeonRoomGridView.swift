@@ -525,8 +525,9 @@ struct DungeonRoomGridView: View {
         // active â replacing 3-per-cell (192 total). Same behaviour: right =
         // room type, shift+left/scroll-up = monster (stays open to add a 2nd),
         // shift+right/scroll-down = floor drop.
-        .popover(isPresented: pickerPresented(.roomType),
-                 attachmentAnchor: .rect(.rect(activeCellRect)), arrowEdge: .bottom) {
+        // In picker panels, not NSPopover — the room pickers were the macOS 27 popover-crash
+        // site (T-256).
+        .pickerPanel(isPresented: pickerPresented(.roomType), anchor: activeCellRect) {
             if let req = activePicker {
                 RoomTypePicker(current: map.room(col: req.col, row: req.row).roomType) { newType in
                     DungeonRoomMark.applyRoomType(newType, col: req.col, row: req.row,
@@ -536,8 +537,7 @@ struct DungeonRoomGridView: View {
                 }
             }
         }
-        .popover(isPresented: pickerPresented(.monster),
-                 attachmentAnchor: .rect(.rect(activeCellRect)), arrowEdge: .bottom) {
+        .pickerPanel(isPresented: pickerPresented(.monster), anchor: activeCellRect) {
             if let req = activePicker {
                 let r = map.room(col: req.col, row: req.row)
                 MonsterPicker(primary: r.monsterDetail, secondary: r.monsterDetail2,
@@ -549,8 +549,7 @@ struct DungeonRoomGridView: View {
                               onDone: { activePicker = nil })
             }
         }
-        .popover(isPresented: pickerPresented(.floorDrop),
-                 attachmentAnchor: .rect(.rect(activeCellRect)), arrowEdge: .bottom) {
+        .pickerPanel(isPresented: pickerPresented(.floorDrop), anchor: activeCellRect) {
             if let req = activePicker {
                 FloorDropPicker(current: map.room(col: req.col, row: req.row).floorDropDetail) { fd in
                     DungeonRoomMark.setFloorDrop(fd, col: req.col, row: req.row, map: map)
