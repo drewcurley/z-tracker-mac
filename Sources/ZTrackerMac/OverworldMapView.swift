@@ -528,11 +528,9 @@ struct OverworldMapView: View {
         .aspectRatio(tileAspectRatio * CGFloat(OverworldGrid.columnCount) / CGFloat(OverworldGrid.rowCount), contentMode: .fit)
         // The hover magnifier (T-254) hangs just below the map — over the dungeon band, where
         // the reference draws it (`Layout.fs:110-111`). It only reads the hovered tile.
-        .overlay(alignment: .bottomLeading) {
-            if options.showMagnifier, customMapImagePath == nil {
-                OverworldMagnifierOverlay(hover: hover, quest: quest, mirrored: mirrored)
-                    .alignmentGuide(.bottom) { $0[.top] }
-            }
+        .hangingBelow {
+            OverworldMagnifierOverlay(hover: hover, quest: quest, mirrored: mirrored,
+                                      enabled: options.showMagnifier && customMapImagePath == nil)
         }
         // Click / scroll hotkeys on the cursor tile (T-249) do what that mouse action does.
         .onChange(of: focus.clickRequest?.id) { _, id in

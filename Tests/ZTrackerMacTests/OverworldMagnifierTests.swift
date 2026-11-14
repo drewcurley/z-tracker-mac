@@ -1,5 +1,6 @@
 import Testing
 import CoreGraphics
+import SwiftUI
 import TrackerCore
 @testable import ZTrackerMac
 
@@ -58,5 +59,22 @@ struct OverworldMagnifierTests {
         #expect(OverworldMagnifierAtlas.rockSource(quest: .first, column: 4, row: 7) == (4, 7))
         #expect(OverworldMagnifierAtlas.rockSource(quest: .mixedFirst, column: 12, row: 3) == (2, 4))
         #expect(OverworldMagnifierAtlas.rockSource(quest: .first, column: 12, row: 3) == (12, 3))
+    }
+
+    @Test("the magnifier hangs below the map, not over it — even when its content is conditional")
+    func hangsBelowNotOver() throws {
+        let show = true
+        let layout = VStack(spacing: 0) {
+            Color.red.frame(width: 100, height: 100)        // stands in for the map
+                .hangingBelow { if show { Color.blue.frame(width: 20, height: 20) } }
+                .zIndex(1)
+            Color.white.frame(width: 100, height: 100)      // the dungeon band below
+        }
+        let renderer = ImageRenderer(content: layout)
+        renderer.scale = 1
+        let image = try #require(renderer.cgImage)
+        let inside = rgb(image, 5, 95), below = rgb(image, 5, 105)
+        #expect(inside.0 > 200 && inside.2 < 120)           // the map's bottom-left is uncovered
+        #expect(below.2 > 200 && below.0 < 60)              // the panel's top-left sits just below
     }
 }

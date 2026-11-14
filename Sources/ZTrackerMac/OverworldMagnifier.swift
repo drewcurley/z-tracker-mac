@@ -256,10 +256,24 @@ struct OverworldMagnifierOverlay: View {
     var hover: OverworldHoverState
     let quest: OverworldQuest
     var mirrored: Bool
+    var enabled = true
 
     var body: some View {
-        if let tile = hover.magnifierTile {
+        if enabled, let tile = hover.magnifierTile {
             OverworldMagnifierView(quest: quest, column: tile.x, row: tile.y, mirrored: mirrored)
+        }
+    }
+}
+
+extension View {
+    /// Overlay `content` hanging just below this view's bottom edge, left-aligned, without
+    /// affecting layout (T-254). The alignment guide must sit on an unconditional view: SwiftUI
+    /// drops an explicit guide applied inside an `if` in the overlay builder, which pinned the
+    /// magnifier to the map's bottom edge — over the map — instead of below it.
+    func hangingBelow<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        overlay(alignment: .bottomLeading) {
+            ZStack(alignment: .topLeading) { content() }
+                .alignmentGuide(.bottom) { $0[.top] }
         }
     }
 }
