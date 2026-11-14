@@ -321,13 +321,20 @@ final class VoiceController {
         }
     }
 
+    /// A dictated note on its own line at the end of Notes (T-251). Pure.
+    static func notes(_ notes: String, appending text: String) -> String {
+        notes.isEmpty || notes.hasSuffix("\n") ? notes + text : notes + "\n" + text
+    }
+
     /// ~0.5s after the transcript stops changing, act — faster than waiting for the
     /// recognizer's own (slow) end-of-speech, and re-armed only on a real change so a
     /// repeated partial can't keep it from firing.
     private func armFallback() {
         endTimer?.cancel()
+        // A note is longer and has natural pauses — give the speaker time to finish (T-251).
+        let wait = VoiceGrammar.isNoteDictation(lastHeard, config: config) ? 2000 : 700
         endTimer = Task { @MainActor [weak self] in
-            try? await Task.sleep(for: .milliseconds(700))
+            try? await Task.sleep(for: .milliseconds(wait))
             guard !Task.isCancelled, let self, self.isListening else { return }
             let text = self.lastHeard
             self.processUtterance(text)
@@ -424,6 +431,8 @@ final class VoiceController {
         case let .clearAt(column, row, words):
             focus.setCursor(col: column, row: row)
             return applyClear(words, cell: focus.cursorCell)
+        case let .appendNote(text):
+            model.notes = Self.notes(model.notes, appending: text)
         }
         return true
     }
@@ -657,6 +666,7 @@ final class VoiceController {
         case .pauseTimer: return "⏸ timer"
         case .recorderDestPrev: return "◀ recorder"
         case .recorderDestNext: return "recorder ▶"
+        case .appendNote: return "📝 note"
         }
     }
 }

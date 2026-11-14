@@ -20,6 +20,7 @@ public enum VoiceCommand: Equatable, Sendable {
     case pauseTimer                                       // "pause timer" / "stop timer"
     case recorderDestPrev                                 // "recorder down" / "recorder previous"
     case recorderDestNext                                 // "recorder up" / "recorder next"
+    case appendNote(text: String)                         // "make a note bomb shop on E7"
 }
 
 /// A resolved overworld action — the app calls it once it knows the cursor is on the
@@ -39,6 +40,9 @@ public enum VoiceGrammar {
     public static func parse(_ raw: String, config: VoiceConfig) -> VoiceCommand? {
         let tokens = normalize(raw)
         guard !tokens.isEmpty else { return nil }
+        // "Make a note …" (T-251) is free-form dictation, checked first so the note's words
+        // ("clear", "bomb shop", a coordinate…) are never taken as commands.
+        if let text = noteText(raw, config: config) { return .appendNote(text: text) }
         let coord = coordinate(in: tokens)
         let words = coord?.rest ?? tokens
 
@@ -105,6 +109,41 @@ public enum VoiceGrammar {
             return .cursorTo(column: coord.coord.column, row: coord.coord.row)
         }
         return nil
+    }
+
+    // MARK: Notes dictation (T-251)
+
+    /// How many leading raw words of `raw` spell a `Notes_Append` trigger ("make a note"), or
+    /// nil. Longest trigger first, so "make a note that" beats "make a note".
+    static func noteTriggerWordCount(_ raw: String, config: VoiceConfig) -> Int? {
+        let rawWords = raw.split(whereSeparator: \.isWhitespace).map(String.init)
+        let triggers = config.phrases(for: "Notes_Append").map(normalize)
+            .filter { !$0.isEmpty }.sorted { $0.count > $1.count }
+        for trigger in triggers {
+            var consumed: [String] = []
+            var i = 0
+            while i < rawWords.count, consumed.count < trigger.count {
+                consumed += normalize(rawWords[i])
+                i += 1
+            }
+            if consumed == trigger { return i }
+        }
+        return nil
+    }
+
+    /// The text dictated after a note trigger, as spoken (case and punctuation kept, minus
+    /// leading/trailing punctuation), or nil when there's no trigger or nothing after it.
+    public static func noteText(_ raw: String, config: VoiceConfig) -> String? {
+        guard let n = noteTriggerWordCount(raw, config: config) else { return nil }
+        let rest = raw.split(whereSeparator: \.isWhitespace).dropFirst(n).joined(separator: " ")
+            .trimmingCharacters(in: .whitespaces.union(.punctuationCharacters))
+        return rest.isEmpty ? nil : rest
+    }
+
+    /// Whether `partial` (a transcript in progress) is a note being dictated — the app waits
+    /// longer for the speaker to finish one (T-251).
+    public static func isNoteDictation(_ partial: String, config: VoiceConfig) -> Bool {
+        noteTriggerWordCount(partial, config: config) != nil
     }
 
     // MARK: Clear / un-mark (T-149)

@@ -154,8 +154,8 @@ The former "not started" list is now empty — every item was shipped or descope
 
 ## 6. Beyond the reference — planned user requests (not in the original audit)
 
-- **"Make a note {X}" voice command** — append dictated text to the NOTES field (buildable with
-  Speech.framework free-form dictation). *(Not yet built.)*
+- **"Make a note {X}" voice command** — append dictated text to the NOTES field. **Done — T-251**
+  ("make a note / take a note / add a note / note that …", editable in the voice editor).
 
 ## What's actually left
 

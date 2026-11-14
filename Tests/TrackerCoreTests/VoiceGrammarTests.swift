@@ -447,3 +447,41 @@ struct VoiceGrammarTests {
         #expect(VoiceGrammar.parse("recorder", config: config) == .actionAtCursor(words: ["recorder"]))
     }
 }
+
+@Suite("Voice notes (T-251)")
+struct VoiceNoteGrammarTests {
+    let config = VoiceConfig()
+
+    @Test("'make a note …' dictates the rest, as spoken")
+    func dictates() {
+        #expect(VoiceGrammar.parse("make a note bomb shop on E7", config: config)
+                == .appendNote(text: "bomb shop on E7"))
+        #expect(VoiceGrammar.parse("Take a note, level 3 needs the ladder.", config: config)
+                == .appendNote(text: "level 3 needs the ladder"))
+    }
+
+    @Test("command words inside a note are not commands")
+    func noteWordsAreText() {
+        #expect(VoiceGrammar.parse("make a note clear D5 later", config: config)
+                == .appendNote(text: "clear D5 later"))
+    }
+
+    @Test("a bare trigger with nothing after it is not a note")
+    func emptyNote() {
+        #expect(VoiceGrammar.noteText("make a note", config: config) == nil)
+        #expect(VoiceGrammar.isNoteDictation("make a note", config: config))
+    }
+
+    @Test("the trigger only counts at the start")
+    func triggerAtStartOnly() {
+        #expect(VoiceGrammar.noteText("bomb shop make a note", config: config) == nil)
+    }
+
+    @Test("a user-edited trigger works")
+    func customTrigger() {
+        let c = VoiceConfig()
+        c.setPhrases(["jot"], for: "Notes_Append")
+        #expect(VoiceGrammar.parse("jot armos is east", config: c) == .appendNote(text: "armos is east"))
+        #expect(VoiceGrammar.noteText("make a note x", config: c) == nil)
+    }
+}

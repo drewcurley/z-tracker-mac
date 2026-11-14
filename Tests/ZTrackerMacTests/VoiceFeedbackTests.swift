@@ -59,3 +59,19 @@ struct VoiceFeedbackTests {
         #expect(VoiceController.shouldGiveUp(errorCode: 203, consecutive: &n))
     }
 }
+
+@Suite("Voice notes apply (T-251)")
+@MainActor
+struct VoiceNoteApplyTests {
+    @Test("a note lands on its own line at the end of Notes")
+    func appends() {
+        #expect(VoiceController.notes("", appending: "a") == "a")
+        #expect(VoiceController.notes("route", appending: "a") == "route\na")
+        #expect(VoiceController.notes("route\n", appending: "a") == "route\na")
+        let model = TrackerModel(quest: .first)
+        let voice = VoiceController(model: model, focus: TrackerFocusState(), config: VoiceConfig(),
+                                    options: TrackerOptions(), timer: TrackerTimer())
+        #expect(voice.execute(.appendNote(text: "L3 needs ladder")))
+        #expect(model.notes == "L3 needs ladder")
+    }
+}
