@@ -236,6 +236,15 @@ struct ZTrackerMacApp: App {
 
         // The duplicate Timer window (T-101) — a big stopwatch readout (e.g. for a
         // stream overlay); the main tracker keeps its own timer too.
+        // The mouse magnifier (T-255): a live 3× view of the tracker around the pointer, for a
+        // small screen where precise targeting is hard to see. Opened by its Settings option.
+        Window("Mouse Magnifier", id: MouseMagnifierWindowID) {
+            MouseMagnifierView()
+                .frame(minWidth: 150, minHeight: 150)
+                .persistWindowFrame("MouseMagnifierWindow")
+        }
+        .defaultSize(width: 500, height: 500)
+
         Window("Timer", id: TimerWindowID) {
             TimerWindowView(timer: timer)
                 .frame(minWidth: 220, minHeight: 90)
