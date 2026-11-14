@@ -12,6 +12,7 @@
 
 | ID | Title | Owner | State |
 |----|-------|-------|-------|
+| [T-250](./T-250.md) | Full startup tips, a real "Disable all" reminder mute, and drop the dead spoiler-import message | frontend-engineer | — | feat/tips-and-mute | — | docs/reviews/feat-tips-and-mute/final.md |
 | [T-249](./T-249.md) | Wire the dead hotkeys — click/scroll keys, Take-Any/Take-This, door +/−; item hotkeys honor the reachability gate | frontend-engineer | — | fix/dead-controls | — | docs/reviews/fix-dead-controls/final.md |
 | [T-248](./T-248.md) | Partly-working features — Recorder/PB reminder toggle, input tick everywhere, mirrored routing, honest voice feedback + mic errors | frontend-engineer | — | fix/partial-features | — | docs/reviews/fix-partial-features/final.md |
 | [T-247](./T-247.md) | Wire the "Warn when quitting while the timer is running" setting | backend-engineer | — | fix/dead-controls | — | docs/reviews/fix-dead-controls/final.md |

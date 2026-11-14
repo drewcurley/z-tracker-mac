@@ -39,6 +39,11 @@ enum SpeechEngine {
         synthesizer.speak(utterance)
     }
 
+    /// Stop speaking now and drop anything queued (T-250, "Disable all").
+    static func stop() {
+        synthesizer.stopSpeaking(at: .immediate)
+    }
+
     /// Prime the speech service, voice model, and audio output stack at launch by
     /// speaking a silent space, so the first real reminder is instant (the T-069
     /// mitigation for `AVSpeechSynthesizer` first-use lag). Uses the same shared

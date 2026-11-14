@@ -193,6 +193,11 @@ public final class TrackerOptions {
     public var visualReminders: [ReminderCategory: Bool] { didSet { persistRemindersIfNeeded() } }
     /// `PreferredVoice`, default empty (no preference / system default).
     public var preferredVoiceIdentifier: String? { didSet { persistRemindersIfNeeded() } }
+    /// `IsMuted` — the reminders' "Disable all" switch (`TrackerModelOptions.fs:79`,
+    /// `OptionsMenu.fs:237-242`), default off. Silences every reminder while keeping the
+    /// per-category choices, so turning it back off restores them; muted reminders are still
+    /// logged (T-250). Persisted with the other reminder settings.
+    public var remindersMuted: Bool = false { didSet { persistRemindersIfNeeded() } }
 
     // MARK: Other
 
@@ -362,17 +367,6 @@ public final class TrackerOptions {
         Dictionary(uniqueKeysWithValues: OverworldHiddenTileKind.allCases.map { ($0, false) })
     }
 
-    /// The "Disable all" button (docs/domain.md § 4.1) — not itself a
-    /// persisted field in the reference app (no matching source field), a UI
-    /// convenience that zeroes every voice+visual toggle. Implemented as a
-    /// method rather than stored state for that reason.
-    public func disableAllReminders() {
-        for category in ReminderCategory.allCases {
-            voiceReminders[category] = false
-            visualReminders[category] = false
-        }
-    }
-
     // MARK: Reminder-settings persistence (T-004.1)
 
     /// Where the reminder settings persist. `nil` (the default) disables
@@ -388,6 +382,7 @@ public final class TrackerOptions {
     private static let voiceKey = "ztracker.reminders.voice"
     private static let visualKey = "ztracker.reminders.visual"
     private static let preferredVoiceKey = "ztracker.reminders.preferredVoice"
+    private static let mutedKey = "ztracker.reminders.muted"
 
     /// Turns on reminder-settings persistence to `store` and applies whatever
     /// was saved on a previous launch over the current defaults (T-004.1). Only
@@ -411,6 +406,7 @@ public final class TrackerOptions {
         if let id = store.string(forKey: Self.preferredVoiceKey) {
             preferredVoiceIdentifier = id
         }
+        remindersMuted = store.bool(forKey: Self.mutedKey)
     }
 
     /// Writes the current reminder settings to the store, unless persistence is
@@ -422,6 +418,7 @@ public final class TrackerOptions {
         store.set(reminderVolume, forKey: Self.volumeKey)
         store.set(Self.encodeToggles(voiceReminders), forKey: Self.voiceKey)
         store.set(Self.encodeToggles(visualReminders), forKey: Self.visualKey)
+        store.set(remindersMuted, forKey: Self.mutedKey)
         if let id = preferredVoiceIdentifier {
             store.set(id, forKey: Self.preferredVoiceKey)
         } else {

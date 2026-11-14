@@ -44,11 +44,11 @@ struct ReminderPersistenceTests {
     func disableAllPersists() {
         let store = makeStore()
         let first = TrackerOptions.withReminderPersistence(store: store)
-        first.disableAllReminders()
+        first.remindersMuted = true
 
         let second = TrackerOptions.withReminderPersistence(store: store)
-        #expect(second.voiceReminders.values.allSatisfy { $0 == false })
-        #expect(second.visualReminders.values.allSatisfy { $0 == false })
+        #expect(second.remindersMuted)
+        #expect(second.voiceReminders[.coastItem] == true)   // choices untouched
     }
 
     @Test("a category absent from the save keeps its default (forward-compatible)")

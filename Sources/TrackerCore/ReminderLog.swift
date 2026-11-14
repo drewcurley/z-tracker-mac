@@ -15,6 +15,9 @@ public final class ReminderLog {
         public let elapsedSeconds: Int
         /// Icons describing the reminder (rendered beside the text).
         public let icons: [ReminderIcon]
+        /// Logged while reminders were muted ("Disable all") — not shown or spoken; the log
+        /// greys it out, as the reference does (`Reminders.fs:115-119`, T-250).
+        public var muted: Bool = false
     }
 
     /// Newest first.
@@ -25,8 +28,10 @@ public final class ReminderLog {
     public init(cap: Int = 100) { self.cap = cap }
 
     /// Append a fired reminder; drops the oldest past `cap`.
-    public func append(_ text: String, elapsedSeconds: Int = 0, icons: [ReminderIcon] = []) {
-        entries.insert(Entry(id: nextID, text: text, elapsedSeconds: elapsedSeconds, icons: icons), at: 0)
+    public func append(_ text: String, elapsedSeconds: Int = 0, icons: [ReminderIcon] = [],
+                       muted: Bool = false) {
+        entries.insert(Entry(id: nextID, text: text, elapsedSeconds: elapsedSeconds, icons: icons,
+                             muted: muted), at: 0)
         nextID += 1
         if entries.count > cap { entries.removeLast(entries.count - cap) }
     }

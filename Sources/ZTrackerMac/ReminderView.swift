@@ -47,8 +47,11 @@ final class ReminderController {
                                                 assignedLabels: assignedLabels)
             let visual = options.visualReminders[announcement.category] == true
             let voice = options.voiceReminders[announcement.category] == true
-            if visual { show(text) }
-            if voice {
+            // "Disable all" (T-250) silences everything but still logs, greyed — the reference's
+            // IsMuted (`Reminders.fs:30,83-85`).
+            let muted = options.remindersMuted
+            if visual, !muted { show(text) }
+            if voice, !muted {
                 SpeechEngine.speak(text,
                                    volume: Float(options.reminderVolume) / 100,
                                    preferredVoiceIdentifier: options.preferredVoiceIdentifier)
@@ -58,7 +61,7 @@ final class ReminderController {
             if visual || voice {
                 let icons = ReminderIcons.icons(for: announcement, swordLevel: swordLevel,
                                                 ringLevel: ringLevel, coastItemId: coastItemId)
-                log.append(text, elapsedSeconds: elapsedSeconds, icons: icons)
+                log.append(text, elapsedSeconds: elapsedSeconds, icons: icons, muted: muted)
             }
         }
     }
@@ -74,6 +77,14 @@ final class ReminderController {
 
     func dismiss(_ id: UUID) {
         visible.removeAll { $0.id == id }
+    }
+
+    /// "Disable all" was just turned on (T-250): stop what's speaking or queued and clear the
+    /// reminders on screen, so nothing more plays after you mute (the reference re-checks the
+    /// mute just before playing, `Reminders.fs:83-85`). Actionable toasts (Undo) stay.
+    func silenceNow() {
+        SpeechEngine.stop()
+        visible.removeAll { $0.action == nil }
     }
 
     @discardableResult

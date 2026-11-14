@@ -102,24 +102,15 @@ struct TrackerOptionsTests {
         #expect(options.visualReminders[category] == expected)
     }
 
-    @Test("disableAllReminders zeroes every voice and visual toggle")
-    func disableAllReminders() {
+    @Test("Disable all is a mute switch: off by default, and it keeps the per-category choices (T-250)")
+    func muteKeepsCategories() {
         let options = TrackerOptions()
-        options.disableAllReminders()
-        for category in ReminderCategory.allCases {
-            #expect(options.voiceReminders[category] == false)
-            #expect(options.visualReminders[category] == false)
-        }
-    }
-
-    @Test("disableAllReminders does not affect unrelated settings")
-    func disableAllReminderScoping() {
-        let options = TrackerOptions()
-        options.drawRoutes = false
-        options.reminderVolume = 75
-        options.disableAllReminders()
-        #expect(options.drawRoutes == false)
-        #expect(options.reminderVolume == 75)
+        #expect(!options.remindersMuted)
+        options.voiceReminders[.blockers] = false
+        options.remindersMuted = true
+        options.remindersMuted = false
+        #expect(options.voiceReminders[.blockers] == false)
+        #expect(options.voiceReminders[.coastItem] == true)
     }
 
     @Test("toggles are independently settable")
