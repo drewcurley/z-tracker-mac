@@ -6,6 +6,8 @@ Each entry mirrors the notes on its [GitHub Release](https://github.com/drewcurl
 
 ## [Unreleased]
 ### Added
+- **Overworld magnifier.** Hovering the overworld shows the surrounding screens magnified, with
+  every cave, bomb, burn, recorder and push spot ringed (Settings ▸ "Show magnifier").
 - **"Make a note …" voice command.** Say "make a note" (or "take a note") and the rest of what you
   say is added to Notes.
 - **45 startup tips** — the Windows tracker's full tip list (Z-Tracker tips reworded for the Mac app).

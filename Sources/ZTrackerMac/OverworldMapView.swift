@@ -526,6 +526,14 @@ struct OverworldMapView: View {
             .scaleEffect(x: mirrored ? -1 : 1, y: 1)
         }
         .aspectRatio(tileAspectRatio * CGFloat(OverworldGrid.columnCount) / CGFloat(OverworldGrid.rowCount), contentMode: .fit)
+        // The hover magnifier (T-254) hangs just below the map — over the dungeon band, where
+        // the reference draws it (`Layout.fs:110-111`). It only reads the hovered tile.
+        .overlay(alignment: .bottomLeading) {
+            if options.showMagnifier, customMapImagePath == nil {
+                OverworldMagnifierOverlay(hover: hover, quest: quest, mirrored: mirrored)
+                    .alignmentGuide(.bottom) { $0[.top] }
+            }
+        }
         // Click / scroll hotkeys on the cursor tile (T-249) do what that mouse action does.
         .onChange(of: focus.clickRequest?.id) { _, id in
             guard !isMirrorWindow, let id, let req = focus.takeClickRequest(id, in: .overworld) else { return }
@@ -570,6 +578,18 @@ struct OverworldMapView: View {
             focus.hoverOverworld(col: column, row: row)
         } else if case .ended = phase {
             focus.endHover(.overworld)
+        }
+        // The hover magnifier (T-254) — independent of routing, so set before its guard.
+        if options.showMagnifier, customMapImagePath == nil {
+            let here = OverworldScreenCoordinate(x: column, y: row)
+            if case .active = phase {
+                if hover.magnifierTile != here { hover.magnifierTile = here }
+            } else if hover.magnifierTile == here {
+                // Only the tile being left clears it — the next tile's enter may land first.
+                hover.magnifierTile = nil
+            }
+        } else if hover.magnifierTile != nil {
+            hover.magnifierTile = nil
         }
         // Routing/GYR is derived from the vanilla map's openings — meaningless on a
         // custom map, so skip it entirely there (T-167).
@@ -1969,6 +1989,9 @@ struct PulsingHighlight: View {
 @MainActor
 final class OverworldHoverState {
     var route: OverworldRouteHighlight?
+    /// The screen under the mouse, for the hover magnifier (T-254) — every screen, dead spots
+    /// included, as the reference's per-tile MouseEnter.
+    var magnifierTile: OverworldScreenCoordinate?
     @ObservationIgnored var vertex: OverworldVertex?
 
     struct GraphKey: Equatable {

@@ -314,6 +314,8 @@ struct MainTrackerPlaceholderView: View {
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
+                // Above the dungeon band, so the hover magnifier hanging below the map covers it.
+                .zIndex(1)
 
                 // (T-081) The recorder destination moved into the Info group
                 // (RecorderInfoWidget) below the six overlay toggles; it no longer
