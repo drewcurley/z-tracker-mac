@@ -222,15 +222,28 @@ enum GameSave {
         return autoSaveOnQuit ? .autosaveAndProceed : .ask
     }
 
+    /// Whether quitting should first warn that the run timer is still going (T-247). Only when
+    /// quitting would otherwise go straight through — "Auto-save and quit" — since an unfinished
+    /// run's Save / Don't Save / Cancel dialog already stops the quit (and says the timer runs).
+    static func shouldWarnTimerRunning(_ decision: QuitDecision, timerRunning: Bool, warn: Bool) -> Bool {
+        warn && timerRunning && decision == .autosaveAndProceed
+    }
+
     /// Quit-time confirmation. Returns whether to proceed. Crucially, with **no run in
     /// memory** it never touches `last-session.json` — so quitting while the resume prompt is
     /// up, after "Not now", or via the startup banner's "Update now" keeps the saved run
     /// (previously it was deleted, T-238).
     static func confirmQuitSaving(model: TrackerModel, timer: TrackerTimer,
                                   options: TrackerOptions? = nil) -> Bool {
-        switch quitDecision(runInMemory: model.quest != nil,
-                            finished: model.playerProgress.hasRescuedZelda,
-                            autoSaveOnQuit: options?.autoSaveOnQuit == true) {
+        let decision = quitDecision(runInMemory: model.quest != nil,
+                                    finished: model.playerProgress.hasRescuedZelda,
+                                    autoSaveOnQuit: options?.autoSaveOnQuit == true)
+        if let options, shouldWarnTimerRunning(decision, timerRunning: timer.isRunning,
+                                               warn: options.warnOnCloseWhileTimerRunning),
+           !confirmQuitWhileTimerRunning() {
+            return false
+        }
+        switch decision {
         case .proceed:
             return true
         case .clearSessionAndProceed:
@@ -242,7 +255,9 @@ enum GameSave {
         case .ask:
             let alert = NSAlert()
             alert.messageText = "Save your run before quitting?"
-            alert.informativeText = "You haven't rescued Zelda yet. Save so you can resume where you left off."
+            alert.informativeText = "You haven't rescued Zelda yet"
+                + (timer.isRunning ? " and the timer is still running" : "")
+                + ". Save so you can resume where you left off."
             alert.addButton(withTitle: "Save")        // .alertFirstButtonReturn
             alert.addButton(withTitle: "Don't Save")  // .alertSecondButtonReturn
             alert.addButton(withTitle: "Cancel")      // .alertThirdButtonReturn

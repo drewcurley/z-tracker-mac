@@ -79,15 +79,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 }
 
-/// Shows the "quit while the timer is running?" confirmation (T-109), returning
-/// whether to proceed. No-op (proceeds) unless the setting is on and the timer is
-/// actually running.
+/// Shows the "quit while the timer is running?" confirmation (T-109), returning whether to
+/// proceed. Called by the quit gate only when quitting would otherwise skip every prompt
+/// (`GameSave.shouldWarnTimerRunning`, T-247).
 @MainActor
-func confirmQuitWhileTimerRunning(timer: TrackerTimer, options: TrackerOptions) -> Bool {
-    guard options.warnOnCloseWhileTimerRunning, timer.isRunning else { return true }
+func confirmQuitWhileTimerRunning() -> Bool {
     let alert = NSAlert()
     alert.messageText = "The run timer is still running."
-    alert.informativeText = "Quit anyway? The timer will be lost."
+    alert.informativeText = "Quit anyway? Your run is saved, and you can resume it when you reopen the app."
     alert.addButton(withTitle: "Quit")
     alert.addButton(withTitle: "Cancel")
     return alert.runModal() == .alertFirstButtonReturn

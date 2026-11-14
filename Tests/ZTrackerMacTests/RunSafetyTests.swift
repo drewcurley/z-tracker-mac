@@ -44,6 +44,16 @@ struct RunSafetyTests {
         #expect(GameSave.quitDecision(runInMemory: true, finished: false, autoSaveOnQuit: true) == .autosaveAndProceed)
     }
 
+    @Test("the timer-running warning only fires when quitting would skip every prompt (T-247)")
+    func timerRunningWarning() {
+        #expect(GameSave.shouldWarnTimerRunning(.autosaveAndProceed, timerRunning: true, warn: true))
+        #expect(!GameSave.shouldWarnTimerRunning(.autosaveAndProceed, timerRunning: false, warn: true))
+        #expect(!GameSave.shouldWarnTimerRunning(.autosaveAndProceed, timerRunning: true, warn: false))
+        #expect(!GameSave.shouldWarnTimerRunning(.ask, timerRunning: true, warn: true))       // save dialog asks
+        #expect(!GameSave.shouldWarnTimerRunning(.proceed, timerRunning: true, warn: true))
+        #expect(!GameSave.shouldWarnTimerRunning(.clearSessionAndProceed, timerRunning: true, warn: true))
+    }
+
     // MARK: Launch-time session check
 
     @Test("an unfinished session is offered; a finished one is cleared; none is none")
