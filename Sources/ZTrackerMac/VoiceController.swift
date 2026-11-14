@@ -95,6 +95,15 @@ final class VoiceController {
     private(set) var auth: Auth = .unknown
     private(set) var lastHeard = ""
     private(set) var lastCommand = ""
+    /// Why voice isn't working, shown under the mic button (T-248); cleared on a good start.
+    private(set) var lastError: String?
+    /// Also surfaces each new error as a toast — the FLAGS area may be off screen (e.g. when
+    /// voice auto-starts at launch).
+    @ObservationIgnored var onError: ((String) -> Void)?
+    /// Consecutive recognition errors other than "no speech" — a persistent one stops voice
+    /// instead of silently restarting forever.
+    @ObservationIgnored private var consecutiveErrors = 0
+    static let maxConsecutiveErrors = 3
 
     @ObservationIgnored private let recognizer = SFSpeechRecognizer()
     @ObservationIgnored private let engine = AVAudioEngine()
@@ -149,8 +158,10 @@ final class VoiceController {
     // MARK: Engine lifecycle — set up / torn down ONCE
 
     private func start() {
-        guard !isListening, let recognizer, recognizer.isAvailable else {
+        guard !isListening else { return }
+        guard let recognizer, recognizer.isAvailable else {
             vlog("start aborted: recognizer available=\(recognizer?.isAvailable ?? false)")
+            report("Speech recognition is unavailable — turn on Dictation in System Settings ▸ Keyboard.")
             return
         }
         VoiceDebugLog.reset()   // fresh log (only when the debug log is enabled, T-243)
@@ -160,6 +171,8 @@ final class VoiceController {
             vlog("input format: \(format.sampleRate)Hz \(format.channelCount)ch; onDevice=\(recognizer.supportsOnDeviceRecognition)")
             if format.sampleRate == 0 || format.channelCount == 0 {
                 vlog("⚠️ invalid input format — no usable mic device")
+                report("No microphone found — connect one or pick an input in System Settings ▸ Sound.")
+                return
             }
             if !tapInstalled {
                 let box = self.box
@@ -171,11 +184,13 @@ final class VoiceController {
             engine.prepare()
             try engine.start()
             isListening = true
+            lastError = nil
+            consecutiveErrors = 0
             startDiag()
             startSession()
         } catch {
-            lastCommand = "mic error"
             stop()
+            report("The microphone couldn't start: \(error.localizedDescription)")
         }
     }
 
@@ -236,13 +251,21 @@ final class VoiceController {
             Task { @MainActor [weak self] in
                 // Ignore callbacks from a task we've already replaced.
                 guard let self, self.isListening, gen == self.generation else { return }
-                if let transcript { self.heard(transcript, isFinal: isFinal) }
+                if let transcript {
+                    self.consecutiveErrors = 0
+                    self.heard(transcript, isFinal: isFinal)
+                }
                 if let errCode {
                     let ms = Int(Date().timeIntervalSince(started) * 1000)
                     // Code 1110 = "no speech detected": a silent window, normal between
                     // commands — not a failure. Any end reason ends the task; open a
                     // fresh one. (ms tells us if the task actually listened.)
                     vlog("session \(gen) ended \(errCode == 1110 ? "no-speech" : "err \(errCode)") after \(ms)ms")
+                    if Self.shouldGiveUp(errorCode: errCode, consecutive: &self.consecutiveErrors) {
+                        self.stop()
+                        self.report("Voice stopped: speech recognition keeps failing (error \(errCode)). Click the mic to try again.")
+                        return
+                    }
                     self.restart()
                 }
             }
@@ -262,6 +285,22 @@ final class VoiceController {
                 try? await Task.sleep(for: .seconds(1))
             }
         }
+    }
+
+    /// Show why voice isn't working (T-248): under the mic button, and as a toast.
+    private func report(_ message: String) {
+        vlog("error: \(message)")
+        lastError = message
+        onError?(message)
+    }
+
+    /// Whether a recognition-task error should stop voice (T-248). "No speech" (1110) is the
+    /// normal silent window between commands and never counts; any other error counts, and
+    /// `maxConsecutiveErrors` in a row (with no transcript between) gives up. Pure.
+    static func shouldGiveUp(errorCode: Int, consecutive: inout Int) -> Bool {
+        if errorCode == 1110 { return false }
+        consecutive += 1
+        return consecutive >= maxConsecutiveErrors
     }
 
     // MARK: Utterance handling
@@ -305,9 +344,15 @@ final class VoiceController {
         lastProcessed = phrase
         if let command = VoiceGrammar.parse(phrase, config: config) {
             vlog("utterance=\"\(phrase)\" → \(command)")
-            execute(command)
-            ConfirmationSound.voice(options)   // audible "command recognized" cue (T-208)
-            lastCommand = describe(command)
+            // The cue and the green ✓ only when the command actually changed something; a
+            // recognized command that couldn't apply (dead spot, wrong region, no such
+            // target) stays silent and shows ✗, like the reference's sound-on-success (T-248).
+            if execute(command) {
+                ConfirmationSound.voice(options)   // audible "command applied" cue (T-208)
+                lastCommand = describe(command)
+            } else {
+                lastCommand = "✗ " + describe(command)
+            }
         } else {
             vlog("utterance=\"\(phrase)\" → (no command)")
         }
@@ -315,17 +360,19 @@ final class VoiceController {
 
     // MARK: Execute
 
-    private func execute(_ command: VoiceCommand) {
+    /// Run a parsed command; returns whether it applied (T-248).
+    @discardableResult
+    func execute(_ command: VoiceCommand) -> Bool {   // internal for tests
         switch command {
         case let .moveCursor(dcol, drow):
             focus.moveCursor(dcol: dcol, drow: drow)
         case let .cursorTo(column, row):
             focus.setCursor(col: column, row: row)
         case let .actionAtCursor(words):
-            applyAction(words)
+            return applyAction(words)
         case let .actionAt(column, row, words):
             focus.setCursor(col: column, row: row)
-            applyAction(words)
+            return applyAction(words)
         case let .dungeonTab(n):
             focus.selectedDungeonTab = n - 1
             focus.cursorRegion = .dungeonMap        // drop the cursor into that dungeon
@@ -349,12 +396,13 @@ final class VoiceController {
                 focus.setCursor(col: s.x, row: s.y)
             }
         case let .toggleProgression(id):
-            applyProgression(id)
+            return applyProgression(id)
         case let .setItemBox(boxID, itemID):
             if !ItemBoxVoiceApply.apply(boxID: boxID, itemID: itemID, region: focus.cursorRegion,
                                         tracker: model.dungeonTracker,
                                         playerState: model.playerComputedStateSummary) {
                 vlog("item box \(boxID)=\(itemID) not applied (region \(focus.cursorRegion), or item can't go here)")
+                return false
             }
         case .stopListening:
             vlog("stop listening (voice command)")
@@ -372,32 +420,35 @@ final class VoiceController {
             model.recorderDestinationManual = true
             model.recorderDestinationIndex += 1
         case let .clearAtCursor(words):
-            applyClear(words, cell: focus.cursorCell)
+            return applyClear(words, cell: focus.cursorCell)
         case let .clearAt(column, row, words):
             focus.setCursor(col: column, row: row)
-            applyClear(words, cell: focus.cursorCell)
+            return applyClear(words, cell: focus.cursorCell)
         }
+        return true
     }
 
     /// Un-mark / clear (T-149) — region-aware. Empty `words` = clear the cursor cell
     /// (overworld) or room (dungeon); otherwise clear the named target.
-    private func applyClear(_ words: [String], cell: TrackerFocusState.GridCell) {
+    private func applyClear(_ words: [String], cell: TrackerFocusState.GridCell) -> Bool {
         switch focus.cursorRegion {
         case .overworld:
-            if clearProgression(words) { return }   // "un-take wood sword" from the overworld
+            if clearProgression(words) { return true }   // "un-take wood sword" from the overworld
             OverworldMark.apply(.unmarked, column: cell.col, row: cell.row, grid: model.overworldGrid,
                                 releaseTakeAny: { c, r in model.releaseOverworldTakeAny(column: c, row: r) },
                                 placeDungeon: { _, _, _ in })
+            return true
         case .dungeonMap:
-            applyDungeonClear(words, cell: cell)
+            return applyDungeonClear(words, cell: cell)
         case .blockers:
             // A slot holds one blocker, so any clear here empties the slot (T-159).
             let t = BlockerRegion.target(cell)
             model.dungeonBlockers.setDungeonBlocker(.nothing, dungeon: t.dungeon, slot: t.slot)
+            return true
         default:
             // .items / .dungeonItem — the only generic clear is a progression flag
             // ("un-take wood sword").
-            _ = clearProgression(words)
+            return clearProgression(words)
         }
     }
 
@@ -411,9 +462,9 @@ final class VoiceController {
 
     /// Clear a dungeon target: door(s) by direction, a room type / monster / floor
     /// drop by name, or — with no target — the whole room.
-    private func applyDungeonClear(_ words: [String], cell: TrackerFocusState.GridCell) {
+    private func applyDungeonClear(_ words: [String], cell: TrackerFocusState.GridCell) -> Bool {
         let tab = focus.selectedDungeonTab
-        guard (0..<model.dungeonRoomMaps.count).contains(tab) else { return }
+        guard (0..<model.dungeonRoomMaps.count).contains(tab) else { return false }
         let map = model.dungeonRoomMaps[tab]
         let actions = VoiceGrammar.dungeonClearActions(words, config: config)
         if actions.isEmpty {
@@ -423,7 +474,7 @@ final class VoiceController {
             r.floorDropDetail = .unmarked
             while let m = r.monsters.first { r.toggleMonster(m) }
             _ = map.setRoom(r, col: cell.col, row: cell.row)
-            return
+            return true
         }
         for a in actions {
             switch a {
@@ -439,14 +490,17 @@ final class VoiceController {
                 setDungeonDoor(.unknown, dir, col: cell.col, row: cell.row, map: map)
             }
         }
+        return true
     }
 
     /// Flag a player-progress item as acquired (T-142); region-scoping + mapping live in
     /// the pure `ProgressionVoiceApply` helper so voice and tests share one path.
-    private func applyProgression(_ id: String) {
+    private func applyProgression(_ id: String) -> Bool {
         if !ProgressionVoiceApply.apply(id: id, region: focus.cursorRegion, progress: model.playerProgress) {
             vlog("progression \(id) not applied (unknown, or overworld-scoped — say it while viewing the overworld)")
+            return false
         }
+        return true
     }
 
     /// The entrance room (a `startEnterFrom*`) of the currently-selected dungeon, if any.
@@ -477,11 +531,11 @@ final class VoiceController {
 
     /// Apply action words at the current cursor cell, interpreted for the active
     /// region. Overworld is wired; the other regions come as their vocabularies land.
-    private func applyAction(_ words: [String]) {
+    private func applyAction(_ words: [String]) -> Bool {
         let cell = focus.cursorCell
         switch focus.cursorRegion {
         case .overworld:
-            guard !model.isDeadSpot(x: cell.col, y: cell.row) else { return }
+            guard !model.isDeadSpot(x: cell.col, y: cell.row) else { return false }
             // Two distinct shop items named in one utterance set the primary shop mark
             // *and* the tile's second item together (T-158) — no need for two commands.
             if let pair = VoiceGrammar.overworldShopPair(words, config: config) {
@@ -490,19 +544,19 @@ final class VoiceController {
                                     releaseTakeAny: { c, r in model.releaseOverworldTakeAny(column: c, row: r) },
                                     placeDungeon: { _, _, _ in })
                 model.overworldGrid.setShopSecondItem(pair.second, column: cell.col, row: cell.row)
-                return
+                return true
             }
             guard let action = VoiceGrammar.overworldAction(words, config: config) else {
-                vlog("no overworld action in \(words)"); return
+                vlog("no overworld action in \(words)"); return false
             }
             switch action {
             case .mark(let mark):
                 // Armos only on the five eligible screens (T-223) — voice mustn't place it elsewhere.
-                if mark == .armos, !model.canMarkArmos(column: cell.col, row: cell.row) { return }
+                if mark == .armos, !model.canMarkArmos(column: cell.col, row: cell.row) { return false }
                 // A second shop word on an existing shop tile sets the tile's *second*
                 // item rather than overwriting the primary (T-141).
                 if OverworldMark.applyVoiceSecondShopItem(mark, column: cell.col, row: cell.row,
-                                                          grid: model.overworldGrid) { return }
+                                                          grid: model.overworldGrid) { return true }
                 OverworldMark.apply(mark, column: cell.col, row: cell.row, grid: model.overworldGrid,
                                     releaseTakeAny: { c, r in model.releaseOverworldTakeAny(column: c, row: r) },
                                     placeDungeon: { number, c, r in
@@ -518,27 +572,30 @@ final class VoiceController {
             case .clearStart:
                 model.startSpot = nil
             }
+            return true
         case .dungeonMap:
-            applyDungeonAction(words, cell: cell)
+            return applyDungeonAction(words, cell: cell)
         case .blockers:
             guard let blocker = VoiceGrammar.blockerAction(words, config: config) else {
-                vlog("no blocker action in \(words)"); return
+                vlog("no blocker action in \(words)"); return false
             }
             let t = BlockerRegion.target(cell)
             model.dungeonBlockers.setDungeonBlocker(blocker, dungeon: t.dungeon, slot: t.slot)
+            return true
         default:
             vlog("voice action in region \(focus.cursorRegion) not supported yet: \(words)")
+            return false
         }
     }
 
     /// Apply dungeon-region action words at `cell` for the selected dungeon: room
     /// type / monster / floor drop, or one-or-more door commands, or an entrance.
-    private func applyDungeonAction(_ words: [String], cell: TrackerFocusState.GridCell) {
+    private func applyDungeonAction(_ words: [String], cell: TrackerFocusState.GridCell) -> Bool {
         let tab = focus.selectedDungeonTab
-        guard (0..<model.dungeonRoomMaps.count).contains(tab) else { return }
+        guard (0..<model.dungeonRoomMaps.count).contains(tab) else { return false }
         let map = model.dungeonRoomMaps[tab]
         let actions = VoiceGrammar.dungeonActions(words, config: config)
-        if actions.isEmpty { vlog("no dungeon action in \(words)"); return }
+        if actions.isEmpty { vlog("no dungeon action in \(words)"); return false }
         for action in actions {
             switch action {
             case .roomType(let type):
@@ -567,6 +624,7 @@ final class VoiceController {
                                               inferDoors: options.doDoorInference)
             }
         }
+        return true
     }
 
     /// The door on the `dir` side of room `(col,row)`, guarding grid edges (there is

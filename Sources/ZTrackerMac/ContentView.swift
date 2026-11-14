@@ -85,6 +85,7 @@ struct ContentView: View {
         // first, then honor the current setting (which redirects stdout/stderr to a temp
         // file while on). Runs once — Reset App reuses this ContentView, not a new one.
         .onAppear {
+            ConfirmationSound.liveOptions = options
             PerfLog.garbageCollectOldLogs()
             PerfLog.setEnabled(options.logRenderPerf)
         }

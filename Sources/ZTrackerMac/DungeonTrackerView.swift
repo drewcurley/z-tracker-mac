@@ -451,7 +451,7 @@ struct BoxView: View {
             .onTapGesture {
                 // Commentary Mode (T-215): ⌥-click toggles runner 1's knowledge of this box.
                 if commentaryActive, commentaryOptionKeyDown() { onCommentaryR1(); return }
-                if box.hasKnownItem { box.toggleTaken() }
+                if box.hasKnownItem { box.toggleTaken(); ConfirmationSound.inputTick() }
                 else { presentPopoverWithoutAnimation { showPicker = true } }
             }
             .onRightClick { presentPopoverWithoutAnimation { showPicker = true } }
@@ -476,7 +476,7 @@ struct BoxView: View {
             .accessibilityAddTraits(disabled ? [] : .isButton)
             .accessibilityAction {
                 guard !disabled else { return }
-                if box.hasKnownItem { box.toggleTaken() }
+                if box.hasKnownItem { box.toggleTaken(); ConfirmationSound.inputTick() }
                 else { presentPopoverWithoutAnimation { showPicker = true } }
             }
             .accessibilityAction(named: "Set item") {
@@ -536,11 +536,13 @@ struct BoxItemPicker: View {
                     .onTapGesture {
                         guard available else { return }
                         box.set(cellCurrent: item, playerHas: leftClickState)
+                        ConfirmationSound.inputTick()
                         dismiss()
                     }
                     .onRightClick {
                         guard available else { return }
                         box.set(cellCurrent: item, playerHas: .no)
+                        ConfirmationSound.inputTick()
                         dismiss()
                     }
                     .help(available ? "Left-click: have it · Right-click: don't have it" : "Already placed elsewhere")
@@ -551,18 +553,18 @@ struct BoxItemPicker: View {
                     .accessibilityAddTraits(available ? .isButton : [])
                     .accessibilityAction {
                         guard available else { return }
-                        box.set(cellCurrent: item, playerHas: leftClickState); dismiss()
+                        box.set(cellCurrent: item, playerHas: leftClickState); ConfirmationSound.inputTick(); dismiss()
                     }
                     .accessibilityAction(named: "Mark as not having it") {
                         guard available else { return }
-                        box.set(cellCurrent: item, playerHas: .no); dismiss()
+                        box.set(cellCurrent: item, playerHas: .no); ConfirmationSound.inputTick(); dismiss()
                     }
                 }
             }
             Divider()
             HStack(spacing: 8) {
-                Button("Don't want it") { box.setPlayerHas(.skipped); dismiss() }
-                Button("Clear") { box.set(cellCurrent: -1, playerHas: .no); dismiss() }
+                Button("Don't want it") { box.setPlayerHas(.skipped); ConfirmationSound.inputTick(); dismiss() }
+                Button("Clear") { box.set(cellCurrent: -1, playerHas: .no); ConfirmationSound.inputTick(); dismiss() }
             }
             .font(.caption)
         }

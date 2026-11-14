@@ -12,7 +12,10 @@ extension ReminderAnnouncement {
         case .considerSword2, .getSword2, .considerSword3: .swordHearts
         case .completedDungeon, .foundDungeonCount, .triforceCount, .triforceAndGo: .dungeonFeedback
         case .remindUnblock: .blockers
-        case .remindShortly: .haveKeyLadder
+        // The recorder / power-bracelet nudges belong with the boomstick under the reference's
+        // "Recorder/PB/Boomstick" toggle (`Reminders.fs:207-243`); the rest stay key/ladder (T-248).
+        case .remindShortly(let id):
+            (id == ITEMS.recorder || id == ITEMS.powerBracelet) ? .recorderPBSpotsAndBoomstickBook : .haveKeyLadder
         case .doorRepairCount: .doorRepair
         case .getCoastItem: .coastItem
         case .getArmosItem, .armosLocated: .armosItem

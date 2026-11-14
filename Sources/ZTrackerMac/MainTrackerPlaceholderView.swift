@@ -442,6 +442,7 @@ struct MainTrackerPlaceholderView: View {
             let isNewVoice = (voice == nil)
             let voiceController = voice ?? VoiceController(model: model, focus: focus, config: voiceConfig, options: options, timer: timer)
             voice = voiceController
+            voiceController.onError = { [reminders] message in reminders.toast(message, duration: .seconds(6)) }
             // "Listen for speech" (T-206): auto-start voice recognition at launch (once),
             // so the mic is live without clicking the FLAGS mic icon. Prompts for mic
             // permission the first time; a no-op if already listening.

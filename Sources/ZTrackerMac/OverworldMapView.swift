@@ -206,15 +206,6 @@ struct OverworldMapView: View {
     static let coastRow = 5
     struct TileCoord: Identifiable, Equatable { let column: Int; let row: Int; var id: Int { row * 100 + column } }
 
-    /// Ladder and raft are live (`playerState.haveLadder`/`.haveRaft`, T-014)
-    /// and any-roads are live (T-015.5). The mirror-overworld toggle
-    /// (`MirrorOverworld`) is a full display-flip feature (flips the whole
-    /// map's marks + background, not just routing) — split out as its own
-    /// task (T-015.7), so it stays a documented placeholder here, not
-    /// silently hardcoded. `RoutesCanScreenScroll` is already wired to a real
-    /// option below.
-    private static let placeholderIsMirror = false
-
     /// Bold/pale highlight cap, matching the reference app's `MaxGYR`
     /// default (`OverworldRouteDrawing.fs:94`/`:28`).
     private static let maxGYR = 12
@@ -232,7 +223,7 @@ struct OverworldMapView: View {
         let key = OverworldHoverState.GraphKey(
             ladder: playerState.haveLadder, raft: playerState.haveRaft,
             anyRoads: anyRoadDestinations.map { OverworldScreenCoordinate(x: $0.x, y: $0.y) },
-            canScreenScroll: options.showScreenScrolls)
+            canScreenScroll: options.showScreenScrolls, isMirror: mirrored)
         if let cached = hover.graphCache, cached.key == key { return cached.graph }
         let graph = OverworldRoutingGraph.dynamicGraph(
             ladder: key.ladder,
@@ -242,7 +233,10 @@ struct OverworldMapView: View {
             // not yet ported — see docs/domain.md § 6 (T-015 follow-ons).
             recorderWarpDestinations: [],
             anyRoads: anyRoadDestinations,
-            isMirror: Self.placeholderIsMirror,
+            // A mirrored map keeps the same adjacency but swaps the one-way screen-scroll
+            // edges (and drops the world wrap), as the reference's `populateDynamic` (T-248).
+            // Drawing is already right: routes sit inside the flipped container.
+            isMirror: key.isMirror,
             canScreenScroll: key.canScreenScroll
         )
         hover.graphCache = (key, graph)
@@ -612,6 +606,7 @@ struct OverworldMapView: View {
         let mark = grid.mark(column: column, row: row)
         if mark == .unmarked {
             grid.setMark(.dontCare, column: column, row: row)
+            ConfirmationSound.input(options)
         } else if mark == .dontCare {
             // "LC dark tile → popup" (docs/domain.md § 4.5): a second left-click on a
             // Don't-Care tile opens the tile chooser (T-185).
@@ -628,6 +623,7 @@ struct OverworldMapView: View {
             // A take-any tile cycles its claimed version (untaken → heart →
             // potion → candle), kept in sync with its Items-group slot (T-066).
             onCycleTakeAny(column, row)
+            ConfirmationSound.input(options)
         } else if case .swordCave(3) = mark {
             // The Magical-Sword cave isn't a manual `used` toggle — its dim derives
             // from whether the player has the magical sword. Clicking it "takes" the
@@ -637,11 +633,13 @@ struct OverworldMapView: View {
             // Block taking it below the 10-heart minimum — you can't have it yet (T-214).
             if !(taking && !ItemAcquisitionGate.magicalSwordReachable(playerState)) {
                 onMagicalSwordCaveUsedChanged(taking)
+                ConfirmationSound.input(options)
             }
         } else if mark.isUsedToggleable {
             // A claimable tile (secret / letter / hint shop / wood-sword cave):
             // left-click toggles it used ⇄ unused (T-054).
             grid.toggleUsed(column: column, row: row)
+            ConfirmationSound.input(options)
             // Marking the wood-sword cave "used" grants (or ungrants) the wood
             // sword — the cave is where you collect it (T-118, user request).
             if case .swordCave(1) = mark {
@@ -1907,6 +1905,7 @@ final class OverworldHoverState {
         let raft: Bool
         let anyRoads: [OverworldScreenCoordinate]
         let canScreenScroll: Bool
+        let isMirror: Bool
     }
     @ObservationIgnored var graphCache: (key: GraphKey, graph: OverworldDynamicGraph?)?
 

@@ -525,6 +525,7 @@ struct DungeonRoomGridView: View {
                 RoomTypePicker(current: map.room(col: req.col, row: req.row).roomType) { newType in
                     DungeonRoomMark.applyRoomType(newType, col: req.col, row: req.row,
                                                   map: map, inferDoors: inferDoors)
+                    ConfirmationSound.inputTick()
                     activePicker = nil
                 }
             }
@@ -536,6 +537,7 @@ struct DungeonRoomGridView: View {
                 MonsterPicker(primary: r.monsterDetail, secondary: r.monsterDetail2,
                               onToggle: { md in
                                   DungeonRoomMark.toggleMonster(md, col: req.col, row: req.row, map: map)
+                                  ConfirmationSound.inputTick()
                                   if md.isNotMarked { activePicker = nil }   // clearing dismisses (T-116)
                               },
                               onDone: { activePicker = nil })
@@ -546,6 +548,7 @@ struct DungeonRoomGridView: View {
             if let req = activePicker {
                 FloorDropPicker(current: map.room(col: req.col, row: req.row).floorDropDetail) { fd in
                     DungeonRoomMark.setFloorDrop(fd, col: req.col, row: req.row, map: map)
+                    ConfirmationSound.inputTick()
                     activePicker = nil
                 }
             }
@@ -745,7 +748,9 @@ private struct RoomCellView: View {
                 case .optionLeft: if commentaryActive { onCommentaryR1() }
                 case .optionRight: if commentaryActive { onCommentaryR2() }
                 // â¥-click stands in for the reference middle-click (no middle button).
-                case .middle, .commandLeft: map.middleClick(col: col, row: row)
+                case .middle, .commandLeft:
+                    map.middleClick(col: col, row: row)
+                    ConfirmationSound.input(enabled: confirmInputSound, volume: confirmInputVolume)
                 }
             },
             // Drag-paint (T-072): left over off-map â unmarked, right over unmarked

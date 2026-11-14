@@ -40,6 +40,15 @@ enum ConfirmationSound {
         input(enabled: options.inputConfirmationSound, volume: options.inputConfirmationVolume)
     }
 
+    /// The app's live options, for edits made in views that aren't handed them (item boxes,
+    /// blockers, pickers — in any window or popover). Registered at launch by `ContentView` (T-248).
+    static weak var liveOptions: TrackerOptions?
+
+    /// The input tick for such an edit, honoring the live setting + volume (T-248).
+    static func inputTick() {
+        if let liveOptions { input(liveOptions) }
+    }
+
     /// Value-driven variant for views that receive only the extracted flag + volume (not the
     /// whole `TrackerOptions`), matching how `inferDoors` / `preferNonDescript` are threaded.
     static func input(enabled: Bool, volume: Int) {

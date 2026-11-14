@@ -6,6 +6,11 @@ Each entry mirrors the notes on its [GitHub Release](https://github.com/drewcurl
 
 ## [Unreleased]
 ### Fixed
+- **Settings and feedback that only half worked now work fully.** The Recorder/PB/Boomstick reminder
+  toggle now covers the recorder and power-bracelet reminders (off by default, as in the Windows app).
+  The click confirmation sound now plays for item boxes, blockers and every map edit. Routing follows
+  Mirror Overworld. Voice only plays its success sound when a command actually did something (✗
+  otherwise), and microphone problems are shown instead of silently doing nothing.
 - **Your run's save is much harder to lose.** Quitting while the "resume your last run?" prompt is
   up, after choosing "Not now", or via "Update now" no longer deletes the saved run. Starting a new
   run after "Not now" keeps the old one as a loadable `ztracker-unfinished-…` file instead of
