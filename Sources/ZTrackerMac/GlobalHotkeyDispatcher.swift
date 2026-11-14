@@ -27,6 +27,20 @@ final class GlobalHotkeyDispatcher {
     /// the same room coordinate in a different dungeon can't false-fire.
     private var justUnmarked: (tab: Int, col: Int, row: Int, selector: String)?
 
+    /// After a take-any or wood-sword cave is placed by hotkey, the next key may say what was
+    /// taken there — the reference's pie-menu keys (`Contextual_TakeAny_*` / `_TakeThis_*`,
+    /// `PieMenus.fs:119-129`). Any other key, or the window passing, dismisses it (T-249).
+    struct PendingContextual {
+        enum Kind { case takeAny, takeThis }
+        let kind: Kind
+        let col: Int
+        let row: Int
+        let armedAt: Date
+    }
+    private(set) var pendingContextual: PendingContextual?
+    private var contextualToast: UUID?
+    static let contextualWindow: TimeInterval = 8
+
     /// Shows the groundhog reset's Undo toast (T-246).
     private let reminders: ReminderController?
     private let groundhog: GroundhogReset
@@ -63,6 +77,10 @@ final class GlobalHotkeyDispatcher {
         let responder = event.window?.firstResponder
         if responder is NSTextView || responder is NSText { return false }
         guard let chord = HotkeyChord(nsEvent: event) else { return false }
+        if pendingContextual != nil, takeContextual(chord) {
+            ConfirmationSound.input(options)
+            return true
+        }
         // Global keys are always live (a chord can't be bound both global and in a
         // region — their conflict scopes intersect, so this ordering is unambiguous).
         // The one exception is being parked on Notes: there, only cursor navigation
@@ -120,6 +138,60 @@ final class GlobalHotkeyDispatcher {
             break
         }
         return false
+    }
+
+    /// Resolve a pending take-any / take-this choice with this key (T-249). Always disarms;
+    /// returns whether the key was a matching choice (and so is consumed).
+    @discardableResult
+    func takeContextual(_ chord: HotkeyChord, now: Date = Date()) -> Bool {
+        guard let pending = pendingContextual else { return false }
+        pendingContextual = nil
+        if let toast = contextualToast { reminders?.dismiss(toast); contextualToast = nil }
+        guard now.timeIntervalSince(pending.armedAt) <= Self.contextualWindow,
+              let id = hotkeys.selectorID(boundTo: chord, in: .contextual) else { return false }
+        return performContextual(id, pending)
+    }
+
+    private func performContextual(_ id: String, _ p: PendingContextual) -> Bool {
+        let grid = model.overworldGrid, progress = model.playerProgress
+        switch (p.kind, id) {
+        // "None" leaves the tile as placed (unclaimed / not collected), like the reference.
+        case (.takeAny, "Contextual_TakeAny_None"), (.takeThis, "Contextual_TakeThis_None"):
+            return true
+        case (.takeAny, "Contextual_TakeAny_Potion"):
+            model.setOverworldTakeAny(.takenPotion, column: p.col, row: p.row)
+        case (.takeAny, "Contextual_TakeAny_Candle"):
+            model.setOverworldTakeAny(.takenCandle, column: p.col, row: p.row)
+        case (.takeAny, "Contextual_TakeAny_Heart"):
+            model.setOverworldTakeAny(.takenHeart, column: p.col, row: p.row)
+        case (.takeThis, "Contextual_TakeThis_Sword"):
+            grid.setUsed(true, column: p.col, row: p.row)
+            progress.hasWoodSword = true
+        case (.takeThis, "Contextual_TakeThis_Candle"):
+            grid.setUsed(true, column: p.col, row: p.row)
+            progress.hasBlueCandle = true
+        default:
+            return false
+        }
+        return true
+    }
+
+    /// Arm the take-any / take-this keys for the tile just placed, showing the bound choices —
+    /// the stand-in for the reference's pie menu. No keys bound → nothing to arm.
+    func armContextual(_ kind: PendingContextual.Kind, col: Int, row: Int, now: Date = Date()) {
+        let choices: [(id: String, name: String)] = kind == .takeAny
+            ? [("TakeAny_None", "none"), ("TakeAny_Potion", "potion"),
+               ("TakeAny_Candle", "candle"), ("TakeAny_Heart", "heart")]
+            : [("TakeThis_None", "none"), ("TakeThis_Candle", "candle"), ("TakeThis_Sword", "sword")]
+        let parts = choices.compactMap { c in
+            hotkeys.chord(for: "Contextual_" + c.id).map { "\($0.displayName) \(c.name)" }
+        }
+        guard !parts.isEmpty else { return }
+        pendingContextual = PendingContextual(kind: kind, col: col, row: row, armedAt: now)
+        if let old = contextualToast { reminders?.dismiss(old) }
+        contextualToast = reminders?.toast(
+            (kind == .takeAny ? "Take Any: " : "Take This: ") + parts.joined(separator: " · "),
+            duration: .seconds(Self.contextualWindow))
     }
 
     /// Play the mouse/keyboard confirmation tick (T-208) when a region hotkey performed an
@@ -192,7 +264,8 @@ final class GlobalHotkeyDispatcher {
     /// grid's assignable picker-boxes (white-sword / coast / armos item) respond;
     /// the fixed toggle boxes have their own Global hotkeys, so the key is consumed
     /// there but does nothing on a non-box cell.
-    private func performItems(_ selectorID: String) -> Bool {
+    @discardableResult
+    func performItems(_ selectorID: String) -> Bool {
         let prefix = "Item_"
         guard selectorID.hasPrefix(prefix),
               let index = ItemBoxMark.itemIndex(forHotkeySuffix: String(selectorID.dropFirst(prefix.count)))
@@ -202,8 +275,11 @@ final class GlobalHotkeyDispatcher {
               (0..<ItemProgressGrid.columns).contains(cell.col),
               case .pickerBox(let coast) = ItemProgressGrid.layout[cell.row][cell.col]
         else { return true }   // consumed, but not a box cell
+        // Below the box's gate (coast without the ladder, white-sword item under the heart
+        // minimum) a fresh mark lands untaken, the same as voice and the picker (T-249).
+        let reachable = coast.defaultAcquired(model.playerComputedStateSummary)
         ItemBoxMark.cycleHotkey(itemIndex: index, box: coast.box(in: model.dungeonTracker),
-                                instance: model.dungeonTracker)
+                                instance: model.dungeonTracker, acquired: reachable ? .yes : .no)
         return true
     }
 
@@ -211,6 +287,16 @@ final class GlobalHotkeyDispatcher {
     /// toggle-off check, and the Unmark–Remark behavior all agree.
     private enum RoomField {
         case roomType(RoomType), monster(MonsterDetail), floorDrop(FloorDropDetail)
+    }
+
+    /// A `DungeonRoom_{West|East|North|South}Door{Increment|Decrement}` key (T-249).
+    static func doorNudge(for selectorID: String) -> (side: DungeonRoomMark.DoorSide, increment: Bool)? {
+        guard let s = selectorID.hotkeySuffix("DungeonRoom_") else { return nil }
+        for side in DungeonRoomMark.DoorSide.allCases {
+            if s == side.hotkeyName + "DoorIncrement" { return (side, true) }
+            if s == side.hotkeyName + "DoorDecrement" { return (side, false) }
+        }
+        return nil
     }
 
     private static func roomField(for selectorID: String) -> RoomField? {
@@ -234,8 +320,14 @@ final class GlobalHotkeyDispatcher {
     @discardableResult
     func performDungeonRoom(_ selectorID: String) -> Bool {
         let tab = focus.selectedDungeonTab
-        guard (0..<model.dungeonRoomMaps.count).contains(tab),
-              let field = Self.roomField(for: selectorID) else { return false }
+        guard (0..<model.dungeonRoomMaps.count).contains(tab) else { return false }
+        if let nudge = Self.doorNudge(for: selectorID) {
+            justUnmarked = nil
+            return DungeonRoomMark.nudgeDoor(nudge.side, increment: nudge.increment,
+                                             col: focus.dungeonCursor.col, row: focus.dungeonCursor.row,
+                                             map: model.dungeonRoomMaps[tab])
+        }
+        guard let field = Self.roomField(for: selectorID) else { return false }
         let map = model.dungeonRoomMaps[tab]
         let cell = focus.dungeonCursor
         let (col, row) = (cell.col, cell.row)
@@ -389,7 +481,16 @@ final class GlobalHotkeyDispatcher {
         // toggleable tile flips its used (dark) state instead of re-placing it.
         if model.overworldGrid.mark(column: cell.col, row: cell.row) == mark,
            mark.isUsedToggleable {
-            model.overworldGrid.toggleUsed(column: cell.col, row: cell.row)
+            // A take-any cycles its claimed slot and the wood-sword cave grants the sword,
+            // exactly as a left-click does — a bare used-toggle left them out of sync (T-249).
+            if mark == .takeAny {
+                model.cycleOverworldTakeAny(column: cell.col, row: cell.row)
+            } else {
+                model.overworldGrid.toggleUsed(column: cell.col, row: cell.row)
+                if case .swordCave(1) = mark {
+                    model.playerProgress.hasWoodSword = model.overworldGrid.isUsed(column: cell.col, row: cell.row)
+                }
+            }
             return true
         }
         OverworldMark.apply(mark, column: cell.col, row: cell.row, grid: model.overworldGrid,
@@ -400,6 +501,8 @@ final class GlobalHotkeyDispatcher {
                             placeSwordCave: { level, c, r in
                                 OverworldMark.didPlaceSwordCave(level, column: c, row: r, model: model)
                             })
+        if mark == .takeAny { armContextual(.takeAny, col: cell.col, row: cell.row) }
+        if case .swordCave(1) = mark { armContextual(.takeThis, col: cell.col, row: cell.row) }
         return true
     }
 
@@ -407,7 +510,13 @@ final class GlobalHotkeyDispatcher {
     private func perform(_ selectorID: String) -> Bool {
         let progress = model.playerProgress
         switch selectorID {
-        case "Global_ToggleMagicalSword": progress.hasMagicalSword.toggle()
+        case "Global_ToggleMagicalSword":
+            // Can't take it below the heart minimum (T-249), the same rule as the Items box;
+            // turning it off is always allowed.
+            guard progress.hasMagicalSword
+                    || ItemAcquisitionGate.magicalSwordReachable(model.playerComputedStateSummary)
+            else { return false }
+            progress.hasMagicalSword.toggle()
         case "Global_ToggleWoodSword":    progress.hasWoodSword.toggle()
         case "Global_ToggleBoomBook":     progress.hasBoomBook.toggle()
         case "Global_ToggleBlueCandle":   progress.hasBlueCandle.toggle()
@@ -445,9 +554,65 @@ final class GlobalHotkeyDispatcher {
         case "Global_RecorderDestPrev": model.recorderDestinationManual = true; model.recorderDestinationIndex -= 1
         case "Global_RecorderDestNext": model.recorderDestinationManual = true; model.recorderDestinationIndex += 1
         case "Global_ToggleVoice": voice?.toggle()   // T-137 (unbound by default)
+        // Click / scroll keys (T-249): the reference synthesizes a real click at the pointer
+        // (its keyboard cursor *is* the pointer). Here they act on the hovered cell, else the
+        // keyboard cursor's cell — the same cell every other region hotkey targets.
+        case "Global_LeftClick":   return performClick(.left)
+        case "Global_RightClick":  return performClick(.right)
+        case "Global_MiddleClick": return performClick(.middle)
+        case "Global_ScrollUp":    return performClick(.scrollUp)
+        case "Global_ScrollDown":  return performClick(.scrollDown)
         default:
-            // Click / scroll globals + hover-region marks are phase 2b — a
-            // recognized-but-unimplemented Global key is left for the app.
+            return false
+        }
+        return true
+    }
+
+    /// A click / scroll key on the active region's cell (T-249). Items and dungeon-item boxes
+    /// are edited here directly; the overworld and dungeon map hand the click to their grid
+    /// view (it owns their pickers). Blockers and Notes have no keyboard click.
+    @discardableResult
+    func performClick(_ kind: TrackerFocusState.ClickRequest.Kind) -> Bool {
+        guard let region = focus.activeRegion else { return false }
+        let cell = focus.cell(in: region)
+        switch region {
+        case .overworld, .dungeonMap:
+            focus.clickRequest = .init(kind: kind, region: region, cell: cell)
+            return true
+        case .items:
+            return clickItem(kind, cell: cell)
+        case .dungeonItem:
+            guard kind == .left, (0..<9).contains(cell.col) else { return false }
+            let boxes = model.dungeonTracker.dungeon(cell.col).boxes
+            guard boxes.indices.contains(cell.row), boxes[cell.row].hasKnownItem else { return false }
+            boxes[cell.row].toggleTaken()
+            return true
+        case .blockers, .notes:
+            return false
+        }
+    }
+
+    /// The Items grid's mouse actions on a cell (T-249), mirroring `ItemToggleBox`,
+    /// `TakeAnyHeartBox` and `BoxView`: left toggles (the magical sword not below its heart
+    /// minimum), right clears; take-any slots cycle; a box with a known item toggles taken.
+    private func clickItem(_ kind: TrackerFocusState.ClickRequest.Kind, cell: TrackerFocusState.GridCell) -> Bool {
+        guard let c = ItemProgressGrid.cell(row: cell.row, col: cell.col) else { return false }
+        let progress = model.playerProgress
+        switch (c, kind) {
+        case (.toggle(let t), .left):
+            if !progress[keyPath: t.keyPath], t == .magicalSword,
+               !ItemAcquisitionGate.magicalSwordReachable(model.playerComputedStateSummary) { return false }
+            progress[keyPath: t.keyPath].toggle()
+        case (.toggle(let t), .right):
+            guard progress[keyPath: t.keyPath] else { return false }
+            progress[keyPath: t.keyPath] = false
+        case (.takeAnyHeart(let i), .left):  model.cycleTakeAnySlot(i, by: 1)
+        case (.takeAnyHeart(let i), .right): model.cycleTakeAnySlot(i, by: -1)
+        case (.pickerBox(let coast), .left):
+            let box = coast.box(in: model.dungeonTracker)
+            guard box.hasKnownItem else { return false }
+            box.toggleTaken()
+        default:
             return false
         }
         return true

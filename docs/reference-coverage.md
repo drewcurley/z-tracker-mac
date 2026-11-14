@@ -146,7 +146,9 @@ The former "not started" list is now empty — every item was shipped or descope
 - **No hotkey mouse-warping / click emulation** (user, 2026-07-22) — the reference nudges the OS
   pointer 20px off-grid and recenters it between regions. The keyboard cursor (T-134/135/168) serves
   the same purpose semantically, and synthetic clicks would require an Accessibility (TCC) grant the
-  user would have to re-approve after every rebuild.
+  user would have to re-approve after every rebuild. So the Left/Middle/Right-click and Scroll
+  hotkeys (T-249) don't synthesize events: they perform that mouse action on the hovered cell, else
+  the keyboard cursor's cell (overworld, dungeon map, Items, dungeon item boxes).
 - **Hotkey context = hover, with the keyboard cursor as fallback** (T-168) — the reference keys purely
   off mouse hover. Both are supported here; a deliberate keyboard nav overrides a resting mouse.
 

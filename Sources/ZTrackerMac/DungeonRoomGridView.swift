@@ -410,6 +410,7 @@ struct DungeonRoomGridView: View {
     /// The single active detail-picker request (T-145). Grid-level so there are
     /// three popovers total, not three per cell.
     @State private var activePicker: RoomPickerRequest?
+    @Environment(\.trackerIsMirror) private var isMirror
 
     /// The grid's natural width: 8 cells + the inter-cell door gaps + the 4pt
     /// padding on each side. The map card uses this to cap its total width so a
@@ -428,6 +429,11 @@ struct DungeonRoomGridView: View {
         VStack(alignment: .leading, spacing: Self.gap) {
             headerRow
             roomsAndDoors
+        }
+        // Click / scroll hotkeys on the cursor room (T-249) do what that mouse action does.
+        .onChange(of: focus.clickRequest?.id) { _, id in
+            guard !isMirror, let id, let req = focus.takeClickRequest(id, in: .dungeonMap) else { return }
+            performClick(req.kind, col: req.cell.col, row: req.cell.row)
         }
         .padding(4)
         .background(RoundedRectangle(cornerRadius: 6).fill(Color(white: 0.09)))
@@ -553,6 +559,29 @@ struct DungeonRoomGridView: View {
                 }
             }
         }
+    }
+
+    /// A keyboard click on room (col,row) (T-249) — the same routing as `RoomCellView`'s mouse
+    /// gestures: grab mode takes a left-click; otherwise left = accelerator, right = room type,
+    /// scroll up/down = monster / floor drop, middle = circle / drop brightness.
+    private func performClick(_ kind: TrackerFocusState.ClickRequest.Kind, col: Int, row: Int) {
+        if grab.isGrabMode {
+            if kind == .left { grab.handleClick(col: col, row: row, map: map) }
+            return
+        }
+        switch kind {
+        case .left:
+            DungeonRoomMark.leftClick(col: col, row: row, map: map,
+                                      preferNonDescript: preferNonDescript, inferDoors: inferDoors)
+        case .middle: map.middleClick(col: col, row: row)
+        case .right: openPicker(.roomType, col: col, row: row)
+        case .scrollUp: openPicker(.monster, col: col, row: row)
+        case .scrollDown: openPicker(.floorDrop, col: col, row: row)
+        }
+    }
+
+    private func openPicker(_ kind: RoomPickerKind, col: Int, row: Int) {
+        presentPopoverWithoutAnimation { activePicker = RoomPickerRequest(col: col, row: row, kind: kind) }
     }
 
     /// A presentation binding for one picker kind: true iff that kind is the
@@ -786,11 +815,8 @@ private struct RoomCellView: View {
     /// Shared by the mouse gesture and the VoiceOver default action.
     private func markWithInference() {
         ConfirmationSound.input(enabled: confirmInputSound, volume: confirmInputVolume)   // mouse-edit tick (T-208)
-        let wasUnmarked = room.roomType.isNotMarked
-        // "Default to NonDescript" (T-206): the left-click accelerator marks an unmarked
-        // room as NonDescript (empty) instead of MaybePushBlock when the option is on.
-        map.leftClick(col: col, row: row, defaultRoom: preferNonDescript ? .nonDescript : .maybePushBlock)
-        if inferDoors, wasUnmarked { map.inferEntryDoor(col: col, row: row) }
+        DungeonRoomMark.leftClick(col: col, row: row, map: map,
+                                  preferNonDescript: preferNonDescript, inferDoors: inferDoors)
     }
 
     private var accessibilityValue: String {

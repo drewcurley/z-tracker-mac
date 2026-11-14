@@ -519,6 +519,35 @@ struct OverworldMapView: View {
             .scaleEffect(x: mirrored ? -1 : 1, y: 1)
         }
         .aspectRatio(tileAspectRatio * CGFloat(OverworldGrid.columnCount) / CGFloat(OverworldGrid.rowCount), contentMode: .fit)
+        // Click / scroll hotkeys on the cursor tile (T-249) do what that mouse action does.
+        .onChange(of: focus.clickRequest?.id) { _, id in
+            guard !isMirrorWindow, let id, let req = focus.takeClickRequest(id, in: .overworld) else { return }
+            performClick(req.kind, column: req.cell.col, row: req.cell.row)
+        }
+    }
+
+    @Environment(\.trackerIsMirror) private var isMirrorWindow
+
+    /// A keyboard click on tile (column,row) (T-249): left = the left-click action; right = the
+    /// chooser (graphical) or the mark menu; scroll-up = the enemy picker (graphical, as the
+    /// mouse). Dead spots take only the left-click no-op, like the mouse.
+    private func performClick(_ kind: TrackerFocusState.ClickRequest.Kind, column: Int, row: Int) {
+        switch kind {
+        case .left:
+            handleLeftClick(column: column, row: row)
+        case .right:
+            guard !screenIsDeadSpot(column, row) else { return }
+            if options.graphicalOverworldChooser {
+                presentPopoverWithoutAnimation { chooserCell = TileCoord(column: column, row: row) }
+            } else {
+                showNativeMarkMenu(column: column, row: row)
+            }
+        case .scrollUp:
+            guard options.graphicalOverworldChooser, !screenIsDeadSpot(column, row) else { return }
+            presentPopoverWithoutAnimation { enemyCell = TileCoord(column: column, row: row) }
+        case .middle, .scrollDown:
+            break
+        }
     }
 
     /// Hover-triggered route computation, ported structurally from the
