@@ -120,8 +120,8 @@ struct SettingsPanelView: View {
             Toggle("Do door inference", isOn: Bindable(options).doDoorInference)
             // "Book for Helpful Hints" is a seed flag now — it lives in the Flags
             // section (T-092), not here.
-            // Back-burnered until drag-to-paint rooms exist (T-206): hidden, option kept.
-            // Toggle("Left-drag auto-inverts", isOn: Bindable(options).leftDragAutoInverts)
+            Toggle("Left-drag auto-inverts", isOn: Bindable(options).leftDragAutoInverts)
+                .help("Painting maps: if your first drag in a dungeon is a left-drag and you haven't inverted it yet, invert Off-The-Map ↔ Unmarked first, so the drag immediately paints the map on.")
             Toggle("Default to NonDescript", isOn: Bindable(options).defaultToNonDescript)
             Toggle("Large X on unwanted items", isOn: Bindable(options).largeUnwantedX)
                 .help("Mark a 'don't want it' item box with a big X across the whole box (on) or a small X in the corner (off).")

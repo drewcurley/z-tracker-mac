@@ -12,8 +12,8 @@ public struct Tip: Identifiable, Equatable, Sendable {
 /// The startup "Random tip:" pool (T-250) — the reference's full `Factoids` list
 /// (`Z1R_Tracker/DungeonData.fs:3-65`). Gameplay tips are verbatim. The Z-Tracker tips are
 /// reworded where this app works differently (⌘-click doors, Settings ▸ hotkeys, Notes.txt in
-/// the save folder, "Highlight nearby" tint); three are left out because their feature isn't
-/// here (the hover "?" explainer, the item box beside the dungeon map, overworld circles).
+/// the save folder, "Highlight nearby" tint); two are left out because their feature isn't
+/// here (the hover "?" explainer, overworld circles).
 public enum TipProvider {
     /// `noviceTips` (`DungeonData.fs:4-17`).
     public static let noviceTips: [Tip] = [
@@ -69,6 +69,7 @@ public enum TipProvider {
         Tip(id: "ztracker-doors", text: "In Z-Tracker, left-clicking a dungeon door makes it a green door (can go), right-clicking makes it a red wall (can't go), ⌘-clicking (or middle-clicking) makes it a yellow door (other, perhaps a locked door), and scrolling cycles the door's color; on an unmarked door, scroll up for purple (perhaps a shutter) or down for gold."),
         Tip(id: "ztracker-rooms", text: "In Z-Tracker, left-clicking a dungeon's entrance room cycles the entrance arrow (SWNE), and left-clicking most other rooms toggles them completed (darker) or uncompleted (brighter)."),
         Tip(id: "ztracker-blockers", text: "In Z-Tracker, if you leave a dungeon because you are blocked (e.g. needing a Ladder or a Key), you can add a mark in the BLOCKERS section for that dungeon number, to remind you why you left."),
+        Tip(id: "ztracker-items-by-map", text: "In Z-Tracker, you can edit the key items and triforce you got from a dungeon, using the box right next to the dungeon map, rather than having to mouse all the way back up to the top of the app."),
         Tip(id: "ztracker-timeline", text: "In Z-Tracker, the Timeline at the bottom of the app is automatically tracking 'splits' of when you got each triforce piece (as well as every other key item)."),
         Tip(id: "ztracker-hotkeys-notes", text: "In Z-Tracker, Settings ▸ Edit hotkeys… sets up keyboard shortcuts (and can import a Windows HotKeys.txt).  Put a Notes.txt in ~/Documents/ztracker to pre-populate the Notes text in the app, as well."),
         Tip(id: "ztracker-highlight-nearby", text: "In Z-Tracker, with \"Highlight nearby\" on, hovering the overworld map tints tiles green if you can uncover a location there, yellow if the screen may or may not yield a location and you can uncover it, or red if you don't have the item to uncover a location there."),

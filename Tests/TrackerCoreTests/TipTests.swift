@@ -8,8 +8,8 @@ struct TipProviderTests {
         #expect(TipProvider.noviceTips.count == 12)
         #expect(TipProvider.intermediateTips.count == 15)
         #expect(TipProvider.advancedTips.count == 8)
-        #expect(TipProvider.zTrackerTips.count == 9)       // 12 in the reference, 3 not applicable here
-        #expect(TipProvider.allTips.count == 12 + 15 + 8 + 9 + TipProvider.extraTips.count)
+        #expect(TipProvider.zTrackerTips.count == 10)      // 12 in the reference, 2 not applicable here
+        #expect(TipProvider.allTips.count == 12 + 15 + 8 + 10 + TipProvider.extraTips.count)
         #expect(TipProvider.allTips.contains { $0.id == "khananakey" || $0.text.contains("(khananakey)") })
     }
 
@@ -28,7 +28,6 @@ struct TipProviderTests {
         for tip in TipProvider.allTips {
             #expect(!tip.text.contains("question mark"))       // the hover explainer
             #expect(!tip.text.contains("circle it"))           // overworld circles
-            #expect(!tip.text.contains("right next to the dungeon map"))
             #expect(!tip.text.contains("application folder"))  // HotKeys.txt lives in Settings here
         }
     }

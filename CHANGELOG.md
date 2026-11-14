@@ -6,6 +6,9 @@ Each entry mirrors the notes on its [GitHub Release](https://github.com/drewcurl
 
 ## [Unreleased]
 ### Added
+- **Invert button for dungeon maps.** Under the minimap, it swaps every empty room with off-the-map so
+  you can paint the map on with a left-drag. **"Left-drag auto-inverts"** (Settings) does this on your
+  first left-drag in a dungeon.
 - **"Make a note …" voice command.** Say "make a note" (or "take a note") and the rest of what you
   say is added to Notes.
 - **45 startup tips** — the Windows tracker's full tip list (Z-Tracker tips reworded for the Mac app).
