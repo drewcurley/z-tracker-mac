@@ -521,6 +521,46 @@ public final class TrackerModel {
         self.quest = quest
     }
 
+    /// Marks stranded on screens that can't hold anything in `quest` (default: the current
+    /// one) — left over after a mid-run quest switch (T-252). Such a tile can't be edited like
+    /// a normal one, and every spot count ignores it, so the mark needs review. A Don't-Care
+    /// mark ("nothing here") isn't stale. None on a custom map (no dead spots there).
+    public func staleMarks(for quest: OverworldQuest? = nil)
+        -> [(column: Int, row: Int, mark: OverworldTileMark)] {
+        guard customMapImagePath == nil else { return [] }
+        let instance = OverworldInstance(quest: quest ?? self.quest ?? .first)
+        var out: [(column: Int, row: Int, mark: OverworldTileMark)] = []
+        for row in 0..<OverworldGrid.rowCount {
+            for col in 0..<OverworldGrid.columnCount where instance.alwaysEmpty(x: col, y: row) {
+                let mark = overworldGrid.mark(column: col, row: row)
+                if mark != .unmarked && mark != .dontCare { out.append((col, row, mark)) }
+            }
+        }
+        return out
+    }
+
+    /// Whether (column,row) holds a stale mark for the current quest (T-252).
+    public func isStaleMark(column: Int, row: Int) -> Bool {
+        guard isDeadSpot(x: column, y: row) else { return false }
+        let mark = overworldGrid.mark(column: column, row: row)
+        return mark != .unmarked && mark != .dontCare
+    }
+
+    /// Clear one stale mark (T-252), freeing a take-any's linked heart slot like any un-mark.
+    public func clearStaleMark(column: Int, row: Int) {
+        guard isStaleMark(column: column, row: row) else { return }
+        if overworldGrid.mark(column: column, row: row) == .takeAny {
+            releaseOverworldTakeAny(column: column, row: row)
+        }
+        overworldGrid.setMark(.unmarked, column: column, row: row)
+        overworldGrid.setUsed(false, column: column, row: row)
+    }
+
+    /// Clear every stale mark for the current quest (T-252).
+    public func clearStaleMarks() {
+        for m in staleMarks() { clearStaleMark(column: m.column, row: m.row) }
+    }
+
     /// Toggle Heart Shuffle live (T-049 — the flag now lives in the in-app Flags
     /// group, not just the startup screen). Re-seeds the dungeon floor-item
     /// hearts: **off** puts a known Heart Container in dungeons 1–8's first box,

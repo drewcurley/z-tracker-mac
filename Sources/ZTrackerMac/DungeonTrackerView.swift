@@ -76,10 +76,13 @@ struct DungeonTrackerView: View {
     /// which numerals light up. Ported behavior of the reference's
     /// `HasBeenLocated()` (a dungeon marked on the map), here read directly
     /// from the typed marks.
-    static func locatedDungeonIndices(in grid: OverworldGrid) -> Set<Int> {
+    /// A dungeon marked on a dead spot (a stale mark after a quest switch, T-252) doesn't count
+    /// as located — the same rule `MapStateSummary` uses for Triforce-and-Go and the reminders.
+    static func locatedDungeonIndices(in grid: OverworldGrid,
+                                      isDeadSpot: (Int, Int) -> Bool = { _, _ in false }) -> Set<Int> {
         var s: Set<Int> = []
         for col in 0..<OverworldGrid.columnCount {
-            for row in 0..<OverworldGrid.rowCount {
+            for row in 0..<OverworldGrid.rowCount where !isDeadSpot(col, row) {
                 if case .dungeon(let n) = grid.mark(column: col, row: row) {
                     s.insert(n - 1)
                 }
@@ -97,7 +100,7 @@ struct DungeonTrackerView: View {
     var body: some View {
         let _ = perfTrace()
         let dt = model.dungeonTracker
-        let loc = Self.locatedDungeonIndices(in: model.overworldGrid)
+        let loc = Self.locatedDungeonIndices(in: model.overworldGrid, isDeadSpot: model.isDeadSpot)
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top, spacing: 6) {
                 ForEach(0..<9, id: \.self) { i in

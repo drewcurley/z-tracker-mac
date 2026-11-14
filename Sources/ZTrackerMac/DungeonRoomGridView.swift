@@ -319,7 +319,7 @@ struct DungeonMapView: View {
             DungeonCardView(
                 dungeon: model.dungeonTracker.dungeon(selected),
                 instance: model.dungeonTracker,
-                isLocated: DungeonTrackerView.locatedDungeonIndices(in: model.overworldGrid).contains(selected),
+                isLocated: DungeonTrackerView.locatedDungeonIndices(in: model.overworldGrid, isDeadSpot: model.isDeadSpot).contains(selected),
                 iconOptions: model.iconOptions,
                 hideDungeonNumbers: model.hideDungeonNumbers,
                 showLocationHeader: false,

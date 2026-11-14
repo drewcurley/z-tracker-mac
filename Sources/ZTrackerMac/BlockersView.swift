@@ -24,7 +24,7 @@ struct BlockersView: View {
     /// Shared keyboard-cursor state (T-135) — this is the "blockers" cursor region.
     var focus: TrackerFocusState
 
-    private var located: Set<Int> { DungeonTrackerView.locatedDungeonIndices(in: model.overworldGrid) }
+    private var located: Set<Int> { DungeonTrackerView.locatedDungeonIndices(in: model.overworldGrid, isDeadSpot: model.isDeadSpot) }
 
     var body: some View {
         let _ = perfTrace()
